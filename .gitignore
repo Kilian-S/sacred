@@ -1,0 +1,12 @@
+# Data, logs, and saved model artifacts.
+/data/
+/logs/
+/models/
+
+# Python cache and local environments.
+__pycache__/
+*.py[cod]
+.venv/
+
+# macOS filesystem metadata.
+.DS_Store

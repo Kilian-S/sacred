@@ -1,0 +1,8 @@
+# Core graph simulation.
+networkx>=3.0
+numpy>=1.24
+pygame>=2.5
+
+# Planned project stack: PyTorch, PyTorch Geometric, PyGame, PettingZoo, OSMnx.
+tensorboard
+

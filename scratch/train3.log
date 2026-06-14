@@ -1,0 +1,28 @@
+Initializing SACRED SMDP Kaliningrad OSM Environment...
+Configuring Protagonist Dispatch Agent...
+Configuring Antagonist Congestion Agent...
+
+Loading baseline transitions from data/erb_transitions.pt...
+Pre-seeding protagonist replay buffer with 16 transitions...
+Protagonist replay buffer pre-seeded successfully!
+Initializing ATLA Coevolution Trainer...
+Run Name: sacred_atla_20ep_sw5_b32_0613_160551
+Starting SACRED ATLA training from scratch for 20 episodes...
+Device: Protagonist=cpu, Antagonist=cpu
+Alternating every 5 episodes.
+Initial Phase: Training PROTAGONIST (Adversary FROZEN)
+
+Traceback (most recent call last):
+  File "/Users/kilian/Kilian/ICL/Thesis/code/sacred/scripts/train_sacred.py", line 172, in <module>
+    main()
+    ~~~~^^
+  File "/Users/kilian/Kilian/ICL/Thesis/code/sacred/scripts/train_sacred.py", line 168, in main
+    trainer.run_training(total_episodes=args.episodes)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/sacred_atla.py", line 176, in run_training
+    action = self.antag.select_action(
+        event.observation, mask, remaining_budget_before, deterministic=False
+    )
+  File "/Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/sac.py", line 648, in select_action
+    mask = (costs <= remaining_budget + 1e-6).unsqueeze(0).expand(num_allowed, -1).view(-1)
+RuntimeError: view size is not compatible with input tensor's size and stride (at least one dimension spans across two contiguous subspaces). Use .reshape(...) instead.

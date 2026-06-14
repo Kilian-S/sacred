@@ -1,0 +1,55 @@
+Initializing SACRED SMDP Kaliningrad OSM Environment...
+Configuring Protagonist Dispatch Agent...
+Configuring Antagonist Congestion Agent...
+
+Loading baseline transitions from data/erb_transitions.pt...
+Pre-seeding protagonist replay buffer with 16 transitions...
+Protagonist replay buffer pre-seeded successfully!
+Initializing ATLA Coevolution Trainer...
+Run Name: sacred_atla_1ep_sw5_b32_0613_160705
+Starting SACRED ATLA training from scratch for 1 episodes...
+Device: Protagonist=cpu, Antagonist=cpu
+Alternating every 5 episodes.
+Initial Phase: Training PROTAGONIST (Adversary FROZEN)
+
+[REROUTE] Antagonist congested edge ('181', '182') (level 1.0). Truncating Truck 0 path from destination 91 to next intersection 181.
+[REROUTE] Antagonist congested edge ('16', '19') (level 1.0). Truncating Truck 1 path from destination 210 to next intersection 19.
+[REROUTE] Antagonist congested edge ('16', '19') (level 1.0). Truncating Truck 2 path from destination 169 to next intersection 16.
+         13056427 function calls (12742939 primitive calls) in 21.295 seconds
+
+   Ordered by: cumulative time
+   List reduced from 2144 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   20.893   20.893 /Users/kilian/Kilian/ICL/Thesis/code/sacred/scripts/train_sacred.py:17(main)
+        1    0.041    0.041   20.892   20.892 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/sacred_atla.py:69(run_training)
+       50    0.207    0.004   20.181    0.404 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/sac.py:240(update)
+133701/9210    0.079    0.000   13.427    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py:1774(_wrapped_call_impl)
+133701/9210    0.153    0.000   13.422    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py:1782(_call_impl)
+     9210    0.044    0.000   12.623    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/networks.py:212(forward)
+     6901    0.145    0.000    9.727    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/sac.py:73(forward)
+    18420    0.348    0.000    9.450    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/conv/gatv2_conv.py:250(forward)
+      114    0.000    0.000    5.173    0.045 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/_tensor.py:576(backward)
+      114    0.001    0.000    5.173    0.045 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py:253(backward)
+      114    0.001    0.000    5.170    0.045 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/autograd/graph.py:869(_engine_run_backward)
+      114    5.169    0.045    5.169    0.045 {method 'run_backward' of 'torch._C._EngineBase' objects}
+    18420    0.062    0.000    4.376    0.000 /var/folders/95/brp0vcyn1vj4h50thfbscc9m0000gn/T/torch_geometric.nn.conv.gatv2_conv_GATv2Conv_edge_updater_8533iipi.py:135(edge_updater)
+    18420    1.200    0.000    3.474    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/conv/gatv2_conv.py:355(edge_update)
+     2273    0.058    0.000    3.380    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/networks.py:249(forward)
+    18420    0.120    0.000    2.668    0.000 /var/folders/95/brp0vcyn1vj4h50thfbscc9m0000gn/T/torch_geometric.nn.conv.gatv2_conv_GATv2Conv_propagate_pg4atuiv.py:112(propagate)
+    73679    0.205    0.000    2.485    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/utils/_scatter.py:14(scatter)
+    36839    0.050    0.000    2.116    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/nn/functional.py:1419(dropout)
+    36839    2.050    0.000    2.050    0.000 {built-in method torch.dropout}
+    18419    0.017    0.000    1.721    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/conv/message_passing.py:577(aggregate)
+    18419    0.013    0.000    1.695    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/experimental.py:114(wrapper)
+     2310    0.603    0.000    1.653    0.001 /Users/kilian/Kilian/ICL/Thesis/code/sacred/src/agents/networks.py:22(featurize_state)
+    18419    0.022    0.000    1.645    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/aggr/base.py:101(__call__)
+    18419    0.005    0.000    1.583    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/aggr/basic.py:19(forward)
+    18419    0.009    0.000    1.578    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/aggr/base.py:173(reduce)
+    73679    1.429    0.000    1.429    0.000 {method 'scatter_add_' of 'torch._C.TensorBase' objects}
+    69217    1.391    0.000    1.391    0.000 {built-in method torch._C._nn.linear}
+    55260    0.027    0.000    1.295    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/nn/dense/linear.py:121(forward)
+    18420    0.144    0.000    1.064    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch_geometric/utils/_softmax.py:12(softmax)
+    18419    0.011    0.000    0.967    0.000 /Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/torch/nn/functional.py:1815(elu)
+
+
