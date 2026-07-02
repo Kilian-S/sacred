@@ -21,8 +21,8 @@ class TestNetworks(unittest.TestCase):
     def test_featurize_state(self) -> None:
         pyg_data = featurize_state(self.obs, active_truck_id=0)
 
-        # 9 nodes in toy graph, each has 9 features
-        self.assertEqual(pyg_data.x.shape, (9, 9))
+        # 9 nodes in toy graph, each has 11 features
+        self.assertEqual(pyg_data.x.shape, (9, 11))
 
         # 15 undirected edges = 30 directed edges in PyG
         self.assertEqual(pyg_data.edge_index.shape[0], 2)
@@ -33,7 +33,7 @@ class TestNetworks(unittest.TestCase):
 
         # Active truck feature checks
         # Active truck (id 0) is at "depot" initially
-        node_ids = list(self.obs["nodes"].keys())
+        node_ids = sorted(list(self.obs["nodes"].keys()))
         depot_idx = node_ids.index("depot")
         
         # Check active truck flag (column 5) and load (column 6)
@@ -51,14 +51,14 @@ class TestNetworks(unittest.TestCase):
         pyg_data = featurize_state(self.obs, active_truck_id=0).to(device)
 
         net = ProtagonistPolicyValueNet(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=32,
             num_layers=2,
             heads=2,
         ).to(device)
 
-        node_ids = list(self.obs["nodes"].keys())
+        node_ids = sorted(list(self.obs["nodes"].keys()))
         depot_idx = node_ids.index("depot")
 
         # In toy graph, depot neighbors are "a", "d", "hub"
@@ -84,7 +84,7 @@ class TestNetworks(unittest.TestCase):
         level_costs = [level * 12.0 for level in [0.25, 0.50, 0.75, 1.00]]
 
         net = AntagonistPolicyValueNet(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=32,
             num_layers=2,
@@ -92,7 +92,7 @@ class TestNetworks(unittest.TestCase):
             num_congestion_levels=num_levels,
         ).to(device)
 
-        node_ids = list(self.obs["nodes"].keys())
+        node_ids = sorted(list(self.obs["nodes"].keys()))
         node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
         original_edges = list(self.obs["edges"].keys())
 

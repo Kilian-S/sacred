@@ -53,7 +53,7 @@ class TestProtagonistRefactoring(unittest.TestCase):
 
         # Featurize for truck 0: no commitments yet
         pyg_data_0 = featurize_state(obs_copy, active_truck_id=0)
-        node_ids = list(event.observation["nodes"].keys())
+        node_ids = sorted(list(event.observation["nodes"].keys()))
         idx_a = node_ids.index("a")
         
         # 'is_targeted_by_other' (column 7) and 'unassigned_demand' (column 8) for node 'a'
@@ -97,20 +97,21 @@ class TestProtagonistRefactoring(unittest.TestCase):
         self.assertFalse(truck1.is_idle)
         self.assertEqual(truck0.destination, "b")
 
-        # Apply antagonist congestion on edge ('a', 'b') which is on the path to 'b'
+        # Apply antagonist congestion on edge ('a', 'b'), which is on Truck 0's (exact Dijkstra)
+        # path depot->a->b, ahead of its current edge (depot->a).
         congestion_edge = smdp.env._edge_key("a", "b")
-        
-        # Set antagonist action
+
+        # Set antagonist action. The reroute happens inside this step (a no-movement sequential
+        # epoch), so assert immediately, before time advances and the truck actually reaches 'a'.
         antag_action = (congestion_edge, 1.0)
         smdp.step_antagonist(antag_action)
-        # End sequential decision epoch to advance simulated time
-        next_event2, transition2 = smdp.step_antagonist(None)
 
         # The antagonist step should have intercepted Truck 0 and truncated its path!
-        # It should have arrived at the next intersection ('a') and become idle.
-        self.assertEqual(truck0.current_node, "a")
-        self.assertTrue(truck0.is_idle)
-        self.assertIsNone(truck0.destination)
+        # It should now be heading to the intersection ('a') before the congested edge, not 'b'.
+        self.assertEqual(truck0.destination, "a")
+        self.assertFalse(truck0.is_idle)
+        self.assertIsNone(truck0.current_node)
+        self.assertEqual(tuple(truck0.path), ("depot", "a"))  # path truncated at the reroute point
 
     def test_unassigned_demand_masking(self) -> None:
         event = self.smdp.reset_decision_env()

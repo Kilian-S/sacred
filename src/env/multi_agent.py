@@ -13,6 +13,7 @@ from math import hypot
 from typing import Callable, Protocol
 
 import networkx as nx
+import numpy as np
 
 from src.env.graph_env import EdgeId, GraphEnv, NodeId, StepResult
 from src.env.toy_graph import make_toy_graph_env
@@ -93,21 +94,32 @@ class AntagonistPolicy(Protocol):
 class NearestDemandProtagonist:
     """Baseline dispatcher with depot reload cycles."""
 
-    def act(self, env: GraphEnv) -> dict[int, NodeId]:
-        actions = {}
-        
-        # Calculate expected demand (actual minus what inbound trucks will deliver)
-        expected_demand = {
+    def __init__(self):
+        self._all_pairs_distances: dict[NodeId, dict[NodeId, float]] | None = None
+        self.expected_demand: dict[NodeId, float] | None = None
+        self.demand_nodes: set[NodeId] | None = None
+        self._last_env: GraphEnv | None = None
+
+    def _init_state(self, env: GraphEnv) -> None:
+        self._last_env = env
+        self.expected_demand = {
             node: data["demand"] for node, data in env.graph.nodes(data=True) if data["demand"] > 0
         }
         for truck in env.trucks.values():
-            if truck.destination is not None and truck.destination in expected_demand:
-                expected_demand[truck.destination] -= truck.load
+            if truck.destination is not None and truck.destination in self.expected_demand:
+                self.expected_demand[truck.destination] -= truck.load
 
-        demand_nodes = {
-            node for node, rem in expected_demand.items() 
+        self.demand_nodes = {
+            node for node, rem in self.expected_demand.items() 
             if rem > 0 and not env.graph.nodes[node]["has_depot"]
         }
+        self._all_pairs_distances = dict(nx.all_pairs_dijkstra_path_length(env.graph, weight="distance"))
+
+    def act(self, env: GraphEnv) -> dict[int, NodeId]:
+        if self._last_env is not env or self.expected_demand is None or self.demand_nodes is None or self._all_pairs_distances is None:
+            self._init_state(env)
+
+        actions = {}
 
         for truck_id, truck in env.trucks.items():
             if not truck.is_idle:
@@ -121,7 +133,7 @@ class NearestDemandProtagonist:
                 continue
 
             truck_comp = env.node_to_component.get(truck.current_node)
-            candidates = sorted([n for n in demand_nodes if env.node_to_component.get(n) == truck_comp])
+            candidates = sorted([n for n in self.demand_nodes if env.node_to_component.get(n) == truck_comp])
 
             if not candidates and truck.current_node != truck.home_depot:
                 if env.node_to_component.get(truck.home_depot) == truck_comp:
@@ -131,18 +143,16 @@ class NearestDemandProtagonist:
             if not candidates:
                 continue
 
-            try:
-                distances = nx.single_source_dijkstra_path_length(env.graph, truck.current_node, weight="distance")
-                destination = min(candidates, key=lambda node: distances.get(node, float("inf")))
-            except (nx.NetworkXNoPath, nx.NodeNotFound):
-                destination = candidates[0]
+            distances = self._all_pairs_distances.get(truck.current_node, {})
+            destination = min(candidates, key=lambda node: distances.get(node, float("inf")))
                 
             actions[truck_id] = destination
             
             # Immediately update expected demand for the next truck in this loop
-            expected_demand[destination] -= truck.load
-            if expected_demand[destination] <= 0:
-                demand_nodes.remove(destination)
+            if destination in self.expected_demand:
+                self.expected_demand[destination] -= truck.load
+                if self.expected_demand[destination] <= 0:
+                    self.demand_nodes.discard(destination)
 
         return actions
 
@@ -150,11 +160,45 @@ class NearestDemandProtagonist:
 class RouteInterceptingAntagonist:
     """Baseline adversary: congest the active route edge with largest delay."""
 
+    def __init__(self):
+        self._last_env: GraphEnv | None = None
+        self._node_coords: np.ndarray | None = None
+        self._node_ids: list[NodeId] = []
+        self._edge_list: list[EdgeId] = []
+        self._edge_to_idx: dict[EdgeId, int] = {}
+        self._edge_midpoints: np.ndarray | None = None
+        self._edge_distances: np.ndarray | None = None
+
+    def _init_state(self, env: GraphEnv) -> None:
+        self._last_env = env
+        nodes = list(env.graph.nodes(data=True))
+        
+        self._node_ids = [n for n, _ in nodes]
+        self._node_coords = np.array([[data["x"], data["y"]] for _, data in nodes])
+        
+        edges = list(env.graph.edges(data=True))
+        self._edge_list = [(u, v) for u, v, _ in edges]
+        self._edge_to_idx = {e: i for i, e in enumerate(self._edge_list)}
+        
+        midpoints = []
+        distances = []
+        for u, v, data in edges:
+            ux, uy = env.graph.nodes[u]["x"], env.graph.nodes[u]["y"]
+            vx, vy = env.graph.nodes[v]["x"], env.graph.nodes[v]["y"]
+            midpoints.append([(ux + vx) / 2.0, (uy + vy) / 2.0])
+            distances.append(data["distance"])
+            
+        self._edge_midpoints = np.array(midpoints)
+        self._edge_distances = np.array(distances)
+
     def act(self, env: GraphEnv, game: SacredToyGame) -> dict[EdgeId, float]:
         if game.cooldown_remaining > 0:
             return {}
         if not game.budget.can_spend(game.congestion_action_cost):
             return {}
+
+        if self._last_env is not env or self._node_coords is None or self._edge_midpoints is None or self._edge_distances is None:
+            self._init_state(env)
 
         candidates = self._active_route_edges(env)
         if not candidates:
@@ -162,8 +206,38 @@ class RouteInterceptingAntagonist:
         if not candidates:
             return {}
 
-        edge = max(candidates, key=lambda item: self._edge_score(env, item))
-        return {edge: game.config.congestion_level}
+        demands = np.array([env.graph.nodes[n]["demand"] for n in self._node_ids])
+        
+        pos_mask = demands > 0
+        pos_demands = demands[pos_mask]
+        pos_coords = self._node_coords[pos_mask]
+        
+        if len(pos_demands) > 0:
+            diffs = self._edge_midpoints[:, np.newaxis, :] - pos_coords[np.newaxis, :, :]
+            dists = np.hypot(diffs[..., 0], diffs[..., 1])
+            dists = np.maximum(1.0, dists)
+            gravity = pos_demands[np.newaxis, :] / dists
+            gravity_scores = gravity.sum(axis=1)
+        else:
+            gravity_scores = np.zeros(len(self._edge_list))
+            
+        edge_scores = self._edge_distances + gravity_scores
+        
+        best_edge = None
+        best_score = -float('inf')
+        for edge in candidates:
+            idx = self._edge_to_idx.get(edge)
+            if idx is None:
+                continue
+            score = edge_scores[idx]
+            if score > best_score:
+                best_score = score
+                best_edge = edge
+
+        if best_edge is None:
+            return {}
+            
+        return {best_edge: game.config.congestion_level}
 
     def _active_route_edges(self, env: GraphEnv) -> list[EdgeId]:
         edges: list[EdgeId] = []
@@ -175,24 +249,6 @@ class RouteInterceptingAntagonist:
                 continue
             edges.append((truck.path[truck.path_index], truck.path[truck.path_index + 1]))
         return edges
-
-    def _edge_score(self, env: GraphEnv, edge: EdgeId) -> float:
-        u, v = edge
-        distance = env.graph.edges[u, v]["distance"]
-        demand_gravity = self._downstream_demand_gravity(env, u, v)
-        return distance + demand_gravity
-
-    def _downstream_demand_gravity(self, env: GraphEnv, u: NodeId, v: NodeId) -> float:
-        ux, uy = env.graph.nodes[u]["x"], env.graph.nodes[u]["y"]
-        vx, vy = env.graph.nodes[v]["x"], env.graph.nodes[v]["y"]
-        score = 0.0
-        for _, data in env.graph.nodes(data=True):
-            demand = data["demand"]
-            if demand <= 0:
-                continue
-            midpoint_distance = hypot(((ux + vx) / 2.0) - data["x"], ((uy + vy) / 2.0) - data["y"])
-            score += demand / max(1.0, midpoint_distance)
-        return score
 
 
 class NoOpAntagonist:
@@ -222,6 +278,7 @@ class SacredToyGame:
         self.active_congestion: dict[EdgeId, int] = {}
         self.cooldown_remaining = 0
         self.metrics = EpisodeMetrics()
+        self.total_remaining_demand = sum(data["demand"] for _, data in self.env.graph.nodes(data=True))
 
     @property
     def congestion_action_cost(self) -> float:
@@ -235,6 +292,7 @@ class SacredToyGame:
         self.active_congestion = {}
         self.cooldown_remaining = 0
         self.metrics = EpisodeMetrics()
+        self.total_remaining_demand = sum(data["demand"] for _, data in self.env.graph.nodes(data=True))
         return self.env.observe()
 
     def step(self) -> GameTick:
@@ -247,6 +305,10 @@ class SacredToyGame:
             dispatch_actions=protagonist_action,
             congestion_actions=accepted_antagonist_action,
         )
+        
+        for delivery in result.info["deliveries"]:
+            self.total_remaining_demand -= delivery["delivered"]
+            
         protagonist_reward, antagonist_reward = self._agent_rewards(result, accepted_antagonist_action)
         self._update_metrics(result, protagonist_reward, antagonist_reward, accepted_antagonist_action)
         return GameTick(
@@ -339,7 +401,7 @@ class SacredToyGame:
             self.metrics.done_reason = "max_ticks"
 
     def _remaining_demand(self) -> float:
-        return sum(data["demand"] for _, data in self.env.graph.nodes(data=True))
+        return self.total_remaining_demand
 
     def _all_trucks_home(self) -> bool:
         return all(

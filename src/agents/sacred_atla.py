@@ -16,6 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.env.smdp_wrapper import DecisionType, SMDPDecisionWrapper, SMDPTransition
 from src.agents.sac import AntagonistSAC, ProtagonistSAC
+from src.agents.transition_builder import collect_protagonist_transitions
 
 
 class ATLACoevolutionTrainer:
@@ -46,12 +47,17 @@ class ATLACoevolutionTrainer:
         switch_every_episodes: int = 10,
         batch_size: int = 64,
         run_name: str | None = None,
+        eval_fn: Callable[[int], dict] | None = None,
+        eval_every: int = 0,
     ) -> None:
         self.smdp = smdp
         self.protag = protag_agent
         self.antag = antag_agent
         self.switch_every_episodes = switch_every_episodes
         self.batch_size = batch_size
+        # Optional periodic snapshot eval: eval_fn(episode) -> dict of scalars, logged under Eval/*.
+        self.eval_fn = eval_fn
+        self.eval_every = eval_every
 
         if run_name is None:
             run_name = f"sacred_atla_sw{switch_every_episodes}_b{batch_size}"
@@ -79,8 +85,18 @@ class ATLACoevolutionTrainer:
             # 1. Check training phase switch
             if (ep - 1) > 0 and (ep - 1) % self.switch_every_episodes == 0:
                 print("Saving checkpoints for both agents before phase switch...")
-                self.protag.save_checkpoint("models/protagonist/checkpoint.pt", ep - 1)
-                self.antag.save_checkpoint("models/antagonist/checkpoint.pt", ep - 1)
+                # Save into the run-specific directory so other runs can't clobber this run's
+                # resumable state. Resume with: --resume-checkpoint models/runs/<run_name>
+                ckpt_dir = os.path.join("models", "runs", self.run_name)
+                self.protag.save_checkpoint(os.path.join(ckpt_dir, "protagonist", "checkpoint.pt"), ep - 1)
+                self.antag.save_checkpoint(os.path.join(ckpt_dir, "antagonist", "checkpoint.pt"), ep - 1)
+                # Per-phase actor snapshots (cheap, never overwritten) so best-checkpoint selection
+                # is possible post-hoc — final-checkpoint is misleading under co-evolution, and the
+                # missing snapshots are exactly what made static-3b un-salvageable.
+                snap_dir = os.path.join(ckpt_dir, "snapshots")
+                os.makedirs(snap_dir, exist_ok=True)
+                torch.save(self.protag.actor.state_dict(), os.path.join(snap_dir, f"protagonist_ep{ep - 1}.pt"))
+                torch.save(self.antag.actor.state_dict(), os.path.join(snap_dir, f"antagonist_ep{ep - 1}.pt"))
                 self.current_phase = "antagonist" if self.current_phase == "protagonist" else "protagonist"
                 print(f"\n--- Episode {ep}: Switching training phase to {self.current_phase.upper()} ---")
 
@@ -101,66 +117,19 @@ class ATLACoevolutionTrainer:
 
                 # A. PROTAGONIST DECISION EPOCH
                 if event.decision_type in (DecisionType.PROTAGONIST_DECISION, DecisionType.BOTH_DECISION):
-                    mask = event.protagonist_action_mask
-                    
-                    # For each waiting truck, we choose actions sequentially with state projection
-                    actions = {}
-                    projected_obs = dict(event.observation)
-                    projected_obs["trucks"] = {tid: dict(t) for tid, t in event.observation["trucks"].items()}
-                    truck_decision_states = {}
-                    
-                    for truck_id in event.waiting_trucks:
-                        projected_obs["active_truck"] = truck_id
-                        projected_obs["allowed_destinations"] = {
-                            "protagonist": dict(mask)
-                        }
-                        
-                        # Save the exact projected state this truck sees for replay buffer training compatibility
-                        truck_decision_states[truck_id] = dict(projected_obs)
-                        truck_decision_states[truck_id]["trucks"] = {tid: dict(t) for tid, t in projected_obs["trucks"].items()}
-                        
-                        # Select action for this truck
-                        truck_action = self.protag.select_action(
-                            projected_obs, mask, deterministic=False
-                        )
-                        actions.update(truck_action)
-                        
-                        # Project commitment: update destination and remove current node for this truck
-                        chosen_node = truck_action.get(truck_id)
-                        if chosen_node is not None:
-                            projected_obs["trucks"][truck_id]["destination"] = chosen_node
-                            projected_obs["trucks"][truck_id]["current_node"] = None
+                    # Sequential per-truck decisions with projection + claiming live in the shared
+                    # transition builder (single source of truth, also used by the ERB demo
+                    # generator so demos are byte-identical to live transitions).
+                    def _choose(projected_obs, truck_mask, truck_id):
+                        return self.protag.select_action(projected_obs, truck_mask, deterministic=False)
 
-                    next_event, transition = self.smdp.step_protagonist(actions)
-                    
-                    # Push individual transitions to the replay buffer for each truck that was active
-                    for truck_id in event.waiting_trucks:
-                        state_used = truck_decision_states[truck_id]
-                        
-                        next_state_copy = dict(next_event.observation)
-                        if next_event.waiting_trucks:
-                            next_state_copy["active_truck"] = next_event.waiting_trucks[0]
-                        else:
-                            next_state_copy["active_truck"] = None
-                            
-                        next_state_copy["allowed_destinations"] = {
-                            "protagonist": dict(next_event.protagonist_action_mask)
-                        }
-                        
-                        t_trans = SMDPTransition(
-                            agent="protagonist",
-                            state=state_used,
-                            action=dict(actions),  # Actions mapping contains the chosen node for truck_id
-                            reward=transition.reward,
-                            next_state=next_state_copy,
-                            done=transition.done,
-                            elapsed_ticks=transition.elapsed_ticks,
-                            action_mask={"protagonist": dict(mask)},
-                            info=dict(transition.info)
-                        )
+                    next_event, t_transitions = collect_protagonist_transitions(self.smdp, event, _choose)
+                    for t_trans in t_transitions:
                         self.protag.replay_buffer.push(t_trans)
 
-                    ep_protag_reward += transition.reward
+                    # Reward bookkeeping (per-truck transitions all carry the same interval reward).
+                    interval_reward = t_transitions[0].reward if t_transitions else 0.0
+                    ep_protag_reward += interval_reward
                     ep_antag_reward += next_event.antagonist_reward
 
                     # Update protagonist parameters if in protagonist phase
@@ -223,14 +192,23 @@ class ATLACoevolutionTrainer:
                     event = self.smdp.advance_until_decision()
 
             # 4. Extract end-of-episode simulator stats
-            env_state = self.smdp.env.observe()
-            total_demands = sum(n["demand"] for n in env_state["nodes"].values())
-            initial_demands = sum(
-                self.smdp.env._initial_graph.nodes[n].get("demand", 0.0)
-                for n in env_state["nodes"]
-            )
-            delivered = max(0.0, initial_demands - total_demands)
-            delivery_rate = delivered / max(1e-6, initial_demands)
+            env = self.smdp.env
+            is_dynamic = getattr(env, "_dynamic_demand", False)
+            if is_dynamic:
+                # Demand arrives over time, so _initial_graph carries none. Count units that
+                # actually entered the system = delivered + still-queued at the horizon.
+                delivered = float(len(env._delivered_latencies))
+                initial_demands = delivered + float(env.remaining_demand)
+                delivery_rate = delivered / max(1e-6, initial_demands)
+            else:
+                env_state = env.observe()
+                total_demands = sum(n["demand"] for n in env_state["nodes"].values())
+                initial_demands = sum(
+                    env._initial_graph.nodes[n].get("demand", 0.0)
+                    for n in env_state["nodes"]
+                )
+                delivered = max(0.0, initial_demands - total_demands)
+                delivery_rate = delivered / max(1e-6, initial_demands)
             budget_spent = self.smdp.budget.used
 
             # 5. Log episode results to console
@@ -247,6 +225,24 @@ class ATLACoevolutionTrainer:
             self.writer.add_scalar("Episode/Antagonist_Reward", ep_antag_reward, ep)
             self.writer.add_scalar("Episode/Delivery_Rate", delivery_rate, ep)
             self.writer.add_scalar("Episode/Budget_Spent", budget_spent, ep)
+
+            # Latency metrics (Stage-0 redesign). In latency reward mode the protagonist
+            # reward telescopes to -(total outstanding-wait), so total_wait = -ep_protag_reward
+            # and mean latency is that normalised per request.
+            if getattr(self.smdp.config, "reward_mode", "legacy") == "latency":
+                total_wait = -ep_protag_reward
+                num_requests = max(1.0, initial_demands)
+                self.writer.add_scalar("Episode/Total_Wait", total_wait, ep)
+                self.writer.add_scalar("Episode/Mean_Latency", total_wait / num_requests, ep)
+            if is_dynamic:
+                # Headline dynamic metrics: mean wait of *completed* requests (clean, untruncated)
+                # and the residual queue at the horizon (how far behind the fleet fell).
+                if env._delivered_latencies:
+                    self.writer.add_scalar(
+                        "Episode/Mean_Delivered_Latency",
+                        sum(env._delivered_latencies) / len(env._delivered_latencies), ep)
+                self.writer.add_scalar("Episode/Final_Queue", float(env.remaining_demand), ep)
+                self.writer.add_scalar("Episode/Num_Arrivals", initial_demands, ep)
             self.writer.add_scalar("Phase/Training_Flag", 1.0 if self.current_phase == "protagonist" else 0.0, ep)
 
             # Log Protagonist training metrics
@@ -256,6 +252,7 @@ class ATLACoevolutionTrainer:
                 avg_alpha_loss = np.mean([m["protag_alpha_loss"] for m in protag_losses])
                 avg_q_val = np.mean([m.get("protag_q_val", 0) for m in protag_losses])
                 avg_entropy = np.mean([m.get("protag_entropy", 0) for m in protag_losses])
+                avg_q_spread = np.mean([m.get("protag_q_spread", 0) for m in protag_losses])
                 avg_c_grad = np.mean([m.get("protag_critic_grad_norm", 0) for m in protag_losses])
                 avg_a_grad = np.mean([m.get("protag_actor_grad_norm", 0) for m in protag_losses])
                 
@@ -264,6 +261,7 @@ class ATLACoevolutionTrainer:
                 self.writer.add_scalar("Loss/Protagonist_Alpha_Loss", avg_alpha_loss, ep)
                 self.writer.add_scalar("Params/Protagonist_Alpha", self.protag.alpha, ep)
                 self.writer.add_scalar("Value/Protagonist_Q", avg_q_val, ep)
+                self.writer.add_scalar("Value/Protagonist_Q_Spread", avg_q_spread, ep)
                 self.writer.add_scalar("Value/Protagonist_Entropy", avg_entropy, ep)
                 self.writer.add_scalar("Gradients/Protagonist_Critic_Norm", avg_c_grad, ep)
                 self.writer.add_scalar("Gradients/Protagonist_Actor_Norm", avg_a_grad, ep)
@@ -287,8 +285,24 @@ class ATLACoevolutionTrainer:
                 self.writer.add_scalar("Gradients/Antagonist_Critic_Norm", avg_c_grad, ep)
                 self.writer.add_scalar("Gradients/Antagonist_Actor_Norm", avg_a_grad, ep)
 
+            # 7. Periodic learned-vs-greedy eval snapshot (logged under Eval/*).
+            if self.eval_fn is not None and self.eval_every > 0 and ep % self.eval_every == 0:
+                em = self.eval_fn(ep)
+                for key, val in em.items():
+                    self.writer.add_scalar(f"Eval/{key}", val, ep)
+                # Handle both the single-cell eval (greedy_atk) and the multi-seed eval (greedy_atk_mean).
+                gat = em.get("greedy_atk", em.get("greedy_atk_mean"))
+                lat = em.get("learned_atk", em.get("learned_atk_mean"))
+                gap = em.get("gap_atk", em.get("gap_atk_mean"))
+                if gap is not None:
+                    std = em.get("gap_atk_std")
+                    std_s = f" +/-{std:.0f}" if std is not None else ""
+                    print(
+                        f"  [EVAL ep {ep}] greedy_atk={gat:.0f} learned_atk={lat:.0f} "
+                        f"gap={gap:+.0f}{std_s} (neg = learned beats greedy under attack)"
+                    )
+
         # Save trained actor models
-        import os
         # 1. Save to unique run directory
         model_save_dir = os.path.join("models", "runs", self.run_name)
         os.makedirs(os.path.join(model_save_dir, "protagonist"), exist_ok=True)

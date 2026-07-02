@@ -55,8 +55,9 @@ class AdaptiveLargeNeighborhoodSearchVRP:
         # Each task is a tuple: (customer_node, task_index_for_node, demand_value)
         self.tasks: list[tuple[NodeId, int, float]] = []
         depot_comp = env.node_to_component[self.depot]
-        for node, data in sorted(env.graph.nodes(data=True), key=lambda x: str(x[0])):
-            if data["has_depot"] or data["demand"] <= 0:
+        for node in sorted(list(env.graph.nodes), key=lambda x: str(x)):
+            data = env.graph.nodes[node]
+            if data.get("has_depot") or data.get("demand", 0) <= 0:
                 continue
             if env.node_to_component.get(node, -1) != depot_comp:
                 continue

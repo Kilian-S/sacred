@@ -7,10 +7,11 @@ truck dispatching, routing, congestion updates, and movement physics.
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass, field
 import functools
 from math import hypot
-from typing import Any, Hashable, Iterable, Mapping
+from typing import Any, Callable, Hashable, Iterable, Mapping
 
 import networkx as nx
 import numpy as np
@@ -29,13 +30,19 @@ class TruckState:
     current_node: NodeId | None
     home_depot: NodeId | None = None
     destination: NodeId | None = None
-    path: list[NodeId] = field(default_factory=list)
+    path: tuple[NodeId, ...] = field(default_factory=tuple)
     path_index: int = 0
     edge: EdgeId | None = None
     edge_progress: float = 0.0
     capacity: float = 1.0
     load: float = 1.0
     delivered_total: float = 0.0
+    path_edges: set[EdgeId] = field(default_factory=set)
+    # Hybrid mode (assignment + next-hop routing): the request the truck was ASSIGNED to serve
+    # (then flips to home_depot for the return leg). None in destination/next_hop modes, so the
+    # hybrid serve/reload transitions in the env are no-ops there. The policy routes next-hop
+    # toward this target; on serving it (load->0) it becomes home_depot; on reloading it clears.
+    assigned_target: NodeId | None = None
 
     @property
     def is_idle(self) -> bool:
@@ -85,6 +92,8 @@ class GraphEnv:
         depot_node: NodeId | None = None,
         truck_starting_nodes: list[NodeId] | None = None,
         max_time: int | None = None,
+        demand_arrival_fn: Callable[[Any, int], Iterable[tuple[int, NodeId, float]]] | None = None,
+        demand_seed: int | None = None,
     ) -> None:
         if num_trucks < 1:
             raise ValueError("num_trucks must be at least 1")
@@ -113,6 +122,26 @@ class GraphEnv:
         self.truck_speed = float(truck_speed)
         self.truck_capacity = float(truck_capacity)
         self.max_time = max_time
+
+        # Dynamic (Poisson) demand: when an arrival fn is supplied the env injects requests over
+        # time (Stage 1.5) instead of placing all demand at t=0. The static path is untouched
+        # (fn is None -> _dynamic_demand False). The arrival fn is `(rng, horizon) -> iterable of
+        # (tick, node, size)`; it is re-drawn each reset so episodes are fresh (or reproducible
+        # via demand_seed for the multi-instance eval harness).
+        self._demand_arrival_fn = demand_arrival_fn
+        self._dynamic_demand = demand_arrival_fn is not None
+        self._demand_rng = np.random.default_rng(demand_seed)
+        self._arrival_schedule: list[tuple[int, NodeId, float]] = []
+        self._arrival_index = 0
+        self._pending_arrivals: dict[NodeId, deque] = {}
+        self._delivered_latencies: list[int] = []
+        # Congestion-aware single-source distance cache for the per-truck ETA feature. Versioned
+        # by `_congestion_version` (bumped on every set_congestion) so ETAs always reflect current
+        # congestion; cached per source node within a version (a truck idling between congestion
+        # changes is free).
+        self._congestion_version = 0
+        self._ss_cache: dict[NodeId, dict[NodeId, float]] = {}
+        self._ss_cache_version = -1
 
         self.time = 0
         self.trucks: dict[int, TruckState] = {}
@@ -150,8 +179,12 @@ class GraphEnv:
             
         self.reset()
 
-    def reset(self) -> dict[str, Any]:
-        """Reset the simulation clock and return the initial observation."""
+    def reset(self, *, demand_seed: int | None = None) -> dict[str, Any]:
+        """Reset the simulation clock and return the initial observation.
+
+        ``demand_seed`` (dynamic mode only) makes the Poisson arrival schedule reproducible — used
+        by the multi-instance evaluation harness to average over fixed demand instances.
+        """
 
         self.graph = self._initial_graph.copy()
         self.time = 0
@@ -163,13 +196,28 @@ class GraphEnv:
                 home_depot=self.truck_starting_nodes[truck_id],
                 capacity=self.truck_capacity,
                 load=self.truck_capacity,
-                path=[self.truck_starting_nodes[truck_id]],
+                path=(self.truck_starting_nodes[truck_id],),
             )
             for truck_id in range(self.num_trucks)
         }
         
         # Track global demand for O(1) is_done() checks
         self.remaining_demand = sum(data["demand"] for _, data in self.graph.nodes(data=True))
+        
+        self.valid_customers_by_comp: dict[int, dict[NodeId, float]] = {}
+        for n, data in self.graph.nodes(data=True):
+            if not data.get("has_depot", False):
+                node_demand = float(data.get("demand", 0.0))
+                if node_demand > 0.0:
+                    comp = self.node_to_component.get(n)
+                    if comp not in self.valid_customers_by_comp:
+                        self.valid_customers_by_comp[comp] = {}
+                    self.valid_customers_by_comp[comp][n] = node_demand
+        
+        self._idle_trucks_at_depot = sum(
+            1 for truck_id in range(self.num_trucks)
+            if self.graph.nodes[self.truck_starting_nodes[truck_id]].get("has_depot", False)
+        )
         
         self._obs_nodes = {
             node: {
@@ -189,16 +237,39 @@ class GraphEnv:
             for u, v, data in self.graph.edges(data=True)
         }
         
+        self._node_coords = {
+            node: (data["x"], data["y"])
+            for node, data in self.graph.nodes(data=True)
+        }
+
+        self._arrival_index = 0
+        self._pending_arrivals = {}
+        self._delivered_latencies = []
+        if self._dynamic_demand:
+            if demand_seed is not None:
+                self._demand_rng = np.random.default_rng(demand_seed)
+            horizon = int(self.max_time) if self.max_time is not None else 0
+            schedule = list(self._demand_arrival_fn(self._demand_rng, horizon))
+            self._arrival_schedule = sorted(schedule, key=lambda r: (r[0], repr(r[1])))
+        else:
+            self._arrival_schedule = []
+
         return self.observe()
 
     def step(
         self,
         dispatch_actions: Mapping[int, NodeId] | None = None,
         congestion_actions: Mapping[EdgeId, float] | Iterable[tuple[NodeId, NodeId, float]] | None = None,
+        next_hop_dispatch: Mapping[int, NodeId] | None = None,
     ) -> StepResult:
         """Advance the environment by one tick.
 
-        ``dispatch_actions`` maps idle truck ids to destination node ids.
+        ``dispatch_actions`` maps idle truck ids to destination node ids (the truck
+        follows the A* shortest path there over many ticks).
+        ``next_hop_dispatch`` maps idle truck ids to an *adjacent* node and moves the
+        truck along that single direct edge (no A*); used by next-hop routing mode so the
+        policy — not the pathfinder — chooses the route. The two dispatch modes are
+        mutually exclusive in practice.
         ``congestion_actions`` sets edge congestion levels before movement.
         A congestion level of ``0.0`` means free flow, ``0.5`` means half speed,
         and ``1.0`` means blocked.
@@ -212,14 +283,71 @@ class GraphEnv:
             "arrivals": [],
             "deliveries": [],
             "reloads": [],
+            "demand_arrivals": [],
             "distance_travelled": 0.0,
         }
 
+        self._inject_demand_arrivals(info)
         self._apply_congestion(congestion_actions, info)
+        if info["congestion_updates"]:
+            self._get_shortest_path.cache_clear()
+            
         self._apply_dispatch(dispatch_actions, info)
+        self._apply_next_hop_dispatch(next_hop_dispatch, info)
 
-        for truck in self.trucks.values():
-            info["distance_travelled"] += self._move_truck_one_tick(truck, info)
+        active_trucks = [t for t in self.trucks.values() if t.edge is not None]
+        if active_trucks:
+            n = len(active_trucks)
+            rem_times = np.ones(n, dtype=np.float64)
+            travelled = np.zeros(n, dtype=np.float64)
+            
+            while True:
+                active_mask = rem_times > 1e-12
+                for i in range(n):
+                    if active_mask[i] and active_trucks[i].edge is None:
+                        active_mask[i] = False
+                
+                if not active_mask.any():
+                    break
+                    
+                eff_speeds = np.zeros(n, dtype=np.float64)
+                rem_dists = np.zeros(n, dtype=np.float64)
+                
+                for i in range(n):
+                    if active_mask[i]:
+                        u, v = active_trucks[i].edge
+                        data = self.graph.edges[u, v]
+                        eff_speeds[i] = active_trucks[i].speed * (1.0 - data["congestion_level"])
+                        rem_dists[i] = data["distance"] - active_trucks[i].edge_progress
+                        
+                active_mask &= (eff_speeds > 1e-12)
+                if not active_mask.any():
+                    break
+                    
+                max_dists = eff_speeds * rem_times
+                not_arrived = active_mask & ((max_dists + 1e-12) < rem_dists)
+                arrived = active_mask & ~not_arrived
+                
+                if not_arrived.any():
+                    idx = np.where(not_arrived)[0]
+                    for i in idx:
+                        active_trucks[i].edge_progress += max_dists[i]
+                        travelled[i] += max_dists[i]
+                        rem_times[i] = 0.0
+                        
+                if arrived.any():
+                    idx = np.where(arrived)[0]
+                    sorted_idx = sorted(idx, key=lambda x: active_trucks[x].truck_id)
+                    for i in sorted_idx:
+                        t = active_trucks[i]
+                        u, v = t.edge
+                        edge_dist = self.graph.edges[u, v]["distance"]
+                        t.edge_progress = edge_dist
+                        travelled[i] += rem_dists[i]
+                        rem_times[i] -= rem_dists[i] / eff_speeds[i]
+                        self._arrive_at_edge_end(t, info)
+                        
+            info["distance_travelled"] += float(travelled.sum())
 
         self.time += 1
         reward = self._reward(info)
@@ -228,7 +356,7 @@ class GraphEnv:
 
     def observe(self) -> dict[str, Any]:
         """Return a Python-dict observation suitable for wrappers to transform."""
-        return {
+        obs = {
             "time": self.time,
             "nodes": self._obs_nodes,
             "edges": self._obs_edges,
@@ -240,13 +368,51 @@ class GraphEnv:
                     "edge_progress": truck.edge_progress,
                     "capacity": truck.capacity,
                     "load": truck.load,
-                    "path": list(truck.path),
+                    "path": truck.path,
                     "path_index": truck.path_index,
                     "delivered_total": truck.delivered_total,
                 }
                 for truck_id, truck in self.trucks.items()
             },
         }
+        if self._dynamic_demand:
+            obs["node_waits"], obs["truck_etas"] = self._dynamic_node_features()
+        return obs
+
+    def _single_source_lengths(self, source: NodeId) -> dict[NodeId, float]:
+        """Congestion-aware single-source shortest-path lengths from ``source``, cached per source
+        within a congestion version (invalidated whenever any edge's congestion changes)."""
+        if self._ss_cache_version != self._congestion_version:
+            self._ss_cache = {}
+            self._ss_cache_version = self._congestion_version
+        cached = self._ss_cache.get(source)
+        if cached is None:
+            cached = nx.single_source_dijkstra_path_length(self.graph, source, weight="effective_weight")
+            self._ss_cache[source] = cached
+        return cached
+
+    def _dynamic_node_features(self) -> tuple[dict[NodeId, float], dict[int, dict[NodeId, float]]]:
+        """Per-node oldest wait and per-truck congestion-aware ETAs for the Step-2 observation.
+
+        ``node_waits[node]`` = self.time − oldest pending arrival tick at that node (request age).
+        ``truck_etas[truck_id][node]`` = congestion-aware distance from each idle/at-node truck's
+        position to every outstanding-demand node and to its home depot (the candidate targets).
+        """
+        node_waits: dict[NodeId, float] = {}
+        for node, dq in self._pending_arrivals.items():
+            if dq:
+                node_waits[node] = float(self.time - dq[0])
+
+        demand_nodes = [n for customers in self.valid_customers_by_comp.values() for n in customers]
+        truck_etas: dict[int, dict[NodeId, float]] = {}
+        for truck_id, truck in self.trucks.items():
+            src = truck.current_node
+            if src is None:
+                continue  # mid-edge: no decision pending, ETA not needed
+            lengths = self._single_source_lengths(src)
+            targets = demand_nodes + ([truck.home_depot] if truck.home_depot is not None else [])
+            truck_etas[truck_id] = {n: lengths[n] for n in targets if n in lengths}
+        return node_waits, truck_etas
 
 
 
@@ -255,18 +421,16 @@ class GraphEnv:
 
         if self.max_time is not None and self.time >= self.max_time:
             return True
-            
+
+        # Dynamic demand keeps arriving until the horizon, so an empty queue is only a lull, not
+        # termination — terminate strictly on max_time (handled above), never on remaining==0.
+        if self._dynamic_demand:
+            return False
+
         if self.remaining_demand > 0:
             return False
             
-        # O(1) check if all trucks are at a depot
-        for truck in self.trucks.values():
-            if truck.edge is not None or truck.current_node is None:
-                return False
-            if not self.graph.nodes[truck.current_node].get("has_depot", False):
-                return False
-                
-        return True
+        return self._idle_trucks_at_depot == self.num_trucks
 
     def set_congestion(self, edge: EdgeId, congestion_level: float) -> None:
         """Set congestion for an edge, clamped to the valid ``[0.0, 1.0]`` range."""
@@ -276,8 +440,9 @@ class GraphEnv:
             raise ValueError(f"edge {edge!r} is not in the graph")
         val = float(np.clip(congestion_level, 0.0, 1.0))
         self.graph.edges[u, v]["congestion_level"] = val
+        self.graph.edges[u, v]["effective_weight"] = self.graph.edges[u, v]["distance"] / max(1e-6, 1.0 - val)
         self._obs_edges[self._edge_key(u, v)]["congestion_level"] = val
-        self._get_shortest_path.cache_clear()
+        self._congestion_version += 1  # invalidate the congestion-aware ETA distance cache
 
     def dispatch_truck(self, truck_id: int, destination: NodeId) -> list[NodeId]:
         """Assign an idle truck to a destination and return the A* route."""
@@ -291,26 +456,66 @@ class GraphEnv:
         if not truck.is_idle:
             raise ValueError(f"truck {truck_id} is already moving")
 
+        if truck.current_node is not None and self.graph.nodes[truck.current_node].get("has_depot", False):
+            self._idle_trucks_at_depot -= 1
+
         path = self._get_shortest_path(truck.current_node, destination)
         truck.destination = destination
-        truck.path = path
+        truck.path = tuple(path)
         truck.path_index = 0
         truck.edge_progress = 0.0
+        truck.path_edges = {self._edge_key(path[i], path[i+1]) for i in range(len(path)-1)}
         self._enter_next_edge(truck)
         return path
 
+    def dispatch_truck_edge(self, truck_id: int, neighbor: NodeId) -> None:
+        """Move an idle truck one step along the *direct* edge to ``neighbor`` (no A*).
+
+        Unlike :meth:`dispatch_truck`, this commits the truck to the exact (current,
+        neighbor) edge and does not reroute around congestion — that is the point of
+        next-hop routing: the policy chooses the edge and bears its congestion. The truck
+        arrives next tick, becoming idle for the following decision (serving/reloading via
+        the usual :meth:`_arrive_at_edge_end` path when ``neighbor`` carries demand/depot).
+        """
+        if truck_id not in self.trucks:
+            raise ValueError(f"unknown truck id {truck_id}")
+        truck = self.trucks[truck_id]
+        if not truck.is_idle:
+            raise ValueError(f"truck {truck_id} is already moving")
+        current = truck.current_node
+        if current is None:
+            raise ValueError(f"truck {truck_id} has no current node")
+        if not self.graph.has_edge(current, neighbor):
+            raise ValueError(f"node {neighbor!r} is not adjacent to {current!r}")
+
+        if self.graph.nodes[current].get("has_depot", False):
+            self._idle_trucks_at_depot -= 1
+
+        truck.destination = neighbor
+        truck.path = (current, neighbor)
+        truck.path_index = 0
+        truck.edge_progress = 0.0
+        truck.path_edges = {self._edge_key(current, neighbor)}
+        self._enter_next_edge(truck)
+
+    def _apply_next_hop_dispatch(self, next_hop_dispatch: Mapping[int, NodeId] | None, info: dict[str, Any]) -> None:
+        if not next_hop_dispatch:
+            return
+        for truck_id, neighbor in next_hop_dispatch.items():
+            truck = self.trucks.get(truck_id)
+            if truck is None or not truck.is_idle:
+                info["ignored_dispatches"].append({"truck_id": truck_id, "destination": neighbor})
+                continue
+            self.dispatch_truck_edge(truck_id, neighbor)
+            info["dispatched"].append({"truck_id": truck_id, "destination": neighbor, "path": [truck.path[0], neighbor]})
+
     @functools.lru_cache(maxsize=None)
     def _get_shortest_path(self, source: NodeId, destination: NodeId) -> list[NodeId]:
-        def weight_func(u, v, d):
-            return d["distance"] / max(1e-6, 1.0 - d["congestion_level"])
-            
-        return nx.astar_path(
-            self.graph,
-            source,
-            destination,
-            heuristic=self._heuristic,
-            weight=weight_func,
-        )
+        # Dijkstra (exact). A* with the lat/lon coordinate heuristic is not reliably admissible
+        # on this OSM graph (clamped/rounded edge weights vs degree coords -> paths up to ~140%
+        # suboptimal in testing), which would corrupt truck routing and the greedy baseline's
+        # ETAs. The graph is small (~290 nodes), so exact Dijkstra is cheap and worth the rigor.
+        return nx.dijkstra_path(self.graph, source, destination, weight="effective_weight")
 
     @classmethod
     def from_specs(
@@ -369,6 +574,7 @@ class GraphEnv:
             if data["distance"] <= 0:
                 raise ValueError(f"edge {(u, v)!r} must have positive distance")
             data["congestion_level"] = float(np.clip(data.get("congestion_level", 0.0), 0.0, 1.0))
+            data["effective_weight"] = data["distance"] / max(1e-6, 1.0 - data["congestion_level"])
 
     def _resolve_depot(self, depot_node: NodeId | None) -> NodeId:
         if depot_node is not None:
@@ -416,33 +622,35 @@ class GraphEnv:
                 truck.destination = None
             info["dispatched"].append({"truck_id": truck_id, "destination": destination, "path": path})
 
-    def _move_truck_one_tick(self, truck: TruckState, info: dict[str, Any]) -> float:
-        remaining_time = 1.0
-        travelled = 0.0
+    def _inject_demand_arrivals(self, info: dict[str, Any]) -> None:
+        """Inject Poisson demand requests scheduled to arrive by this tick (dynamic mode only).
 
-        while remaining_time > 1e-12 and truck.edge is not None:
-            u, v = truck.edge
-            edge_data = self.graph.edges[u, v]
-            speed_multiplier = 1.0 - edge_data["congestion_level"]
-            effective_speed = truck.speed * speed_multiplier
-            if effective_speed <= 1e-12:
-                break
-
-            edge_distance = edge_data["distance"]
-            remaining_distance = edge_distance - truck.edge_progress
-            max_distance_this_tick = effective_speed * remaining_time
-
-            if max_distance_this_tick + 1e-12 < remaining_distance:
-                truck.edge_progress += max_distance_this_tick
-                travelled += max_distance_this_tick
-                remaining_time = 0.0
-            else:
-                truck.edge_progress = edge_distance
-                travelled += remaining_distance
-                remaining_time -= remaining_distance / effective_speed
-                self._arrive_at_edge_end(truck, info)
-
-        return travelled
+        Requests are added to the existing per-node ``demand`` machinery (so the action masks,
+        valid-customer index, and the potential-based latency reward all work unchanged), and
+        their arrival ticks are queued FIFO per node for per-request latency accounting.
+        """
+        if not self._dynamic_demand:
+            return
+        now = self.time + 1
+        schedule = self._arrival_schedule
+        i = self._arrival_index
+        n = len(schedule)
+        while i < n and schedule[i][0] <= now:
+            _tick, node, size = schedule[i]
+            i += 1
+            if node not in self.graph or self.graph.nodes[node].get("has_depot", False):
+                continue
+            data = self.graph.nodes[node]
+            data["demand"] += size
+            self._obs_nodes[node]["demand"] = data["demand"]
+            self.remaining_demand += size
+            comp = self.node_to_component.get(node)
+            self.valid_customers_by_comp.setdefault(comp, {})[node] = data["demand"]
+            dq = self._pending_arrivals.setdefault(node, deque())
+            for _ in range(int(round(size))):
+                dq.append(now)
+            info["demand_arrivals"].append({"node": node, "tick": now, "size": size})
+        self._arrival_index = i
 
     def _enter_next_edge(self, truck: TruckState) -> None:
         if truck.path_index >= len(truck.path) - 1:
@@ -472,6 +680,7 @@ class GraphEnv:
 
     def _handle_node_stop(self, truck: TruckState, node: NodeId, info: dict[str, Any]) -> None:
         if self.graph.nodes[node].get("has_depot", False):
+            self._idle_trucks_at_depot += 1
             self._reload_truck(truck, info, node)
         else:
             self._serve_demand(truck, node, info)
@@ -481,33 +690,66 @@ class GraphEnv:
             return
         reloaded = truck.capacity - truck.load
         truck.load = truck.capacity
+        # Hybrid: reloaded at depot -> ready for a new assignment (no-op in other modes).
+        if truck.assigned_target is not None:
+            truck.assigned_target = None
         info["reloads"].append({"truck_id": truck.truck_id, "node": node, "reloaded": reloaded})
 
     def _serve_demand(self, truck: TruckState, node: NodeId, info: dict[str, Any]) -> None:
         demand = self.graph.nodes[node]["demand"]
         if demand <= 0 or truck.load <= 0:
             return
+        # Hybrid: a truck serves ONLY the request it was assigned (keeps the assignment decision
+        # meaningful) — skip demand it merely passes through. No-op in destination/next_hop modes.
+        if truck.assigned_target is not None and node != truck.assigned_target:
+            return
 
         delivered = min(truck.load, demand)
-        self.graph.nodes[node]["demand"] = demand - delivered
-        self._obs_nodes[node]["demand"] = demand - delivered
+        new_demand = demand - delivered
+        self.graph.nodes[node]["demand"] = new_demand
+        self._obs_nodes[node]["demand"] = new_demand
         self.remaining_demand -= delivered
         truck.load -= delivered
         truck.delivered_total += delivered
-        info["deliveries"].append({"truck_id": truck.truck_id, "node": node, "delivered": delivered})
+        # Hybrid: served the assigned request (load now 0) -> head home to reload.
+        if truck.assigned_target is not None and truck.load <= 0:
+            truck.assigned_target = truck.home_depot
+        delivery_record = {"truck_id": truck.truck_id, "node": node, "delivered": delivered}
+        if self._dynamic_demand:
+            dq = self._pending_arrivals.get(node)
+            now = self.time + 1
+            latencies = []
+            for _ in range(int(round(delivered))):
+                if dq:
+                    latencies.append(now - dq.popleft())
+            if latencies:
+                self._delivered_latencies.extend(latencies)
+                delivery_record["latencies"] = latencies
+        info["deliveries"].append(delivery_record)
+
+        comp = self.node_to_component.get(node)
+        if hasattr(self, 'valid_customers_by_comp') and comp in self.valid_customers_by_comp:
+            if new_demand <= 0.0:
+                self.valid_customers_by_comp[comp].pop(node, None)
+            else:
+                self.valid_customers_by_comp[comp][node] = new_demand
 
     def _reward(self, info: Mapping[str, Any]) -> float:
         delivered = sum(delivery["delivered"] for delivery in info["deliveries"])
         return float(delivered - self.remaining_demand)
 
     def _heuristic(self, u: NodeId, v: NodeId) -> float:
-        ux, uy = self._initial_graph.nodes[u]["x"], self._initial_graph.nodes[u]["y"]
-        vx, vy = self._initial_graph.nodes[v]["x"], self._initial_graph.nodes[v]["y"]
+        ux, uy = self._node_coords[u]
+        vx, vy = self._node_coords[v]
         import math
-        # Convert EPSG:4326 degrees to rough meters
+        # Convert EPSG:4326 degrees to rough meters, then to edge-weight units. OSM edge
+        # weights are length_m / 100 (see graph_utils), so the heuristic must also be
+        # straight-line-metres / 100 to stay <= true path cost. The previous version returned
+        # raw metres (~100x the edge scale) -> grossly inadmissible -> A* could return
+        # suboptimal paths. /100.0 makes it admissible AND tight.
         dx = (vx - ux) * 111000.0 * math.cos(math.radians((uy + vy) / 2.0))
         dy = (vy - uy) * 111000.0
-        return hypot(dx, dy)
+        return hypot(dx, dy) / 100.0
 
     def _edge_key(self, u: NodeId, v: NodeId) -> EdgeId:
         if self.graph.is_directed():

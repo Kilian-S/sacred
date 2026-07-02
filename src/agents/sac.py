@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch_geometric.data import Data
+from torch_geometric.data import Batch, Data
 
 from src.agents.device import get_torch_device
 from src.agents.networks import (
@@ -27,6 +27,47 @@ from src.agents.networks import (
     ProtagonistPolicyValueNet,
     featurize_state,
 )
+
+
+def _collate_graphs(data_list: list) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, list[int]]:
+    """Concatenate per-sample graphs into one disjoint graph for a single encoder pass.
+
+    Each entry is a single-graph PyG object (as returned by ``featurize_state``). Node
+    features are concatenated, edge indices are offset per graph, and ``offsets`` marks
+    each graph's node span so the encoder output can be sliced back per sample. Because
+    the union has no cross-graph edges, GATv2 message passing is identical to encoding
+    each graph separately (guarded by tests/test_batched_equivalence.py).
+    """
+    xs, eis, eas = [], [], []
+    offsets = [0]
+    for d in data_list:
+        n = d.x.size(0)
+        xs.append(d.x)
+        eis.append(d.edge_index + offsets[-1])
+        eas.append(d.edge_attr)
+        offsets.append(offsets[-1] + n)
+    x = torch.cat(xs, dim=0)
+    edge_index = torch.cat(eis, dim=1) if eis else torch.empty((2, 0), dtype=torch.long)
+    edge_attr = torch.cat(eas, dim=0)
+    return x, edge_index, edge_attr, offsets
+
+
+def _cached_featurize(trans: Any, key: str, build_fn):
+    """Memoize a featurized graph on the transition, building it once via ``build_fn``.
+
+    Tolerates transitions deserialized from older pickles (e.g. preseed
+    ``data/erb_transitions.pt``) whose ``feature_cache`` slot was never assigned: the
+    slot exists on the class, so we lazily initialize it here.
+    """
+    fc = getattr(trans, "feature_cache", None)
+    if fc is None:
+        fc = {}
+        trans.feature_cache = fc
+    val = fc.get(key)
+    if val is None:
+        val = build_fn()
+        fc[key] = val
+    return val
 
 
 class ReplayBuffer:
@@ -52,7 +93,7 @@ class ProtagonistQNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -78,6 +119,15 @@ class ProtagonistQNet(nn.Module):
     ) -> torch.Tensor:
         """Calculate state-action Q-values for all candidate destinations."""
         h = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
+        return self.head(h, active_node_idx, action_mask_indices)
+
+    def head(
+        self,
+        h: torch.Tensor,
+        active_node_idx: int,
+        action_mask_indices: list[int],
+    ) -> torch.Tensor:
+        """Q-head on precomputed node embeddings ``h`` (see ProtagonistPolicyValueNet.head)."""
         if not action_mask_indices:
             return torch.empty(0, device=h.device)
 
@@ -253,15 +303,20 @@ class ProtagonistSAC:
         alpha_losses = []
         q_values_list = []
         entropies_list = []
+        q_spreads = []  # diagnostic: how discriminative the critic is across allowed actions
 
+        # --- Pass 1: parse + featurize all valid samples, collate graphs ---
+        # The GATv2 encoder is the hot path (one pass per network per sample previously).
+        # We encode the whole minibatch in a single Batch.from_data_list pass, then apply
+        # each network's `head` per-sample. Disjoint batching is identical to per-sample
+        # (see tests/test_batched_equivalence.py).
+        samples: list[dict[str, Any]] = []
+        state_data_list: list[Data] = []
+        next_data_list: list[Data] = []
         for trans in transitions:
-            # Parse transition components
             state = trans.state
             action_dict = trans.action
-            reward = trans.reward
             next_state = trans.next_state
-            done = trans.done
-            dt = trans.elapsed_ticks
             action_mask_dict = trans.action_mask
 
             active_truck = state.get("active_truck")
@@ -276,82 +331,116 @@ class ProtagonistSAC:
                 continue
             action_idx = allowed_nodes.index(chosen_node)
 
-            # Node indices map
-            node_ids = list(state["nodes"].keys())
-            node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
-
+            node_to_idx = {nid: idx for idx, nid in enumerate(state["nodes"].keys())}
             active_idx = node_to_idx[state["trucks"][active_truck]["current_node"]]
             mask_idxs = [node_to_idx[nid] for nid in allowed_nodes]
 
-            pyg_data = featurize_state(state, active_truck).to(self.device)
+            # Does this sample bootstrap a next-state value V(s')?
+            next_slot = None
+            next_active_idx = None
+            next_mask_idxs = None
+            if (not trans.done and next_active_truck is not None
+                    and "protagonist" in next_state.get("allowed_destinations", {})):
+                next_allowed = next_state["allowed_destinations"]["protagonist"].get(next_active_truck, [])
+                if next_allowed:
+                    next_node_to_idx = {nid: idx for idx, nid in enumerate(next_state["nodes"].keys())}
+                    next_active_idx = next_node_to_idx[next_state["trucks"][next_active_truck]["current_node"]]
+                    next_mask_idxs = [next_node_to_idx[nid] for nid in next_allowed]
+                    next_slot = len(next_data_list)
+                    next_data_list.append(_cached_featurize(
+                        trans, "next",
+                        lambda: featurize_state(next_state, next_active_truck).to(self.device)))
 
-            # --- 1. CRITIC LOSS: TARGET VALUE ESTIMATION V(s') ---
+            state_data_list.append(_cached_featurize(
+                trans, "state",
+                lambda: featurize_state(state, active_truck).to(self.device)))
+            samples.append({
+                "action_idx": action_idx,
+                "active_idx": active_idx,
+                "mask_idxs": mask_idxs,
+                "allowed_len": len(allowed_nodes),
+                "reward": trans.reward,
+                "done": trans.done,
+                "dt": trans.elapsed_ticks,
+                "next_slot": next_slot,
+                "next_active_idx": next_active_idx,
+                "next_mask_idxs": next_mask_idxs,
+            })
+
+        if not samples:
+            return None
+
+        # --- Batch-encode states once per network (and next-states for targets) ---
+        sx, sei, sea, s_ptr = _collate_graphs(state_data_list)
+        h_actor = self.actor.encoder(sx, sei, sea)
+        h_q1 = self.q1.encoder(sx, sei, sea)
+        h_q2 = self.q2.encoder(sx, sei, sea)
+
+        n_ptr = None
+        if next_data_list:
+            nx, nei, nea, n_ptr = _collate_graphs(next_data_list)
             with torch.no_grad():
-                if done:
-                    v_next = torch.tensor(0.0, device=self.device)
-                elif next_active_truck is None or "protagonist" not in next_state.get("allowed_destinations", {}):
+                h_actor_next = self.actor.encoder(nx, nei, nea)
+                h_tq1 = self.target_q1.encoder(nx, nei, nea)
+                h_tq2 = self.target_q2.encoder(nx, nei, nea)
+
+        # --- Pass 2: per-sample heads on precomputed embeddings ---
+        for i, s in enumerate(samples):
+            hs = slice(s_ptr[i], s_ptr[i + 1])
+            active_idx = s["active_idx"]
+            mask_idxs = s["mask_idxs"]
+            action_idx = s["action_idx"]
+
+            # 1. Target value V(s')
+            with torch.no_grad():
+                if s["next_slot"] is None:
                     v_next = torch.tensor(0.0, device=self.device)
                 else:
-                    next_allowed = next_state["allowed_destinations"]["protagonist"].get(next_active_truck, [])
-                    if not next_allowed:
-                        v_next = torch.tensor(0.0, device=self.device)
-                    else:
-                        next_node_ids = list(next_state["nodes"].keys())
-                        next_node_to_idx = {nid: idx for idx, nid in enumerate(next_node_ids)}
-                        next_active_idx = next_node_to_idx[next_state["trucks"][next_active_truck]["current_node"]]
-                        next_mask_idxs = [next_node_to_idx[nid] for nid in next_allowed]
-
-                        next_pyg_data = featurize_state(next_state, next_active_truck).to(self.device)
-
-                        # Policy probs next: pi(a' | s')
-                        next_probs, _ = self.actor(next_pyg_data, next_active_idx, next_mask_idxs)
-                        
-                        # Target Critics next
-                        q1_target = self.target_q1(next_pyg_data, next_active_idx, next_mask_idxs)
-                        q2_target = self.target_q2(next_pyg_data, next_active_idx, next_mask_idxs)
-                        min_q_target = torch.min(q1_target, q2_target)
-
-                        # V(s') = sum_a' pi(a'|s') * [min Q(s', a') - alpha * log pi(a'|s')]
-                        log_next_probs = torch.log(next_probs + 1e-9)
-                        v_next = torch.sum(next_probs * (min_q_target - self.alpha * log_next_probs))
+                    j = s["next_slot"]
+                    hn = slice(n_ptr[j], n_ptr[j + 1])
+                    next_probs, _ = self.actor.head(h_actor_next[hn], s["next_active_idx"], s["next_mask_idxs"])
+                    q1_target = self.target_q1.head(h_tq1[hn], s["next_active_idx"], s["next_mask_idxs"])
+                    q2_target = self.target_q2.head(h_tq2[hn], s["next_active_idx"], s["next_mask_idxs"])
+                    min_q_target = torch.min(q1_target, q2_target)
+                    log_next_probs = torch.log(next_probs + 1e-9)
+                    v_next = torch.sum(next_probs * (min_q_target - self.alpha * log_next_probs))
 
             # SMDP Bellman target: y = r + gamma^dt * (1 - done) * V(s')
-            target_q = (reward * self.reward_scale) + (self.gamma ** dt) * (1.0 - float(done)) * v_next
+            target_q = (s["reward"] * self.reward_scale) + (self.gamma ** s["dt"]) * (1.0 - float(s["done"])) * v_next
 
-            # --- 2. CRITIC LOSS: CURRENT Q ESTIMATION ---
-            q1_val = self.q1(pyg_data, active_idx, mask_idxs)[action_idx]
-            q2_val = self.q2(pyg_data, active_idx, mask_idxs)[action_idx]
-            
+            # 2. Current Q estimation
+            q1_val = self.q1.head(h_q1[hs], active_idx, mask_idxs)[action_idx]
+            q2_val = self.q2.head(h_q2[hs], active_idx, mask_idxs)[action_idx]
             q_values_list.append(torch.min(q1_val, q2_val).item())
-
             critic_loss = F.mse_loss(q1_val, target_q.detach()) + F.mse_loss(q2_val, target_q.detach())
             critic_losses.append(critic_loss)
 
-            # --- 3. ACTOR LOSS ---
-            probs, _ = self.actor(pyg_data, active_idx, mask_idxs)
+            # 3. Actor loss
+            probs, _ = self.actor.head(h_actor[hs], active_idx, mask_idxs)
             log_probs = torch.log(probs + 1e-9)
-
-            curr_q1 = self.q1(pyg_data, active_idx, mask_idxs)
-            curr_q2 = self.q2(pyg_data, active_idx, mask_idxs)
-            
+            curr_q1 = self.q1.head(h_q1[hs], active_idx, mask_idxs)
+            curr_q2 = self.q2.head(h_q2[hs], active_idx, mask_idxs)
             # CRITICAL: Detach critic predictions to block policy gradients from critic networks
             min_q = torch.min(curr_q1, curr_q2).detach()
-
-            # Policy loss: sum_a pi(a|s) * [alpha * log pi(a|s) - Q(s, a)]
+            if min_q.numel() > 1:
+                # Q-spread across allowed destinations: ~0 means the critic can't tell good routes
+                # from bad ones (the protagonist's reward signal-to-noise failure mode).
+                q_spreads.append((min_q.max() - min_q.min()).item())
             actor_loss = torch.sum(probs * (self.alpha * log_probs - min_q))
             actor_losses.append(actor_loss)
-
             entropy = -torch.sum(probs * log_probs)
             entropies_list.append(entropy.item())
 
-            # --- 4. ALPHA ENTROPY TUNING LOSS ---
+            # 4. Alpha entropy tuning loss
             if self.autotune_alpha:
                 if self.target_entropy is not None:
                     target_entropy = torch.tensor(self.target_entropy, device=self.device)
                 else:
                     # Dynamic target entropy based on number of active valid actions (calibrated to 0.45)
-                    target_entropy = -0.45 * torch.log(torch.tensor(1.0 / len(allowed_nodes), device=self.device))
-                alpha_loss = -self.log_alpha * (entropy - target_entropy).detach()
+                    target_entropy = -0.45 * torch.log(torch.tensor(1.0 / s["allowed_len"], device=self.device))
+                # Negative feedback: alpha decreases when entropy > target (standard SAC temperature loss).
+                # The previous `-log_alpha * (...)` had the sign inverted -> alpha runaway / critic divergence.
+                alpha_loss = self.log_alpha * (entropy - target_entropy).detach()
                 alpha_losses.append(alpha_loss)
 
         if not critic_losses:
@@ -361,7 +450,8 @@ class ProtagonistSAC:
         total_critic_loss = torch.stack(critic_losses).mean()
         self.critic_optimizer.zero_grad()
         total_critic_loss.backward()
-        
+        torch.nn.utils.clip_grad_norm_(list(self.q1.parameters()) + list(self.q2.parameters()), 10.0)
+
         critic_grad_norm = sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.q1.parameters() if p.grad is not None)
         critic_grad_norm += sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.q2.parameters() if p.grad is not None)
         critic_grad_norm = critic_grad_norm ** 0.5
@@ -371,7 +461,8 @@ class ProtagonistSAC:
         total_actor_loss = torch.stack(actor_losses).mean()
         self.actor_optimizer.zero_grad()
         total_actor_loss.backward()
-        
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 10.0)
+
         actor_grad_norm = sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.actor.parameters() if p.grad is not None)
         actor_grad_norm = actor_grad_norm ** 0.5
         
@@ -397,6 +488,7 @@ class ProtagonistSAC:
             "protag_alpha": self.alpha,
             "protag_q_val": sum(q_values_list) / len(q_values_list) if q_values_list else 0.0,
             "protag_entropy": sum(entropies_list) / len(entropies_list) if entropies_list else 0.0,
+            "protag_q_spread": sum(q_spreads) / len(q_spreads) if q_spreads else 0.0,
             "protag_critic_grad_norm": critic_grad_norm,
             "protag_actor_grad_norm": actor_grad_norm,
         }
@@ -454,7 +546,7 @@ class AntagonistQNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -490,10 +582,26 @@ class AntagonistQNet(nn.Module):
         level_costs: list[float],
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculate state-action Q-values for edge choice and level choices."""
-        device = pyg_data.x.device
+        h_nodes = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
+        return self.head(
+            h_nodes, pyg_data.edge_index, pyg_data.edge_attr,
+            node_to_idx, allowed_edges, remaining_budget, level_costs,
+        )
+
+    def head(
+        self,
+        h_nodes: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_attr: torch.Tensor,
+        node_to_idx: Mapping[Any, int],
+        allowed_edges: list[tuple[Any, Any]],
+        remaining_budget: float,
+        level_costs: list[float],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Q-head on precomputed node embeddings (see AntagonistPolicyValueNet.head)."""
+        device = h_nodes.device
         num_allowed = len(allowed_edges)
 
-        h_nodes = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
         h_graph = torch.mean(h_nodes, dim=0, keepdim=True)
 
         if num_allowed == 0:
@@ -503,9 +611,9 @@ class AntagonistQNet(nn.Module):
 
         # Build edge encodings
         h_edges = []
-        u_list = pyg_data.edge_index[0].tolist()
-        v_list = pyg_data.edge_index[1].tolist()
-        edge_features_dict = dict(zip(zip(u_list, v_list), pyg_data.edge_attr))
+        u_list = edge_index[0].tolist()
+        v_list = edge_index[1].tolist()
+        edge_features_dict = dict(zip(zip(u_list, v_list), edge_attr))
 
         for u, v in allowed_edges:
             idx_u = node_to_idx[u]
@@ -543,13 +651,14 @@ class AntagonistSAC:
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
         num_congestion_levels: int = 4,
         level_costs: list[float] | None = None,
+        congestion_levels: tuple[float, ...] = (0.25, 0.5, 0.75, 1.0),
         lr_actor: float = 3e-4,
         lr_critic: float = 1e-3,
         gamma: float = 0.99,
@@ -567,6 +676,10 @@ class AntagonistSAC:
         self.reward_scale = reward_scale
         self.target_entropy = target_entropy
         self.num_levels = num_congestion_levels
+        # The actual congestion-level VALUES the level-head index maps to. Must match the env's
+        # SMDPConfig.congestion_levels, else select_action returns a level the action mask rejects
+        # (e.g. full-blockage-only configs). Was previously hardcoded to [0.25,0.5,0.75,1.0].
+        self.congestion_levels = tuple(congestion_levels)
         # Level cost calculation defaults based on: level * duration * congestion_cost
         # E.g. levels = [0.25, 0.50, 0.75, 1.0], duration = 12, cost = 0.015
         self.level_costs = level_costs or [
@@ -721,7 +834,7 @@ class AntagonistSAC:
         chosen_level_idx = chosen_idx % self.num_levels
 
         chosen_edge = allowed_edges[chosen_edge_idx]
-        chosen_level = [0.25, 0.5, 0.75, 1.0][chosen_level_idx]
+        chosen_level = self.congestion_levels[chosen_level_idx]
 
         return chosen_edge, chosen_level
 
@@ -738,38 +851,32 @@ class AntagonistSAC:
         q_values_list = []
         entropies_list = []
 
+        # --- Pass 1: parse + featurize all valid samples, collate graphs ---
+        # See ProtagonistSAC.update for the batch-encode rationale; the antagonist already
+        # computes each network's output once per sample, so the per-sample head logic below
+        # is reused verbatim on precomputed embeddings.
+        samples: list[dict[str, Any]] = []
+        state_data_list: list[Data] = []
+        next_data_list: list[Data] = []
         for trans in transitions:
-            # Parse transition components
             state = trans.state
             action = trans.action  # ((u, v), level) or None
-            reward = trans.reward
             next_state = trans.next_state
-            done = trans.done
-            dt = trans.elapsed_ticks
-            action_mask_dict = trans.action_mask.get("antagonist", {})
 
+            action_mask_dict = trans.action_mask.get("antagonist", {})
             allowed_edges = action_mask_dict.get("allowed_edges")
             if allowed_edges is None:
                 allowed_edges = list(action_mask_dict.get("levels_by_edge", {}).keys())
-
-            original_edges = action_mask_dict.get("original_edges")
-            if original_edges is None:
-                original_edges = list(state.get("edges", {}).keys())
             remaining_budget = trans.info.get("antagonist_budget_remaining", 0.0)
 
-            # Node indices map
-            node_ids = list(state["nodes"].keys())
-            node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
-
+            node_to_idx = {nid: idx for idx, nid in enumerate(state["nodes"].keys())}
             num_allowed = len(allowed_edges)
-            pyg_data = featurize_state(state).to(self.device)
 
-            # --- 1. RESOLVE CHOSEN ACTION INDEX IN FLATTENED SPACE ---
+            # Resolve chosen action index in the flattened (edge x level + wait) space
             if action is None:
                 chosen_flat_idx = num_allowed * self.num_levels
             else:
                 edge, level = action
-                # Support bidirectional edge lookup
                 reversed_edge = (edge[1], edge[0])
                 if edge in allowed_edges:
                     edge_idx = allowed_edges.index(edge)
@@ -777,49 +884,110 @@ class AntagonistSAC:
                     edge_idx = allowed_edges.index(reversed_edge)
                 else:
                     continue  # Invalid choice
-
-                level_idx = [0.25, 0.5, 0.75, 1.0].index(level)
+                # Map the level VALUE back to its index in this agent's congestion_levels (was
+                # hardcoded [0.25,0.5,0.75,1.0] -> broke any non-default level set, e.g. (1.0,)).
+                if level in self.congestion_levels:
+                    level_idx = self.congestion_levels.index(level)
+                else:
+                    level_idx = min(range(self.num_levels),
+                                    key=lambda k: abs(self.congestion_levels[k] - level))
                 chosen_flat_idx = edge_idx * self.num_levels + level_idx
+
+            rec: dict[str, Any] = {
+                "allowed_edges": allowed_edges,
+                "node_to_idx": node_to_idx,
+                "num_allowed": num_allowed,
+                "remaining_budget": remaining_budget,
+                "chosen_flat_idx": chosen_flat_idx,
+                "reward": trans.reward,
+                "done": trans.done,
+                "dt": trans.elapsed_ticks,
+                "next_slot": None,
+            }
+
+            if not trans.done:
+                next_mask_dict = next_state.get("allowed_destinations", {}).get("antagonist", {})
+                next_allowed = next_mask_dict.get("allowed_edges")
+                if next_allowed is None:
+                    next_allowed = list(next_mask_dict.get("levels_by_edge", {}).keys())
+                next_budget = trans.info.get("next_antagonist_budget_remaining", remaining_budget)
+                next_node_to_idx = {nid: idx for idx, nid in enumerate(next_state["nodes"].keys())}
+                rec["next_allowed"] = next_allowed
+                rec["next_node_to_idx"] = next_node_to_idx
+                rec["next_budget"] = next_budget
+                rec["next_num_allowed"] = len(next_allowed)
+                rec["next_slot"] = len(next_data_list)
+                next_data_list.append(_cached_featurize(
+                    trans, "next", lambda: featurize_state(next_state).to(self.device)))
+
+            state_data_list.append(_cached_featurize(
+                trans, "state", lambda: featurize_state(state).to(self.device)))
+            samples.append(rec)
+
+        if not samples:
+            return None
+
+        # --- Batch-encode states once per network (and next-states for targets) ---
+        sx, sei, sea, s_ptr = _collate_graphs(state_data_list)
+        h_actor = self.actor.encoder(sx, sei, sea)
+        h_q1 = self.q1.encoder(sx, sei, sea)
+        h_q2 = self.q2.encoder(sx, sei, sea)
+
+        n_ptr = None
+        if next_data_list:
+            ncx, ncei, ncea, n_ptr = _collate_graphs(next_data_list)
+            with torch.no_grad():
+                h_actor_next = self.actor.encoder(ncx, ncei, ncea)
+                h_tq1 = self.target_q1.encoder(ncx, ncei, ncea)
+                h_tq2 = self.target_q2.encoder(ncx, ncei, ncea)
+
+        # --- Pass 2: per-sample heads on precomputed embeddings ---
+        for i, rec in enumerate(samples):
+            hs = slice(s_ptr[i], s_ptr[i + 1])
+            ei_s = state_data_list[i].edge_index
+            ea_s = state_data_list[i].edge_attr
+            allowed_edges = rec["allowed_edges"]
+            node_to_idx = rec["node_to_idx"]
+            num_allowed = rec["num_allowed"]
+            remaining_budget = rec["remaining_budget"]
+            chosen_flat_idx = rec["chosen_flat_idx"]
+            reward = rec["reward"]
+            done = rec["done"]
+            dt = rec["dt"]
 
             # --- 2. CRITIC LOSS: TARGET VALUE ESTIMATION V(s') ---
             with torch.no_grad():
                 if done:
                     v_next = torch.tensor(0.0, device=self.device)
                 else:
-                    next_mask_dict = next_state.get("allowed_destinations", {}).get("antagonist", {})
-                    next_allowed = next_mask_dict.get("allowed_edges")
-                    if next_allowed is None:
-                        next_allowed = list(next_mask_dict.get("levels_by_edge", {}).keys())
-
-                    next_orig = next_mask_dict.get("original_edges")
-                    if next_orig is None:
-                        next_orig = list(next_state.get("edges", {}).keys())
-                    next_budget = trans.info.get("next_antagonist_budget_remaining", remaining_budget)
-
-                    next_num_allowed = len(next_allowed)
-                    next_pyg_data = featurize_state(next_state).to(self.device)
-                    next_node_ids = list(next_state["nodes"].keys())
-                    next_node_to_idx = {nid: idx for idx, nid in enumerate(next_node_ids)}
+                    j = rec["next_slot"]
+                    hn = slice(n_ptr[j], n_ptr[j + 1])
+                    nei = next_data_list[j].edge_index
+                    nea = next_data_list[j].edge_attr
+                    next_allowed = rec["next_allowed"]
+                    next_node_to_idx = rec["next_node_to_idx"]
+                    next_budget = rec["next_budget"]
+                    next_num_allowed = rec["next_num_allowed"]
 
                     if next_num_allowed == 0:
                         # Only wait action is allowed
-                        q1_target_wait, _ = self.target_q1(
-                            next_pyg_data, next_orig, next_node_to_idx, next_allowed, next_budget, self.level_costs
+                        q1_target_wait, _ = self.target_q1.head(
+                            h_tq1[hn], nei, nea, next_node_to_idx, next_allowed, next_budget, self.level_costs
                         )
-                        q2_target_wait, _ = self.target_q2(
-                            next_pyg_data, next_orig, next_node_to_idx, next_allowed, next_budget, self.level_costs
+                        q2_target_wait, _ = self.target_q2.head(
+                            h_tq2[hn], nei, nea, next_node_to_idx, next_allowed, next_budget, self.level_costs
                         )
                         min_q_wait = torch.min(q1_target_wait[0], q2_target_wait[0])
                         v_next = min_q_wait  # log pi(wait|s) = log(1.0) = 0
                     else:
-                        next_edge_probs, next_level_probs, _ = self.actor(
-                            next_pyg_data, next_orig, next_node_to_idx, next_allowed, next_budget, self.level_costs
+                        next_edge_probs, next_level_probs, _ = self.actor.head(
+                            h_actor_next[hn], nei, nea, next_node_to_idx, next_allowed, next_budget, self.level_costs
                         )
-                        next_q1_edge, next_q1_level = self.target_q1(
-                            next_pyg_data, next_orig, next_node_to_idx, next_allowed, next_budget, self.level_costs
+                        next_q1_edge, next_q1_level = self.target_q1.head(
+                            h_tq1[hn], nei, nea, next_node_to_idx, next_allowed, next_budget, self.level_costs
                         )
-                        next_q2_edge, next_q2_level = self.target_q2(
-                            next_pyg_data, next_orig, next_node_to_idx, next_allowed, next_budget, self.level_costs
+                        next_q2_edge, next_q2_level = self.target_q2.head(
+                            h_tq2[hn], nei, nea, next_node_to_idx, next_allowed, next_budget, self.level_costs
                         )
 
                         # Flatten next Q and probabilities with cost budget masking
@@ -867,11 +1035,11 @@ class AntagonistSAC:
             target_q = (reward * self.reward_scale) + (self.gamma ** dt) * (1.0 - float(done)) * v_next
 
             # --- 3. CRITIC LOSS: CURRENT Q ESTIMATION ---
-            q1_edge, q1_level = self.q1(
-                pyg_data, original_edges, node_to_idx, allowed_edges, remaining_budget, self.level_costs
+            q1_edge, q1_level = self.q1.head(
+                h_q1[hs], ei_s, ea_s, node_to_idx, allowed_edges, remaining_budget, self.level_costs
             )
-            q2_edge, q2_level = self.q2(
-                pyg_data, original_edges, node_to_idx, allowed_edges, remaining_budget, self.level_costs
+            q2_edge, q2_level = self.q2.head(
+                h_q2[hs], ei_s, ea_s, node_to_idx, allowed_edges, remaining_budget, self.level_costs
             )
 
             # Reconstruct chosen Q-value
@@ -890,8 +1058,8 @@ class AntagonistSAC:
             critic_losses.append(critic_loss)
 
             # --- 4. ACTOR LOSS & ALPHA ENTROPY TUNING ---
-            edge_probs, level_probs, _ = self.actor(
-                pyg_data, original_edges, node_to_idx, allowed_edges, remaining_budget, self.level_costs
+            edge_probs, level_probs, _ = self.actor.head(
+                h_actor[hs], ei_s, ea_s, node_to_idx, allowed_edges, remaining_budget, self.level_costs
             )
 
             if num_allowed > 0:
@@ -948,9 +1116,13 @@ class AntagonistSAC:
                     if self.target_entropy is not None:
                         target_entropy = torch.tensor(self.target_entropy, device=self.device)
                     else:
-                        # Dynamic target entropy over flat options size
-                        target_entropy = -0.98 * torch.log(torch.tensor(1.0 / len(flat_probs), device=self.device))
-                    alpha_loss = -self.log_alpha * (entropy - target_entropy).detach()
+                        # Dynamic target entropy over flat options size.
+                        # protag_signal_rebalance: 0.98 (near-max) forced near-uniform play, so alpha
+                        # climbed unboundedly to fight a policy that wanted to commit -> 0.5 lets it settle.
+                        target_entropy = -0.5 * torch.log(torch.tensor(1.0 / len(flat_probs), device=self.device))
+                    # Negative feedback: alpha decreases when entropy > target (standard SAC temperature loss).
+                    # The previous `-log_alpha * (...)` had the sign inverted -> alpha runaway / critic divergence.
+                    alpha_loss = self.log_alpha * (entropy - target_entropy).detach()
                     alpha_losses.append(alpha_loss)
 
         if not critic_losses:
@@ -960,7 +1132,8 @@ class AntagonistSAC:
         total_critic_loss = torch.stack(critic_losses).mean()
         self.critic_optimizer.zero_grad()
         total_critic_loss.backward()
-        
+        torch.nn.utils.clip_grad_norm_(list(self.q1.parameters()) + list(self.q2.parameters()), 10.0)
+
         critic_grad_norm = sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.q1.parameters() if p.grad is not None)
         critic_grad_norm += sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.q2.parameters() if p.grad is not None)
         critic_grad_norm = critic_grad_norm ** 0.5
@@ -971,7 +1144,8 @@ class AntagonistSAC:
             total_actor_loss = torch.stack(actor_losses).mean()
             self.actor_optimizer.zero_grad()
             total_actor_loss.backward()
-            
+            torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 10.0)
+
             actor_grad_norm = sum(p.grad.detach().data.norm(2).item() ** 2 for p in self.actor.parameters() if p.grad is not None)
             actor_grad_norm = actor_grad_norm ** 0.5
             

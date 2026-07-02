@@ -41,7 +41,7 @@ class TestSAC(unittest.TestCase):
 
     def test_protagonist_sac_action_selection(self) -> None:
         agent = ProtagonistSAC(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=16,
             num_layers=1,
@@ -65,7 +65,7 @@ class TestSAC(unittest.TestCase):
 
     def test_protagonist_sac_update(self) -> None:
         agent = ProtagonistSAC(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=16,
             num_layers=1,
@@ -121,7 +121,7 @@ class TestSAC(unittest.TestCase):
         self.assertFalse(torch.isnan(torch.tensor(metrics["protag_actor_loss"])))
 
         agent = AntagonistSAC(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=16,
             num_layers=1,
@@ -149,7 +149,7 @@ class TestSAC(unittest.TestCase):
 
     def test_antagonist_sac_update(self) -> None:
         agent = AntagonistSAC(
-            node_in_dim=9,
+            node_in_dim=11,
             edge_in_dim=2,
             hidden_dim=16,
             num_layers=1,

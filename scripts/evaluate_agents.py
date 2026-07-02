@@ -42,7 +42,7 @@ def main():
     )
     
     protag = ProtagonistSAC(
-        node_in_dim=9, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
         lr_actor=5e-5, lr_critic=1e-3, gamma=0.99, tau=0.005, alpha_init=1.0,
         autotune_alpha=True, target_entropy=-1.0, device="cpu"
     )
@@ -50,7 +50,7 @@ def main():
     protag.actor.eval()
 
     antag = AntagonistSAC(
-        node_in_dim=9, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(config.congestion_levels),
         level_costs=[level * config.congestion_duration for level in config.congestion_levels],
         lr_actor=5e-5, lr_critic=1e-3, gamma=0.99, tau=0.005, alpha_init=1.0,

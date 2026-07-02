@@ -19,6 +19,13 @@ import numpy as np
 
 _FEATURIZE_CACHE = {}
 
+# Node feature width. Bumped 9 -> 11 for Stage 1.5: the last two columns are the dynamic-queue
+# signals greedy is blind to — request age (oldest wait at the node) and the active truck's
+# congestion-aware ETA to the node. Zero for static problems (their observations omit the keys).
+NODE_FEATURE_DIM = 11
+_WAIT_NORM = 100.0  # rough scale for request age (ticks) -> O(1)
+_ETA_NORM = 50.0    # rough scale for congestion-aware ETA (graph diameter ~44) -> O(1)
+
 def featurize_state(
     observation: dict[str, Any],
     active_truck_id: int | None = None,
@@ -37,13 +44,16 @@ def featurize_state(
     -------
     Data:
         A PyTorch Geometric Data object with features:
-        - x: Node features [num_nodes, 9]
+        - x: Node features [num_nodes, 11]
         - edge_index: Graph topology [2, 2 * num_edges]
         - edge_attr: Edge features [2 * num_edges, 2]
     """
     nodes_dict = observation["nodes"]
     edges_dict = observation["edges"]
     trucks_dict = observation["trucks"]
+    # Dynamic-queue features (Stage 1.5); empty/zero for static problems.
+    node_waits = observation.get("node_waits", {})
+    active_etas = observation.get("truck_etas", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
 
     node_ids = sorted(list(nodes_dict.keys()))
     node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
@@ -103,7 +113,8 @@ def featurize_state(
                 other_targeted_capacity[dest] += t.get("capacity", 1.0)
 
     # 3. Build node features
-    # Columns: [x_norm, y_norm, demand, is_depot, num_trucks, is_active_truck, active_truck_load, is_targeted_by_other, unassigned_demand]
+    # Columns: [x_norm, y_norm, demand, is_depot, num_trucks, is_active_truck, active_truck_load,
+    #           is_targeted_by_other, unassigned_demand, oldest_wait_norm, active_truck_eta_norm]
     x_features = []
     for node_id in node_ids:
         ndata = nodes_dict[node_id]
@@ -131,6 +142,8 @@ def featurize_state(
             active_load,
             is_targeted,
             unassigned,
+            float(node_waits.get(node_id, 0.0)) / _WAIT_NORM,
+            float(active_etas.get(node_id, 0.0)) / _ETA_NORM,
         ]
         x_features.append(feat)
 
@@ -167,7 +180,7 @@ class GATv2Encoder(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -224,7 +237,7 @@ class ProtagonistPolicyValueNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -272,7 +285,20 @@ class ProtagonistPolicyValueNet(nn.Module):
         """
         # 1. Generate node embeddings: [num_nodes, hidden_dim]
         h = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
+        return self.head(h, active_node_idx, action_mask_indices)
 
+    def head(
+        self,
+        h: torch.Tensor,
+        active_node_idx: int,
+        action_mask_indices: list[int],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Policy/value head on precomputed node embeddings ``h`` [num_nodes, hidden_dim].
+
+        Separated from the encoder so :meth:`SAC.update` can batch-encode the whole
+        minibatch in a single GATv2 pass and then apply this head per-sample. Behaviour
+        is identical to running :meth:`forward` on the corresponding single graph.
+        """
         # 2. Get active node embedding: [1, hidden_dim]
         h_active = h[active_node_idx].unsqueeze(0)
 
@@ -302,7 +328,7 @@ class AntagonistPolicyValueNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 7,
+        node_in_dim: int = 11,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -373,11 +399,26 @@ class AntagonistPolicyValueNet(nn.Module):
         value:
             Critic estimated state value V(s) [1].
         """
-        device = pyg_data.x.device
+        h_nodes = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
+        return self.head(
+            h_nodes, pyg_data.edge_index, pyg_data.edge_attr,
+            node_to_idx, allowed_edges, remaining_budget, level_costs,
+        )
+
+    def head(
+        self,
+        h_nodes: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_attr: torch.Tensor,
+        node_to_idx: Mapping[Any, int],
+        allowed_edges: list[tuple[Any, Any]],
+        remaining_budget: float,
+        level_costs: list[float],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Policy/value head on precomputed node embeddings (see ProtagonistPolicyValueNet.head)."""
+        device = h_nodes.device
         num_allowed = len(allowed_edges)
 
-        # 1. Node embeddings: [num_nodes, hidden_dim]
-        h_nodes = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
         h_graph = torch.mean(h_nodes, dim=0, keepdim=True)  # [1, hidden_dim]
 
         # 2. Critic state value estimation
@@ -387,10 +428,10 @@ class AntagonistPolicyValueNet(nn.Module):
         # We find the node indices of edge endpoints, gather their embeddings, and append current edge features.
         h_edges = []
         # Re-construct maps of existing edge features for lookup
-        # pyg_data.edge_index is directed (2 * num_edges), we lookup the undirected pairs
-        u_list = pyg_data.edge_index[0].tolist()
-        v_list = pyg_data.edge_index[1].tolist()
-        edge_features_dict = dict(zip(zip(u_list, v_list), pyg_data.edge_attr))
+        # edge_index is directed (2 * num_edges), we lookup the undirected pairs
+        u_list = edge_index[0].tolist()
+        v_list = edge_index[1].tolist()
+        edge_features_dict = dict(zip(zip(u_list, v_list), edge_attr))
 
         for u, v_node in allowed_edges:
             idx_u = node_to_idx[u]
@@ -401,8 +442,14 @@ class AntagonistPolicyValueNet(nn.Module):
             # Lookup original edge attribute tensor
             attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(2, device=device))
             
-            # Combine [emb_u, emb_v, edge_attr]
-            combined = torch.cat([emb_u, emb_v, attr], dim=-1)
+            # Enforce permutation invariance for undirected edges
+            if idx_u < idx_v:
+                emb_min, emb_max = emb_u, emb_v
+            else:
+                emb_min, emb_max = emb_v, emb_u
+
+            # Combine [emb_min, emb_max, edge_attr]
+            combined = torch.cat([emb_min, emb_max, attr], dim=-1)
             h_edges.append(combined)
 
         # Handle the case where no edge changes are allowed (e.g. out of budget)
@@ -421,7 +468,6 @@ class AntagonistPolicyValueNet(nn.Module):
 
         # Combine logits: [allowed_edges... , wait]
         all_logits = torch.cat([edge_logits, wait_logit], dim=0)  # [num_allowed + 1]
-        edge_probs = F.softmax(all_logits, dim=-1)
 
         # 5. Compute congestion level probabilities for each allowed edge
         level_logits = self.level_head(h_edge_features)  # [num_allowed, num_levels]
@@ -434,6 +480,12 @@ class AntagonistPolicyValueNet(nn.Module):
             device=device
         )
         
+        # If no levels are affordable, mask out all edge actions to force wait
+        if not level_mask.any():
+            all_logits[:-1] = -1e9
+
+        edge_probs = F.softmax(all_logits, dim=-1)
+
         # Expand mask to [num_allowed, num_levels]
         level_mask_expanded = level_mask.unsqueeze(0).expand(num_allowed, -1)
         masked_level_logits = level_logits.masked_fill(~level_mask_expanded, -1e9)

@@ -70,33 +70,219 @@ def main() -> None:
         default=None,
         help="Path to a directory containing protagonist/checkpoint.pt and antagonist/checkpoint.pt to resume from.",
     )
+    parser.add_argument(
+        "--eval-every",
+        type=int,
+        default=100,
+        help="Stage 0 only: run a learned-vs-greedy eval every N episodes (0 disables).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed (torch/numpy/random). Set for reproducible, labelled seeded runs in a "
+             "generation; None = unseeded (legacy nondeterministic run).",
+    )
+    parser.add_argument(
+        "--group",
+        type=str,
+        default=None,
+        help="Experiment generation name. Nests the run under logs/tb_runs/<group>/ and "
+             "models/runs/<group>/ so TensorBoard groups it and seeds stay together.",
+    )
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=None,
+        help="torch CPU thread cap (default ~4). Lower it (e.g. 3) when running several seeds "
+             "in parallel so total threads stay <= 10 cores (see scratch/thread_benchmark.py).",
+    )
+    parser.add_argument(
+        "--erb-path",
+        type=str,
+        default=None,
+        help="Path to a .pt of pre-generated SMDPTransitions to seed the protagonist replay "
+             "buffer (e.g. data/erb_assign.pt from generate_erb_assign.py). Overrides the legacy "
+             "--preseed-buffer path; demos are already correctly formatted (no compat shim).",
+    )
+    parser.add_argument(
+        "--problem",
+        type=str,
+        choices=["osm", "stage0", "assign", "dynassign", "hybrid"],
+        default="osm",
+        help=(
+            "Which problem to train. 'osm' (default) = the static-demand Kaliningrad "
+            "baseline. 'stage0' = single-truck next-hop route-choice validation rung. "
+            "'assign' = the 3b multi-truck assignment probe (static, RETIRED baseline). "
+            "'dynassign' = Stage 1.5 dynamic assignment (Poisson arrivals, 2 trucks, latency). "
+            "'hybrid' = Stage 2 hybrid (assignment + next-hop routing, chokepoint geometry, static)."
+        ),
+    )
+    parser.add_argument(
+        "--arrival-rate",
+        type=float,
+        default=0.06,
+        help="dynassign only: Poisson demand arrival rate (requests/tick). Default 0.06 = the "
+             "Step-4 gate's rho~1 operating point (delivery ~0.71, residual queue ~14).",
+    )
+    parser.add_argument(
+        "--congestion-budget",
+        type=float,
+        default=4000.0,
+        help="dynassign only: antagonist congestion budget. Default 4000 is non-binding under the "
+             "per-event cap (~32 full roadblocks x 120 = ~3840 spent); the cap + congestion_duration "
+             "are the real leverage/compute knobs now.",
+    )
     args = parser.parse_args()
 
-    # 1. Initialize SMDP Environment with Kaliningrad OSM Graph (4 trucks)
-    print("Initializing SACRED SMDP Kaliningrad OSM Environment...")
-    from src.envs.osm_factory import make_osm_env
-    
-    config = SMDPConfig(
-        max_ticks=600,
-        antagonist_interval=30,  # Acts at least every 30 ticks
-        congestion_duration=30,
-        congestion_budget=500.0,
-        congestion_cooldown=0,
-        remaining_demand_penalty=0.5,
-        delivery_reward=10.0,
-        time_penalty=1.0,
-        congestion_cost=0.1,
-        congestion_levels=(0.25, 0.5, 0.75, 1.0)
-    )
-    smdp = SMDPDecisionWrapper(
-        env_factory=lambda: make_osm_env(num_trucks=4, truck_capacity=40.0, episode_packages=150),
-        config=config,
-    )
+    # Reproducibility + CPU thread cap (for parallel seeded runs; see scratch/thread_benchmark.py).
+    if args.threads is not None:
+        import torch
+        torch.set_num_threads(args.threads)
+    if args.seed is not None:
+        import random
+        import numpy as np
+        import torch
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        print(f"Seeded run: seed={args.seed}")
+
+    # 1. Initialize the SMDP environment for the chosen problem.
+    if args.problem == "stage0":
+        print("Initializing SACRED Stage-0 next-hop route-choice validation environment (single truck)...")
+        from src.envs.stage0_factory import make_stage0_nexthop_env
+
+        config = SMDPConfig(
+            max_ticks=400,
+            antagonist_interval=20,  # corridor is short; act often
+            congestion_duration=30,
+            congestion_budget=300.0,
+            congestion_cooldown=0,
+            congestion_cost=0.1,
+            reward_mode="latency",  # per-tick outstanding-wait; telescopes to total latency
+            routing_mode="next_hop",  # policy chooses each edge -> learns to route around the antagonist
+            routing_corridor_slack=1.2,  # tightened from 1.5: keeps both routes, prunes the mid-corridor dithering
+            congestion_levels=(0.25, 0.5, 0.75, 1.0),
+        )
+        smdp = SMDPDecisionWrapper(
+            env_factory=lambda: make_stage0_nexthop_env(),
+            config=config,
+        )
+        # Stage 0 has no demonstration ERB yet (the dynamic-dispatch ERB is later-stage work).
+        if args.preseed_buffer:
+            print("Stage 0: forcing --preseed-buffer False (no ERB for the validation rung).")
+            args.preseed_buffer = False
+        # Next-hop fragments each episode into many short transitions, so the per-transition
+        # latency reward is small (~-0.15 at scale 0.01) and was dwarfed by the SAC entropy
+        # bonus alpha*H (~0.5) -> the agent optimised entropy, not delivery (Q went positive
+        # while delivery collapsed). Scale up ~10x so the task signal dominates the entropy term.
+        reward_scale = 0.1
+    elif args.problem == "assign":
+        print("Initializing SACRED 3b assignment probe (2 trucks/depots, contested demand)...")
+        from src.envs.assignment_factory import make_assignment_env
+
+        config = SMDPConfig(
+            max_ticks=800,
+            antagonist_interval=20,
+            congestion_duration=30,
+            congestion_budget=400.0,
+            congestion_cooldown=0,
+            congestion_cost=0.1,
+            reward_mode="latency",
+            routing_mode="destination",  # assignment only: env auto-routes (exact Dijkstra)
+            congestion_levels=(0.25, 0.5, 0.75, 1.0),
+        )
+        smdp = SMDPDecisionWrapper(
+            env_factory=lambda: make_assignment_env(),
+            config=config,
+        )
+        if args.preseed_buffer:
+            print("Assign: forcing --preseed-buffer False (no ERB for the probe).")
+            args.preseed_buffer = False
+        # Same entropy-vs-signal scaling concern as stage0: latency reward must dominate alpha*H.
+        reward_scale = 0.1
+    elif args.problem == "dynassign":
+        print("Initializing SACRED Stage-1.5 dynamic assignment (Poisson arrivals, 2 trucks)...")
+        import itertools
+        from src.envs.assignment_factory import make_dynamic_assign_env
+
+        config = SMDPConfig(
+            max_ticks=800,
+            antagonist_interval=25,           # ~32 antagonist decision events / episode
+            congestion_duration=120,          # each full roadblock persists ~5 events (sustained)
+            congestion_budget=args.congestion_budget,  # default 4000 (non-binding under the cap)
+            congestion_cooldown=0,
+            congestion_cost=0.1,
+            reward_mode="latency",
+            routing_mode="destination",       # assignment only: env auto-routes (routing deferred)
+            congestion_levels=(1.0,),         # FULL blockage only (simpler adversary + fewer updates)
+            max_antag_actions_per_event=1,    # one strategic roadblock per event -> ~32 updates/ep
+        )
+        # Each episode gets a fresh Poisson demand stream. When --seed is set, derive a distinct
+        # per-episode demand seed from a counter so the whole run's stream sequence is reproducible
+        # (the env is rebuilt each reset, so a fixed seed would repeat one stream — the counter
+        # advances it instead). Unseeded -> OS entropy per episode.
+        if args.seed is not None:
+            _demand_counter = itertools.count(args.seed * 100003)
+            env_factory = lambda: make_dynamic_assign_env(
+                arrival_rate=args.arrival_rate, demand_seed=next(_demand_counter))
+        else:
+            env_factory = lambda: make_dynamic_assign_env(arrival_rate=args.arrival_rate)
+        smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config)
+        if args.preseed_buffer:
+            print("Dynassign: forcing --preseed-buffer False (no ERB for the dynamic rung yet).")
+            args.preseed_buffer = False
+        reward_scale = 0.1
+    elif args.problem == "hybrid":
+        print("Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...")
+        from src.envs.assignment_factory import make_hybrid_assign_env
+
+        config = SMDPConfig(
+            max_ticks=1500,                 # hybrid routes (next-hop) run longer than destination mode
+            antagonist_interval=25,
+            congestion_duration=125,        # = 5 x interval -> block expiry aligns to a decision event
+            congestion_budget=4000.0,
+            congestion_cooldown=0,
+            congestion_cost=0.1,
+            reward_mode="latency",
+            routing_mode="hybrid",          # assignment (pick request) + next-hop routing (pick roads)
+            routing_corridor_slack=2.0,     # loose enough for a real detour around a blocked gateway
+            congestion_levels=(1.0,),       # full-blockage roadblocks
+            max_antag_actions_per_event=1,  # one strategic roadblock per decision event
+            antag_reach="route",            # block the gateway AHEAD on a truck's route (anticipation)
+        )
+        smdp = SMDPDecisionWrapper(env_factory=lambda: make_hybrid_assign_env(), config=config)
+        if args.preseed_buffer:
+            print("Hybrid: forcing --preseed-buffer False.")
+            args.preseed_buffer = False
+        reward_scale = 0.1
+    else:
+        print("Initializing SACRED SMDP Kaliningrad OSM Environment...")
+        from src.envs.osm_factory import make_osm_env
+
+        config = SMDPConfig(
+            max_ticks=600,
+            antagonist_interval=30,  # Acts at least every 30 ticks
+            congestion_duration=30,
+            congestion_budget=500.0,
+            congestion_cooldown=0,
+            remaining_demand_penalty=0.05,  # protag_reward_shaping: was 0.5 (the dominant, antagonist-driven noise term); demoted to a small urgency nudge
+            delivery_reward=100.0,  # protag_reward_shaping: was 10.0; now the dominant, controllable signal so the critic can attribute value to good routing
+            time_penalty=1.0,
+            congestion_cost=0.1,
+            congestion_levels=(0.25, 0.5, 0.75, 1.0)
+        )
+        smdp = SMDPDecisionWrapper(
+            env_factory=lambda: make_osm_env(num_trucks=4, truck_capacity=40.0, episode_packages=150),
+            config=config,
+        )
+        reward_scale = 0.01  # tuned for the OSM baseline's larger per-decision rewards
 
     # 2. Configure Protagonist SAC Agent
     print("Configuring Protagonist Dispatch Agent...")
     protag = ProtagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=args.hidden_dim,
         num_layers=2,
@@ -107,27 +293,30 @@ def main() -> None:
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        target_entropy=-1.0,
+        target_entropy=None,  # None -> sane discrete-SAC fallback; -1.0 caused alpha runaway/critic divergence
+        reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
     )
 
     # 3. Configure Antagonist SAC Agent
     print("Configuring Antagonist Congestion Agent...")
     antag = AntagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=args.hidden_dim,
         num_layers=2,
         heads=4,
         num_congestion_levels=len(config.congestion_levels),
         level_costs=[level * config.congestion_duration for level in config.congestion_levels],
+        congestion_levels=config.congestion_levels,
         lr_actor=5e-5,
         lr_critic=1e-3,
         gamma=0.99,
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        target_entropy=-1.0,
+        target_entropy=None,  # None -> sane discrete-SAC fallback; -1.0 caused alpha runaway/critic divergence
+        reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
     )
 
@@ -141,6 +330,17 @@ def main() -> None:
         start_episode = protag.load_checkpoint(protag_ckpt)
         antag.load_checkpoint(antag_ckpt)
         print(f"Resumed successfully from episode {start_episode}.")
+    elif args.erb_path is not None:
+        import os
+        import torch
+        if not os.path.exists(args.erb_path):
+            sys.exit(f"--erb-path {args.erb_path} not found. Generate it first (e.g. generate_erb_assign.py).")
+        print(f"\nSeeding protagonist replay buffer from {args.erb_path}...")
+        transitions = torch.load(args.erb_path, map_location="cpu", weights_only=False)
+        for trans in transitions:
+            # Demos are produced by the shared transition builder -> already correct format.
+            protag.replay_buffer.push(trans)
+        print(f"Seeded {len(transitions)} demonstration transitions.")
     elif args.preseed_buffer:
         import os
         import subprocess
@@ -167,9 +367,45 @@ def main() -> None:
     # 4. Initialize ATLA Trainer
     print("Initializing ATLA Coevolution Trainer...")
     import datetime
-    timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
-    run_name = f"{args.tag}_{args.episodes}ep_sw{args.switch_every}_b{args.batch_size}_{timestamp}"
+    # Within a generation (--group), name runs by tag+seed (no timestamp) so seeds sit together
+    # and are reproducible/identifiable; nesting under <group>/ makes TensorBoard group them and
+    # mirrors into models/runs/<group>/. Standalone runs keep the timestamped flat name.
+    if args.group is not None:
+        seed_suffix = f"_seed{args.seed}" if args.seed is not None else ""
+        run_name = f"{args.group}/{args.tag}{seed_suffix}"
+    else:
+        timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
+        run_name = f"{args.tag}_{args.episodes}ep_sw{args.switch_every}_b{args.batch_size}_{timestamp}"
     print(f"Run Name: {run_name}")
+
+    # Periodic learned-vs-greedy eval snapshot (every --eval-every episodes).
+    eval_fn = None
+    eval_every = 0
+    if args.problem == "stage0" and args.eval_every > 0:
+        from scripts.evaluate_stage0 import eval_cells
+        from src.envs.stage0_factory import make_stage0_nexthop_env as _mk
+        eval_fn = lambda ep: eval_cells(protag, antag, lambda: _mk(), config)
+        eval_every = args.eval_every
+    elif args.problem == "assign" and args.eval_every > 0:
+        from scripts.evaluate_assignment import eval_cells_assignment
+        from src.envs.assignment_factory import make_assignment_env as _mk
+        eval_fn = lambda ep: eval_cells_assignment(protag, antag, lambda: _mk(), config)
+        eval_every = args.eval_every
+    elif args.problem == "dynassign" and args.eval_every > 0:
+        from scripts.evaluate_dynamic_assign import eval_dynamic_cells
+        from src.envs.assignment_factory import make_dynamic_assign_env as _mkd
+        # Multi-seed, fixed-adversary eval (a few fixed Poisson instances) — the metric the
+        # static-3b retraction demands. make_env_for_seed(seed) -> a zero-arg factory bound to it.
+        make_env_for_seed = lambda seed: (lambda: _mkd(arrival_rate=args.arrival_rate, demand_seed=seed))
+        eval_fn = lambda ep: eval_dynamic_cells(protag, antag, make_env_for_seed, config, seeds=(0, 1, 2))
+        eval_every = args.eval_every
+    elif args.problem == "hybrid" and args.eval_every > 0:
+        from scripts.evaluate_hybrid import eval_hybrid_cells
+        from src.envs.assignment_factory import make_hybrid_assign_env as _mkh
+        # Static demand -> deterministic single-episode eval vs the current antagonist (progress
+        # signal); the real verdict is best-checkpoint vs the FIXED antagonist (select-best, post-hoc).
+        eval_fn = lambda ep: eval_hybrid_cells(protag, antag, _mkh, config)
+        eval_every = args.eval_every
 
     trainer = ATLACoevolutionTrainer(
         smdp=smdp,
@@ -179,6 +415,8 @@ def main() -> None:
         switch_every_episodes=args.switch_every,
         batch_size=args.batch_size,
         run_name=run_name,
+        eval_fn=eval_fn,
+        eval_every=eval_every,
     )
 
     # 5. Run coevolutionary training

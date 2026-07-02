@@ -191,7 +191,7 @@ def main() -> None:
     # 1. Reconstruct agents with correct hidden features
     print("Loading SACRED agent models...")
     protag_agent = ProtagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=64,
         num_layers=2,
@@ -203,7 +203,7 @@ def main() -> None:
         for level in [0.25, 0.5, 0.75, 1.0]
     ]
     antag_agent = AntagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=64,
         num_layers=2,

@@ -109,14 +109,14 @@ def main() -> None:
     ]
 
     protag = ProtagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=64,
         num_layers=2,
         heads=4,
     )
     antag = AntagonistSAC(
-        node_in_dim=9,
+        node_in_dim=11,
         edge_in_dim=2,
         hidden_dim=64,
         num_layers=2,
