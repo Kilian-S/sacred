@@ -29,6 +29,10 @@ RECIPES = {
     # Stage 1.5 dynamic assignment at the gate's rho~1 point + load-scaled antagonist budget.
     "dynassign": ["--problem", "dynassign", "--arrival-rate", "0.06",
                   "--congestion-budget", "4000", "--preseed-buffer", "False"],
+    # gen03 Phase-1: the NON-adversarial control (identical to dynassign but the antagonist is
+    # inert and the protagonist trains every episode) — see experiments/gen03_robustness_dynassign.md.
+    "vanilla": ["--problem", "dynassign", "--arrival-rate", "0.06",
+                "--congestion-budget", "4000", "--preseed-buffer", "False", "--vanilla"],
 }
 
 
@@ -42,6 +46,16 @@ def git_sha() -> str:
 def write_ledger(group: str, configs: list[str], seeds: list[int], common: list[str]) -> None:
     os.makedirs("experiments", exist_ok=True)
     path = f"experiments/{group}.md"
+    if os.path.exists(path):
+        # A hand-written ledger (pre-registered metric etc.) already exists — append the launch
+        # record instead of clobbering it.
+        with open(path, "a") as f:
+            f.write(f"\n## Launch record ({time.strftime('%Y-%m-%d %H:%M')})\n\n")
+            f.write(f"- **git SHA:** `{git_sha()}`\n")
+            f.write(f"- **configs:** {', '.join(configs)}  **seeds:** {seeds}\n")
+            f.write(f"- **common args:** `{' '.join(common)}`\n")
+        print(f"Appended launch record to existing ledger {path}")
+        return
     with open(path, "w") as f:
         f.write(f"# Generation: {group}\n\n")
         f.write(f"- **git SHA:** `{git_sha()}` (runs are only comparable within this code state)\n")
@@ -81,7 +95,8 @@ def main() -> None:
         "--device", "cpu", "--eval-every", str(args.eval_every),
         "--group", args.group, "--threads", str(args.threads),
     ]
-    write_ledger(args.group, configs, seeds, common)
+    if not args.dry_run:
+        write_ledger(args.group, configs, seeds, common)
 
     jobs = [(c, s) for c in configs for s in seeds]
     print(f"Generation {args.group}: {len(jobs)} runs, {args.threads} threads each, "

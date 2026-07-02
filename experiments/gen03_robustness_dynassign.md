@@ -1,6 +1,6 @@
 # Generation: gen03_robustness_dynassign (Phase 1 — protocol pilot)
 
-- **git SHA:** _fill at launch (must be the commit the runs execute on)_
+- **git SHA:** `c361b4c` (Phase-1 infra commit; runs must execute on this state or a descendant that leaves `src/` + eval untouched)
 - **date opened:** 2026-07-02
 - **status:** LEDGER OPEN — training not yet launched (awaiting Kilian's go)
 
@@ -58,8 +58,8 @@ checkpoint selection per arm = min mean attacked-wait under `targeted` on valida
 ## Commands
 
 ```bash
-# 1. vanilla control (3 seeds, parallel, ~overnight)
-PYTHONPATH=. python scripts/run_generation.py --group gen03_robustness_dynassign --configs vanilla --seeds 0,1,2 --threads 3 --max-concurrent 3
+# 1. vanilla control (3 seeds, parallel, ~overnight; 800 ep matches gen02's budget)
+PYTHONPATH=. python scripts/run_generation.py --group gen03_robustness_dynassign --configs vanilla --seeds 0,1,2 --episodes 800 --threads 3 --max-concurrent 3
 #    (or per-seed: PYTHONPATH=. python scripts/train_sacred.py --problem dynassign --vanilla --episodes 800 --switch-every 50 --batch-size 32 --eval-every 0 --seed <k> --group gen03_robustness_dynassign --tag vanilla --threads 3)
 
 # 2. checkpoint selection (per arm+seed, validation attacker)
