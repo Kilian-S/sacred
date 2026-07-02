@@ -1,14 +1,26 @@
-# TASK.md — state record + our (unexecuted) plan (updated 2026-07-01)
+# TASK.md — state record + plan
 
-> **⚠️ For the incoming agent (Fable): read this as a RECORD, not a mandate.** Per Kilian, your first
-> job is to **critique the overall approach** (see `HANDOFF_PROMPT.md`) — *not* to execute the plan
-> below. The Stage-2 H-steps are **our** plan for the hybrid rung, resting on **our** (unproven)
-> interpretation that "next-hop routing is the missing lever". **H1–H6 are built; H7 (the training
-> run) has NOT been run** — deliberately left for you to decide whether it, a different rung, or a
-> different direction entirely is the right move.
+> **⚠️ REFRAMED 2026-07-02 (Kilian + Fable) — the plan below this banner is HISTORICAL.**
+> The critique (`CRITIQUE.md`) was accepted: the headline is now the **robustness claim**
+> (SACRED/ATLA vs an identical but non-adversarially-trained vanilla SAC, under a held-out attack
+> portfolio; greedy demoted to reference line). Decisions: D1 reframe ✓ · D2 dynassign pilot
+> first, headline matrix on the FIXED hybrid · D3 vanilla-SAC control only · D4 descoping deferred.
+> **Active plan + pre-registered metric: `experiments/gen03_robustness_dynassign.md`** (Phase 1).
+> Hybrid fixes landed 2026-07-02 (zombie-orbit bug, goal observability/13-dim features,
+> info-parity ETAs, narrow-checkpoint slicing — commit `d2b065b`, 82 tests green); post-fix probes:
+> greedy no-attack 902→847, episodes end ~tick 220 (was always 1500), 1-gateway blockade floor
+> +10.4%, scripted route-reach attack +40…+184% over budget 250…4000 (Phase-3 training budget
+> recommendation: ~1500). New infra: `--vanilla`, `--train-antagonist-only --protagonist-snapshot`,
+> `src/baselines/attackers.py`, `scripts/evaluate_portfolio.py` (paired portfolio + validation/test
+> attacker split + `--select-best`).
 >
-> History: Stage-0 (near-wash) → static-3b (claimed milestone, RETRACTED) → Stage 1.5 dynamic
-> assignment (2 seeds, near-wash) → Stage 2 hybrid (built, untrained). Full record in `CONTEXT.md` §2.
+> H7 (training the hybrid as previously specced) is SUPERSEDED — it must never run without these
+> fixes; the hybrid now enters as the Phase-3 robustness-matrix arena.
+
+> **(Historical handoff note, 2026-07-01):** the Stage-2 H-steps below were the prior plan, resting
+> on the (unproven) interpretation that "next-hop routing is the missing lever". H1–H6 built; H7
+> deliberately not run. History: Stage-0 (near-wash) → static-3b (claimed milestone, RETRACTED) →
+> Stage 1.5 dynamic assignment (2 seeds, near-wash) → Stage 2 hybrid. Full record in `CONTEXT.md` §2.
 
 ## Where we are (one paragraph)
 **Three rungs have now near-washed** against reactive greedy — Stage 0 (routing), static-3b

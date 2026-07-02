@@ -133,7 +133,34 @@ def main() -> None:
              "per-event cap (~32 full roadblocks x 120 = ~3840 spent); the cap + congestion_duration "
              "are the real leverage/compute knobs now.",
     )
+    parser.add_argument(
+        "--vanilla",
+        action="store_true",
+        help="NON-adversarial control for the robustness comparison: the protagonist trains every "
+             "episode and the antagonist is inert (never acts/updates). Identical env, reward, nets "
+             "and hyperparameters otherwise.",
+    )
+    parser.add_argument(
+        "--train-antagonist-only",
+        action="store_true",
+        help="Best-response attacker training: FREEZE the protagonist (loaded from "
+             "--protagonist-snapshot, acting stochastically) and train only the antagonist. Used to "
+             "build the per-policy worst-case attack for the evaluation portfolio.",
+    )
+    parser.add_argument(
+        "--protagonist-snapshot",
+        type=str,
+        default=None,
+        help="Actor state_dict (.pt) of the frozen protagonist for --train-antagonist-only. The "
+             "protagonist nets are sized to the snapshot's trained feature width automatically.",
+    )
     args = parser.parse_args()
+
+    if args.vanilla and args.train_antagonist_only:
+        sys.exit("--vanilla and --train-antagonist-only are mutually exclusive.")
+    if args.train_antagonist_only and not args.protagonist_snapshot:
+        sys.exit("--train-antagonist-only requires --protagonist-snapshot.")
+    trainer_mode = "vanilla" if args.vanilla else ("antagonist_only" if args.train_antagonist_only else "atla")
 
     # Reproducibility + CPU thread cap (for parallel seeded runs; see scratch/thread_benchmark.py).
     if args.threads is not None:
@@ -281,8 +308,16 @@ def main() -> None:
 
     # 2. Configure Protagonist SAC Agent
     print("Configuring Protagonist Dispatch Agent...")
+    protag_node_dim = 13
+    protag_snapshot_sd = None
+    if args.protagonist_snapshot is not None:
+        import torch
+        from src.agents.sac import infer_node_in_dim
+        protag_snapshot_sd = torch.load(args.protagonist_snapshot, map_location="cpu")
+        protag_node_dim = infer_node_in_dim(protag_snapshot_sd)
+        print(f"Frozen protagonist from {args.protagonist_snapshot} (node_in_dim={protag_node_dim}).")
     protag = ProtagonistSAC(
-        node_in_dim=13,
+        node_in_dim=protag_node_dim,
         edge_in_dim=2,
         hidden_dim=args.hidden_dim,
         num_layers=2,
@@ -319,6 +354,9 @@ def main() -> None:
         reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
     )
+
+    if protag_snapshot_sd is not None:
+        protag.actor.load_state_dict(protag_snapshot_sd)
 
     start_episode = 0
     if args.resume_checkpoint is not None:
@@ -417,6 +455,7 @@ def main() -> None:
         run_name=run_name,
         eval_fn=eval_fn,
         eval_every=eval_every,
+        mode=trainer_mode,
     )
 
     # 5. Run coevolutionary training

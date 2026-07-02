@@ -49,12 +49,22 @@ class ATLACoevolutionTrainer:
         run_name: str | None = None,
         eval_fn: Callable[[int], dict] | None = None,
         eval_every: int = 0,
+        mode: str = "atla",
     ) -> None:
+        if mode not in ("atla", "vanilla", "antagonist_only"):
+            raise ValueError(f"unknown trainer mode {mode!r}")
         self.smdp = smdp
         self.protag = protag_agent
         self.antag = antag_agent
         self.switch_every_episodes = switch_every_episodes
         self.batch_size = batch_size
+        # Training mode. "atla" = the coevolutionary alternating game (default). "vanilla" = the
+        # NON-adversarial control for the robustness comparison: the protagonist trains every
+        # episode and the antagonist is inert (never acts, never updates) — identical env, reward,
+        # nets and hyperparameters otherwise. "antagonist_only" = best-response attacker training:
+        # the protagonist is FROZEN (acts stochastically, no updates/storage) while the antagonist
+        # trains every episode — used to build the per-policy worst-case attack for evaluation.
+        self.mode = mode
         # Optional periodic snapshot eval: eval_fn(episode) -> dict of scalars, logged under Eval/*.
         self.eval_fn = eval_fn
         self.eval_every = eval_every
@@ -67,17 +77,19 @@ class ATLACoevolutionTrainer:
         os.makedirs(log_dir, exist_ok=True)
         self.writer = SummaryWriter(log_dir=os.path.join(log_dir, self.run_name))
 
-        # Training phase tracking
-        self.current_phase: str = "protagonist"  # starts with protagonist training
+        # Training phase tracking. Non-ATLA modes pin the phase for the whole run (the
+        # switch-every cadence then only drives checkpoint/snapshot saving).
+        self.current_phase: str = "antagonist" if mode == "antagonist_only" else "protagonist"
         self.episode_count = 0
         self.step_count = 0
 
     def run_training(self, total_episodes: int, start_episode: int = 0) -> None:
         """Run the coevolutionary training loop for total_episodes."""
-        print(f"Starting SACRED ATLA training from scratch for {total_episodes} episodes...")
+        print(f"Starting SACRED training (mode={self.mode}) for {total_episodes} episodes...")
         print(f"Device: Protagonist={self.protag.device}, Antagonist={self.antag.device}")
-        print(f"Alternating every {self.switch_every_episodes} episodes.")
-        print(f"Initial Phase: Training {self.current_phase.upper()} (Adversary FROZEN)\n")
+        if self.mode == "atla":
+            print(f"Alternating every {self.switch_every_episodes} episodes.")
+        print(f"Initial Phase: Training {self.current_phase.upper()}\n")
 
         for ep in range(start_episode + 1, total_episodes + 1):
             self.episode_count = ep
@@ -97,8 +109,9 @@ class ATLACoevolutionTrainer:
                 os.makedirs(snap_dir, exist_ok=True)
                 torch.save(self.protag.actor.state_dict(), os.path.join(snap_dir, f"protagonist_ep{ep - 1}.pt"))
                 torch.save(self.antag.actor.state_dict(), os.path.join(snap_dir, f"antagonist_ep{ep - 1}.pt"))
-                self.current_phase = "antagonist" if self.current_phase == "protagonist" else "protagonist"
-                print(f"\n--- Episode {ep}: Switching training phase to {self.current_phase.upper()} ---")
+                if self.mode == "atla":
+                    self.current_phase = "antagonist" if self.current_phase == "protagonist" else "protagonist"
+                    print(f"\n--- Episode {ep}: Switching training phase to {self.current_phase.upper()} ---")
 
             # 2. Reset environment and tracking accumulators
             event = self.smdp.reset_decision_env()
@@ -124,8 +137,9 @@ class ATLACoevolutionTrainer:
                         return self.protag.select_action(projected_obs, truck_mask, deterministic=False)
 
                     next_event, t_transitions = collect_protagonist_transitions(self.smdp, event, _choose)
-                    for t_trans in t_transitions:
-                        self.protag.replay_buffer.push(t_trans)
+                    if self.mode != "antagonist_only":  # a frozen protagonist stores nothing
+                        for t_trans in t_transitions:
+                            self.protag.replay_buffer.push(t_trans)
 
                     # Reward bookkeeping (per-truck transitions all carry the same interval reward).
                     interval_reward = t_transitions[0].reward if t_transitions else 0.0
@@ -142,6 +156,14 @@ class ATLACoevolutionTrainer:
 
                 # B. ANTAGONIST DECISION EPOCH
                 elif event.decision_type in (DecisionType.ANTAGONIST_DECISION, DecisionType.BOTH_DECISION):
+                    if self.mode == "vanilla":
+                        # Non-adversarial control: the adversary never acts (no net forward, no
+                        # storage, no update) — the event only advances simulated time.
+                        next_event, _ = self.smdp.step_antagonist(None)
+                        ep_protag_reward += next_event.protagonist_reward
+                        ep_antag_reward += next_event.antagonist_reward
+                        event = next_event
+                        continue
                     mask = event.antagonist_action_mask
                     # Active congestion choice
                     remaining_budget_before = self.smdp.budget.remaining
