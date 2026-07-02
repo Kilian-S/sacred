@@ -94,6 +94,7 @@ class GraphEnv:
         max_time: int | None = None,
         demand_arrival_fn: Callable[[Any, int], Iterable[tuple[int, NodeId, float]]] | None = None,
         demand_seed: int | None = None,
+        expose_queue_features: bool | None = None,
     ) -> None:
         if num_trucks < 1:
             raise ValueError("num_trucks must be at least 1")
@@ -130,6 +131,13 @@ class GraphEnv:
         # via demand_seed for the multi-instance eval harness).
         self._demand_arrival_fn = demand_arrival_fn
         self._dynamic_demand = demand_arrival_fn is not None
+        # Whether observe() ships the queue/ETA feature block (node_waits, truck_etas,
+        # goal_dists). Defaults to dynamic-only (the Stage-1.5 behaviour); the hybrid rung
+        # turns it on for STATIC demand too so the policy has the same congestion-aware
+        # distance information the greedy baseline's Dijkstra uses (information parity).
+        self._expose_queue_features = (
+            bool(expose_queue_features) if expose_queue_features is not None else self._dynamic_demand
+        )
         self._demand_rng = np.random.default_rng(demand_seed)
         self._arrival_schedule: list[tuple[int, NodeId, float]] = []
         self._arrival_index = 0
@@ -371,12 +379,14 @@ class GraphEnv:
                     "path": truck.path,
                     "path_index": truck.path_index,
                     "delivered_total": truck.delivered_total,
+                    "assigned_target": truck.assigned_target,
                 }
                 for truck_id, truck in self.trucks.items()
             },
         }
-        if self._dynamic_demand:
+        if self._expose_queue_features:
             obs["node_waits"], obs["truck_etas"] = self._dynamic_node_features()
+            obs["goal_dists"] = self._goal_distances()
         return obs
 
     def _single_source_lengths(self, source: NodeId) -> dict[NodeId, float]:
@@ -413,6 +423,21 @@ class GraphEnv:
             targets = demand_nodes + ([truck.home_depot] if truck.home_depot is not None else [])
             truck_etas[truck_id] = {n: lengths[n] for n in targets if n in lengths}
         return node_waits, truck_etas
+
+    def _goal_distances(self) -> dict[int, dict[NodeId, float]]:
+        """Per-truck congestion-aware distance-to-goal field: for each truck committed to an
+        ``assigned_target`` (hybrid mode), the distance from EVERY node to that goal. This is the
+        global routing information the 2-layer GNN cannot propagate itself (receptive field 2 hops
+        vs graph diameter ~44): with it, each next-hop candidate carries its goal-progress under
+        current congestion — parity with the greedy baseline's Dijkstra. Cached per congestion
+        version via _single_source_lengths (undirected graph -> from-goal == to-goal)."""
+        goal_dists: dict[int, dict[NodeId, float]] = {}
+        for truck_id, truck in self.trucks.items():
+            goal = truck.assigned_target
+            if goal is None or goal not in self.graph:
+                continue
+            goal_dists[truck_id] = self._single_source_lengths(goal)
+        return goal_dists
 
 
 
@@ -686,13 +711,15 @@ class GraphEnv:
             self._serve_demand(truck, node, info)
 
     def _reload_truck(self, truck: TruckState, info: dict[str, Any], node: NodeId) -> None:
+        # Hybrid: arriving at the depot ends the current assignment even at FULL load (a truck
+        # sent home because no unclaimed request remained must become assignable again, else it
+        # would orbit the depot forever). No-op in other modes.
+        if truck.assigned_target is not None:
+            truck.assigned_target = None
         if truck.load >= truck.capacity:
             return
         reloaded = truck.capacity - truck.load
         truck.load = truck.capacity
-        # Hybrid: reloaded at depot -> ready for a new assignment (no-op in other modes).
-        if truck.assigned_target is not None:
-            truck.assigned_target = None
         info["reloads"].append({"truck_id": truck.truck_id, "node": node, "reloaded": reloaded})
 
     def _serve_demand(self, truck: TruckState, node: NodeId, info: dict[str, Any]) -> None:
@@ -733,6 +760,14 @@ class GraphEnv:
                 self.valid_customers_by_comp[comp].pop(node, None)
             else:
                 self.valid_customers_by_comp[comp][node] = new_demand
+
+        # Hybrid: if the demand here is exhausted, release any OTHER truck still assigned to it
+        # (cross-event double assignment) so it can be re-assigned instead of orbiting a
+        # zero-demand node forever — assigned_target otherwise only clears on serve/reload.
+        if new_demand <= 0.0:
+            for other in self.trucks.values():
+                if other is not truck and other.assigned_target == node:
+                    other.assigned_target = None
 
     def _reward(self, info: Mapping[str, Any]) -> float:
         delivered = sum(delivery["delivered"] for delivery in info["deliveries"])

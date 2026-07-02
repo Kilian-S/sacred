@@ -53,6 +53,7 @@ def make_assignment_env(
     truck_capacity: float = 1.0,
     truck_speed: float = 1.0,
     max_time: int = 800,
+    expose_queue_features: bool | None = None,
 ) -> GraphEnv:
     """Build the n-depot / n-truck assignment-probe environment on the OSM graph.
 
@@ -83,6 +84,7 @@ def make_assignment_env(
         truck_starting_nodes=list(depots),  # one truck per depot
         truck_speed=truck_speed,
         max_time=max_time,
+        expose_queue_features=expose_queue_features,
     )
     env.assignment_depots = tuple(depots)
     env.assignment_demand = tuple(demand_nodes)
@@ -105,7 +107,10 @@ def make_hybrid_assign_env(
     node-0 gateways so the routing lever is exercised."""
     env = make_assignment_env(
         nodes_path, edges_path, tasks_path,
-        depots=depots, demand_nodes=demand_nodes, truck_capacity=truck_capacity, max_time=max_time)
+        depots=depots, demand_nodes=demand_nodes, truck_capacity=truck_capacity, max_time=max_time,
+        # Static demand, but ship the ETA/goal-distance observation block anyway: the routing
+        # policy needs the same congestion-aware distance information greedy's Dijkstra uses.
+        expose_queue_features=True)
     return env
 
 

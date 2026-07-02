@@ -282,7 +282,7 @@ def main() -> None:
     # 2. Configure Protagonist SAC Agent
     print("Configuring Protagonist Dispatch Agent...")
     protag = ProtagonistSAC(
-        node_in_dim=11,
+        node_in_dim=13,
         edge_in_dim=2,
         hidden_dim=args.hidden_dim,
         num_layers=2,
@@ -301,7 +301,7 @@ def main() -> None:
     # 3. Configure Antagonist SAC Agent
     print("Configuring Antagonist Congestion Agent...")
     antag = AntagonistSAC(
-        node_in_dim=11,
+        node_in_dim=13,
         edge_in_dim=2,
         hidden_dim=args.hidden_dim,
         num_layers=2,

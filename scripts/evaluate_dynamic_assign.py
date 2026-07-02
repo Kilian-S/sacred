@@ -26,7 +26,7 @@ import torch
 
 from src.env.smdp_wrapper import SMDPConfig, SMDPDecisionWrapper
 from src.envs.assignment_factory import make_dynamic_assign_env
-from src.agents.sac import AntagonistSAC, ProtagonistSAC
+from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_node_in_dim
 from src.baselines.greedy_dispatch import greedy_insertion_policy, no_antagonist_policy, run_episode
 from scripts.evaluate_assignment import sac_assignment_policy, sac_antagonist_policy
 
@@ -80,21 +80,32 @@ def eval_dynamic_cells(protag, antag, make_env_for_seed, cfg: SMDPConfig, seeds=
     return out
 
 
-def _new_protag(cfg: SMDPConfig) -> ProtagonistSAC:
-    return ProtagonistSAC(node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
+def _new_protag(cfg: SMDPConfig, node_in_dim: int = 13) -> ProtagonistSAC:
+    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
 
 
-def _new_antag(cfg: SMDPConfig) -> AntagonistSAC:
+def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13) -> AntagonistSAC:
     return AntagonistSAC(
-        node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(cfg.congestion_levels),
         level_costs=[lvl * cfg.congestion_duration for lvl in cfg.congestion_levels],
         congestion_levels=cfg.congestion_levels, device="cpu",
     )
 
 
-def _load_actor(agent, path: str):
-    agent.actor.load_state_dict(torch.load(path, map_location="cpu"))
+def _load_protag(cfg: SMDPConfig, path: str) -> ProtagonistSAC:
+    """Build a protagonist sized to the checkpoint's trained feature width and load it (pre-13-dim
+    checkpoints, e.g. gen02, keep working: the agent slices current features down to its width)."""
+    sd = torch.load(path, map_location="cpu")
+    agent = _new_protag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent.actor.load_state_dict(sd)
+    return agent
+
+
+def _load_antag(cfg: SMDPConfig, path: str) -> AntagonistSAC:
+    sd = torch.load(path, map_location="cpu")
+    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent.actor.load_state_dict(sd)
     return agent
 
 
@@ -106,7 +117,7 @@ def select_best_checkpoint(run_dir, make_env_for_seed, cfg, seeds, antag_path=No
     fixed adversary* — standard model selection, and it matches deployment (ship one frozen policy)."""
     if antag_path is None:
         antag_path = os.path.join(run_dir, "antagonist", "actor.pt")
-    antag = _load_actor(_new_antag(cfg), antag_path)
+    antag = _load_antag(cfg, antag_path)
 
     snaps = sorted(
         glob.glob(os.path.join(run_dir, "snapshots", "protagonist_ep*.pt")),
@@ -119,7 +130,7 @@ def select_best_checkpoint(run_dir, make_env_for_seed, cfg, seeds, antag_path=No
     for path in snaps:
         m = re.search(r"ep(\d+)", path)
         ep = int(m.group(1)) if m else -1
-        protag = _load_actor(_new_protag(cfg), path)
+        protag = _load_protag(cfg, path)
         r = eval_dynamic_cells(protag, antag, make_env_for_seed, cfg, seeds)
         results.append({"ep": ep, "path": path, **r})
     results.sort(key=lambda d: d["gap_atk_mean"])
@@ -150,8 +161,8 @@ def main() -> None:
         print(f"\nBEST: ep{best['ep']}  gap_atk={best['gap_atk_mean']:+.1f} +/- {best['gap_atk_std']:.0f}  "
               f"({verdict} greedy under the fixed adversary)")
     else:
-        protag = _load_actor(_new_protag(cfg), os.path.join(args.run, "protagonist", "actor.pt"))
-        antag = _load_actor(_new_antag(cfg), os.path.join(args.run, "antagonist", "actor.pt"))
+        protag = _load_protag(cfg, os.path.join(args.run, "protagonist", "actor.pt"))
+        antag = _load_antag(cfg, os.path.join(args.run, "antagonist", "actor.pt"))
         r = eval_dynamic_cells(protag, antag, make_env_for_seed, cfg, seeds)
         print(f"\nDynamic assignment eval — run {args.run} ({len(seeds)} fixed seeds)")
         for cell in ["greedy_noatk", "greedy_atk", "learned_noatk", "learned_atk"]:

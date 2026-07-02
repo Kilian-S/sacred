@@ -21,8 +21,8 @@ class TestNetworks(unittest.TestCase):
     def test_featurize_state(self) -> None:
         pyg_data = featurize_state(self.obs, active_truck_id=0)
 
-        # 9 nodes in toy graph, each has 11 features
-        self.assertEqual(pyg_data.x.shape, (9, 11))
+        # 9 nodes in toy graph, each has 13 features
+        self.assertEqual(pyg_data.x.shape, (9, 13))
 
         # 15 undirected edges = 30 directed edges in PyG
         self.assertEqual(pyg_data.edge_index.shape[0], 2)
@@ -51,7 +51,7 @@ class TestNetworks(unittest.TestCase):
         pyg_data = featurize_state(self.obs, active_truck_id=0).to(device)
 
         net = ProtagonistPolicyValueNet(
-            node_in_dim=11,
+            node_in_dim=13,
             edge_in_dim=2,
             hidden_dim=32,
             num_layers=2,
@@ -84,7 +84,7 @@ class TestNetworks(unittest.TestCase):
         level_costs = [level * 12.0 for level in [0.25, 0.50, 0.75, 1.00]]
 
         net = AntagonistPolicyValueNet(
-            node_in_dim=11,
+            node_in_dim=13,
             edge_in_dim=2,
             hidden_dim=32,
             num_layers=2,

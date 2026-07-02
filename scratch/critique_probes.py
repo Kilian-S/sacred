@@ -112,6 +112,22 @@ def permanent_blockade_floor():
               f"(+{100*(r['total_wait']-g_no)/g_no:.1f}%)  delivered={r['delivered']}/8")
 
 
+def budget_sweep():
+    """Post-fix budget re-tune: scripted route-reach attack cost on greedy as a function of the
+    antagonist budget. Target band for the robustness matrix: hurts (~+30-50%) without saturating."""
+    from dataclasses import replace
+    base = SMDPDecisionWrapper(env_factory=make_hybrid_assign_env, config=_cfg("route"))
+    g_no = run_episode(base, hybrid_greedy_policy(base), no_antagonist_policy)["total_wait"]
+    print(f"[sweep] greedy no-attack: {g_no:.0f}")
+    for budget in (250, 500, 1000, 1500, 2000, 3000, 4000):
+        cfg = replace(_cfg("route"), congestion_budget=float(budget))
+        smdp = SMDPDecisionWrapper(env_factory=make_hybrid_assign_env, config=cfg)
+        r = run_episode(smdp, hybrid_greedy_policy(smdp), route_reach_attacker)
+        print(f"[sweep] budget {budget:5d}: total_wait={r['total_wait']:6.0f} "
+              f"(+{100*(r['total_wait']-g_no)/g_no:5.1f}%)  delivered={r['delivered']}/8  "
+              f"blocks={r['budget_used']/125:.0f}  end_tick={r['ticks']}")
+
+
 def main():
     print("=== Probe A: hybrid mechanics (double assignment / orbit deadlock) ===")
     instrumented_episode(no_antagonist_policy, "greedy no-attack")
@@ -119,6 +135,9 @@ def main():
     print()
     print("=== Probe B: unavoidable-detour floor vs the +79% attack ===")
     permanent_blockade_floor()
+    print()
+    print("=== Probe C: post-fix antagonist budget sweep (scripted route-reach vs greedy) ===")
+    budget_sweep()
 
 
 if __name__ == "__main__":

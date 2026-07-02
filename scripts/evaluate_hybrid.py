@@ -21,7 +21,7 @@ import torch
 
 from src.env.smdp_wrapper import SMDPConfig, SMDPDecisionWrapper
 from src.envs.assignment_factory import make_hybrid_assign_env
-from src.agents.sac import AntagonistSAC, ProtagonistSAC
+from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_node_in_dim
 from src.baselines.greedy_dispatch import hybrid_greedy_policy, no_antagonist_policy, run_episode
 from scripts.evaluate_assignment import sac_antagonist_policy
 
@@ -79,20 +79,30 @@ def eval_hybrid_cells(protag, antag, make_env, cfg: SMDPConfig) -> dict:
     return out
 
 
-def _new_protag() -> ProtagonistSAC:
-    return ProtagonistSAC(node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
+def _new_protag(node_in_dim: int = 13) -> ProtagonistSAC:
+    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
 
 
-def _new_antag(cfg: SMDPConfig) -> AntagonistSAC:
+def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13) -> AntagonistSAC:
     return AntagonistSAC(
-        node_in_dim=11, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(cfg.congestion_levels),
         level_costs=[lvl * cfg.congestion_duration for lvl in cfg.congestion_levels],
         congestion_levels=cfg.congestion_levels, device="cpu")
 
 
-def _load(agent, path):
-    agent.actor.load_state_dict(torch.load(path, map_location="cpu"))
+def _load_protag(path) -> ProtagonistSAC:
+    """Size the nets to the checkpoint's trained feature width (see infer_node_in_dim)."""
+    sd = torch.load(path, map_location="cpu")
+    agent = _new_protag(node_in_dim=infer_node_in_dim(sd))
+    agent.actor.load_state_dict(sd)
+    return agent
+
+
+def _load_antag(cfg: SMDPConfig, path) -> AntagonistSAC:
+    sd = torch.load(path, map_location="cpu")
+    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent.actor.load_state_dict(sd)
     return agent
 
 
@@ -102,7 +112,7 @@ def select_best_checkpoint(run_dir, make_env, cfg, antag_path=None) -> list[dict
     the min is unbiased — no max-over-noise selection problem (unlike the dynamic rung)."""
     if antag_path is None:
         antag_path = os.path.join(run_dir, "antagonist", "actor.pt")
-    antag = _load(_new_antag(cfg), antag_path)
+    antag = _load_antag(cfg, antag_path)
     snaps = sorted(glob.glob(os.path.join(run_dir, "snapshots", "protagonist_ep*.pt")),
                    key=lambda p: int(re.search(r"ep(\d+)", p).group(1)))
     if not snaps:
@@ -111,7 +121,7 @@ def select_best_checkpoint(run_dir, make_env, cfg, antag_path=None) -> list[dict
     for path in snaps:
         m = re.search(r"ep(\d+)", path)
         ep = int(m.group(1)) if m else -1
-        protag = _load(_new_protag(), path)
+        protag = _load_protag(path)
         r = eval_hybrid_cells(protag, antag, make_env, cfg)
         results.append({"ep": ep, **r})
     results.sort(key=lambda d: d["gap_atk"])
@@ -137,8 +147,8 @@ def main() -> None:
         verdict = "BEATS" if best["gap_atk"] < 0 else "loses to"
         print(f"\nBEST: ep{best['ep']}  gap_atk={best['gap_atk']:+.0f}  ({verdict} greedy under the fixed adversary)")
     else:
-        protag = _load(_new_protag(), os.path.join(args.run, "protagonist", "actor.pt"))
-        antag = _load(_new_antag(cfg), os.path.join(args.run, "antagonist", "actor.pt"))
+        protag = _load_protag(os.path.join(args.run, "protagonist", "actor.pt"))
+        antag = _load_antag(cfg, os.path.join(args.run, "antagonist", "actor.pt"))
         r = eval_hybrid_cells(protag, antag, make_env, cfg)
         print(f"\nHybrid eval — run {args.run}")
         for cell in ["greedy_noatk", "greedy_atk", "learned_noatk", "learned_atk"]:

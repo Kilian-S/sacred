@@ -19,12 +19,22 @@ import numpy as np
 
 _FEATURIZE_CACHE = {}
 
-# Node feature width. Bumped 9 -> 11 for Stage 1.5: the last two columns are the dynamic-queue
-# signals greedy is blind to — request age (oldest wait at the node) and the active truck's
-# congestion-aware ETA to the node. Zero for static problems (their observations omit the keys).
-NODE_FEATURE_DIM = 11
+# Node feature width. Bumped 9 -> 11 for Stage 1.5 (request age + active truck's congestion-aware
+# ETA; zero for static problems), and 11 -> 13 for the fixed hybrid rung: column 11 marks the
+# active truck's assigned target (the goal it is routing toward — previously invisible to the
+# policy) and column 12 is the congestion-aware distance-to-that-goal field (global routing
+# information a 2-layer GNN cannot propagate itself; parity with greedy's Dijkstra). Both are zero
+# whenever the observation lacks the keys, so pre-hybrid problems are informationally unchanged.
+# Checkpoints trained at a narrower width are still evaluable: the SAC agents slice features to
+# their own node_in_dim (new columns are appended LAST, so a [:, :11] slice reproduces the old
+# featurization exactly).
+NODE_FEATURE_DIM = 13
 _WAIT_NORM = 100.0  # rough scale for request age (ticks) -> O(1)
 _ETA_NORM = 50.0    # rough scale for congestion-aware ETA (graph diameter ~44) -> O(1)
+_GOAL_NORM = 50.0   # same scale for the distance-to-goal field
+# Full blockage sets effective_weight ~ distance/1e-6, so a node whose only route to the goal is
+# blocked would get a ~1e4 feature after normalization — clamp distance features to a sane range.
+_DIST_FEATURE_CAP = 10.0
 
 def featurize_state(
     observation: dict[str, Any],
@@ -54,6 +64,11 @@ def featurize_state(
     # Dynamic-queue features (Stage 1.5); empty/zero for static problems.
     node_waits = observation.get("node_waits", {})
     active_etas = observation.get("truck_etas", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
+    # Hybrid features: the active truck's assigned goal and the distance-to-goal field.
+    goal_dists = observation.get("goal_dists", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
+    active_target = None
+    if active_truck_id is not None and active_truck_id in trucks_dict:
+        active_target = trucks_dict[active_truck_id].get("assigned_target")
 
     node_ids = sorted(list(nodes_dict.keys()))
     node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
@@ -105,20 +120,26 @@ def featurize_state(
         if t["current_node"] is not None:
             trucks_per_node[t["current_node"]] += 1
 
-        # Count commitments by other trucks
-        if active_truck_id is not None and t_id != active_truck_id:
-            dest = t.get("destination")
-            if dest is not None and dest in nodes_dict:
-                targeted_by_other[dest] = 1.0
-                other_targeted_capacity[dest] += t.get("capacity", 1.0)
+        # Count commitments by other trucks. A truck's commitment is its assigned request
+        # (hybrid mode) falling back to its in-flight destination (destination mode — identical
+        # to the old behaviour there, since assigned_target is always None outside hybrid; in
+        # hybrid the destination is only the next hop and would be meaningless). When there is
+        # no active truck (the ANTAGONIST's view), every truck counts as "other" — previously
+        # the antagonist saw no commitments at all.
+        if t_id != active_truck_id:
+            commit = t.get("assigned_target") or t.get("destination")
+            if commit is not None and commit in nodes_dict:
+                targeted_by_other[commit] = 1.0
+                other_targeted_capacity[commit] += t.get("capacity", 1.0)
 
     # 3. Build node features
     # Columns: [x_norm, y_norm, demand, is_depot, num_trucks, is_active_truck, active_truck_load,
-    #           is_targeted_by_other, unassigned_demand, oldest_wait_norm, active_truck_eta_norm]
+    #           is_targeted_by_other, unassigned_demand, oldest_wait_norm, active_truck_eta_norm,
+    #           is_active_target, goal_dist_norm]
     x_features = []
     for node_id in node_ids:
         ndata = nodes_dict[node_id]
-        
+
         # Check if active truck is here
         is_active_here = 0.0
         active_load = 0.0
@@ -143,7 +164,9 @@ def featurize_state(
             is_targeted,
             unassigned,
             float(node_waits.get(node_id, 0.0)) / _WAIT_NORM,
-            float(active_etas.get(node_id, 0.0)) / _ETA_NORM,
+            min(float(active_etas.get(node_id, 0.0)) / _ETA_NORM, _DIST_FEATURE_CAP),
+            1.0 if (active_target is not None and node_id == active_target) else 0.0,
+            min(float(goal_dists.get(node_id, 0.0)) / _GOAL_NORM, _DIST_FEATURE_CAP),
         ]
         x_features.append(feat)
 
@@ -180,7 +203,7 @@ class GATv2Encoder(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 11,
+        node_in_dim: int = 13,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -237,7 +260,7 @@ class ProtagonistPolicyValueNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 11,
+        node_in_dim: int = 13,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,
@@ -328,7 +351,7 @@ class AntagonistPolicyValueNet(nn.Module):
 
     def __init__(
         self,
-        node_in_dim: int = 11,
+        node_in_dim: int = 13,
         edge_in_dim: int = 2,
         hidden_dim: int = 64,
         num_layers: int = 2,

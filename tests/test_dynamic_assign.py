@@ -134,13 +134,13 @@ def test_featurize_dynamic_columns_populated():
     assert any(w > 0 for w in obs["node_waits"].values())
 
     data = featurize_state(obs, active_truck_id=0)
-    assert data.x.shape[1] == NODE_FEATURE_DIM == 11
+    assert data.x.shape[1] == NODE_FEATURE_DIM == 13
     assert float(data.x[:, 9].max()) > 0.0   # some node has a positive wait (age)
     assert float(data.x[:, 10].max()) > 0.0  # active truck has positive ETAs to demand nodes
 
 
 def test_featurize_static_has_zero_dynamic_columns():
-    """Static problems omit the dynamic keys → the 2 new columns are exactly zero (width still 11)."""
+    """Static non-hybrid problems omit the dynamic keys → the queue/goal columns are exactly zero."""
     from src.agents.networks import featurize_state
     from src.envs.assignment_factory import make_assignment_env
 
@@ -148,9 +148,11 @@ def test_featurize_static_has_zero_dynamic_columns():
     obs = env.observe()
     assert "node_waits" not in obs and "truck_etas" not in obs
     data = featurize_state(obs, active_truck_id=0)
-    assert data.x.shape[1] == 11
+    assert data.x.shape[1] == 13
     assert float(data.x[:, 9].abs().max()) == 0.0
     assert float(data.x[:, 10].abs().max()) == 0.0
+    assert float(data.x[:, 11].abs().max()) == 0.0
+    assert float(data.x[:, 12].abs().max()) == 0.0
 
 
 def _dyn_cfg(max_ticks=300):

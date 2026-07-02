@@ -485,11 +485,29 @@ class SMDPDecisionWrapper:
         return mask
 
     def _assignment_candidates(self, truck: Any) -> list[NodeId]:
-        """Pending request nodes reachable from the truck (same component). Sequential claiming
-        (no two trucks the same request) is applied by the trainer/eval, mirroring destination mode."""
+        """Pending request nodes reachable from the truck (same component), excluding requests
+        another truck is already assigned to (CROSS-EVENT claiming — same-event claiming is still
+        applied by the trainer/eval). Without this, a request could be double-assigned across
+        decision events; once the first truck served it, the second was stranded orbiting a
+        zero-demand node. If no unclaimed request remains, the truck is sent home (assignment =
+        its own depot) so the episode can terminate; the env clears the assignment on depot
+        arrival, so it re-enters assignment if new work appears."""
         comp = self.env.node_to_component.get(truck.current_node)
         customers = getattr(self.env, "valid_customers_by_comp", {}).get(comp, {})
-        return [n for n in sorted(customers, key=repr) if n != truck.current_node]
+        taken = {
+            t.assigned_target
+            for t in self.env.trucks.values()
+            if t is not truck and t.assigned_target is not None
+        }
+        candidates = [
+            n for n in sorted(customers, key=repr)
+            if n != truck.current_node and n not in taken
+        ]
+        if candidates:
+            return candidates
+        if truck.home_depot is not None and truck.current_node != truck.home_depot:
+            return [truck.home_depot]
+        return []
 
     def _truck_goal(self, truck: Any) -> NodeId | None:
         """The node a truck is heading for: nearest demand if it has load, else home depot."""
