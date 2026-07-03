@@ -1,6 +1,6 @@
 # Generation: gen04_antag_gate — can the learned adversary beat RANDOM once it can see motion?
 
-- **git SHA:** _fill at launch_ (N1 fix: edge features 2→4 = directed truck occupancy + progress)
+- **git SHA:** `af056ac` (N1 fix: edge features 2→4 = directed truck occupancy + progress)
 - **date opened:** 2026-07-04
 - **status:** LEDGER OPEN
 
