@@ -1,0 +1,50 @@
+Portfolio: arms=['greedy', 'sacred', 'vanilla'] attackers=['none', 'random', 'targeted', 'br_sacred', 'br_vanilla'] instances=30 rollouts=1 -> 450 episodes
+  instance 10000019: done (15 episodes total)
+  instance 10000020: done (30 episodes total)
+  instance 10000021: done (45 episodes total)
+  instance 10000022: done (60 episodes total)
+  instance 10000023: done (75 episodes total)
+  instance 10000024: done (90 episodes total)
+  instance 10000025: done (105 episodes total)
+  instance 10000026: done (120 episodes total)
+  instance 10000027: done (135 episodes total)
+  instance 10000028: done (150 episodes total)
+  instance 10000029: done (165 episodes total)
+  instance 10000030: done (180 episodes total)
+  instance 10000031: done (195 episodes total)
+  instance 10000032: done (210 episodes total)
+  instance 10000033: done (225 episodes total)
+  instance 10000034: done (240 episodes total)
+  instance 10000035: done (255 episodes total)
+  instance 10000036: done (270 episodes total)
+  instance 10000037: done (285 episodes total)
+  instance 10000038: done (300 episodes total)
+  instance 10000039: done (315 episodes total)
+  instance 10000040: done (330 episodes total)
+  instance 10000041: done (345 episodes total)
+  instance 10000042: done (360 episodes total)
+  instance 10000043: done (375 episodes total)
+  instance 10000044: done (390 episodes total)
+  instance 10000045: done (405 episodes total)
+  instance 10000046: done (420 episodes total)
+  instance 10000047: done (435 episodes total)
+  instance 10000048: done (450 episodes total)
+
+=== W(arm, attack): mean total_wait ± SEM (lower = better) ===
+       arm |               none |             random |           targeted |          br_sacred |         br_vanilla
+    greedy |      6200 ±   389 |      7917 ±   497 |     11121 ±   498 |      7386 ±   459 |      7127 ±   428
+    sacred |      6684 ±   426 |      8544 ±   446 |     12440 ±   470 |      8058 ±   468 |      7781 ±   482
+   vanilla |      6635 ±   425 |      8742 ±   499 |     12294 ±   515 |      7700 ±   451 |      7717 ±   533
+
+=== D(arm, attack) = W(attack) − W(none): degradation under attack ===
+    greedy | random:    +1718 ±  197 | targeted:    +4921 ±  201 | br_sacred:    +1186 ±  130 | br_vanilla:     +927 ±  146
+    sacred | random:    +1860 ±  184 | targeted:    +5756 ±  158 | br_sacred:    +1374 ±  158 | br_vanilla:    +1098 ±  150
+   vanilla | random:    +2108 ±  172 | targeted:    +5660 ±  196 | br_sacred:    +1066 ±  141 | br_vanilla:    +1083 ±  167
+
+=== PRIMARY: dD ± SEM (positive => the FIRST-named arm degrades more) ===
+          vanilla-minus-sacred under       random:     +247 ±    471 (95% CI) [not significant]
+          vanilla-minus-sacred under     targeted:      -96 ±    398 (95% CI) [not significant]
+          vanilla-minus-sacred under    br_sacred:     -308 ±    354 (95% CI) [not significant]
+          vanilla-minus-sacred under   br_vanilla:      -15 ±    293 (95% CI) [not significant]
+
+Wrote experiments/gen03_portfolio_pair0.json

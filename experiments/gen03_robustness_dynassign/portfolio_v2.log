@@ -1,0 +1,42 @@
+Portfolio: arms=['greedy', 'vanilla'] attackers=['none', 'random', 'targeted', 'br_vanilla'] instances=30 rollouts=1 -> 240 episodes
+  instance 10000019: done (8 episodes total)
+  instance 10000020: done (16 episodes total)
+  instance 10000021: done (24 episodes total)
+  instance 10000022: done (32 episodes total)
+  instance 10000023: done (40 episodes total)
+  instance 10000024: done (48 episodes total)
+  instance 10000025: done (56 episodes total)
+  instance 10000026: done (64 episodes total)
+  instance 10000027: done (72 episodes total)
+  instance 10000028: done (80 episodes total)
+  instance 10000029: done (88 episodes total)
+  instance 10000030: done (96 episodes total)
+  instance 10000031: done (104 episodes total)
+  instance 10000032: done (112 episodes total)
+  instance 10000033: done (120 episodes total)
+  instance 10000034: done (128 episodes total)
+  instance 10000035: done (136 episodes total)
+  instance 10000036: done (144 episodes total)
+  instance 10000037: done (152 episodes total)
+  instance 10000038: done (160 episodes total)
+  instance 10000039: done (168 episodes total)
+  instance 10000040: done (176 episodes total)
+  instance 10000041: done (184 episodes total)
+  instance 10000042: done (192 episodes total)
+  instance 10000043: done (200 episodes total)
+  instance 10000044: done (208 episodes total)
+  instance 10000045: done (216 episodes total)
+  instance 10000046: done (224 episodes total)
+  instance 10000047: done (232 episodes total)
+  instance 10000048: done (240 episodes total)
+
+=== W(arm, attack): mean total_wait ± SEM (lower = better) ===
+       arm |               none |             random |           targeted |         br_vanilla
+    greedy |      6200 ±   389 |      7917 ±   497 |     11121 ±   498 |      8197 ±   513
+   vanilla |      6672 ±   425 |      8738 ±   497 |     12364 ±   451 |      8537 ±   491
+
+=== D(arm, attack) = W(attack) − W(none): degradation under attack ===
+    greedy | random:    +1718 ±  197 | targeted:    +4921 ±  201 | br_vanilla:    +1997 ±  204
+   vanilla | random:    +2067 ±  191 | targeted:    +5693 ±  194 | br_vanilla:    +1865 ±  157
+
+Wrote experiments/gen03_portfolio_v2.json
