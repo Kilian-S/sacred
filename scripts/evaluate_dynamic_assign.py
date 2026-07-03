@@ -26,7 +26,7 @@ import torch
 
 from src.env.smdp_wrapper import SMDPConfig, SMDPDecisionWrapper
 from src.envs.assignment_factory import make_dynamic_assign_env
-from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_node_in_dim
+from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_edge_in_dim, infer_node_in_dim
 from src.baselines.greedy_dispatch import greedy_insertion_policy, no_antagonist_policy, run_episode
 from scripts.evaluate_assignment import sac_assignment_policy, sac_antagonist_policy
 
@@ -80,13 +80,13 @@ def eval_dynamic_cells(protag, antag, make_env_for_seed, cfg: SMDPConfig, seeds=
     return out
 
 
-def _new_protag(cfg: SMDPConfig, node_in_dim: int = 13) -> ProtagonistSAC:
-    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
+def _new_protag(cfg: SMDPConfig, node_in_dim: int = 13, edge_in_dim: int = 4) -> ProtagonistSAC:
+    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=edge_in_dim, hidden_dim=64, num_layers=2, heads=4, device="cpu")
 
 
-def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13) -> AntagonistSAC:
+def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13, edge_in_dim: int = 4) -> AntagonistSAC:
     return AntagonistSAC(
-        node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=node_in_dim, edge_in_dim=edge_in_dim, hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(cfg.congestion_levels),
         level_costs=[lvl * cfg.congestion_duration for lvl in cfg.congestion_levels],
         congestion_levels=cfg.congestion_levels, device="cpu",
@@ -97,14 +97,14 @@ def _load_protag(cfg: SMDPConfig, path: str) -> ProtagonistSAC:
     """Build a protagonist sized to the checkpoint's trained feature width and load it (pre-13-dim
     checkpoints, e.g. gen02, keep working: the agent slices current features down to its width)."""
     sd = torch.load(path, map_location="cpu")
-    agent = _new_protag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent = _new_protag(cfg, node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
     return agent
 
 
 def _load_antag(cfg: SMDPConfig, path: str) -> AntagonistSAC:
     sd = torch.load(path, map_location="cpu")
-    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
     return agent
 

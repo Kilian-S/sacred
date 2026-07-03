@@ -150,17 +150,62 @@ def test_hybrid_observation_and_goal_features():
 
 
 def test_narrow_checkpoint_slicing_compat():
-    """A pre-bump (11-dim) agent must consume current 13-wide features: sliced inputs reproduce
-    the old featurization exactly (new columns are appended last)."""
+    """A pre-bump (11-node / 2-edge dim) agent must consume current 13/4-wide features: sliced
+    inputs reproduce the old featurization exactly (new columns are appended last)."""
+    from src.agents.sac import _clip_ea, infer_edge_in_dim
+
     x = torch.randn(7, 13)
     assert torch.equal(_clip_x(x, 11), x[:, :11])
     assert _clip_x(x, 13) is x  # no-op at matching width
+    ea = torch.randn(9, 4)
+    assert torch.equal(_clip_ea(ea, 2), ea[:, :2])
+    assert _clip_ea(ea, 4) is ea
 
     agent = ProtagonistSAC(node_in_dim=11, edge_in_dim=2, hidden_dim=16, num_layers=2, heads=2, device="cpu")
     assert infer_node_in_dim(agent.actor.state_dict()) == 11
+    assert infer_edge_in_dim(agent.actor.state_dict()) == 2
     smdp = _fresh()
     event_obs = smdp.env.observe()
     event_obs["active_truck"] = 0
     mask = smdp.protagonist_action_mask()
     action = agent.select_action(event_obs, {0: mask.get(0, [])})
     assert 0 in action and action[0] in mask.get(0, [])
+
+
+def test_edge_occupancy_features_encode_motion():
+    """gen04 antagonist-observability fix: a truck traversing an edge appears on that DIRECTED
+    edge's feature row (count + progress fraction); the reverse direction stays zero."""
+    from src.agents.networks import EDGE_FEATURE_DIM
+
+    smdp = _fresh()
+    env = smdp.env
+    truck = env.trucks[0]
+    start = truck.current_node
+    neighbor = sorted(env.graph.neighbors(start), key=repr)[0]
+    env.dispatch_truck_edge(0, neighbor)   # truck now mid-edge (start -> neighbor)
+    env.step()                             # advance one tick so edge_progress > 0
+
+    obs = env.observe()
+    data = featurize_state(obs, active_truck_id=None)  # the ANTAGONIST's view
+    assert data.edge_attr.shape[1] == EDGE_FEATURE_DIM == 4
+
+    node_ids = sorted(obs["nodes"].keys())
+    idx = {n: i for i, n in enumerate(node_ids)}
+    ei = data.edge_index
+    fwd = rev = None
+    for k in range(ei.shape[1]):
+        pair = (int(ei[0, k]), int(ei[1, k]))
+        if pair == (idx[start], idx[neighbor]):
+            fwd = data.edge_attr[k]
+        elif pair == (idx[neighbor], idx[start]):
+            rev = data.edge_attr[k]
+    assert fwd is not None and rev is not None
+    if env.trucks[0].edge is not None:  # still mid-edge (edge could be short)
+        assert float(fwd[2]) == 1.0, "occupancy count must mark the travel direction"
+        assert 0.0 < float(fwd[3]) <= 1.0, "progress fraction must be populated"
+        assert float(rev[2]) == 0.0 and float(rev[3]) == 0.0, "reverse direction stays empty"
+    # all trucks idle -> all occupancy columns zero
+    smdp2 = _fresh()
+    d2 = featurize_state(smdp2.env.observe(), active_truck_id=None)
+    assert float(d2.edge_attr[:, 2].abs().max()) == 0.0
+    assert float(d2.edge_attr[:, 3].abs().max()) == 0.0

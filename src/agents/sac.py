@@ -59,6 +59,11 @@ def _clip_x(x: torch.Tensor, node_in_dim: int) -> torch.Tensor:
     return x[:, :node_in_dim] if x.size(1) > node_in_dim else x
 
 
+def _clip_ea(edge_attr: torch.Tensor, edge_in_dim: int) -> torch.Tensor:
+    """Edge-feature counterpart of :func:`_clip_x` (edge columns are also appended last)."""
+    return edge_attr[:, :edge_in_dim] if edge_attr.size(1) > edge_in_dim else edge_attr
+
+
 def infer_node_in_dim(actor_state_dict: Mapping[str, Any], default: int = 13) -> int:
     """Read the node-feature width a checkpoint was trained with from its first GATv2 layer.
 
@@ -72,6 +77,12 @@ def infer_node_in_dim(actor_state_dict: Mapping[str, Any], default: int = 13) ->
         if w is not None:
             return int(w.shape[1])
     return default
+
+
+def infer_edge_in_dim(actor_state_dict: Mapping[str, Any], default: int = 4) -> int:
+    """Edge-feature counterpart of :func:`infer_node_in_dim` (GATv2's lin_edge input width)."""
+    w = actor_state_dict.get("encoder.convs.0.lin_edge.weight")
+    return int(w.shape[1]) if w is not None else default
 
 
 def _cached_featurize(trans: Any, key: str, build_fn):
@@ -116,7 +127,7 @@ class ProtagonistQNet(nn.Module):
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -187,10 +198,11 @@ class ProtagonistSAC:
         self.tau = tau
         self.reward_scale = reward_scale
         self.target_entropy = target_entropy
-        # Feature width this agent's networks consume. featurize_state may emit MORE columns
-        # (new ones are appended last); _clip_x slices down so checkpoints trained at a narrower
-        # width keep seeing byte-identical inputs (see infer_node_in_dim).
+        # Feature widths this agent's networks consume. featurize_state may emit MORE columns
+        # (new ones are appended last); _clip_x/_clip_ea slice down so checkpoints trained at a
+        # narrower width keep seeing byte-identical inputs (see infer_node_in_dim/infer_edge_in_dim).
         self.node_in_dim = node_in_dim
+        self.edge_in_dim = edge_in_dim
 
         # 1. Initialize Actor & twin Critics
         self.actor = ProtagonistPolicyValueNet(
@@ -293,6 +305,7 @@ class ProtagonistSAC:
         # 1. Featurize state and find node indices
         pyg_data = featurize_state(observation, active_truck).to(self.device)
         pyg_data.x = _clip_x(pyg_data.x, self.node_in_dim)
+        pyg_data.edge_attr = _clip_ea(pyg_data.edge_attr, self.edge_in_dim)
         node_ids = list(observation["nodes"].keys())
         node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
 
@@ -400,6 +413,7 @@ class ProtagonistSAC:
         # --- Batch-encode states once per network (and next-states for targets) ---
         sx, sei, sea, s_ptr = _collate_graphs(state_data_list)
         sx = _clip_x(sx, self.node_in_dim)
+        sea = _clip_ea(sea, self.edge_in_dim)
         h_actor = self.actor.encoder(sx, sei, sea)
         h_q1 = self.q1.encoder(sx, sei, sea)
         h_q2 = self.q2.encoder(sx, sei, sea)
@@ -408,6 +422,7 @@ class ProtagonistSAC:
         if next_data_list:
             nx, nei, nea, n_ptr = _collate_graphs(next_data_list)
             nx = _clip_x(nx, self.node_in_dim)
+            nea = _clip_ea(nea, self.edge_in_dim)
             with torch.no_grad():
                 h_actor_next = self.actor.encoder(nx, nei, nea)
                 h_tq1 = self.target_q1.encoder(nx, nei, nea)
@@ -576,7 +591,7 @@ class AntagonistQNet(nn.Module):
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -649,7 +664,7 @@ class AntagonistQNet(nn.Module):
             idx_v = node_to_idx[v]
             emb_u = h_nodes[idx_u]
             emb_v = h_nodes[idx_v]
-            attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(2, device=device))
+            attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(edge_attr.size(1), device=device))
             combined = torch.cat([emb_u, emb_v, attr], dim=-1)
             h_edges.append(combined)
 
@@ -681,7 +696,7 @@ class AntagonistSAC:
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -714,8 +729,9 @@ class AntagonistSAC:
         self.level_costs = level_costs or [
             level * 12 * 0.015 for level in [0.25, 0.5, 0.75, 1.0]
         ]
-        # Feature width this agent's networks consume (see ProtagonistSAC / infer_node_in_dim).
+        # Feature widths this agent's networks consume (see ProtagonistSAC / infer_*_in_dim).
         self.node_in_dim = node_in_dim
+        self.edge_in_dim = edge_in_dim
 
         # 1. Initialize networks
         self.actor = AntagonistPolicyValueNet(
@@ -815,6 +831,7 @@ class AntagonistSAC:
         # 1. Featurize state and maps
         pyg_data = featurize_state(observation).to(self.device)
         pyg_data.x = _clip_x(pyg_data.x, self.node_in_dim)
+        pyg_data.edge_attr = _clip_ea(pyg_data.edge_attr, self.edge_in_dim)
         node_ids = list(observation["nodes"].keys())
         node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
 
@@ -962,6 +979,7 @@ class AntagonistSAC:
         # --- Batch-encode states once per network (and next-states for targets) ---
         sx, sei, sea, s_ptr = _collate_graphs(state_data_list)
         sx = _clip_x(sx, self.node_in_dim)
+        sea = _clip_ea(sea, self.edge_in_dim)
         h_actor = self.actor.encoder(sx, sei, sea)
         h_q1 = self.q1.encoder(sx, sei, sea)
         h_q2 = self.q2.encoder(sx, sei, sea)
@@ -970,6 +988,7 @@ class AntagonistSAC:
         if next_data_list:
             ncx, ncei, ncea, n_ptr = _collate_graphs(next_data_list)
             ncx = _clip_x(ncx, self.node_in_dim)
+            ncea = _clip_ea(ncea, self.edge_in_dim)
             with torch.no_grad():
                 h_actor_next = self.actor.encoder(ncx, ncei, ncea)
                 h_tq1 = self.target_q1.encoder(ncx, ncei, ncea)
@@ -979,7 +998,7 @@ class AntagonistSAC:
         for i, rec in enumerate(samples):
             hs = slice(s_ptr[i], s_ptr[i + 1])
             ei_s = state_data_list[i].edge_index
-            ea_s = state_data_list[i].edge_attr
+            ea_s = _clip_ea(state_data_list[i].edge_attr, self.edge_in_dim)
             allowed_edges = rec["allowed_edges"]
             node_to_idx = rec["node_to_idx"]
             num_allowed = rec["num_allowed"]
@@ -997,7 +1016,7 @@ class AntagonistSAC:
                     j = rec["next_slot"]
                     hn = slice(n_ptr[j], n_ptr[j + 1])
                     nei = next_data_list[j].edge_index
-                    nea = next_data_list[j].edge_attr
+                    nea = _clip_ea(next_data_list[j].edge_attr, self.edge_in_dim)
                     next_allowed = rec["next_allowed"]
                     next_node_to_idx = rec["next_node_to_idx"]
                     next_budget = rec["next_budget"]

@@ -1,0 +1,201 @@
+# SACRED_PROGRESS.md — the run chronicle
+
+> **Purpose.** One entry per *significant* run or run family (no smoke tests, no micro-benchmarks),
+> in chronological order, so the development of the SACRED project can be followed coherently over
+> time — what each experiment set out to show, what it actually showed, and how it moved the
+> thesis. Detailed protocols/numbers live in `experiments/<gen>.md` ledgers and `CONTEXT.md`; this
+> document is the narrative spine.
+>
+> **Entry template** (append new entries at the bottom, keep them this shape):
+> ```
+> ## <N>. <run / run family name>  (dates · code state · ledger)
+> - **Goal (prospective):** what the run was launched to demonstrate, written as it was framed then.
+> - **Headline results:** the few figures that matter, with uncertainty.
+> - **What we learned:** the honest reading, including surprises and retractions.
+> - **Thesis progression:** what capability/knowledge the project gained.
+> - **What it means for the thesis:** implications for the headline claim(s).
+> - **Thesis fit:** which research objectives (Obj 1–5, ZST) it serves and how it will appear
+>   in the written thesis.
+> ```
+> Research objectives shorthand (from the literature review §2.2): **Obj 1** zero-sum game
+> formulation · **Obj 2** simulation environment · **Obj 3** SAC+ATLA+ERB bootstrapping ·
+> **Obj 4** SBO facility/fleet · **Obj 5** evaluation vs metaheuristics *and vs a
+> non-adversarially-trained SAC baseline* under disruption · **ZST** zero-shot transfer.
+
+---
+
+## 1. OSM static baseline era (`...0614_170342` diverged run · `protag_signal_rebalance` · `protag_reward_shaping`)  (2026-06-14 → 06-18 · pre-`90e759c` · no ledger, see CONTEXT §3)
+
+- **Goal (prospective):** train the original SACRED formulation end-to-end on the Kaliningrad OSM
+  graph (290 nodes, 4 trucks, 150 packages, static demand spread over 95 nodes) and show the
+  protagonist learns to dispatch under a co-evolving congestion adversary.
+- **Headline results:** first 2000-ep run **diverged** (SAC temperature α 1→69, critic Q 7→601 —
+  root cause: inverted alpha-loss sign, later fixed). After the fix, two reward-variant runs were
+  *stable but flat*: delivery rate pinned at **~0.91** across every variant; the critic's
+  `Q_Spread` diagnostic **collapsed 5.3→0.46**; policy entropy never fell.
+- **What we learned:** the machinery had a real bug (alpha sign) *and* the problem had a real flaw:
+  with demand everywhere, per-step decisions are near-inconsequential — ~0.91 is the ceiling any
+  coverage policy reaches, and the adversary is toothless (trucks just serve a different nearby
+  node). "Stable training" and "learnable problem" are different properties.
+- **Thesis progression:** produced the trusted SAC core (correct alpha loss, grad clipping, batched
+  GNN updates ~1.45×, exact-Dijkstra routing) and the diagnostic toolkit (`Q_Spread`, windowed
+  tfevents reads) still in use.
+- **What it means for the thesis:** motivated the pivot to a *dynamic, multi-depot,
+  latency-objective* VRP (PROBLEM_REDESIGN.md) — decisions must be consequential and the adversary
+  must matter for any adversarial-RL claim to be testable.
+- **Thesis fit:** Obj 2 (the environment) and Obj 3 (working SAC+ATLA machinery); appears in the
+  thesis as the motivation section for the problem redesign ("why the naive formulation is
+  unlearnable"), plus a methods lesson on divergence diagnosis.
+
+## 2. Stage 0 — single-truck next-hop route choice  (2026-06-27/28 · pre-`90e759c` · CONTEXT §2)
+
+- **Goal (prospective):** validation rung: prove the SACRED stack can learn a *consequential
+  adversarial* policy at all, on the cleanest possible signal (1 truck, two-route corridor, the
+  policy picks each edge so congestion is an exploitable decision).
+- **Headline results (1000 ep):** it learns — `Q_Spread` 0.85→1.58, entropy 0.60→0.34 (commits),
+  antagonist co-evolves (Q 22→62), 12/12 delivered — but **matches reactive greedy under attack**
+  (final gap +24, ~1.6%) and never beats it. Three enabling fixes: reward_scale 0.01→0.1 (task
+  signal vs entropy bonus), forward-corridor action mask, corridor slack 1.2.
+- **What we learned:** the stack trains; single-truck route choice vs a reactive
+  congestion-aware greedy is structurally near-a-wash (greedy re-plans optimally each edge).
+- **Thesis progression:** first working curriculum rung; next-hop routing machinery, greedy
+  baselines, periodic eval infrastructure.
+- **What it means for the thesis:** first of the three "near-washes" that would later force the
+  question of whether "beat greedy" was ever the right success criterion.
+- **Thesis fit:** Obj 2/3 validation; appears as the curriculum's first rung and as evidence in
+  the "reactive baselines are strong" argument (consistent with Ritzinger et al. 2015).
+
+## 3. Static-3b assignment probe (`assign_probe`, `assign_probe_claimfix`)  (2026-06-28, **retracted 06-29** · pre-`90e759c` · CONTEXT §2)
+
+- **Goal (prospective):** move the lever to multi-truck *assignment* (2 depots, 8 contested static
+  requests, destination mode) where greedy insertion is provably suboptimal, and show RL beats it.
+- **Headline results:** first run lost everywhere (a double-assignment bug); after the claim-fix,
+  the run was briefly celebrated as "first RL beats classical" (final gap −56, best −188) — then
+  **RETRACTED on a windowed re-read**: mean `gap_atk` over all 20 eval points **+18** (a loss),
+  reliable static loss ~+8%, and the metric itself was mis-specified (single deterministic episode
+  vs the *co-evolving* antagonist = arms-race timing, not robustness).
+- **What we learned:** the project's most important *methodological* lesson: never headline a
+  final/best point; fix the decision metric in advance; evaluate against fixed/held-out
+  adversaries over multiple instances; save per-phase checkpoints. Also a real mechanical fix
+  (sequential claiming) that survives in every later rung.
+- **Thesis progression:** triggered the experiment-management infrastructure (seeded generations,
+  ledgers pinning SHA + pre-registered metrics, aggregate-over-seeds reporting).
+- **What it means for the thesis:** the retraction is *presentable* — it demonstrates
+  self-correcting methodology, and it seeded the evaluation standards every later claim rests on.
+- **Thesis fit:** methods chapter (evaluation methodology under co-evolution); a cautionary
+  subsection the examiners will read as rigor, not failure.
+
+## 4. `gen01_erb_ablation` — ERB bootstrapping pilot  (2026-06-28/29, paused/inconclusive · `experiments/gen01_erb_ablation.md`)
+
+- **Goal (prospective):** does seeding the replay buffer with greedy demonstrations (Obj 3's ERB
+  bootstrapping) fix the static assignment gap and accelerate learning? {erb, noerb} × 3 seeds.
+- **Headline results (n=1 completed — seed0 only, paused for heat):** ERB did **not** move the
+  static gap (`gap_noatk` ~+50 throughout); late co-evolution instability wrecked the run's tail
+  (ep-1000 gap +282, `Q_Spread` 7.1→1.9).
+- **What we learned:** (a) ERB-as-built wasn't earning its keep; (b) the bigger, config-agnostic
+  problem was late antagonist runaway + the final-checkpoint metric — findings that shaped the
+  best-checkpoint / fixed-adversary protocol.
+- **Thesis progression:** first use of the generation infrastructure; identified the
+  measurement fixes that gen02 baked in.
+- **What it means for the thesis:** Obj 3's ERB claim is currently unsupported; it stays descoped
+  until a rung exists where learning speed is the bottleneck (revisit-or-descope decision with
+  supervisor).
+- **Thesis fit:** Obj 3 (ERB) — likely a short "attempted, inconclusive at n=1, deprioritised"
+  subsection unless revisited on the final rung.
+
+## 5. `gen02_dynassign` — Stage 1.5 dynamic (Poisson) assignment  (2026-06-29/30 · SHA `dd96228`+WT · `experiments/gen02_dynassign.md`)
+
+- **Goal (prospective):** the assignment lever in the dynamic regime (Poisson λ=0.06 ≈ ρ=1,
+  2 depots, destination mode, latency reward, full-blockage antagonist), measured with the fixed
+  static-3b lessons: does RL beat greedy-insertion under attack, beyond seed luck? 2 seeds × 800 ep.
+- **Headline results:** best-checkpoint `gap_atk` ≈ **−106 ± ~1000** (not significant,
+  selection-biased — seed0's "best" was the untrained ep50); reliable static loss `gap_noatk` ≈
+  **+348 (~+6%)**; antagonist Q 37→116 ("runaway"). Two latent antagonist bugs found+fixed
+  (hardcoded congestion-level values) and the antagonist-phase compute blow-up solved
+  (budget-capped full-blockage redesign, 295→18 s/ep).
+- **What we learned (as read at the time):** third near-wash; interpreted as "destination-mode
+  auto-routing starves the antagonist → the missing lever is next-hop routing." *(Later revision:
+  gen03 showed the antagonist itself couldn't attack, and the ρ≈1 operating point made the metric
+  variance ±1000 — the rung was likely unresolvable as posed.)*
+- **Thesis progression:** the full dynamic environment (Poisson arrivals, queue/ETA observations,
+  per-phase snapshots, fixed-adversary multi-instance eval) — the SDVRP machinery the thesis
+  promised; its snapshots became the SACRED arm of the gen03 pilot for free.
+- **What it means for the thesis:** the "D" in SDVRP is built and validated; the beat-greedy
+  framing hit its third wash, setting up the external critique.
+- **Thesis fit:** Obj 2 (dynamic env), Obj 5 (evaluation protocol evolution); appears as the final
+  motivating null before the reframe.
+
+## 6. Approach critique + hybrid fixes (no training)  (2026-07-01/02 · `90e759c`→`d2b065b` · `CRITIQUE.md`)
+
+- **Goal (prospective):** external fresh-eyes interrogation of the whole approach after three
+  near-washes (Kilian's handoff instruction), before spending CPU on the built-but-untrained
+  hybrid rung (H7).
+- **Headline results (probes, not training):** (a) the hybrid rung had a **mechanical bug firing
+  every episode** — cross-event double assignment stranded a truck orbiting a served node,
+  episodes always ran to the 1500-tick horizon (fixed: episodes end ~tick 220, greedy's own
+  baseline improved 902→847); (b) the H5 "+79% recoverable headroom" decomposed: post-fix, a
+  permanent single-gateway blockade costs only **+10.4%** (floor), while the scripted route-reach
+  attack costs **+40…+184%** over budget 250–4000 — the damage is chase dynamics, i.e. genuinely
+  contestable; (c) observability gaps documented (policy couldn't see its own goal; 2-hop GNN vs
+  global-Dijkstra greedy; antagonist blind to commitments/motion); (d) γ-myopia and eval-protocol
+  biases (off-target fixed adversary, selection-on-test, argmax-ing a max-entropy policy).
+- **What we learned:** the three near-washes were **not valid evidence** for their structural
+  conclusions (biased + underpowered protocol, handicapped learner), and the thesis's own Obj-5
+  control — a *non-adversarially trained* SAC — had never been run.
+- **Thesis progression:** the **reframe** (accepted as D1): headline = *robustness from
+  adversarial training* (SACRED vs vanilla SAC under held-out attacks), greedy demoted to
+  reference line; hybrid rung repaired (13-dim observability, info-parity ETAs); portfolio
+  evaluation protocol designed (paired instances, per-policy best responses, validation/test
+  attacker split).
+- **What it means for the thesis:** the claim became achievable-as-posed and aligned with the
+  literature review's actual research objectives; every subsequent experiment is pre-registered.
+- **Thesis fit:** methods + framing chapters; the critique's structure (framing drift, protocol
+  biases, learnability handicaps) maps directly onto the thesis's "limitations of naive
+  adversarial evaluation" section.
+
+## 7. `gen03_robustness_dynassign` — Phase-1 robustness pilot  (2026-07-02/03 · `de5ff7d`→`c7ff687` · `experiments/gen03_robustness_dynassign.md`)
+
+- **Goal (prospective):** first test of the reframed headline on the dynassign rung, reusing the
+  sunk gen02 SACRED runs: *does ATLA co-evolution buy robustness to held-out attacks vs an
+  identical vanilla-SAC control?* Pre-registered primary: dD = D(vanilla, its own best-response) −
+  D(sacred, its own best-response) > 0, paired 95% CI excluding 0, both sacred seeds.
+- **Headline results:** **primary NULL, wrong sign**: dD = −291 ± 500 (pair 0), −255 ± 295
+  (pair 1). No clean-performance cost of ATLA either (both arms ≈ +7% behind greedy statically).
+  **The diagnostic that matters** — attacker hierarchy on identical paired instances:
+  scripted `targeted` heuristic D ≈ **+4.9–5.8k (~+79% on greedy)** ≫ `random` ≈ +1.7–2.1k ≫
+  **learned best-response ≈ +0.6–1.9k — weaker than random**, despite 300 dedicated training
+  episodes each; during BR training the antagonist's true reward *fell* (~9.0k→8.4k) while its Q
+  tripled (35→115) — the "Q runaway" was critic over-estimation all along.
+- **What we learned:** **the binding constraint on the whole framework is adversary competence,
+  not protagonist learning.** ATLA trained SACRED against a near-random sparring partner, so there
+  was no robustness to learn; the co-evolved adversary's apparent strength in earlier rungs was an
+  artifact. The large scripted-attack surface proves robustness *is* measurable here.
+- **Thesis progression:** the complete robustness-evaluation pipeline ran end-to-end (vanilla
+  control, per-arm checkpoint selection on a validation attacker, per-policy best-response
+  attackers, 1,140-episode paired portfolio with CIs ±300–500); root cause isolated to missing
+  motion observability → the N1 fix (directed edge-occupancy features) + the gen04 gate.
+- **What it means for the thesis:** a pre-registered, correctly-powered, mechanistically-explained
+  null — publishable-shape in its own right. The narrative sharpens to: *the central practical
+  obstacle to RARL in vehicle routing is training a competent environment-adversary; we
+  demonstrate it, diagnose it, fix it, and measure what adversarial training then buys.* Decision
+  recorded 2026-07-04: the scripted-adversarial training arm stays **in the back pocket** (D3
+  unchanged) — it becomes the Phase-3 fallback if pure SACRED fails the gen04 gate.
+- **Thesis fit:** Obj 5's named control (finally run) + Obj 1/3 stress-test; this is the pivotal
+  results chapter that motivates the final experiment. The methodology (portfolio, per-policy
+  best responses, pre-registration) is itself a contribution.
+
+## 8. `gen04_antag_gate` — can the adversary see now?  (2026-07-04 · ledger `experiments/gen04_antag_gate.md` · IN PROGRESS)
+
+- **Goal (prospective):** after the N1 fix (edge features 2→4: directed truck occupancy +
+  progress — the exact state the scripted attacker exploits), retrain one best-response attacker
+  against the *same* frozen defender as gen03 and gate Phase-3's co-evolution: **PASS** =
+  D(br_fixed) ≥ 1.25 × D(random) on 16 validation instances; **STRONG PASS** = additionally
+  ≥ 0.5 × D(targeted); **FAIL** = co-evolution parked, scripted-adversarial arm promoted for
+  Phase 3.
+- **Headline results:** _(pending)_
+- **What we learned:** _(pending)_
+- **Thesis progression / meaning / fit:** decides whether Phase 3's hybrid matrix (budget 1500,
+  3 seeds × {vanilla, SACRED} + portfolio) runs with a genuinely dangerous learned adversary or
+  pivots to the fallback design. Either outcome is a thesis result: "observability was the
+  missing ingredient" or "learned congestion adversaries underperform informed heuristics even
+  with full observability."

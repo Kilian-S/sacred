@@ -29,7 +29,7 @@ class TestNetworks(unittest.TestCase):
         self.assertEqual(pyg_data.edge_index.shape[1], 30)
 
         # Edge features (norm_distance, congestion_level)
-        self.assertEqual(pyg_data.edge_attr.shape, (30, 2))
+        self.assertEqual(pyg_data.edge_attr.shape, (30, 4))
 
         # Active truck feature checks
         # Active truck (id 0) is at "depot" initially
@@ -52,7 +52,7 @@ class TestNetworks(unittest.TestCase):
 
         net = ProtagonistPolicyValueNet(
             node_in_dim=13,
-            edge_in_dim=2,
+            edge_in_dim=4,
             hidden_dim=32,
             num_layers=2,
             heads=2,
@@ -85,7 +85,7 @@ class TestNetworks(unittest.TestCase):
 
         net = AntagonistPolicyValueNet(
             node_in_dim=13,
-            edge_in_dim=2,
+            edge_in_dim=4,
             hidden_dim=32,
             num_layers=2,
             heads=2,

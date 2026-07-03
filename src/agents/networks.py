@@ -36,6 +36,13 @@ _GOAL_NORM = 50.0   # same scale for the distance-to-goal field
 # blocked would get a ~1e4 feature after normalization — clamp distance features to a sane range.
 _DIST_FEATURE_CAP = 10.0
 
+# Edge feature width. Bumped 2 -> 4 for the gen03/gen04 antagonist-observability fix: columns 2/3
+# are the DIRECTED truck occupancy (count, furthest progress fraction) of the edge — the motion
+# state the adversary needs to attack ahead of a moving truck (mid-edge trucks were previously
+# invisible to both agents). Same back-compat rule as node features: new columns are appended
+# LAST, and the SAC agents slice edge_attr down to their own edge_in_dim.
+EDGE_FEATURE_DIM = 4
+
 def featurize_state(
     observation: dict[str, Any],
     active_truck_id: int | None = None,
@@ -172,26 +179,50 @@ def featurize_state(
 
     x_tensor = torch.tensor(x_features, dtype=torch.float32)
 
-    # 4. Build dynamic edge features only (topology is cached)
+    # 4a. Truck occupancy per DIRECTED edge — the motion state (gen03 fix). A truck mid-edge was
+    # previously invisible (only at-node presence was featurized), which is exactly the state an
+    # attacker needs to block "the edge ahead of a moving truck" — the scripted heuristic that
+    # out-attacked the learned antagonist 3-6x used precisely this. Keyed by travel direction
+    # (truck.edge = (from, to)), so heading is encoded by which directed row carries the value.
+    edge_occ: dict[tuple[int, int], list[float]] = {}
+    for t in trucks_dict.values():
+        e = t.get("edge")
+        if not e:
+            continue
+        eu, ev = e
+        if eu not in node_to_idx or ev not in node_to_idx:
+            continue
+        edata = edges_dict.get((eu, ev)) or edges_dict.get((ev, eu))
+        dist = float(edata["distance"]) if edata else 1.0
+        frac = min(1.0, max(0.0, float(t.get("edge_progress", 0.0)) / max(dist, 1e-9)))
+        rec = edge_occ.setdefault((node_to_idx[eu], node_to_idx[ev]), [0.0, 0.0])
+        rec[0] += 1.0                # occupancy count on this directed edge
+        rec[1] = max(rec[1], frac)   # furthest along (0 = just entered, ~1 = about to arrive)
+
+    # 4b. Build dynamic edge features only (topology is cached)
+    # Columns: [norm_distance, congestion, occupancy_count(directed), max_progress_frac(directed)]
     edge_features = []
     norm_idx = 0
+    _no_occ = (0.0, 0.0)
     for (u, v), edata in sorted(list(edges_dict.items())):
         if u not in node_to_idx or v not in node_to_idx:
             continue
-        
+
         cong = edata["congestion_level"]
-        
+        fwd = edge_occ.get((node_to_idx[u], node_to_idx[v]), _no_occ)
+        rev = edge_occ.get((node_to_idx[v], node_to_idx[u]), _no_occ)
+
         # Forward edge (u -> v)
-        edge_features.append([norm_dists[norm_idx], cong])
+        edge_features.append([norm_dists[norm_idx], cong, fwd[0], fwd[1]])
         # Reverse edge (v -> u)
-        edge_features.append([norm_dists[norm_idx+1], cong])
-        
+        edge_features.append([norm_dists[norm_idx + 1], cong, rev[0], rev[1]])
+
         norm_idx += 2
 
     if edge_features:
         edge_attr_tensor = torch.tensor(edge_features, dtype=torch.float32)
     else:
-        edge_attr_tensor = torch.empty((0, 2), dtype=torch.float32)
+        edge_attr_tensor = torch.empty((0, EDGE_FEATURE_DIM), dtype=torch.float32)
 
     from torch_geometric.data import Batch
     data = Data(x=x_tensor, edge_index=edge_index_tensor, edge_attr=edge_attr_tensor)
@@ -204,7 +235,7 @@ class GATv2Encoder(nn.Module):
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -261,7 +292,7 @@ class ProtagonistPolicyValueNet(nn.Module):
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -352,7 +383,7 @@ class AntagonistPolicyValueNet(nn.Module):
     def __init__(
         self,
         node_in_dim: int = 13,
-        edge_in_dim: int = 2,
+        edge_in_dim: int = 4,
         hidden_dim: int = 64,
         num_layers: int = 2,
         heads: int = 4,
@@ -463,7 +494,7 @@ class AntagonistPolicyValueNet(nn.Module):
             emb_u = h_nodes[idx_u]
             emb_v = h_nodes[idx_v]
             # Lookup original edge attribute tensor
-            attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(2, device=device))
+            attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(edge_attr.size(1), device=device))
             
             # Enforce permutation invariance for undirected edges
             if idx_u < idx_v:

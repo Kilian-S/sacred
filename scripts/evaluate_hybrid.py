@@ -21,7 +21,7 @@ import torch
 
 from src.env.smdp_wrapper import SMDPConfig, SMDPDecisionWrapper
 from src.envs.assignment_factory import make_hybrid_assign_env
-from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_node_in_dim
+from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_edge_in_dim, infer_node_in_dim
 from src.baselines.greedy_dispatch import hybrid_greedy_policy, no_antagonist_policy, run_episode
 from scripts.evaluate_assignment import sac_antagonist_policy
 
@@ -30,7 +30,7 @@ def hybrid_config() -> SMDPConfig:
     """Must match the hybrid branch in scripts/train_sacred.py."""
     return SMDPConfig(
         max_ticks=1500, reward_mode="latency", routing_mode="hybrid", routing_corridor_slack=2.0,
-        antagonist_interval=25, congestion_duration=125, congestion_budget=4000.0, congestion_cooldown=0,
+        antagonist_interval=25, congestion_duration=125, congestion_budget=1500.0, congestion_cooldown=0,
         congestion_cost=0.1, congestion_levels=(1.0,), max_antag_actions_per_event=1, antag_reach="route")
 
 
@@ -79,13 +79,13 @@ def eval_hybrid_cells(protag, antag, make_env, cfg: SMDPConfig) -> dict:
     return out
 
 
-def _new_protag(node_in_dim: int = 13) -> ProtagonistSAC:
-    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4, device="cpu")
+def _new_protag(node_in_dim: int = 13, edge_in_dim: int = 4) -> ProtagonistSAC:
+    return ProtagonistSAC(node_in_dim=node_in_dim, edge_in_dim=edge_in_dim, hidden_dim=64, num_layers=2, heads=4, device="cpu")
 
 
-def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13) -> AntagonistSAC:
+def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13, edge_in_dim: int = 4) -> AntagonistSAC:
     return AntagonistSAC(
-        node_in_dim=node_in_dim, edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=node_in_dim, edge_in_dim=edge_in_dim, hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(cfg.congestion_levels),
         level_costs=[lvl * cfg.congestion_duration for lvl in cfg.congestion_levels],
         congestion_levels=cfg.congestion_levels, device="cpu")
@@ -94,14 +94,14 @@ def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13) -> AntagonistSAC:
 def _load_protag(path) -> ProtagonistSAC:
     """Size the nets to the checkpoint's trained feature width (see infer_node_in_dim)."""
     sd = torch.load(path, map_location="cpu")
-    agent = _new_protag(node_in_dim=infer_node_in_dim(sd))
+    agent = _new_protag(node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
     return agent
 
 
 def _load_antag(cfg: SMDPConfig, path) -> AntagonistSAC:
     sd = torch.load(path, map_location="cpu")
-    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd))
+    agent = _new_antag(cfg, node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
     return agent
 

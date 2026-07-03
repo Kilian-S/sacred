@@ -269,7 +269,11 @@ def main() -> None:
             max_ticks=1500,                 # hybrid routes (next-hop) run longer than destination mode
             antagonist_interval=25,
             congestion_duration=125,        # = 5 x interval -> block expiry aligns to a decision event
-            congestion_budget=4000.0,
+            # 1500 = the budget sweep's sweet spot (scratch/critique_probes.py Probe C): scripted
+            # route-reach attack costs greedy ~+84% with 8/8 still delivered and episodes ending
+            # ~tick 416; 4000 dragged episodes to ~1263 ticks and approaches the everyone-crushed
+            # regime. MUST match evaluate_hybrid.hybrid_config.
+            congestion_budget=1500.0,
             congestion_cooldown=0,
             congestion_cost=0.1,
             reward_mode="latency",
@@ -308,17 +312,19 @@ def main() -> None:
 
     # 2. Configure Protagonist SAC Agent
     print("Configuring Protagonist Dispatch Agent...")
-    protag_node_dim = 13
+    protag_node_dim, protag_edge_dim = 13, 4
     protag_snapshot_sd = None
     if args.protagonist_snapshot is not None:
         import torch
-        from src.agents.sac import infer_node_in_dim
+        from src.agents.sac import infer_edge_in_dim, infer_node_in_dim
         protag_snapshot_sd = torch.load(args.protagonist_snapshot, map_location="cpu")
         protag_node_dim = infer_node_in_dim(protag_snapshot_sd)
-        print(f"Frozen protagonist from {args.protagonist_snapshot} (node_in_dim={protag_node_dim}).")
+        protag_edge_dim = infer_edge_in_dim(protag_snapshot_sd)
+        print(f"Frozen protagonist from {args.protagonist_snapshot} "
+              f"(node_in_dim={protag_node_dim}, edge_in_dim={protag_edge_dim}).")
     protag = ProtagonistSAC(
         node_in_dim=protag_node_dim,
-        edge_in_dim=2,
+        edge_in_dim=protag_edge_dim,
         hidden_dim=args.hidden_dim,
         num_layers=2,
         heads=4,
@@ -337,7 +343,7 @@ def main() -> None:
     print("Configuring Antagonist Congestion Agent...")
     antag = AntagonistSAC(
         node_in_dim=13,
-        edge_in_dim=2,
+        edge_in_dim=4,
         hidden_dim=args.hidden_dim,
         num_layers=2,
         heads=4,

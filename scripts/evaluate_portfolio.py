@@ -44,7 +44,7 @@ from typing import Any, Callable
 import torch
 
 from src.env.smdp_wrapper import DecisionEvent, SMDPConfig, SMDPDecisionWrapper
-from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_node_in_dim
+from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_edge_in_dim, infer_node_in_dim
 from src.baselines.attackers import random_block_policy, targeted_block_policy
 from src.baselines.greedy_dispatch import (
     greedy_insertion_policy,
@@ -83,8 +83,8 @@ def _problem_setup(problem: str, arrival_rate: float):
 
 def _load_protagonist(path: str) -> ProtagonistSAC:
     sd = torch.load(path, map_location="cpu")
-    agent = ProtagonistSAC(node_in_dim=infer_node_in_dim(sd), edge_in_dim=2, hidden_dim=64,
-                           num_layers=2, heads=4, device="cpu")
+    agent = ProtagonistSAC(node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd),
+                           hidden_dim=64, num_layers=2, heads=4, device="cpu")
     agent.actor.load_state_dict(sd)
     return agent
 
@@ -92,7 +92,8 @@ def _load_protagonist(path: str) -> ProtagonistSAC:
 def _load_antagonist(path: str, cfg: SMDPConfig) -> AntagonistSAC:
     sd = torch.load(path, map_location="cpu")
     agent = AntagonistSAC(
-        node_in_dim=infer_node_in_dim(sd), edge_in_dim=2, hidden_dim=64, num_layers=2, heads=4,
+        node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd),
+        hidden_dim=64, num_layers=2, heads=4,
         num_congestion_levels=len(cfg.congestion_levels),
         level_costs=[lvl * cfg.congestion_duration for lvl in cfg.congestion_levels],
         congestion_levels=cfg.congestion_levels, device="cpu")

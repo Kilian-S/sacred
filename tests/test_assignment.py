@@ -96,7 +96,7 @@ class ErbDemoFormatTest(unittest.TestCase):
         from src.agents.sac import ProtagonistSAC
         smdp = SMDPDecisionWrapper(env_factory=make_assignment_env, config=_cfg())
         choose = self._greedy_choose(smdp)
-        agent = ProtagonistSAC(node_in_dim=13, edge_in_dim=2, hidden_dim=32, num_layers=2, heads=4, device="cpu")
+        agent = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=32, num_layers=2, heads=4, device="cpu")
         event = smdp.reset_decision_env()
         n = 0
         while not event.done and n < 40:
