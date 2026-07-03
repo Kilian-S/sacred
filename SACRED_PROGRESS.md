@@ -192,10 +192,26 @@
   D(br_fixed) ≥ 1.25 × D(random) on 16 validation instances; **STRONG PASS** = additionally
   ≥ 0.5 × D(targeted); **FAIL** = co-evolution parked, scripted-adversarial arm promoted for
   Phase 3.
-- **Headline results:** _(pending)_
-- **What we learned:** _(pending)_
-- **Thesis progression / meaning / fit:** decides whether Phase 3's hybrid matrix (budget 1500,
-  3 seeds × {vanilla, SACRED} + portfolio) runs with a genuinely dangerous learned adversary or
-  pivots to the fallback design. Either outcome is a thesis result: "observability was the
-  missing ingredient" or "learned congestion adversaries underperform informed heuristics even
-  with full observability."
+- **Headline results:** **GATE FAIL.** With full motion observability, the retrained
+  best-response attacker degrades the defender by **1663 ± 517** — still below random blocking
+  (1984 ± 447; ratio 0.84 vs required 1.25) and 0.28× the scripted heuristic (5868 ± 647).
+  Training signature identical to gen03: true reward fell (8710→8120), Q inflated 3× (37→113),
+  critic loss never converged, **α pinned at 1.0 / entropy ~2.1**.
+- **What we learned:** observability was necessary but not sufficient. The failure is in the
+  antagonist's *learning problem*: (a) the max-entropy objective with a 0.5·ln(N) target over a
+  ~120-option flat action space **requires a near-uniform policy** at these advantage magnitudes
+  — near-uniform over the mask ≈ the random attacker, which is exactly what both gates measured;
+  (b) reward SNR (~1–2k controllable vs ~8k queue baseline) and γ=0.99/tick myopia starve the
+  critic. "Learned congestion adversaries underperform an informed 40-line heuristic even with
+  full observability" is now a two-datapoint finding.
+- **Thesis progression:** the gate did its job for ~2 h of CPU — Phase 3 will not spend its
+  budget on a broken co-evolution loop. Per the pre-registered consequence, the
+  **scripted-adversarial arm is promoted** for Phase 3; an ATLA arm may still ride along because
+  the hybrid arena's route-reach mask aims attacks structurally (decision pending Kilian).
+- **What it means for the thesis:** the honest narrative sharpens further: adversarial *pressure*
+  is easy to supply (scripted) and hard to *learn* (max-entropy SAC over a flat edge space);
+  SACRED's robustness claim is tested with the strong scripted adversary, while the co-evolution
+  component becomes a diagnosed limitation with a concrete mechanism (entropy pinning + SNR),
+  not a vague failure.
+- **Thesis fit:** Obj 1/3 (the limits of the zero-sum co-evolution as instantiated) and the
+  methods chapter (gating expensive training on cheap pre-registered probes).

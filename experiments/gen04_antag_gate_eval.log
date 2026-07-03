@@ -1,0 +1,28 @@
+Portfolio: arms=['greedy', 'vanilla'] attackers=['none', 'random', 'targeted', 'br_fixed'] instances=16 rollouts=1 -> 128 episodes
+  instance 20000019: done (8 episodes total)
+  instance 20000020: done (16 episodes total)
+  instance 20000021: done (24 episodes total)
+  instance 20000022: done (32 episodes total)
+  instance 20000023: done (40 episodes total)
+  instance 20000024: done (48 episodes total)
+  instance 20000025: done (56 episodes total)
+  instance 20000026: done (64 episodes total)
+  instance 20000027: done (72 episodes total)
+  instance 20000028: done (80 episodes total)
+  instance 20000029: done (88 episodes total)
+  instance 20000030: done (96 episodes total)
+  instance 20000031: done (104 episodes total)
+  instance 20000032: done (112 episodes total)
+  instance 20000033: done (120 episodes total)
+  instance 20000034: done (128 episodes total)
+
+=== W(arm, attack): mean total_wait ± SEM (lower = better) ===
+       arm |               none |             random |           targeted |           br_fixed
+    greedy |      7189 ±   490 |      8870 ±   578 |     12214 ±   613 |      8663 ±   549
+   vanilla |      7628 ±   514 |      9613 ±   533 |     13497 ±   731 |      9291 ±   619
+
+=== D(arm, attack) = W(attack) − W(none): degradation under attack ===
+    greedy | random:    +1681 ±  244 | targeted:    +5025 ±  264 | br_fixed:    +1474 ±  247
+   vanilla | random:    +1984 ±  228 | targeted:    +5868 ±  330 | br_fixed:    +1663 ±  264
+
+Wrote experiments/gen04_gate.json

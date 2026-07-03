@@ -48,6 +48,35 @@ PYTHONPATH=. python scripts/evaluate_portfolio.py --problem dynassign \
   --out experiments/gen04_gate.json
 ```
 
-## Result
+## Result (2026-07-04) — **GATE FAIL.** Observability was necessary but not sufficient.
 
-_(to be filled)_
+On the 16 validation instances (paired, same frozen defender as gen03):
+
+| attacker | D (degradation) |
+|---|---|
+| random | 1984 ± 447 |
+| targeted (scripted) | 5868 ± 647 |
+| **br_fixed (retrained, WITH motion features)** | **1663 ± 517** |
+
+Ratios: br/random = **0.84** (PASS needed ≥ 1.25); br/targeted = 0.28 (STRONG needed ≥ 0.50).
+Paired D(br) − D(random) = −321 ± 807. The seeing attacker is still statistically ≈ random.
+
+**Training curve — the same failure signature as gen03, so the bottleneck is deeper than
+observability:** true episode reward *fell* 8710→8120 while Q inflated 37→113 (critic
+over-estimation), critic loss never converged (~250→265), and **α stayed pinned at 1.0 with
+policy entropy ~2.1** — with a ~120-option flat action space and the 0.5·ln(N) entropy target,
+the max-entropy objective *requires* a near-uniform attack policy at these advantage magnitudes.
+A near-uniform policy over the mask ≈ the random attacker — which is exactly what both gates
+measured. Contributing causes (per CRITIQUE.md): reward SNR (~1–2k controllable effect on an ~8k
+uncontrollable queue baseline) and γ=0.99/tick myopia vs 100+-tick damage horizons.
+
+**Consequence (pre-registered):** co-evolution is **parked**; the back-pocket
+**scripted-adversarial arm is promoted** for Phase 3. Additional recommendation for Kilian: keep
+one ATLA arm in the hybrid matrix anyway — in the hybrid arena the **route-reach mask itself aims
+the attacks** (the gen03-era scripted route-reach attacker was literally "first maskable edge" and
+cost greedy +40…+184%), so even a near-uniform learned antagonist applies real pressure there;
+that keeps the thesis's namesake mechanism in the headline experiment with an honest mechanism
+either way. Optional cheap follow-up (gen04b, ~2 h): one gate re-run with a lowered antagonist
+entropy target to test the "entropy pinning" hypothesis directly.
+
+Artifacts: `experiments/gen04_gate.json`, run `models/runs/gen04_antag_gate/br_fixed_vanilla_s0_seed0`.
