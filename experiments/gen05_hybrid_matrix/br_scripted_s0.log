@@ -1,0 +1,139 @@
+Seeded run: seed=0
+Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...
+Hybrid: forcing --preseed-buffer False.
+Configuring Protagonist Dispatch Agent...
+Frozen protagonist from models/runs/gen05_hybrid_matrix/hybrid_scripted_seed0/snapshots/protagonist_ep350.pt (node_in_dim=13, edge_in_dim=4).
+Configuring Antagonist Congestion Agent...
+Initializing ATLA Coevolution Trainer...
+Run Name: gen05_hybrid_matrix/br_scripted_s0_seed0
+Starting SACRED training (mode=antagonist_only) for 300 episodes...
+Device: Protagonist=cpu, Antagonist=cpu
+Initial Phase: Training ANTAGONIST
+
+Ep    1 | Phase: ANTAGON | Ticks: 799 | Protag R: -5308.00 | Antag R: 5158.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep    2 | Phase: ANTAGON | Ticks: 798 | Protag R: -5101.00 | Antag R: 4951.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep    3 | Phase: ANTAGON | Ticks: 799 | Protag R: -5393.00 | Antag R: 5243.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep    4 | Phase: ANTAGON | Ticks: 796 | Protag R: -5277.00 | Antag R: 5127.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep    5 | Phase: ANTAGON | Ticks: 799 | Protag R: -5092.00 | Antag R: 4942.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep    6 | Phase: ANTAGON | Ticks: 798 | Protag R: -5042.00 | Antag R: 4892.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep    7 | Phase: ANTAGON | Ticks: 798 | Protag R: -5725.00 | Antag R: 5575.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep    8 | Phase: ANTAGON | Ticks: 798 | Protag R: -4850.00 | Antag R: 4700.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep    9 | Phase: ANTAGON | Ticks: 798 | Protag R: -4683.00 | Antag R: 4533.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   10 | Phase: ANTAGON | Ticks: 799 | Protag R: -5841.00 | Antag R: 5691.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   11 | Phase: ANTAGON | Ticks: 798 | Protag R: -5031.00 | Antag R: 4881.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   12 | Phase: ANTAGON | Ticks: 799 | Protag R: -5882.00 | Antag R: 5732.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   13 | Phase: ANTAGON | Ticks: 798 | Protag R: -5737.00 | Antag R: 5587.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   14 | Phase: ANTAGON | Ticks: 799 | Protag R: -4744.00 | Antag R: 4594.00 | Delivery:  62.5% | Budget Used: 1500.00/1500.0
+Ep   15 | Phase: ANTAGON | Ticks: 799 | Protag R: -5749.00 | Antag R: 5599.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   16 | Phase: ANTAGON | Ticks: 799 | Protag R: -5331.00 | Antag R: 5181.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   17 | Phase: ANTAGON | Ticks: 799 | Protag R: -5778.00 | Antag R: 5628.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   18 | Phase: ANTAGON | Ticks: 799 | Protag R: -5389.00 | Antag R: 5239.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   19 | Phase: ANTAGON | Ticks: 798 | Protag R: -5832.00 | Antag R: 5682.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   20 | Phase: ANTAGON | Ticks: 799 | Protag R: -5141.00 | Antag R: 4991.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   21 | Phase: ANTAGON | Ticks: 799 | Protag R: -5656.00 | Antag R: 5506.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   22 | Phase: ANTAGON | Ticks: 799 | Protag R: -5530.00 | Antag R: 5380.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   23 | Phase: ANTAGON | Ticks: 799 | Protag R: -5434.00 | Antag R: 5284.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   24 | Phase: ANTAGON | Ticks: 799 | Protag R: -4720.00 | Antag R: 4570.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   25 | Phase: ANTAGON | Ticks: 799 | Protag R: -5168.00 | Antag R: 5018.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   26 | Phase: ANTAGON | Ticks: 798 | Protag R: -5392.00 | Antag R: 5242.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   27 | Phase: ANTAGON | Ticks: 797 | Protag R: -5111.00 | Antag R: 4961.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   28 | Phase: ANTAGON | Ticks: 799 | Protag R: -4918.00 | Antag R: 4768.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   29 | Phase: ANTAGON | Ticks: 799 | Protag R: -4804.00 | Antag R: 4654.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   30 | Phase: ANTAGON | Ticks: 797 | Protag R: -5257.00 | Antag R: 5107.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   31 | Phase: ANTAGON | Ticks: 797 | Protag R: -5643.00 | Antag R: 5493.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   32 | Phase: ANTAGON | Ticks: 798 | Protag R: -5358.00 | Antag R: 5208.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   33 | Phase: ANTAGON | Ticks: 799 | Protag R: -5461.00 | Antag R: 5311.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   34 | Phase: ANTAGON | Ticks: 797 | Protag R: -5253.00 | Antag R: 5103.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   35 | Phase: ANTAGON | Ticks: 797 | Protag R: -5656.00 | Antag R: 5506.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   36 | Phase: ANTAGON | Ticks: 799 | Protag R: -5133.00 | Antag R: 4983.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   37 | Phase: ANTAGON | Ticks: 797 | Protag R: -5844.00 | Antag R: 5694.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   38 | Phase: ANTAGON | Ticks: 798 | Protag R: -5402.00 | Antag R: 5252.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   39 | Phase: ANTAGON | Ticks: 799 | Protag R: -6057.00 | Antag R: 5907.00 | Delivery:  12.5% | Budget Used: 1500.00/1500.0
+Ep   40 | Phase: ANTAGON | Ticks: 798 | Protag R: -5586.00 | Antag R: 5436.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   41 | Phase: ANTAGON | Ticks: 799 | Protag R: -5301.00 | Antag R: 5151.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   42 | Phase: ANTAGON | Ticks: 799 | Protag R: -4941.00 | Antag R: 4791.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   43 | Phase: ANTAGON | Ticks: 799 | Protag R: -5355.00 | Antag R: 5205.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   44 | Phase: ANTAGON | Ticks: 798 | Protag R: -5315.00 | Antag R: 5165.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   45 | Phase: ANTAGON | Ticks: 799 | Protag R: -5577.00 | Antag R: 5427.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   46 | Phase: ANTAGON | Ticks: 799 | Protag R: -6019.00 | Antag R: 5869.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   47 | Phase: ANTAGON | Ticks: 799 | Protag R: -5206.00 | Antag R: 5056.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   48 | Phase: ANTAGON | Ticks: 799 | Protag R: -4707.00 | Antag R: 4557.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   49 | Phase: ANTAGON | Ticks: 798 | Protag R: -5701.00 | Antag R: 5551.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   50 | Phase: ANTAGON | Ticks: 799 | Protag R: -5377.00 | Antag R: 5227.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Saving checkpoints for both agents before phase switch...
+Ep   51 | Phase: ANTAGON | Ticks: 799 | Protag R: -4977.00 | Antag R: 4827.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   52 | Phase: ANTAGON | Ticks: 797 | Protag R: -5380.00 | Antag R: 5230.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   53 | Phase: ANTAGON | Ticks: 799 | Protag R: -5162.00 | Antag R: 5012.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   54 | Phase: ANTAGON | Ticks: 799 | Protag R: -5411.00 | Antag R: 5261.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   55 | Phase: ANTAGON | Ticks: 798 | Protag R: -5557.00 | Antag R: 5407.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   56 | Phase: ANTAGON | Ticks: 798 | Protag R: -5336.00 | Antag R: 5186.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   57 | Phase: ANTAGON | Ticks: 799 | Protag R: -5388.00 | Antag R: 5238.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   58 | Phase: ANTAGON | Ticks: 798 | Protag R: -4824.00 | Antag R: 4674.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   59 | Phase: ANTAGON | Ticks: 799 | Protag R: -5557.00 | Antag R: 5407.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   60 | Phase: ANTAGON | Ticks: 799 | Protag R: -5640.00 | Antag R: 5490.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   61 | Phase: ANTAGON | Ticks: 798 | Protag R: -5326.00 | Antag R: 5176.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   62 | Phase: ANTAGON | Ticks: 799 | Protag R: -5938.00 | Antag R: 5788.00 | Delivery:  12.5% | Budget Used: 1500.00/1500.0
+Ep   63 | Phase: ANTAGON | Ticks: 798 | Protag R: -5496.00 | Antag R: 5346.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   64 | Phase: ANTAGON | Ticks: 797 | Protag R: -4705.00 | Antag R: 4555.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   65 | Phase: ANTAGON | Ticks: 799 | Protag R: -5650.00 | Antag R: 5500.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   66 | Phase: ANTAGON | Ticks: 799 | Protag R: -5798.00 | Antag R: 5648.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   67 | Phase: ANTAGON | Ticks: 797 | Protag R: -5768.00 | Antag R: 5618.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   68 | Phase: ANTAGON | Ticks: 798 | Protag R: -5767.00 | Antag R: 5617.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   69 | Phase: ANTAGON | Ticks: 799 | Protag R: -5807.00 | Antag R: 5657.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   70 | Phase: ANTAGON | Ticks: 799 | Protag R: -5342.00 | Antag R: 5192.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   71 | Phase: ANTAGON | Ticks: 798 | Protag R: -5714.00 | Antag R: 5564.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   72 | Phase: ANTAGON | Ticks: 799 | Protag R: -5526.00 | Antag R: 5376.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   73 | Phase: ANTAGON | Ticks: 799 | Protag R: -5256.00 | Antag R: 5106.00 | Delivery:  62.5% | Budget Used: 1500.00/1500.0
+Ep   74 | Phase: ANTAGON | Ticks: 799 | Protag R: -5296.00 | Antag R: 5146.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   75 | Phase: ANTAGON | Ticks: 799 | Protag R: -5059.00 | Antag R: 4909.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   76 | Phase: ANTAGON | Ticks: 799 | Protag R: -5925.00 | Antag R: 5775.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   77 | Phase: ANTAGON | Ticks: 799 | Protag R: -5580.00 | Antag R: 5430.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   78 | Phase: ANTAGON | Ticks: 799 | Protag R: -6029.00 | Antag R: 5879.00 | Delivery:  12.5% | Budget Used: 1500.00/1500.0
+Ep   79 | Phase: ANTAGON | Ticks: 799 | Protag R: -5059.00 | Antag R: 4909.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   80 | Phase: ANTAGON | Ticks: 799 | Protag R: -4795.00 | Antag R: 4645.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   81 | Phase: ANTAGON | Ticks: 799 | Protag R: -5480.00 | Antag R: 5330.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   82 | Phase: ANTAGON | Ticks: 798 | Protag R: -5305.00 | Antag R: 5155.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   83 | Phase: ANTAGON | Ticks: 799 | Protag R: -5477.00 | Antag R: 5327.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   84 | Phase: ANTAGON | Ticks: 798 | Protag R: -5578.00 | Antag R: 5428.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   85 | Phase: ANTAGON | Ticks: 799 | Protag R: -5628.00 | Antag R: 5478.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   86 | Phase: ANTAGON | Ticks: 799 | Protag R: -4788.00 | Antag R: 4638.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   87 | Phase: ANTAGON | Ticks: 799 | Protag R: -4569.00 | Antag R: 4419.00 | Delivery:  62.5% | Budget Used: 1500.00/1500.0
+Ep   88 | Phase: ANTAGON | Ticks: 799 | Protag R: -5764.00 | Antag R: 5614.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   89 | Phase: ANTAGON | Ticks: 799 | Protag R: -5536.00 | Antag R: 5386.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   90 | Phase: ANTAGON | Ticks: 798 | Protag R: -4884.00 | Antag R: 4734.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   91 | Phase: ANTAGON | Ticks: 799 | Protag R: -5515.00 | Antag R: 5365.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep   92 | Phase: ANTAGON | Ticks: 798 | Protag R: -5628.00 | Antag R: 5478.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   93 | Phase: ANTAGON | Ticks: 796 | Protag R: -5908.00 | Antag R: 5758.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   94 | Phase: ANTAGON | Ticks: 799 | Protag R: -4986.00 | Antag R: 4836.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   95 | Phase: ANTAGON | Ticks: 798 | Protag R: -5427.00 | Antag R: 5277.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   96 | Phase: ANTAGON | Ticks: 798 | Protag R: -5268.00 | Antag R: 5118.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   97 | Phase: ANTAGON | Ticks: 799 | Protag R: -5491.00 | Antag R: 5341.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep   98 | Phase: ANTAGON | Ticks: 799 | Protag R: -5223.00 | Antag R: 5073.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep   99 | Phase: ANTAGON | Ticks: 799 | Protag R: -5551.00 | Antag R: 5401.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  100 | Phase: ANTAGON | Ticks: 799 | Protag R: -5609.00 | Antag R: 5459.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Saving checkpoints for both agents before phase switch...
+Ep  101 | Phase: ANTAGON | Ticks: 799 | Protag R: -5800.00 | Antag R: 5650.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  102 | Phase: ANTAGON | Ticks: 799 | Protag R: -5163.00 | Antag R: 5013.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  103 | Phase: ANTAGON | Ticks: 799 | Protag R: -5086.00 | Antag R: 4936.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  104 | Phase: ANTAGON | Ticks: 798 | Protag R: -5220.00 | Antag R: 5070.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  105 | Phase: ANTAGON | Ticks: 799 | Protag R: -5351.00 | Antag R: 5201.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  106 | Phase: ANTAGON | Ticks: 798 | Protag R: -5310.00 | Antag R: 5160.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  107 | Phase: ANTAGON | Ticks: 799 | Protag R: -5632.00 | Antag R: 5482.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  108 | Phase: ANTAGON | Ticks: 798 | Protag R: -5528.00 | Antag R: 5378.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  109 | Phase: ANTAGON | Ticks: 799 | Protag R: -5561.00 | Antag R: 5411.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  110 | Phase: ANTAGON | Ticks: 799 | Protag R: -5444.00 | Antag R: 5294.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  111 | Phase: ANTAGON | Ticks: 799 | Protag R: -5264.00 | Antag R: 5114.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  112 | Phase: ANTAGON | Ticks: 799 | Protag R: -5151.00 | Antag R: 5001.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  113 | Phase: ANTAGON | Ticks: 798 | Protag R: -5602.00 | Antag R: 5452.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  114 | Phase: ANTAGON | Ticks: 799 | Protag R: -5636.00 | Antag R: 5486.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  115 | Phase: ANTAGON | Ticks: 799 | Protag R: -4771.00 | Antag R: 4621.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  116 | Phase: ANTAGON | Ticks: 798 | Protag R: -5090.00 | Antag R: 4940.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  117 | Phase: ANTAGON | Ticks: 799 | Protag R: -4797.00 | Antag R: 4647.00 | Delivery:  62.5% | Budget Used: 1500.00/1500.0
+Ep  118 | Phase: ANTAGON | Ticks: 798 | Protag R: -5559.00 | Antag R: 5409.00 | Delivery:  25.0% | Budget Used: 1500.00/1500.0
+Ep  119 | Phase: ANTAGON | Ticks: 798 | Protag R: -5344.00 | Antag R: 5194.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  120 | Phase: ANTAGON | Ticks: 799 | Protag R: -4353.00 | Antag R: 4203.00 | Delivery:  62.5% | Budget Used: 1500.00/1500.0
+Ep  121 | Phase: ANTAGON | Ticks: 798 | Protag R: -4967.00 | Antag R: 4817.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0
+Ep  122 | Phase: ANTAGON | Ticks: 799 | Protag R: -4956.00 | Antag R: 4806.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  123 | Phase: ANTAGON | Ticks: 799 | Protag R: -4924.00 | Antag R: 4774.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  124 | Phase: ANTAGON | Ticks: 799 | Protag R: -5065.00 | Antag R: 4915.00 | Delivery:  50.0% | Budget Used: 1500.00/1500.0
+Ep  125 | Phase: ANTAGON | Ticks: 798 | Protag R: -5527.00 | Antag R: 5377.00 | Delivery:  37.5% | Budget Used: 1500.00/1500.0

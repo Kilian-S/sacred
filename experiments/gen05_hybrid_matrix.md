@@ -68,9 +68,45 @@ PYTHONPATH=. python scripts/evaluate_portfolio.py --problem hybrid \
   --instances 24 --out experiments/gen05_portfolio.json
 ```
 
-## Result
+## Result (2026-07-04, primary pass; BR reference rows pending) — **PRIMARY NOT MET, sign REVERSED; both arms failed to learn the task, voiding the robustness interpretation**
 
-_(to be filled)_
+Per-pairing D (paired over 24 rollout instances; greedy is deterministic → single trajectory):
+
+| arm | W(none) | D(random) | D(targeted) | D(gateway) |
+|---|---|---|---|---|
+| greedy | **847** | 1036 | 1154 | 714 |
+| vanilla (s0/s1/s2) | 4739 / 4769 / 4845 | 593 / 585 / 407 | 978 / 841 / 725 | 476 / 366 / 320 |
+| scripted (s0/s1/s2) | 4716 / 4605 / 4726 | 559 / 604 / 566 | 849 / 910 / 844 | 582 / 584 / 571 |
+
+**Primary:** pooled `dD_gateway = −192 ± 181` (95% CI, n=72), pairings positive **0/3**
+(−106±313, −219±258, −251±368) → **NOT MET**, and the pooled CI excludes zero on the *negative*
+side: the scripted-adversarially-trained arm degrades slightly MORE under the held-out attack.
+
+**The finding that dominates the table:** the learned arms' clean performance is
+**W(none) ≈ 4.6–4.8k vs greedy's 847 — ~5.6× worse** — and the in-distribution secondary
+`dD_targeted = −20 ± 135`: 400 episodes of training *against* the targeted attacker taught **no
+measurable coping even with the attack it saw every episode**. Neither arm learned the hybrid
+task to competence (delivery ~0.5 clean within the horizon; Q_Spread ~0.1; deterministic-argmax
+eval delivers zero). With W(none) that close to the 6.4k saturation ceiling (8 requests × 800
+ticks), degradation D is **ceiling-compressed** — weak policies have little left to lose (note
+both learned arms show *smaller* D than greedy, which starts at 847 and has everything to lose).
+**The robustness comparison between two incompetent policies is therefore not interpretable as a
+robustness result**, in either direction; the pre-hoc "muted learning" risk materialized fully.
+
+**Diagnosis shift:** gen03/gen04 located the framework's binding constraint in the *adversary*;
+gen05 relocates it for this arena to the **protagonist**: hybrid-rung learning (hundreds of
+edge-level decisions/episode, thin credit, γ=0.99/tick, UTD 8, 400 ep) did not produce a
+competent policy on either arm. The robustness question requires competent baselines first.
+
+**Options recorded for Kilian:** (a) extend training (lossless resume, 400→1000+, ~a day;
+uncertain — Q_Spread ≈ 0.1 suggests structural credit-assignment weakness, not just
+under-training); (b) make the hybrid rung learnable first (tighter corridor slack → fewer
+decisions + denser credit, γ↑, headroom gate: W(none) ≤ ~1.5× greedy before any re-matrix);
+(c) **move the headline matrix to the dynassign arena where policies demonstrably learn to
+within ~7% of greedy** — train a scripted-adversarial arm there (vanilla arms already exist from
+gen03), with a second scripted attacker variant for training so `targeted` stays held out;
+(d) freeze and write the arc as-is. BR reference rows will be appended when their training
+completes (they cannot change the primary).
 
 ## Launch record (2026-07-04 09:13)
 

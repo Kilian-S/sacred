@@ -218,3 +218,36 @@
 - **Decisions (2026-07-04, Kilian):** scripted-adversarial arm **promoted** into Phase 3
   (`gen05_hybrid_matrix`); the ATLA co-evolution rider arm and the lowered-entropy-target re-gate
   (gen04b) both go to the **back pocket** — recorded options, not scheduled work.
+
+## 9. `gen05_hybrid_matrix` — Phase 3, the headline robustness matrix  (2026-07-04 · `cd11f14`/`324a644` · `experiments/gen05_hybrid_matrix.md`)
+
+- **Goal (prospective):** the reframed thesis headline on the repaired hybrid arena: does
+  adversarial training against the strong scripted `targeted` attacker buy robustness to the
+  held-out `gateway` attack, vs an identical non-adversarial control? 2 arms × 3 seeds × 400 ep
+  (budget 1500, horizon 800, `--update-every 8`); pre-registered primary = pooled dD_gateway > 0,
+  CI excl. 0, ≥2/3 pairings.
+- **Headline results:** **primary NOT MET — sign reversed** (pooled dD_gateway = −192 ± 181,
+  0/3 pairings positive). The dominating observation: **neither arm learned the task** —
+  W(none) ≈ 4.6–4.8k vs greedy's 847 (~5.6× worse), and in-distribution dD_targeted = −20 ± 135:
+  training against the attacker taught no measurable coping *even against that same attacker*.
+  With W(none) near the 6.4k saturation ceiling, degradation is ceiling-compressed (both learned
+  arms show smaller D than greedy — weakness masquerading as robustness).
+- **What we learned:** the binding constraint moved. gen03/gen04 diagnosed the *adversary* as
+  unable to learn; gen05 shows that on the hybrid rung the *protagonist* can't learn either at
+  this budget/structure (hundreds of edge-level micro-decisions, thin credit, γ-myopia; Q_Spread
+  ≈ 0.1 = the critic never discriminated). A robustness comparison between two incompetent
+  policies is uninterpretable — competence is a precondition for the robustness question.
+- **Thesis progression:** the full matrix pipeline (dual-arm training, held-out attack design,
+  paired stochastic portfolio) ran end-to-end and produced a clean pre-registered readout in one
+  day — the machinery is no longer ever the bottleneck. The interruption/resume during training
+  also proved the checkpointing discipline (lossless mid-run recovery).
+- **What it means for the thesis:** the honest empirical arc is now: adversarial VRP training
+  fails two ways — the adversary can't learn to attack (gen03/04), and on decision-dense arenas
+  the protagonist can't learn to act (gen05). Options recorded in the ledger: extend training /
+  make the hybrid learnable (fewer decisions, denser credit) / move the matrix to dynassign where
+  policies demonstrably reach within ~7% of greedy / freeze and write the diagnostic arc.
+  Kilian to decide with the freeze (~Jul 16–18) in view.
+- **Thesis fit:** Obj 5 (the robustness evaluation methodology is itself the contribution:
+  pre-registration, held-out attacks, paired instances, ceiling-compression as an identified
+  robustness-evaluation pitfall) + the results chapter's second act; strengthens the methods
+  narrative regardless of what the final matrix shows.
