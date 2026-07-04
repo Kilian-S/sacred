@@ -50,9 +50,13 @@ class ATLACoevolutionTrainer:
         eval_fn: Callable[[int], dict] | None = None,
         eval_every: int = 0,
         mode: str = "atla",
+        scripted_attacker: Callable | None = None,
+        update_every: int = 1,
     ) -> None:
-        if mode not in ("atla", "vanilla", "antagonist_only"):
+        if mode not in ("atla", "vanilla", "antagonist_only", "scripted_adversary"):
             raise ValueError(f"unknown trainer mode {mode!r}")
+        if mode == "scripted_adversary" and scripted_attacker is None:
+            raise ValueError("mode='scripted_adversary' requires a scripted_attacker callable")
         self.smdp = smdp
         self.protag = protag_agent
         self.antag = antag_agent
@@ -64,7 +68,20 @@ class ATLACoevolutionTrainer:
         # nets and hyperparameters otherwise. "antagonist_only" = best-response attacker training:
         # the protagonist is FROZEN (acts stochastically, no updates/storage) while the antagonist
         # trains every episode — used to build the per-policy worst-case attack for evaluation.
+        # "scripted_adversary" = adversarial training against a FIXED scripted attacker
+        # (gen04 consequence: the learned adversary cannot learn to attack — the scripted targeted
+        # heuristic supplies strong, stationary adversarial pressure instead; the protagonist
+        # trains every episode, the antagonist nets are never used).
         self.mode = mode
+        self.scripted_attacker = scripted_attacker
+        # Update-to-data ratio: run a gradient update once every N decision epochs (per agent)
+        # instead of every one. N=1 = the historical behaviour. The hybrid rung makes ~10x more
+        # (edge-level) decisions per episode than destination-mode rungs, so update-per-decision
+        # is prohibitive there (~198 s/ep untrained); N>1 trades updates-per-experience for
+        # wall-clock. Applied identically to every arm of a generation for fairness.
+        self.update_every = max(1, int(update_every))
+        self._protag_decision_count = 0
+        self._antag_decision_count = 0
         # Optional periodic snapshot eval: eval_fn(episode) -> dict of scalars, logged under Eval/*.
         self.eval_fn = eval_fn
         self.eval_every = eval_every
@@ -147,7 +164,9 @@ class ATLACoevolutionTrainer:
                     ep_antag_reward += next_event.antagonist_reward
 
                     # Update protagonist parameters if in protagonist phase
-                    if self.current_phase == "protagonist":
+                    self._protag_decision_count += 1
+                    if (self.current_phase == "protagonist"
+                            and self._protag_decision_count % self.update_every == 0):
                         metrics = self.protag.update(self.batch_size)
                         if metrics:
                             protag_losses.append(metrics)
@@ -156,10 +175,12 @@ class ATLACoevolutionTrainer:
 
                 # B. ANTAGONIST DECISION EPOCH
                 elif event.decision_type in (DecisionType.ANTAGONIST_DECISION, DecisionType.BOTH_DECISION):
-                    if self.mode == "vanilla":
-                        # Non-adversarial control: the adversary never acts (no net forward, no
-                        # storage, no update) — the event only advances simulated time.
-                        next_event, _ = self.smdp.step_antagonist(None)
+                    if self.mode in ("vanilla", "scripted_adversary"):
+                        # vanilla: the adversary never acts. scripted_adversary: a FIXED scripted
+                        # attacker acts (strong, stationary adversarial pressure). Either way no
+                        # antagonist net forward/storage/update — only the protagonist learns.
+                        action = self.scripted_attacker(event) if self.mode == "scripted_adversary" else None
+                        next_event, _ = self.smdp.step_antagonist(action)
                         ep_protag_reward += next_event.protagonist_reward
                         ep_antag_reward += next_event.antagonist_reward
                         event = next_event
@@ -202,7 +223,9 @@ class ATLACoevolutionTrainer:
                     ep_protag_reward += next_event.protagonist_reward
 
                     # Update antagonist parameters if in antagonist phase
-                    if self.current_phase == "antagonist":
+                    self._antag_decision_count += 1
+                    if (self.current_phase == "antagonist"
+                            and self._antag_decision_count % self.update_every == 0):
                         metrics = self.antag.update(self.batch_size)
                         if metrics:
                             antag_losses.append(metrics)

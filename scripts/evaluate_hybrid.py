@@ -29,7 +29,7 @@ from scripts.evaluate_assignment import sac_antagonist_policy
 def hybrid_config() -> SMDPConfig:
     """Must match the hybrid branch in scripts/train_sacred.py."""
     return SMDPConfig(
-        max_ticks=1500, reward_mode="latency", routing_mode="hybrid", routing_corridor_slack=2.0,
+        max_ticks=800, reward_mode="latency", routing_mode="hybrid", routing_corridor_slack=2.0,
         antagonist_interval=25, congestion_duration=125, congestion_budget=1500.0, congestion_cooldown=0,
         congestion_cost=0.1, congestion_levels=(1.0,), max_antag_actions_per_event=1, antag_reach="route")
 

@@ -45,7 +45,7 @@ import torch
 
 from src.env.smdp_wrapper import DecisionEvent, SMDPConfig, SMDPDecisionWrapper
 from src.agents.sac import AntagonistSAC, ProtagonistSAC, infer_edge_in_dim, infer_node_in_dim
-from src.baselines.attackers import random_block_policy, targeted_block_policy
+from src.baselines.attackers import mask_first_block_policy, random_block_policy, targeted_block_policy
 from src.baselines.greedy_dispatch import (
     greedy_insertion_policy,
     hybrid_greedy_policy,
@@ -161,6 +161,10 @@ def _make_attacker(name: str, smdp: SMDPDecisionWrapper, instance_seed: int,
         return random_block_policy(seed=instance_seed)
     if name == "targeted":
         return targeted_block_policy(smdp)
+    if name == "gateway":
+        # first-maskable-edge attacker — the HELD-OUT strong attack for the hybrid matrix
+        # (under route reach the mask does the aiming; +40..184% on greedy in the budget sweep)
+        return mask_first_block_policy
     if name.startswith("br_"):
         return _sac_attacker(smdp, br_agents[name[3:]])
     raise ValueError(f"unknown attacker {name!r}")

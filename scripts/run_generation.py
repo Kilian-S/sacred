@@ -33,6 +33,9 @@ RECIPES = {
     # inert and the protagonist trains every episode) — see experiments/gen03_robustness_dynassign.md.
     "vanilla": ["--problem", "dynassign", "--arrival-rate", "0.06",
                 "--congestion-budget", "4000", "--preseed-buffer", "False", "--vanilla"],
+    # gen05 Phase-3 hybrid matrix arms (budget 1500 is set by the hybrid branch itself).
+    "hybrid_vanilla": ["--problem", "hybrid", "--preseed-buffer", "False", "--vanilla"],
+    "hybrid_scripted": ["--problem", "hybrid", "--preseed-buffer", "False", "--scripted-adversary"],
 }
 
 
@@ -78,6 +81,8 @@ def main() -> None:
     p.add_argument("--batch-size", type=int, default=32)
     p.add_argument("--hidden-dim", type=int, default=64)
     p.add_argument("--eval-every", type=int, default=50)
+    p.add_argument("--update-every", type=int, default=1,
+                   help="gradient update once every N decision epochs (gen05 hybrid: 8)")
     p.add_argument("--threads", type=int, default=3, help="torch threads per run (total <= 10 cores)")
     p.add_argument("--max-concurrent", type=int, default=3)
     p.add_argument("--dry-run", action="store_true", help="print commands without launching")
@@ -94,6 +99,7 @@ def main() -> None:
         "--batch-size", str(args.batch_size), "--hidden-dim", str(args.hidden_dim),
         "--device", "cpu", "--eval-every", str(args.eval_every),
         "--group", args.group, "--threads", str(args.threads),
+        "--update-every", str(args.update_every),
     ]
     if not args.dry_run:
         write_ledger(args.group, configs, seeds, common)

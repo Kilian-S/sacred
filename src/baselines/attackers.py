@@ -38,6 +38,19 @@ def random_block_policy(seed: int = 0):
     return policy
 
 
+def mask_first_block_policy(event: DecisionEvent):
+    """Deterministic "gateway" attacker: block the lexicographically-first maskable edge at max
+    level. Sounds naive, but under ROUTE reach the mask is exactly the edges on trucks' committed
+    routes — the mask does the aiming — and this attacker inflicted +40…+184% on greedy in the
+    hybrid budget sweep (scratch/critique_probes.py Probe C). It is the HELD-OUT test attacker for
+    gen05: the scripted-adversarial arm trains against targeted_block_policy, never against this."""
+    lbe = event.antagonist_action_mask.get("levels_by_edge", {})
+    if not lbe:
+        return None
+    edge = sorted(lbe, key=repr)[0]
+    return (edge, max(lbe[edge]))
+
+
 def targeted_block_policy(smdp: SMDPDecisionWrapper):
     """Block the first blockable edge on the shortest path of the truck closest to its goal.
 

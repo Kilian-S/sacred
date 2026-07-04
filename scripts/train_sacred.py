@@ -154,13 +154,36 @@ def main() -> None:
         help="Actor state_dict (.pt) of the frozen protagonist for --train-antagonist-only. The "
              "protagonist nets are sized to the snapshot's trained feature width automatically.",
     )
+    parser.add_argument(
+        "--update-every",
+        type=int,
+        default=1,
+        help="Run a gradient update once every N decision epochs (per agent) instead of every one. "
+             "1 = historical behaviour. The hybrid rung makes ~10x more (edge-level) decisions per "
+             "episode than destination-mode rungs, where update-per-decision is prohibitive. Use "
+             "the SAME value for every arm of a generation.",
+    )
+    parser.add_argument(
+        "--scripted-adversary",
+        action="store_true",
+        help="Adversarial training against the FIXED scripted targeted attacker (gen04 consequence:"
+             " the learned adversary cannot learn to attack). The protagonist trains every episode;"
+             " the antagonist nets are never used.",
+    )
     args = parser.parse_args()
 
-    if args.vanilla and args.train_antagonist_only:
-        sys.exit("--vanilla and --train-antagonist-only are mutually exclusive.")
+    if sum([args.vanilla, args.train_antagonist_only, args.scripted_adversary]) > 1:
+        sys.exit("--vanilla, --train-antagonist-only and --scripted-adversary are mutually exclusive.")
     if args.train_antagonist_only and not args.protagonist_snapshot:
         sys.exit("--train-antagonist-only requires --protagonist-snapshot.")
-    trainer_mode = "vanilla" if args.vanilla else ("antagonist_only" if args.train_antagonist_only else "atla")
+    if args.vanilla:
+        trainer_mode = "vanilla"
+    elif args.train_antagonist_only:
+        trainer_mode = "antagonist_only"
+    elif args.scripted_adversary:
+        trainer_mode = "scripted_adversary"
+    else:
+        trainer_mode = "atla"
 
     # Reproducibility + CPU thread cap (for parallel seeded runs; see scratch/thread_benchmark.py).
     if args.threads is not None:
@@ -266,7 +289,10 @@ def main() -> None:
         from src.envs.assignment_factory import make_hybrid_assign_env
 
         config = SMDPConfig(
-            max_ticks=1500,                 # hybrid routes (next-hop) run longer than destination mode
+            max_ticks=800,                  # greedy ends ~tick 220 unattacked / ~416 under the
+                                            # budget-1500 attack (post zombie-fix); 800 keeps full
+                                            # headroom while halving the cost of untrained
+                                            # wandering. MUST match evaluate_hybrid.hybrid_config.
             antagonist_interval=25,
             congestion_duration=125,        # = 5 x interval -> block expiry aligns to a decision event
             # 1500 = the budget sweep's sweet spot (scratch/critique_probes.py Probe C): scripted
@@ -451,6 +477,11 @@ def main() -> None:
         eval_fn = lambda ep: eval_hybrid_cells(protag, antag, _mkh, config)
         eval_every = args.eval_every
 
+    scripted_attacker = None
+    if trainer_mode == "scripted_adversary":
+        from src.baselines.attackers import targeted_block_policy
+        scripted_attacker = targeted_block_policy(smdp)
+
     trainer = ATLACoevolutionTrainer(
         smdp=smdp,
         protag_agent=protag,
@@ -462,6 +493,8 @@ def main() -> None:
         eval_fn=eval_fn,
         eval_every=eval_every,
         mode=trainer_mode,
+        scripted_attacker=scripted_attacker,
+        update_every=args.update_every,
     )
 
     # 5. Run coevolutionary training
