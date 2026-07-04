@@ -124,3 +124,24 @@ checkpoint, so the resumed trajectories differ from an uninterrupted run — sam
 seeds, noted for the record. The relaunch runs under a detached nohup orchestrator
 (scratchpad/gen05_orchestrator.sh → gen05_status.txt) immune to session cleanup; the scripted
 batch auto-starts when the vanilla batch completes.
+
+## BR reference rows (appended 2026-07-04 ~22:15; primary unchanged)
+
+D under the learned best-response attackers (24 paired instances; greedy deterministic):
+
+| arm | D(br_vanilla) | D(br_scripted) |
+|---|---|---|
+| greedy | **1667 ± 0** | **1667 ± 0** |
+| vanilla (s0/s1/s2) | 596 / 561 / 532 | 597 / 570 / 436 |
+| scripted (s0/s1/s2) | 721 / 754 / 685 | 582 / 764 / 602 |
+
+Two observations. (1) Against the weak learned arms the BR rows sit in the same
+ceiling-compressed 430–760 band as every other attack — no new signal about the arms, primary
+unchanged. (2) **Against GREEDY, the learned attackers finally work**: +1667, i.e. more damage
+than the scripted `targeted` (+1154) and `gateway` (+714) attacks — and both BR nets collapse to
+the identical deterministic attack trajectory. In the hybrid arena the route-reach mask does the
+aiming and the motion features (gen04's N1 fix) are present; against a *competent, predictable*
+victim the learned adversary is now the strongest attacker in the portfolio. This partially
+rehabilitates learned attackers **for this arena** (gen03/04's "weaker than random" was the
+leashed dynassign setting) and is relevant to any future competent-protagonist matrix and to the
+back-pocket ATLA option.
