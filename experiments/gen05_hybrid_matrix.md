@@ -1,6 +1,6 @@
 # Generation: gen05_hybrid_matrix (Phase 3 — the headline robustness matrix)
 
-- **git SHA:** _fill at launch_
+- **git SHA:** `cd11f14` (Phase-3 build commit)
 - **date opened:** 2026-07-04
 - **status:** LEDGER OPEN — awaiting Kilian's launch
 
