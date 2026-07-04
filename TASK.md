@@ -22,6 +22,13 @@
 > co-evolution parked. **Phase 3 = `experiments/gen05_hybrid_matrix.md`: {vanilla,
 > scripted-adversarial} × portfolio on fixed hybrid, budget 1500.** Back pocket: ATLA rider arm,
 > gen04b entropy re-gate. Full narrative: `SACRED_PROGRESS.md`.
+>
+> **Deferred cleanup TODOs (approved 2026-07-04, blocked on running jobs / campaign freeze):**
+> (1) AFTER gen05 training completes: remove the legacy `--preseed-buffer` path from
+> `train_sacred.py` (+ recipes in `run_generation.py`), delete `scripts/generate_erb.py` +
+> `data/erb_transitions.pt`, trim `tests/test_erb.py` to ALNS-only. (2) AFTER the experimental
+> campaign freezes (~Jul 16-18): merge `src/env/` vs `src/envs/` naming (mechanical refactor,
+> one commit, suite-guarded). See commit `f92f88d` for the full cleanup record.
 
 > **(Historical handoff note, 2026-07-01):** the Stage-2 H-steps below were the prior plan, resting
 > on the (unproven) interpretation that "next-hop routing is the missing lever". H1–H6 built; H7
