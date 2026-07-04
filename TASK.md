@@ -241,7 +241,7 @@ first dynamic run is measured right — not retrofitted after a noisy result.
 ## Explicitly later (curriculum / supervisor agenda — don't start without Kilian)
 True Stage 2 hybrid assignment+routing (the multi-headed action head); K×ρ×budget sweeps; **ZST**;
 Obj-3 dynamic-dispatch ERB / rolling-ALNS (also Obj-5 SOTA baseline); Obj-4 SBO. Held low-severity
-bug/perf fixes: `CONTEXT.md` §2 "Held / known issues" + `MASTER_AUDIT.md`.
+bug/perf fixes: `CONTEXT.md` §2 "Held / known issues" + `docs/archive/MASTER_AUDIT.md`.
 
 **Visualiser idea (Kilian, for later):** in the dynamic visualiser, colour each demand node by
 *wait time* — light orange → dark orange the longer it has waited (a direct visual of the Step-2

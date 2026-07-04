@@ -1,0 +1,149 @@
+Seeded run: seed=0
+Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...
+Configuring Protagonist Dispatch Agent...
+Configuring Antagonist Congestion Agent...
+Initializing ATLA Coevolution Trainer...
+Run Name: gen05_hybrid_matrix/hybrid_vanilla_seed0
+Starting SACRED training (mode=vanilla) for 400 episodes...
+Device: Protagonist=cpu, Antagonist=cpu
+Initial Phase: Training PROTAGONIST
+
+Ep    1 | Phase: PROTAGO | Ticks: 798 | Protag R: -4150.00 | Antag R: 4150.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep    2 | Phase: PROTAGO | Ticks: 799 | Protag R: -4364.00 | Antag R: 4364.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep    3 | Phase: PROTAGO | Ticks: 799 | Protag R: -3953.00 | Antag R: 3953.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep    4 | Phase: PROTAGO | Ticks: 798 | Protag R: -4455.00 | Antag R: 4455.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep    5 | Phase: PROTAGO | Ticks: 799 | Protag R: -4235.00 | Antag R: 4235.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep    6 | Phase: PROTAGO | Ticks: 799 | Protag R: -4301.00 | Antag R: 4301.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep    7 | Phase: PROTAGO | Ticks: 798 | Protag R: -4316.00 | Antag R: 4316.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep    8 | Phase: PROTAGO | Ticks: 799 | Protag R: -5089.00 | Antag R: 5089.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep    9 | Phase: PROTAGO | Ticks: 797 | Protag R: -4077.00 | Antag R: 4077.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   10 | Phase: PROTAGO | Ticks: 799 | Protag R: -4708.00 | Antag R: 4708.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   11 | Phase: PROTAGO | Ticks: 799 | Protag R: -4724.00 | Antag R: 4724.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   12 | Phase: PROTAGO | Ticks: 799 | Protag R: -4003.00 | Antag R: 4003.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   13 | Phase: PROTAGO | Ticks: 798 | Protag R: -4531.00 | Antag R: 4531.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   14 | Phase: PROTAGO | Ticks: 799 | Protag R: -3860.00 | Antag R: 3860.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   15 | Phase: PROTAGO | Ticks: 799 | Protag R: -4993.00 | Antag R: 4993.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep   16 | Phase: PROTAGO | Ticks: 798 | Protag R: -3873.00 | Antag R: 3873.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   17 | Phase: PROTAGO | Ticks: 797 | Protag R: -4381.00 | Antag R: 4381.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   18 | Phase: PROTAGO | Ticks: 799 | Protag R: -4868.00 | Antag R: 4868.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   19 | Phase: PROTAGO | Ticks: 799 | Protag R: -4520.00 | Antag R: 4520.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   20 | Phase: PROTAGO | Ticks: 799 | Protag R: -3918.00 | Antag R: 3918.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   21 | Phase: PROTAGO | Ticks: 799 | Protag R: -4755.00 | Antag R: 4755.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   22 | Phase: PROTAGO | Ticks: 798 | Protag R: -4448.00 | Antag R: 4448.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   23 | Phase: PROTAGO | Ticks: 798 | Protag R: -4477.00 | Antag R: 4477.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   24 | Phase: PROTAGO | Ticks: 799 | Protag R: -5320.00 | Antag R: 5320.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   25 | Phase: PROTAGO | Ticks: 799 | Protag R: -4640.00 | Antag R: 4640.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Saving checkpoints for both agents before phase switch...
+Ep   26 | Phase: PROTAGO | Ticks: 799 | Protag R: -4515.00 | Antag R: 4515.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   27 | Phase: PROTAGO | Ticks: 797 | Protag R: -4621.00 | Antag R: 4621.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   28 | Phase: PROTAGO | Ticks: 799 | Protag R: -4901.00 | Antag R: 4901.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   29 | Phase: PROTAGO | Ticks: 797 | Protag R: -5130.00 | Antag R: 5130.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   30 | Phase: PROTAGO | Ticks: 798 | Protag R: -5153.00 | Antag R: 5153.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   31 | Phase: PROTAGO | Ticks: 799 | Protag R: -4592.00 | Antag R: 4592.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   32 | Phase: PROTAGO | Ticks: 799 | Protag R: -4573.00 | Antag R: 4573.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   33 | Phase: PROTAGO | Ticks: 799 | Protag R: -5058.00 | Antag R: 5058.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   34 | Phase: PROTAGO | Ticks: 797 | Protag R: -4673.00 | Antag R: 4673.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   35 | Phase: PROTAGO | Ticks: 798 | Protag R: -4252.00 | Antag R: 4252.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   36 | Phase: PROTAGO | Ticks: 798 | Protag R: -4768.00 | Antag R: 4768.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   37 | Phase: PROTAGO | Ticks: 799 | Protag R: -4187.00 | Antag R: 4187.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   38 | Phase: PROTAGO | Ticks: 799 | Protag R: -4235.00 | Antag R: 4235.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   39 | Phase: PROTAGO | Ticks: 799 | Protag R: -4559.00 | Antag R: 4559.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   40 | Phase: PROTAGO | Ticks: 799 | Protag R: -4290.00 | Antag R: 4290.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   41 | Phase: PROTAGO | Ticks: 797 | Protag R: -5324.00 | Antag R: 5324.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep   42 | Phase: PROTAGO | Ticks: 798 | Protag R: -4530.00 | Antag R: 4530.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   43 | Phase: PROTAGO | Ticks: 799 | Protag R: -4204.00 | Antag R: 4204.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   44 | Phase: PROTAGO | Ticks: 799 | Protag R: -4731.00 | Antag R: 4731.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   45 | Phase: PROTAGO | Ticks: 799 | Protag R: -4246.00 | Antag R: 4246.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   46 | Phase: PROTAGO | Ticks: 796 | Protag R: -5014.00 | Antag R: 5014.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   47 | Phase: PROTAGO | Ticks: 798 | Protag R: -4867.00 | Antag R: 4867.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   48 | Phase: PROTAGO | Ticks: 798 | Protag R: -3699.00 | Antag R: 3699.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   49 | Phase: PROTAGO | Ticks: 799 | Protag R: -4318.00 | Antag R: 4318.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   50 | Phase: PROTAGO | Ticks: 798 | Protag R: -4099.00 | Antag R: 4099.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+  [EVAL ep 50] greedy_atk=847 learned_atk=6400 gap=+5553 (neg = learned beats greedy under attack)
+Saving checkpoints for both agents before phase switch...
+Ep   51 | Phase: PROTAGO | Ticks: 799 | Protag R: -4639.00 | Antag R: 4639.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   52 | Phase: PROTAGO | Ticks: 799 | Protag R: -4954.00 | Antag R: 4954.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   53 | Phase: PROTAGO | Ticks: 799 | Protag R: -5299.00 | Antag R: 5299.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   54 | Phase: PROTAGO | Ticks: 799 | Protag R: -4334.00 | Antag R: 4334.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   55 | Phase: PROTAGO | Ticks: 799 | Protag R: -4091.00 | Antag R: 4091.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   56 | Phase: PROTAGO | Ticks: 799 | Protag R: -5546.00 | Antag R: 5546.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   57 | Phase: PROTAGO | Ticks: 798 | Protag R: -4686.00 | Antag R: 4686.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   58 | Phase: PROTAGO | Ticks: 799 | Protag R: -4809.00 | Antag R: 4809.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   59 | Phase: PROTAGO | Ticks: 799 | Protag R: -5228.00 | Antag R: 5228.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   60 | Phase: PROTAGO | Ticks: 797 | Protag R: -4389.00 | Antag R: 4389.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   61 | Phase: PROTAGO | Ticks: 798 | Protag R: -4090.00 | Antag R: 4090.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0Seeded run: seed=0
+Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...
+Configuring Protagonist Dispatch Agent...
+Configuring Antagonist Congestion Agent...
+Resuming from checkpoints in models/runs/gen05_hybrid_matrix/hybrid_vanilla_seed0...
+Resumed successfully from episode 75.
+Initializing ATLA Coevolution Trainer...
+Run Name: gen05_hybrid_matrix/hybrid_vanilla_seed0
+Starting SACRED training (mode=vanilla) for 400 episodes...
+Device: Protagonist=cpu, Antagonist=cpu
+Initial Phase: Training PROTAGONIST
+
+Saving checkpoints for both agents before phase switch...
+Ep   76 | Phase: PROTAGO | Ticks: 796 | Protag R: -4879.00 | Antag R: 4879.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   77 | Phase: PROTAGO | Ticks: 797 | Protag R: -5401.00 | Antag R: 5401.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep   78 | Phase: PROTAGO | Ticks: 799 | Protag R: -4280.00 | Antag R: 4280.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   79 | Phase: PROTAGO | Ticks: 799 | Protag R: -4639.00 | Antag R: 4639.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   80 | Phase: PROTAGO | Ticks: 796 | Protag R: -4921.00 | Antag R: 4921.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   81 | Phase: PROTAGO | Ticks: 798 | Protag R: -4931.00 | Antag R: 4931.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   82 | Phase: PROTAGO | Ticks: 799 | Protag R: -3810.00 | Antag R: 3810.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   83 | Phase: PROTAGO | Ticks: 799 | Protag R: -5020.00 | Antag R: 5020.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   84 | Phase: PROTAGO | Ticks: 799 | Protag R: -4543.00 | Antag R: 4543.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   85 | Phase: PROTAGO | Ticks: 798 | Protag R: -5508.00 | Antag R: 5508.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   86 | Phase: PROTAGO | Ticks: 799 | Protag R: -4855.00 | Antag R: 4855.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   87 | Phase: PROTAGO | Ticks: 797 | Protag R: -4942.00 | Antag R: 4942.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   88 | Phase: PROTAGO | Ticks: 799 | Protag R: -4401.00 | Antag R: 4401.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   89 | Phase: PROTAGO | Ticks: 799 | Protag R: -4632.00 | Antag R: 4632.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   90 | Phase: PROTAGO | Ticks: 799 | Protag R: -5270.00 | Antag R: 5270.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep   91 | Phase: PROTAGO | Ticks: 799 | Protag R: -5247.00 | Antag R: 5247.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   92 | Phase: PROTAGO | Ticks: 799 | Protag R: -4729.00 | Antag R: 4729.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   93 | Phase: PROTAGO | Ticks: 799 | Protag R: -4318.00 | Antag R: 4318.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   94 | Phase: PROTAGO | Ticks: 798 | Protag R: -5123.00 | Antag R: 5123.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep   95 | Phase: PROTAGO | Ticks: 799 | Protag R: -4859.00 | Antag R: 4859.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep   96 | Phase: PROTAGO | Ticks: 799 | Protag R: -4456.00 | Antag R: 4456.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   97 | Phase: PROTAGO | Ticks: 799 | Protag R: -4684.00 | Antag R: 4684.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep   98 | Phase: PROTAGO | Ticks: 799 | Protag R: -3733.00 | Antag R: 3733.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep   99 | Phase: PROTAGO | Ticks: 798 | Protag R: -4541.00 | Antag R: 4541.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  100 | Phase: PROTAGO | Ticks: 799 | Protag R: -5003.00 | Antag R: 5003.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+  [EVAL ep 100] greedy_atk=847 learned_atk=6400 gap=+5553 (neg = learned beats greedy under attack)
+Saving checkpoints for both agents before phase switch...
+Ep  101 | Phase: PROTAGO | Ticks: 799 | Protag R: -4505.00 | Antag R: 4505.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  102 | Phase: PROTAGO | Ticks: 797 | Protag R: -4788.00 | Antag R: 4788.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  103 | Phase: PROTAGO | Ticks: 798 | Protag R: -4686.00 | Antag R: 4686.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep  104 | Phase: PROTAGO | Ticks: 798 | Protag R: -4161.00 | Antag R: 4161.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  105 | Phase: PROTAGO | Ticks: 798 | Protag R: -3675.00 | Antag R: 3675.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  106 | Phase: PROTAGO | Ticks: 799 | Protag R: -4907.00 | Antag R: 4907.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  107 | Phase: PROTAGO | Ticks: 799 | Protag R: -4292.00 | Antag R: 4292.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  108 | Phase: PROTAGO | Ticks: 799 | Protag R: -5467.00 | Antag R: 5467.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep  109 | Phase: PROTAGO | Ticks: 799 | Protag R: -4081.00 | Antag R: 4081.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  110 | Phase: PROTAGO | Ticks: 798 | Protag R: -5223.00 | Antag R: 5223.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep  111 | Phase: PROTAGO | Ticks: 799 | Protag R: -4712.00 | Antag R: 4712.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  112 | Phase: PROTAGO | Ticks: 799 | Protag R: -4270.00 | Antag R: 4270.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  113 | Phase: PROTAGO | Ticks: 799 | Protag R: -4537.00 | Antag R: 4537.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  114 | Phase: PROTAGO | Ticks: 798 | Protag R: -4163.00 | Antag R: 4163.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  115 | Phase: PROTAGO | Ticks: 799 | Protag R: -4117.00 | Antag R: 4117.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  116 | Phase: PROTAGO | Ticks: 799 | Protag R: -5809.00 | Antag R: 5809.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep  117 | Phase: PROTAGO | Ticks: 798 | Protag R: -5683.00 | Antag R: 5683.00 | Delivery:  12.5% | Budget Used:  0.00/1500.0
+Ep  118 | Phase: PROTAGO | Ticks: 799 | Protag R: -4208.00 | Antag R: 4208.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  119 | Phase: PROTAGO | Ticks: 799 | Protag R: -5045.00 | Antag R: 5045.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep  120 | Phase: PROTAGO | Ticks: 798 | Protag R: -3287.00 | Antag R: 3287.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep  121 | Phase: PROTAGO | Ticks: 798 | Protag R: -4747.00 | Antag R: 4747.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep  122 | Phase: PROTAGO | Ticks: 798 | Protag R: -4622.00 | Antag R: 4622.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  123 | Phase: PROTAGO | Ticks: 799 | Protag R: -5139.00 | Antag R: 5139.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
+Ep  124 | Phase: PROTAGO | Ticks: 799 | Protag R: -4230.00 | Antag R: 4230.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  125 | Phase: PROTAGO | Ticks: 799 | Protag R: -4847.00 | Antag R: 4847.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Saving checkpoints for both agents before phase switch...
+Ep  126 | Phase: PROTAGO | Ticks: 799 | Protag R: -5388.00 | Antag R: 5388.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  127 | Phase: PROTAGO | Ticks: 799 | Protag R: -5116.00 | Antag R: 5116.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  128 | Phase: PROTAGO | Ticks: 799 | Protag R: -4200.00 | Antag R: 4200.00 | Delivery:  50.0% | Budget Used:  0.00/1500.0
+Ep  129 | Phase: PROTAGO | Ticks: 798 | Protag R: -4541.00 | Antag R: 4541.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  130 | Phase: PROTAGO | Ticks: 799 | Protag R: -4549.00 | Antag R: 4549.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  131 | Phase: PROTAGO | Ticks: 799 | Protag R: -3643.00 | Antag R: 3643.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  132 | Phase: PROTAGO | Ticks: 799 | Protag R: -4643.00 | Antag R: 4643.00 | Delivery:  75.0% | Budget Used:  0.00/1500.0
+Ep  133 | Phase: PROTAGO | Ticks: 798 | Protag R: -5377.00 | Antag R: 5377.00 | Delivery:  25.0% | Budget Used:  0.00/1500.0
+Ep  134 | Phase: PROTAGO | Ticks: 799 | Protag R: -4523.00 | Antag R: 4523.00 | Delivery:  62.5% | Budget Used:  0.00/1500.0
+Ep  135 | Phase: PROTAGO | Ticks: 798 | Protag R: -4837.00 | Antag R: 4837.00 | Delivery:  37.5% | Budget Used:  0.00/1500.0
