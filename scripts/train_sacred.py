@@ -53,12 +53,6 @@ def main() -> None:
         help="Custom tag for this training run (default: sacred_atla)",
     )
     parser.add_argument(
-        "--preseed-buffer",
-        type=lambda x: (str(x).lower() == 'true'),
-        default=True,
-        help="Pre-seed the protagonist's replay buffer using ALNS demonstrations (default: True)",
-    )
-    parser.add_argument(
         "--device",
         type=str,
         default="cpu",
@@ -102,8 +96,8 @@ def main() -> None:
         type=str,
         default=None,
         help="Path to a .pt of pre-generated SMDPTransitions to seed the protagonist replay "
-             "buffer (e.g. data/erb_assign.pt from generate_erb_assign.py). Overrides the legacy "
-             "--preseed-buffer path; demos are already correctly formatted (no compat shim).",
+             "buffer (e.g. data/erb_assign.pt from generate_erb_assign.py); demos are produced by "
+             "the shared transition builder (no compat shim needed).",
     )
     parser.add_argument(
         "--problem",
@@ -220,9 +214,6 @@ def main() -> None:
             config=config,
         )
         # Stage 0 has no demonstration ERB yet (the dynamic-dispatch ERB is later-stage work).
-        if args.preseed_buffer:
-            print("Stage 0: forcing --preseed-buffer False (no ERB for the validation rung).")
-            args.preseed_buffer = False
         # Next-hop fragments each episode into many short transitions, so the per-transition
         # latency reward is small (~-0.15 at scale 0.01) and was dwarfed by the SAC entropy
         # bonus alpha*H (~0.5) -> the agent optimised entropy, not delivery (Q went positive
@@ -247,9 +238,6 @@ def main() -> None:
             env_factory=lambda: make_assignment_env(),
             config=config,
         )
-        if args.preseed_buffer:
-            print("Assign: forcing --preseed-buffer False (no ERB for the probe).")
-            args.preseed_buffer = False
         # Same entropy-vs-signal scaling concern as stage0: latency reward must dominate alpha*H.
         reward_scale = 0.1
     elif args.problem == "dynassign":
@@ -280,9 +268,6 @@ def main() -> None:
         else:
             env_factory = lambda: make_dynamic_assign_env(arrival_rate=args.arrival_rate)
         smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config)
-        if args.preseed_buffer:
-            print("Dynassign: forcing --preseed-buffer False (no ERB for the dynamic rung yet).")
-            args.preseed_buffer = False
         reward_scale = 0.1
     elif args.problem == "hybrid":
         print("Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...")
@@ -310,9 +295,6 @@ def main() -> None:
             antag_reach="route",            # block the gateway AHEAD on a truck's route (anticipation)
         )
         smdp = SMDPDecisionWrapper(env_factory=lambda: make_hybrid_assign_env(), config=config)
-        if args.preseed_buffer:
-            print("Hybrid: forcing --preseed-buffer False.")
-            args.preseed_buffer = False
         reward_scale = 0.1
     else:
         print("Initializing SACRED SMDP Kaliningrad OSM Environment...")
@@ -411,28 +393,6 @@ def main() -> None:
             # Demos are produced by the shared transition builder -> already correct format.
             protag.replay_buffer.push(trans)
         print(f"Seeded {len(transitions)} demonstration transitions.")
-    elif args.preseed_buffer:
-        import os
-        import subprocess
-        import torch
-        erb_path = "data/erb_transitions.pt"
-        if not os.path.exists(erb_path):
-            print("\nPre-seeded transition file 'data/erb_transitions.pt' not found.")
-            print("Auto-triggering ALNS trajectory generator...")
-            # Run generate_erb.py using python
-            subprocess.run([sys.executable, "scripts/generate_erb.py"], check=True)
-            
-        if os.path.exists(erb_path):
-            print(f"\nLoading baseline transitions from {erb_path}...")
-            transitions = torch.load(erb_path, map_location="cpu", weights_only=False)
-            print(f"Pre-seeding protagonist replay buffer with {len(transitions)} transitions...")
-            for trans in transitions:
-                # Ensure compatibility with GATv2 state structures
-                trans.state["allowed_destinations"] = {
-                    "protagonist": dict(trans.action_mask["protagonist"])
-                }
-                protag.replay_buffer.push(trans)
-            print("Protagonist replay buffer pre-seeded successfully!")
 
     # 4. Initialize ATLA Trainer
     print("Initializing ATLA Coevolution Trainer...")

@@ -24,18 +24,18 @@ import time
 # Config recipes: name -> extra train_sacred.py args that define that condition.
 RECIPES = {
     "assign_erb": ["--problem", "assign", "--erb-path", "data/erb_assign.pt"],
-    "assign_noerb": ["--problem", "assign", "--preseed-buffer", "False"],
-    "stage0": ["--problem", "stage0", "--preseed-buffer", "False"],
+    "assign_noerb": ["--problem", "assign"],
+    "stage0": ["--problem", "stage0"],
     # Stage 1.5 dynamic assignment at the gate's rho~1 point + load-scaled antagonist budget.
     "dynassign": ["--problem", "dynassign", "--arrival-rate", "0.06",
-                  "--congestion-budget", "4000", "--preseed-buffer", "False"],
+                  "--congestion-budget", "4000"],
     # gen03 Phase-1: the NON-adversarial control (identical to dynassign but the antagonist is
     # inert and the protagonist trains every episode) — see experiments/gen03_robustness_dynassign.md.
     "vanilla": ["--problem", "dynassign", "--arrival-rate", "0.06",
-                "--congestion-budget", "4000", "--preseed-buffer", "False", "--vanilla"],
+                "--congestion-budget", "4000", "--vanilla"],
     # gen05 Phase-3 hybrid matrix arms (budget 1500 is set by the hybrid branch itself).
-    "hybrid_vanilla": ["--problem", "hybrid", "--preseed-buffer", "False", "--vanilla"],
-    "hybrid_scripted": ["--problem", "hybrid", "--preseed-buffer", "False", "--scripted-adversary"],
+    "hybrid_vanilla": ["--problem", "hybrid", "--vanilla"],
+    "hybrid_scripted": ["--problem", "hybrid", "--scripted-adversary"],
 }
 
 
