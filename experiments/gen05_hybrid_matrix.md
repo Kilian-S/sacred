@@ -71,3 +71,20 @@ PYTHONPATH=. python scripts/evaluate_portfolio.py --problem hybrid \
 ## Result
 
 _(to be filled)_
+
+## Launch record (2026-07-04 09:13)
+
+- **git SHA:** `324a644`
+- **configs:** hybrid_vanilla, hybrid_scripted  **seeds:** [0, 1, 2]
+- **common args:** `--episodes 400 --switch-every 25 --batch-size 32 --hidden-dim 64 --device cpu --eval-every 50 --group gen05_hybrid_matrix --threads 3 --update-every 8`
+
+## Recovery note (2026-07-04 10:28)
+
+The launch-session wrapper was reaped at ~10:25 (harness task cleanup; no reboot — both the
+launcher and an inert watcher died simultaneously), taking the three vanilla trainings with it at
+~ep 78. Resumed losslessly from the ep-75 phase checkpoints (`--resume-checkpoint`, replay buffer
+included; verified the new event stream continues at ep 76). RNG streams are not part of the
+checkpoint, so the resumed trajectories differ from an uninterrupted run — same config, same
+seeds, noted for the record. The relaunch runs under a detached nohup orchestrator
+(scratchpad/gen05_orchestrator.sh → gen05_status.txt) immune to session cleanup; the scripted
+batch auto-starts when the vanilla batch completes.
