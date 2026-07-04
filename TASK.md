@@ -16,6 +16,12 @@
 >
 > H7 (training the hybrid as previously specced) is SUPERSEDED — it must never run without these
 > fixes; the hybrid now enters as the Phase-3 robustness-matrix arena.
+>
+> **Update 2026-07-04:** gen03 pilot = pre-registered null (ATLA ≈ vanilla; learned adversary
+> weaker than random); gen04 gate = FAIL with motion observability (entropy pinning diagnosed) →
+> co-evolution parked. **Phase 3 = `experiments/gen05_hybrid_matrix.md`: {vanilla,
+> scripted-adversarial} × portfolio on fixed hybrid, budget 1500.** Back pocket: ATLA rider arm,
+> gen04b entropy re-gate. Full narrative: `SACRED_PROGRESS.md`.
 
 > **(Historical handoff note, 2026-07-01):** the Stage-2 H-steps below were the prior plan, resting
 > on the (unproven) interpretation that "next-hop routing is the missing lever". H1–H6 built; H7

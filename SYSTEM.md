@@ -37,5 +37,17 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Separation of concerns.** The physics engine (`graph_env.py`) stays unaware of RL hyperparameters; apply RL logic (γ discounting, reward scaling) on the agent/wrapper side using `elapsed_ticks`.
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
-## 5. Current epic (state only — see CONTEXT.md §2 / TASK.md for the full record)
-The machinery is stable and correct. Three curriculum rungs have **near-washed** against a reactive-greedy baseline (Stage 0 next-hop routing; static-3b assignment — a claimed milestone later *retracted* on a windowed read; Stage 1.5 dynamic assignment — 2 seeds, `gap_atk` within noise + ~6% static loss + antagonist runaway). We *interpreted* the common cause as destination-mode auto-routing starving the antagonist and built **Stage 2 = hybrid (assignment + next-hop routing)** — H1–H6 done (env state-machine, chokepoint geometry, route-reach antagonist, greedy baseline, headroom check, eval; **75 tests green**), **not yet trained**. That interpretation is *unproven* — do not treat "routing is the missing lever" as established. Everything is built ALONGSIDE the earlier rungs (all kept runnable): `--problem {osm,stage0,assign,dynassign,hybrid}`; factories `make_{osm,stage0_nexthop,assignment,dynamic_assign,hybrid_assign}_env`; eval `evaluate_{stage0,assignment,dynamic_assign,hybrid}.py`; headroom probes in `scratch/*_headroom.py`. **CPU spend and headline (Stage-2) design decisions need Kilian.**
+## 5. Current epic (state only — the living record is `SACRED_PROGRESS.md` + the newest `experiments/genNN_*.md` ledger)
+Headline (reframed 2026-07-02, `CRITIQUE.md`): **robustness of adversarially-trained vs
+non-adversarially-trained SAC under held-out attacks** (greedy = reference line only). Findings
+so far: gen03 = pre-registered null with mechanism — ATLA co-evolution bought no robustness
+because **the learned adversary attacks worse than random** (a 40-line scripted heuristic is 3–6×
+stronger); gen04 gate = FAIL even with motion observability (entropy pinning + reward SNR +
+γ-myopia). **Phase 3 = `gen05_hybrid_matrix`: {vanilla, scripted-adversarially-trained} × attack
+portfolio on the FIXED hybrid rung (budget 1500).** Back pocket (recorded, not scheduled): ATLA
+rider arm; lowered-antagonist-entropy re-gate (gen04b). All earlier rungs stay runnable
+(`--problem {osm,stage0,assign,dynassign,hybrid}`); trainer modes: atla · `--vanilla` ·
+`--train-antagonist-only` · `--scripted-adversary`. Additional dogma earned in gen03/gen04:
+**gate expensive training on cheap pre-registered probes; per-policy best-response evaluation;
+selection on a validation attacker never on test attacks; paired instances; stochastic eval of
+max-entropy policies.** CPU spend and design changes still need Kilian.

@@ -1,6 +1,23 @@
 # CONTEXT.md — The Blueprint (project state & reference)
 
-> **Read order for a new agent:** the handoff prompt → this file → `PROBLEM_REDESIGN.md` → `SYSTEM.md` → `TASK.md`, and the literature review at `../../MT_Literature_Survey_Kilian_Schwarz_split.pdf` (two folders above the repo root; a non-split `.pdf` sits beside it). This file is the *current-state reference*; `PROBLEM_REDESIGN.md` is the *forward design*; `TASK.md` is the *next concrete steps*.
+> **⚠️ STATUS BANNER (2026-07-04) — §0–§2 below are the historical record up to the Stage-2 hybrid
+> build (2026-07-01); they are intentionally preserved, not current.** The project was **REFRAMED
+> 2026-07-02** (`CRITIQUE.md`, accepted): headline = *robustness of adversarially-trained vs
+> non-adversarially-trained SAC under held-out attacks*; "beat greedy" demoted to a reference
+> line. Since then: hybrid rung repaired (zombie-orbit bug; 13-dim node + 4-dim edge
+> observability incl. truck motion); **gen03** robustness pilot = pre-registered null with
+> mechanism (the learned adversary attacks *worse than random*; a 40-line scripted heuristic is
+> 3–6× stronger); **gen04** gate = FAIL (observability necessary but not sufficient — entropy
+> pinning + reward SNR + γ-myopia diagnosed) → **co-evolution parked; Phase 3
+> (`gen05_hybrid_matrix`) = vanilla vs scripted-adversarially-trained protagonist on the fixed
+> hybrid, budget 1500** (Kilian 2026-07-04; ATLA rider arm + lowered-entropy re-gate in the back
+> pocket). **The living per-run narrative is `SACRED_PROGRESS.md`; the live plan is the newest
+> `experiments/genNN_*.md` ledger.**
+>
+> **Read order for a new agent:** `SACRED_PROGRESS.md` → `CRITIQUE.md` → the newest ledger → this
+> file (history) → `PROBLEM_REDESIGN.md` (historical design) → `SYSTEM.md` → `TASK.md`, and the
+> literature review at `../../MT_Literature_Survey_Kilian_Schwarz_split.pdf` (two folders above
+> the repo root; a non-split `.pdf` sits beside it).
 
 ---
 

@@ -80,3 +80,13 @@ either way. Optional cheap follow-up (gen04b, ~2 h): one gate re-run with a lowe
 entropy target to test the "entropy pinning" hypothesis directly.
 
 Artifacts: `experiments/gen04_gate.json`, run `models/runs/gen04_antag_gate/br_fixed_vanilla_s0_seed0`.
+
+## Decisions (2026-07-04, Kilian)
+
+- **Scripted-adversarial arm: PROMOTED** — Phase 3 trains the protagonist against the scripted
+  targeted attacker (`gen05_hybrid_matrix`).
+- **ATLA co-evolution rider arm: BACK POCKET** — not in Phase 3; revisit only if the scripted
+  arm's result motivates it (the hybrid route-reach mask argument stands recorded above).
+- **gen04b (lowered antagonist entropy target re-gate): BACK POCKET** — the entropy-pinning
+  hypothesis stays documented but untested for now; a ~2 h re-gate if the thesis's diagnosis
+  chapter needs the direct counterfactual.

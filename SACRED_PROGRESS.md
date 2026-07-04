@@ -215,3 +215,6 @@
   not a vague failure.
 - **Thesis fit:** Obj 1/3 (the limits of the zero-sum co-evolution as instantiated) and the
   methods chapter (gating expensive training on cheap pre-registered probes).
+- **Decisions (2026-07-04, Kilian):** scripted-adversarial arm **promoted** into Phase 3
+  (`gen05_hybrid_matrix`); the ATLA co-evolution rider arm and the lowered-entropy-target re-gate
+  (gen04b) both go to the **back pocket** — recorded options, not scheduled work.
