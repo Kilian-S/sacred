@@ -158,6 +158,15 @@ def main() -> None:
              "the SAME value for every arm of a generation.",
     )
     parser.add_argument(
+        "--scripted-attacker",
+        type=str,
+        choices=["targeted", "pathrand"],
+        default="targeted",
+        help="Which scripted attacker --scripted-adversary trains against. gen05 hybrid used "
+             "'targeted'; gen06 dynassign trains vs 'pathrand' (random goal-committed truck's "
+             "path edge) so 'targeted' stays HELD OUT as the test attack.",
+    )
+    parser.add_argument(
         "--scripted-adversary",
         action="store_true",
         help="Adversarial training against the FIXED scripted targeted attacker (gen04 consequence:"
@@ -439,8 +448,12 @@ def main() -> None:
 
     scripted_attacker = None
     if trainer_mode == "scripted_adversary":
-        from src.baselines.attackers import targeted_block_policy
-        scripted_attacker = targeted_block_policy(smdp)
+        from src.baselines.attackers import random_path_block_policy, targeted_block_policy
+        if args.scripted_attacker == "pathrand":
+            scripted_attacker = random_path_block_policy(smdp, seed=args.seed or 0)
+        else:
+            scripted_attacker = targeted_block_policy(smdp)
+        print(f"Scripted adversary: {args.scripted_attacker}")
 
     trainer = ATLACoevolutionTrainer(
         smdp=smdp,

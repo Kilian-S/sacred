@@ -36,6 +36,10 @@ RECIPES = {
     # gen05 Phase-3 hybrid matrix arms (budget 1500 is set by the hybrid branch itself).
     "hybrid_vanilla": ["--problem", "hybrid", "--vanilla"],
     "hybrid_scripted": ["--problem", "hybrid", "--scripted-adversary"],
+    # gen06 dynassign matrix: scripted-adversarial arm trains vs pathrand ('targeted' held out).
+    "dynassign_scripted": ["--problem", "dynassign", "--arrival-rate", "0.06",
+                           "--congestion-budget", "4000", "--scripted-adversary",
+                           "--scripted-attacker", "pathrand"],
 }
 
 

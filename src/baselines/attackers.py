@@ -51,6 +51,42 @@ def mask_first_block_policy(event: DecisionEvent):
     return (edge, max(lbe[edge]))
 
 
+def random_path_block_policy(smdp: SMDPDecisionWrapper, seed: int = 0):
+    """The gen06 TRAINING attacker: block the first blockable edge on the path of a UNIFORMLY
+    RANDOM goal-committed truck (falling back to a random maskable edge). Route-aimed like
+    `targeted` but stochastic across trucks — training against it exposes the protagonist to
+    broader interdiction patterns (less determinism to overfit) while `targeted` (always the
+    nearest-to-goal truck) stays HELD OUT as the test attack."""
+    rng = random.Random(seed)
+
+    def policy(event: DecisionEvent):
+        env = smdp.env
+        lbe = event.antagonist_action_mask.get("levels_by_edge", {})
+        if not lbe:
+            return None
+        candidates = []
+        for truck in sorted(env.trucks.values(), key=lambda t: t.truck_id):
+            goal = getattr(truck, "assigned_target", None) or truck.destination
+            start = truck.current_node
+            if start is None and truck.edge is not None:
+                start = truck.edge[1]
+            if goal is None or start is None or start == goal:
+                continue
+            try:
+                path = nx.dijkstra_path(env.graph, start, goal, weight="effective_weight")
+            except (nx.NetworkXNoPath, nx.NodeNotFound):
+                continue
+            for i in range(len(path) - 1):
+                e = env._edge_key(path[i], path[i + 1])
+                if e in lbe:
+                    candidates.append(e)
+                    break  # first blockable edge on THIS truck's path
+        edge = rng.choice(candidates) if candidates else rng.choice(sorted(lbe, key=repr))
+        return (edge, max(lbe[edge]))
+
+    return policy
+
+
 def targeted_block_policy(smdp: SMDPDecisionWrapper):
     """Block the first blockable edge on the shortest path of the truck closest to its goal.
 
