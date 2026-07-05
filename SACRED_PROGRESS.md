@@ -251,3 +251,35 @@
   pre-registration, held-out attacks, paired instances, ceiling-compression as an identified
   robustness-evaluation pitfall) + the results chapter's second act; strengthens the methods
   narrative regardless of what the final matrix shows.
+
+## 10. `gen06_dynassign_matrix` — the competence-valid robustness matrix  (2026-07-05 · `cfabc90`/`0bc6ec3` · `experiments/gen06_dynassign_matrix.md`)
+
+- **Goal (prospective):** the Phase-3 retake in the arena where policies demonstrably learn:
+  {vanilla, scripted-adversarial (trained vs the new stochastic `pathrand` attacker)} × 3 fresh
+  seeds × 800 ep on dynassign; primary = pooled dD under the fully held-out `targeted` attack,
+  behind a pre-registered **competence gate** (the gen05 lesson).
+- **Headline results:** **gate PASSED everywhere** (all six arms within +5.5…+7.0% of greedy
+  clean — gen03's band, replicated); **primary NOT MET and significantly reversed**: pooled
+  dD_targeted = **−881 ± 284** (0/3 pairings), dD_pathrand = **−775 ± 244** (worse even under its
+  own training attacker), dD_random = −45 ± 221 (even), clean premium ≈ 0. Robustness ranking:
+  **greedy (D 4921) > vanilla (5196–5882) > adversarially-trained (6361–6575)**.
+- **What we learned:** with competence finally established, adversarial training against a
+  strong scripted attacker **worsens** robustness to route-aimed attacks — in- and
+  out-of-distribution — at zero clean cost. Leading mechanism, consistent with the campaign-wide
+  SNR theme: constant attack floods the latency reward with unavoidable damage, diluting the
+  learnable signal; the deficit surfaces precisely where queue compounding amplifies policy
+  quality. And the most robust policy in the matrix is the reactive classical dispatcher —
+  Ritzinger's reactive-dominance, measured in our own framework.
+- **Thesis progression:** the campaign now closes a complete, coherent chain of evidence:
+  the learned adversary cannot learn to attack (gen03/04) → the protagonist cannot learn
+  decision-dense arenas (gen05) → and even the best-case configuration (strong fixed adversary,
+  competent protagonist, clean evaluation) yields *negative* robustness transfer (gen06).
+- **What it means for the thesis:** the definitive experimental finding, and a genuinely
+  publishable-shaped one: *adversarial co-training as formulated does not confer robustness in
+  stochastic-dynamic VRP, and the paper explains why* — reward SNR under zero-sum latency,
+  entropy pinning, decision density, and reactive-baseline dominance. The methodology
+  (pre-registration, competence gates, held-out attack portfolios, paired instances) is the
+  constructive contribution. Freeze can proceed on this result.
+- **Thesis fit:** Objectives 1/3/5 all get evidenced answers (negative but rigorous); the
+  discussion chapter's "when does adaptive RL help" question gets its honest empirical answer
+  for this problem class.

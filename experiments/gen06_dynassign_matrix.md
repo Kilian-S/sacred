@@ -58,9 +58,43 @@ PYTHONPATH=. python scripts/run_generation.py --group gen06_dynassign_matrix --c
 # 4. portfolio: arms paired per invocation + greedy; attackers none,random,pathrand,targeted,br_*; 30 instances
 ```
 
-## Result
+## Result (2026-07-05 ~20:40, primary pass; BR reference rows pending) — **COMPETENCE GATE PASSED; PRIMARY NOT MET — SIGNIFICANTLY REVERSED**
 
-_(to be filled)_
+**Competence gate: PASS, all six arms** — W(none) within **+5.5…+7.0%** of greedy (6538–6635 vs
+6200), exactly gen03's band, replicated. No ceiling compression (attacked W ≈ 8–13k, unbounded
+regime). This matrix is fully interpretable — the gen05 confound is absent.
+
+| arm | W(none) | D(random) | D(pathrand) *(in-dist. for scripted)* | D(targeted) **(held out)** |
+|---|---|---|---|---|
+| greedy | 6200 | 1718 | 5035 | **4921** |
+| vanilla (s0/s1/s2) | 6618/6635/6590 | 1751/1807/2027 | 5174/5749/5706 | 5196/5627/5882 |
+| scripted (s0/s1/s2) | 6538/6609/6600 | 1890/1650/2180 | 6528/6052/6374 | **6575/6413/6361** |
+
+**Primary:** pooled `dD_targeted = −881 ± 284` (95% CI, n=90), pairings positive **0/3**
+(−1379±519 / −785±510 / −479±400) → **NOT MET, significantly reversed**: the adversarially-
+trained arm degrades ~900 MORE under the held-out attack. Secondaries: `dD_pathrand = −775 ±
+244` (0/3) — the scripted arm is worse even under **its own training attacker**; `dD_random =
+−45 ± 221` (dead even). Clean premium ≈ 0 (scripted ≈ vanilla unattacked).
+
+**Reading.** With competence established, the result is unambiguous and consistent across seeds
+and both aimed attacks: **training under constant strong attack made the policy measurably LESS
+robust to route-aimed attacks, in- and out-of-distribution, at no clean-performance difference.**
+The robustness ranking is `greedy (4921) > vanilla (5196–5882) > adversarially-trained
+(6361–6575)` — the more adversarial exposure, the worse; the reactive classical dispatcher is
+the most robust policy in the matrix (consistent with Ritzinger et al.'s reactive-dominance).
+Leading mechanism (fits the campaign-wide SNR theme): under constant attack the latency reward is
+dominated by unavoidable attack damage, so the *learnable* signal (assignment quality under
+pressure) is diluted — adversarial exposure degraded learning rather than conferring robustness;
+the deficit surfaces exactly where queue compounding amplifies policy quality (aimed attacks) and
+not where damage is undirected (random) or absent (clean).
+
+**Campaign conclusion (gen03→gen06):** the SACRED zero-sum co-training premise fails on both
+sides for this problem class, with a common root cause — (i) the learned adversary cannot learn
+to attack (gen03/04: below-random, entropy pinning, SNR); (ii) the protagonist cannot learn
+decision-dense arenas (gen05); (iii) even with a strong scripted adversary and a competent
+protagonist, adversarial training *worsens* held-out robustness (gen06). This is the thesis's
+definitive experimental finding — pre-registered, competence-gated, paired, seeded.
+BR reference rows to be appended (cannot change the primary).
 
 ## Launch record (2026-07-05 01:42)
 
