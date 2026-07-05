@@ -101,3 +101,17 @@ BR reference rows to be appended (cannot change the primary).
 - **git SHA:** `0bc6ec3`
 - **configs:** vanilla, dynassign_scripted  **seeds:** [0, 1, 2]
 - **common args:** `--episodes 800 --switch-every 50 --batch-size 32 --hidden-dim 64 --device cpu --eval-every 50 --group gen06_dynassign_matrix --threads 3 --update-every 1`
+
+## BR reference rows (appended 2026-07-06; primary unchanged — pipeline complete)
+
+| arm | D(br_vanilla) | D(br_scripted) |
+|---|---|---|
+| greedy | 577 | 1715 |
+| vanilla (s0/s1/s2) | 1086 / 949 / 928 | 1749 / 1908 / 1500 |
+| scripted (s0/s1/s2) | 1148 / 1023 / 841 | 1324 / 1864 / 1804 |
+
+Both learned best-response attackers remain weak in this leashed-reach arena (≈ at or below the
+random attacker's ~1700–2200, and 3–4× below the scripted attacks) — consistent with gen03/04;
+the gen05 finding that learned attackers become strong under ROUTE reach is arena-specific.
+br_scripted transfers somewhat better (~1500–1900 vs all victims) than br_vanilla (577–1148) but
+neither approaches the scripted heuristics. No change to the primary. **gen06 closed.**
