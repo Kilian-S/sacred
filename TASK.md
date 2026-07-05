@@ -23,6 +23,15 @@
 > scripted-adversarial} × portfolio on fixed hybrid, budget 1500.** Back pocket: ATLA rider arm,
 > gen04b entropy re-gate. Full narrative: `SACRED_PROGRESS.md`.
 >
+> **FINAL UPDATE 2026-07-06 — CAMPAIGN COMPLETE; see `HANDOVER.md`.** gen05 = competence-void
+> (neither arm learned the hybrid; ceiling compression); gen06 (dynassign, competence gate PASSED
+> at +5.5–7.0% of greedy) = **primary significantly reversed: adversarial training worsens
+> held-out robustness** (dD_targeted −881 ± 284, 0/3 pairings; ranking greedy > vanilla >
+> adversarial). Open decisions with Kilian: freeze-and-write (recommended) vs option-(b) hybrid
+> learnability stretch; supervisor conversation (D4 descope: ERB/SBO/ZST/ALNS); thesis-planner
+> launch. Remaining chores: env/envs merge (post-freeze), visualiser dims touch-up if figures
+> need old checkpoints.
+>
 > **Deferred cleanup TODOs (approved 2026-07-04, blocked on running jobs / campaign freeze):**
 > ~~(1) AFTER gen05 training completes: remove the legacy `--preseed-buffer` path~~ **DONE
 > 2026-07-04, commit `d6982bb`** (test_erb needed no trim — already file-independent). (2) AFTER the experimental

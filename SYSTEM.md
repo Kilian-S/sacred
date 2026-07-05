@@ -37,17 +37,23 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Separation of concerns.** The physics engine (`graph_env.py`) stays unaware of RL hyperparameters; apply RL logic (γ discounting, reward scaling) on the agent/wrapper side using `elapsed_ticks`.
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
-## 5. Current epic (state only — the living record is `SACRED_PROGRESS.md` + the newest `experiments/genNN_*.md` ledger)
-Headline (reframed 2026-07-02, `CRITIQUE.md`): **robustness of adversarially-trained vs
-non-adversarially-trained SAC under held-out attacks** (greedy = reference line only). Findings
-so far: gen03 = pre-registered null with mechanism — ATLA co-evolution bought no robustness
-because **the learned adversary attacks worse than random** (a 40-line scripted heuristic is 3–6×
-stronger); gen04 gate = FAIL even with motion observability (entropy pinning + reward SNR +
-γ-myopia). **Phase 3 = `gen05_hybrid_matrix`: {vanilla, scripted-adversarially-trained} × attack
-portfolio on the FIXED hybrid rung (budget 1500).** Back pocket (recorded, not scheduled): ATLA
-rider arm; lowered-antagonist-entropy re-gate (gen04b). All earlier rungs stay runnable
-(`--problem {osm,stage0,assign,dynassign,hybrid}`); trainer modes: atla · `--vanilla` ·
-`--train-antagonist-only` · `--scripted-adversary`. Additional dogma earned in gen03/gen04:
-**gate expensive training on cheap pre-registered probes; per-policy best-response evaluation;
-selection on a validation attacker never on test attacks; paired instances; stochastic eval of
-max-entropy policies.** CPU spend and design changes still need Kilian.
+## 5. Current epic (state only — the living record is `SACRED_PROGRESS.md` + `HANDOVER.md`)
+**THE EXPERIMENTAL CAMPAIGN IS COMPLETE (2026-07-06; gen03→gen06, all pre-registered).**
+Definitive finding (gen06, competence-gated, all arms within +5.5–7.0% of greedy clean):
+**adversarial training worsens held-out robustness** (pooled dD_targeted = −881 ± 284, 0/3
+pairings; worse even under its own training attacker), robustness ranking **greedy > vanilla >
+adversarially-trained**. Full chain: the learned adversary can't learn to attack (gen03/04 —
+below random; entropy pinning) → the protagonist can't learn decision-dense arenas (gen05 —
+ceiling compression voided that matrix) → adversarial exposure degrades learning SNR even in the
+best case (gen06). One root cause: the zero-sum latency reward buries controllable signal under
+an uncontrollable shared baseline. Constructive output: four named preconditions for adversarial
+VRP training (coping channel, learnable attack structure, competence-first curriculum,
+variance-reduced reward) + the evaluation methodology (pre-registration, competence gates,
+held-out attack portfolios, per-policy best responses, paired instances). Trainer modes: atla ·
+`--vanilla` · `--train-antagonist-only` · `--scripted-adversary` (+`--scripted-attacker`,
+`--update-every`); all rungs runnable (`--problem {osm,stage0,assign,dynassign,hybrid}`).
+**Next phase = thesis writing** (freeze ~Jul 16–18; supervisor conversation pending; thesis
+planner brief in `../../../thesis/THESIS_PLANNER_HANDOFF.md`). Dogma additions earned this
+campaign: gate expensive training on cheap pre-registered probes; competence is a precondition
+for robustness claims; selection on a validation attacker never on test attacks; stochastic eval
+of max-entropy policies. CPU spend and design changes still need Kilian.

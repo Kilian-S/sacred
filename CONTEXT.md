@@ -1,23 +1,24 @@
 # CONTEXT.md — The Blueprint (project state & reference)
 
-> **⚠️ STATUS BANNER (2026-07-04) — §0–§2 below are the historical record up to the Stage-2 hybrid
-> build (2026-07-01); they are intentionally preserved, not current.** The project was **REFRAMED
-> 2026-07-02** (`CRITIQUE.md`, accepted): headline = *robustness of adversarially-trained vs
-> non-adversarially-trained SAC under held-out attacks*; "beat greedy" demoted to a reference
-> line. Since then: hybrid rung repaired (zombie-orbit bug; 13-dim node + 4-dim edge
-> observability incl. truck motion); **gen03** robustness pilot = pre-registered null with
-> mechanism (the learned adversary attacks *worse than random*; a 40-line scripted heuristic is
-> 3–6× stronger); **gen04** gate = FAIL (observability necessary but not sufficient — entropy
-> pinning + reward SNR + γ-myopia diagnosed) → **co-evolution parked; Phase 3
-> (`gen05_hybrid_matrix`) = vanilla vs scripted-adversarially-trained protagonist on the fixed
-> hybrid, budget 1500** (Kilian 2026-07-04; ATLA rider arm + lowered-entropy re-gate in the back
-> pocket). **The living per-run narrative is `SACRED_PROGRESS.md`; the live plan is the newest
-> `experiments/genNN_*.md` ledger.**
+> **⚠️ STATUS BANNER (2026-07-06) — §0–§2 below are the historical record up to the Stage-2 hybrid
+> build (2026-07-01); they are intentionally preserved, not current. THE EXPERIMENTAL CAMPAIGN IS
+> COMPLETE — read `HANDOVER.md` first.** The project was **REFRAMED 2026-07-02** (`CRITIQUE.md`):
+> headline = *robustness of adversarially-trained vs non-adversarially-trained SAC under held-out
+> attacks*. The campaign (gen03→gen06, all pre-registered) then produced the definitive finding:
+> **adversarial training does not confer — and measurably worsens — held-out robustness in this
+> framework** (gen06, competence-gated: dD_targeted −881 ± 284, 0/3 pairings; robustness ranking
+> greedy > vanilla > adversarially-trained), with a complete mechanism chain: the learned
+> adversary can't learn to attack (gen03/04: below-random, entropy pinning), the protagonist
+> can't learn decision-dense arenas (gen05: ceiling compression), and adversarial exposure
+> degrades learning SNR even in the best case (gen06). Root cause: the zero-sum latency reward's
+> signal-to-noise structure. **Next phase = thesis writing.** The living records are
+> `HANDOVER.md` (state + outlook), `SACRED_PROGRESS.md` (per-run narrative), and the
+> `experiments/genNN_*.md` ledgers (all numbers).
 >
-> **Read order for a new agent:** `SACRED_PROGRESS.md` → `CRITIQUE.md` → the newest ledger → this
-> file (history) → `PROBLEM_REDESIGN.md` (historical design) → `SYSTEM.md` → `TASK.md`, and the
-> literature review at `../../MT_Literature_Survey_Kilian_Schwarz_split.pdf` (two folders above
-> the repo root; a non-split `.pdf` sits beside it).
+> **Read order for a new agent:** `HANDOVER.md` → `SACRED_PROGRESS.md` → `CRITIQUE.md` → the
+> ledgers gen02–gen06 → this file (history) → `PROBLEM_REDESIGN.md` (historical design) →
+> `SYSTEM.md` → `TASK.md`, and the literature review at
+> `../../MT_Literature_Survey_Kilian_Schwarz_split.pdf` (two folders above the repo root).
 
 ---
 
