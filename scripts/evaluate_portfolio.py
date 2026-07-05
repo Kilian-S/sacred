@@ -272,9 +272,10 @@ def print_summary(summary: dict) -> None:
 
 def select_best_under_attack(run_dir: str, cfg: SMDPConfig, make_env_for_seed,
                              greedy_factory, instance_seeds: list[int],
-                             rollouts: int = 1) -> list[dict]:
-    """Rank a run's protagonist snapshots by mean total_wait under the VALIDATION (targeted)
-    attacker. Selection never sees the best-response attackers or the test instances."""
+                             rollouts: int = 1, attacker: str = "targeted") -> list[dict]:
+    """Rank a run's protagonist snapshots by mean total_wait under the VALIDATION attacker
+    (configurable — gen06 selects on `pathrand` because `targeted` is its held-out test attack).
+    Selection never sees the test attackers or the test instances."""
     import glob
     import os
     import re
@@ -289,9 +290,9 @@ def select_best_under_attack(run_dir: str, cfg: SMDPConfig, make_env_for_seed,
         ep = int(m.group(1)) if m else -1
         agent = _load_protagonist(path)
         factory = lambda smdp, _a=agent: sac_protagonist_policy(smdp, _a)
-        res = run_matrix({"cand": factory}, ["targeted"], {}, cfg, make_env_for_seed,
+        res = run_matrix({"cand": factory}, [attacker], {}, cfg, make_env_for_seed,
                          instance_seeds, rollouts, quiet=True)
-        mean, sem = _mean_sem(res["cand"]["targeted"])
+        mean, sem = _mean_sem(res["cand"][attacker])
         ranked.append({"ep": ep, "path": path, "val_attacked_wait": mean, "sem": sem})
     ranked.sort(key=lambda d: d["val_attacked_wait"])
     return ranked
@@ -316,6 +317,8 @@ def main() -> None:
     parser.add_argument("--out", type=str, default=None, help="write raw results + summary JSON")
     parser.add_argument("--select-best", type=str, default=None, metavar="RUN_DIR",
                         help="rank RUN_DIR's snapshots under the validation attacker instead")
+    parser.add_argument("--select-attacker", type=str, default="targeted",
+                        help="validation attacker for --select-best (gen06: pathrand)")
     args = parser.parse_args()
 
     cfg, make_env_for_seed, greedy_factory, is_static = _problem_setup(args.problem, args.arrival_rate)
@@ -323,8 +326,9 @@ def main() -> None:
     if args.select_best:
         seeds = [VAL_SEED_BASE + i for i in range(args.instances)]
         ranked = select_best_under_attack(args.select_best, cfg, make_env_for_seed,
-                                          greedy_factory, seeds, args.rollouts)
-        print(f"\nSnapshot ranking under the VALIDATION (targeted) attacker "
+                                          greedy_factory, seeds, args.rollouts,
+                                          attacker=args.select_attacker)
+        print(f"\nSnapshot ranking under the VALIDATION ({args.select_attacker}) attacker "
               f"({args.instances} validation instances):")
         for r in ranked[:15]:
             print(f"  ep{r['ep']:>5}  attacked_wait={r['val_attacked_wait']:8.0f} ±{r['sem']:5.0f}")

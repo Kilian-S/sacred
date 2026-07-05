@@ -61,3 +61,9 @@ PYTHONPATH=. python scripts/run_generation.py --group gen06_dynassign_matrix --c
 ## Result
 
 _(to be filled)_
+
+## Launch record (2026-07-05 01:42)
+
+- **git SHA:** `0bc6ec3`
+- **configs:** vanilla, dynassign_scripted  **seeds:** [0, 1, 2]
+- **common args:** `--episodes 800 --switch-every 50 --batch-size 32 --hidden-dim 64 --device cpu --eval-every 50 --group gen06_dynassign_matrix --threads 3 --update-every 1`
