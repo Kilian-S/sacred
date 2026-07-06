@@ -215,6 +215,30 @@ def survival_intercept_fn(vulnerability: dict[frozenset, float]) -> Callable[[fr
     return fn
 
 
+def cost_constrained_value(game: InterdictionGame, budget: float) -> tuple[float, np.ndarray]:
+    """One point of the COST-SECURITY FRONTIER: the minimax interception achievable by a mixed
+    route strategy whose EXPECTED travel cost is at most ``budget`` (sweep budget for the curve;
+    budget >= max useful cost reproduces the unconstrained ``solve`` value). This is the yardstick
+    for the two-axis claim: deterministic dispatch is cheap but fully exploitable, naive noise is
+    expensive AND exploitable, the equilibrium converts cost into security efficiently, and each
+    trained arm lands somewhere against the curve. Budgets below the cheapest route are infeasible."""
+    c_min = float(game.travel_cost.min())
+    if budget < c_min - 1e-12:
+        raise ValueError(f"budget {budget} infeasible: the cheapest route costs {c_min}")
+    n, m = game.payoff.shape
+    c = np.zeros(n + 1); c[-1] = 1.0
+    A_ub = np.vstack([np.hstack([game.payoff.T, -np.ones((m, 1))]),
+                      np.hstack([game.travel_cost[None, :], np.zeros((1, 1))])])
+    b_ub = np.concatenate([np.zeros(m), [budget]])
+    A_eq = np.zeros((1, n + 1)); A_eq[0, :n] = 1.0; b_eq = np.array([1.0])
+    bounds = [(0.0, 1.0)] * n + [(None, None)]
+    res = linprog(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method="highs")
+    if not res.success:
+        raise RuntimeError(f"frontier LP failed: {res.message}")
+    x = np.clip(res.x[:n], 0.0, None); x = x / x.sum()
+    return float(res.x[-1]), x
+
+
 def route_distribution_from_first_hops(game: InterdictionGame, s: NodeId,
                                        first_hop_probs: dict[NodeId, float]) -> np.ndarray:
     """Map a distribution over the FIRST hop out of s to a distribution over routes (each route is

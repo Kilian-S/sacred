@@ -71,11 +71,16 @@ evaluation discipline). Separation policy from the redirection still holds (`mai
          learn the specific mixed strategy: (a) ~~K>=2 interdictors~~ **CORRECTED 2026-07-06: K>=2
          alone is NOT an asymmetry source (on disjoint routes with hard interception the equilibrium
          is uniquely uniform for every K: best response = the top-K defender masses); K stays the
-         budget/sweep axis**; (b) shared-edge / non-disjoint candidate routes (needs route-choice
-         beyond first-hop = the multi-branch next-hop or an explicit route-index policy head, since
-         first-hop != route when routes share prefixes; the LATER class); (c) heterogeneous route
-         vulnerability: **BUILT (I3a, the priority class)**. The oracle handles all of these
-         (`build_interdiction_game` with any K, any route set, any `intercept_fn`). Pick 2-3 OD pairs.
+         budget/sweep axis**; (b) shared-edge / non-disjoint candidate routes: **BUILT 2026-07-06
+         (B2): route-walk trie (`begin_walk`/`step_walk`/`walk_distribution`, exact branch-product
+         policy mixtures), `--route-mode walk`, TAP metric (trailing-averaged policy distribution),
+         `cost_constrained_value` frontier LP; suite 131 green; B2 pre-registered in the gen08
+         ledger (33->71 k8 primary: equilibrium 0.167 vs best-possible cost mixture >= 0.467:
+         the wave-1 imitation escape is closed by construction); LAUNCH AWAITS KILIAN**;
+         (c) heterogeneous route vulnerability: **BUILT + RUN (I3a wave 1: primary FAILED, headline
+         replicated, mechanisms ledgered; class (c) exhausted on disjoint routes by the
+         descending-band probe)**. The oracle handles all of these (`build_interdiction_game` with
+         any K, any route set, any `intercept_fn`).
       2. **Arms x seeds:** shortest_path, vanilla, sacred, + the equilibrium oracle (ground truth);
          >=3 seeds; report exploitability (best-response) + distance-to-equilibrium, dual-level stats.
       3. **Sweeps as curves:** interdiction budget K, edge-connectivity of the OD pair.

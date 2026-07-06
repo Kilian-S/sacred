@@ -100,6 +100,103 @@ def test_factory_builds_sac_observation():
         assert fh in env.graph["33"]
 
 
+# --- B2 (class b): route-walk over the candidate-route trie (shared-edge instances) ---
+
+
+def _shared_prefix_graph():
+    # candidate routes: S-A-T, S-A-B-T (SHARED prefix S-A), S-C-T, S-E-F-T (forced segment E-F-T).
+    G = nx.Graph()
+    for p in (["S", "A", "T"], ["S", "A", "B", "T"], ["S", "C", "T"], ["S", "E", "F", "T"]):
+        for u, v in zip(p, p[1:]):
+            G.add_edge(u, v, w=1.0)
+    return G
+
+
+def _walk_route(env, route):
+    """Drive the walk along a target route; at each branch the correct hop is the allowed node
+    earliest in the route (nodes before the branch are already consumed: simple paths)."""
+    _, done, ri = env.begin_walk()
+    while not done:
+        allowed = env.walk_mask()[0]
+        hop = min((h for h in allowed if h in route), key=route.index)
+        _, done, ri = env.step_walk(hop)
+    return ri
+
+
+def test_walk_trie_masks_and_auto_advance():
+    env = InterdictionEnv(_shared_prefix_graph(), InterdictionConfig(od=("S", "T"), K=1))
+    assert env.game.n_routes == 4
+    # first-hop collision exists (S-A-T and S-A-B-T): the walk is genuinely needed.
+    assert max(len(v) for v in env.routes_by_first_hop.values()) == 2
+    obs, done, ri = env.begin_walk()
+    assert not done and ri is None
+    assert env.walk_mask()[0] == ["A", "C", "E"]
+    # a hop onto a fully forced branch auto-advances to the terminal.
+    _, done, ri = env.step_walk("E")
+    assert done and env.game.routes[ri] == ("S", "E", "F", "T")
+    # shared prefix: after S-A there is a real second decision.
+    env.begin_walk()
+    _, done, _ = env.step_walk("A")
+    assert not done and env.walk_mask()[0] == ["B", "T"]
+    _, done, ri = env.step_walk("B")
+    assert done and env.game.routes[ri] == ("S", "A", "B", "T")
+    # illegal hop rejected.
+    env.begin_walk()
+    with pytest.raises(ValueError):
+        env.step_walk("F")
+    # round-trip: every candidate route is walkable and returns its own index.
+    for i, r in enumerate(env.game.routes):
+        assert _walk_route(env, r) == i
+
+
+def test_walk_distribution_exact_product():
+    env = InterdictionEnv(_shared_prefix_graph(), InterdictionConfig(od=("S", "T"), K=1))
+    uniform = lambda node, allowed: {h: 1.0 / len(allowed) for h in allowed}
+    d = env.walk_distribution(uniform)
+    expected = {("S", "A", "T"): 1 / 6, ("S", "A", "B", "T"): 1 / 6,
+                ("S", "C", "T"): 1 / 3, ("S", "E", "F", "T"): 1 / 3}
+    for i, r in enumerate(env.game.routes):
+        assert d[i] == pytest.approx(expected[r])
+    # a biased policy propagates exactly (branch product).
+    biased = lambda node, allowed: ({"A": 0.5, "C": 0.5, "E": 0.0} if node == "S"
+                                    else {h: (1.0 if h == "T" else 0.0) for h in allowed})
+    d2 = env.walk_distribution(biased)
+    assert d2[env.game.routes.index(("S", "A", "T"))] == pytest.approx(0.5)
+    assert d2[env.game.routes.index(("S", "C", "T"))] == pytest.approx(0.5)
+
+
+def test_B2_shared_edge_kaliningrad_gate():
+    """The B2 primary instance (33->71, k_extra=8, hard, K=1), anchors pinned by
+    scratch/shared_edge_probe.py: 11 routes, first-hop collisions (walk required), equilibrium
+    1/6 over the disjoint routes, uniform mixing >2.5x suboptimal (mass stacks on shared edges),
+    and the walk expresses exactly the candidate route set."""
+    from src.envs.interdiction import make_interdiction_env
+    env = make_interdiction_env(od=("33", "71"), K=1, k_extra_routes=8)
+    assert env.game.n_routes == 11
+    assert max(len(v) for v in env.routes_by_first_hop.values()) >= 2
+    sol = solve(env.game)
+    assert sol.loss_det == pytest.approx(1.0)
+    assert sol.value == pytest.approx(1.0 / 6.0, abs=1e-6)
+    uni = np.ones(env.game.n_routes) / env.game.n_routes
+    _, expl_uni = best_response_attacker(env.game, uni)
+    assert expl_uni / sol.value > 2.5
+    for i, r in enumerate(env.game.routes):
+        assert _walk_route(env, r) == i
+    # SAC plumbing: an untrained protagonist walks a full sortie against a committed interdiction.
+    from src.agents.sac import ProtagonistSAC
+    prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=32, num_layers=2, heads=2, device="cpu")
+    env.commit(0)
+    obs, done, ri = env.begin_walk()
+    hops = 0
+    while not done:
+        act = prot.select_action(obs, env.walk_mask(), deterministic=False)
+        obs, done, ri = env.step_walk(act[0])
+        hops += 1
+        assert hops < 20
+    out = env.resolve(ri)
+    assert out.defender_reward <= 0.0 and isinstance(out.intercepted, bool)
+
+
 # --- I3: heterogeneous edge vulnerability (soft interception) ---
 
 

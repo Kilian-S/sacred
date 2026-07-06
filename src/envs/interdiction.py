@@ -91,6 +91,20 @@ class InterdictionEnv:
         for i, r in enumerate(self.game.routes):
             self.routes_by_first_hop.setdefault(r[1], []).append(i)
         self.first_hops: list[NodeId] = sorted(self.routes_by_first_hop, key=repr)
+        # Route-walk trie (class-b shared-edge instances): when candidate routes share prefixes,
+        # first hop != route, so the defender walks hop-by-hop along the trie of candidate routes
+        # and its mixed strategy is the product of branch probabilities. children[prefix] = the
+        # allowed next hops at that node-sequence prefix (sorted: determinism dogma).
+        self._prefix_children: dict[tuple, list[NodeId]] = {}
+        self._route_by_path: dict[tuple, int] = {tuple(r): i for i, r in enumerate(self.game.routes)}
+        for r in self.game.routes:
+            for j in range(1, len(r)):
+                kids = self._prefix_children.setdefault(tuple(r[:j]), [])
+                if r[j] not in kids:
+                    kids.append(r[j])
+        for kids in self._prefix_children.values():
+            kids.sort(key=repr)
+        self._walk_prefix: tuple | None = None
         # candidate interdiction edges (undirected frozensets), as (u,v) keys for the attacker mask.
         self._cand_edges = sorted(set().union(*self.game.route_edges), key=repr)
         self._committed_iset: int | None = None
@@ -166,6 +180,82 @@ class InterdictionEnv:
 
     def resolve_first_hop(self, first_hop: NodeId) -> InterdictionOutcome:
         return self.resolve(self.route_of_first_hop(first_hop))
+
+    # -- defender (convoy), WALK mode: hop-by-hop route choice on the candidate-route trie -------
+    # A simple path ends at the FOB exactly once, so a prefix ending at the FOB IS a complete
+    # candidate route (no route is a proper prefix of another): terminal detection is unambiguous.
+
+    def begin_walk(self) -> tuple[dict | None, bool, int | None]:
+        """Start a sortie in walk mode: convoy at base, prefix = (base,). Auto-advances forced
+        (single-child) hops. Returns (observation | None, done, route_index | None), the same
+        contract as step_walk. The committed interdiction (hidden) is untouched by the walk."""
+        if self.graph_env is not None:
+            self.graph_env.reset()
+            self.graph_env.trucks[0].assigned_target = self.fob
+        self._walk_prefix = (self.base,)
+        return self._advance_walk()
+
+    def walk_mask(self) -> dict:
+        """Protagonist-format mask at the current walk prefix: the allowed next hops."""
+        if self._walk_prefix is None:
+            raise RuntimeError("no walk in progress; call begin_walk()")
+        return {0: list(self._prefix_children[self._walk_prefix])}
+
+    def step_walk(self, next_hop: NodeId) -> tuple[dict | None, bool, int | None]:
+        """Take a hop; auto-advance forced hops until a branch or the FOB. On done, the returned
+        route index is resolved separately via resolve() (interception applies to the whole route:
+        the ambush was committed before the convoy moved)."""
+        if self._walk_prefix is None:
+            raise RuntimeError("no walk in progress; call begin_walk()")
+        if next_hop not in self._prefix_children.get(self._walk_prefix, ()):
+            raise ValueError(f"hop {next_hop!r} not allowed at prefix {self._walk_prefix}")
+        self._walk_prefix = self._walk_prefix + (next_hop,)
+        return self._advance_walk()
+
+    def _advance_walk(self) -> tuple[dict | None, bool, int | None]:
+        while True:
+            pref = self._walk_prefix
+            if pref[-1] == self.fob:
+                self._walk_prefix = None
+                return None, True, self._route_by_path[pref]
+            kids = self._prefix_children[pref]
+            if len(kids) == 1:
+                self._walk_prefix = pref + (kids[0],)
+                continue
+            return self.observe_at(pref[-1]), False, None
+
+    def observe_at(self, node: NodeId) -> dict | None:
+        """Observation with the convoy positioned at ``node`` (walk decision points and the exact
+        policy-distribution enumeration). None without a graph_env (core-only use)."""
+        if self.graph_env is None:
+            return None
+        self.graph_env.trucks[0].current_node = node
+        return self.observe()
+
+    def walk_distribution(self, hop_probs_fn) -> np.ndarray:
+        """EXACT route distribution of a walk policy: ``hop_probs_fn(node, allowed) -> {hop: p}``
+        queried at each BRANCH prefix (forced hops contribute probability 1). This is the
+        deployable mixed strategy over ``game.routes`` that exploitability is scored on; exactness
+        holds because the policy is Markov in the convoy position (featurisation is position-based)."""
+        dist = np.zeros(self.game.n_routes)
+
+        def rec(pref: tuple, p: float) -> None:
+            if pref[-1] == self.fob:
+                dist[self._route_by_path[pref]] += p
+                return
+            kids = self._prefix_children[pref]
+            if len(kids) == 1:
+                rec(pref + (kids[0],), p)
+                return
+            probs = hop_probs_fn(pref[-1], list(kids))
+            for k in kids:
+                pk = float(probs.get(k, 0.0))
+                if pk > 0.0:
+                    rec(pref + (k,), p * pk)
+
+        rec((self.base,), 1.0)
+        total = dist.sum()
+        return dist / total if total > 0 else dist
 
     # -- helpers ---------------------------------------------------------------
     def shortest_route_index(self) -> int:

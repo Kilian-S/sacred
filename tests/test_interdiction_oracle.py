@@ -126,6 +126,27 @@ def test_survival_intercept_fn_multi_edge():
     assert fn(route, both) == pytest.approx(1.0 - 0.1 * 0.6)
 
 
+def test_cost_constrained_frontier():
+    # heterogeneous costs, HARD interception: S-A-T costs 6, S-B-T costs 3, S-C-T costs 5.
+    from src.baselines.interdiction_oracle import cost_constrained_value
+    G = _heterogeneous()
+    game = build_interdiction_game(G, "S", "T", K=1, k_extra=0)
+    sol = solve(game)
+    # unconstrained budget reproduces the equilibrium (1/3 on three disjoint routes).
+    v_inf, x_inf = cost_constrained_value(game, budget=100.0)
+    assert v_inf == pytest.approx(sol.value, abs=1e-6) == pytest.approx(1 / 3, abs=1e-6)
+    assert x_inf.sum() == pytest.approx(1.0)
+    # the tightest feasible budget forces the cheapest pure route: fully exploitable.
+    v_min, x_min = cost_constrained_value(game, budget=3.0)
+    assert v_min == pytest.approx(1.0)
+    # the frontier is monotone non-increasing in budget, strictly between the endpoints mid-way.
+    v_mid, _ = cost_constrained_value(game, budget=4.0)
+    assert 1 / 3 < v_mid < 1.0
+    assert v_min >= v_mid >= v_inf
+    with pytest.raises(ValueError):
+        cost_constrained_value(game, budget=2.0)
+
+
 def test_soft_equilibrium_matches_closed_form():
     # On disjoint routes with per-route max vulnerability p_i*, the attacker's dominant edge per
     # route is its max-p edge, so the game reduces to: value = 1 / sum_i(1/p_i*), defender

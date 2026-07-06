@@ -241,6 +241,54 @@ curve (equilibrium K/6; does sacred track it?). Wave C: 110->135 band (0.15,0.95
 exploitability readings; no gap claim pre-registered for A (symmetric: vanilla mixes
 incidentally, the I2 caveat) or C (thin headroom, ratio 1.23x).
 
+## B2 pre-registration (class (b) shared-edge instances; opened 2026-07-06, binding at launch)
+
+**Question:** does adversarial training produce the CALIBRATED mixed strategy that generic
+max-entropy RL cannot, on instances where no cost-driven mixture can imitate the equilibrium?
+
+**Instances (hard interception; anchors pinned by `scratch/shared_edge_probe.py` and the frontier
+computation, 2026-07-06, before any training):**
+
+| id | OD | route set | equilibrium | uniform | best cost-mixture (any T) | shortest-det |
+|---|---|---|---|---|---|---|
+| **B2-P (primary)** | 33->71 | k_extra=8: 11 routes (6 disjoint + 5 shared near-duplicates) | **0.167** at cost 16.0 | 0.455 at cost 12.4 | **>= 0.467** at cost ~6 | 1.000 at cost 4.1 |
+| B2-S (secondary) | 110->135 | k_extra=8: 11 routes (3 distinct + corridor micro-variants) | 0.333 | 0.818 | >= 0.862 | 1.000 |
+
+The equilibrium mixes ONLY over the structurally independent routes (zero mass on shared
+duplicates); uniform mixing stacks on shared edges; the ENTIRE cost-softmax family is bounded
+>= 2.8x the equilibrium on B2-P (oracle probe). Recorded prediction: vanilla is either
+cost-calibrated (exploitable, >= ~0.47) or noise-like (expensive AND still >= ~0.455): a
+wave-1-style tie is impossible by construction; the two-axis (cost, exploitability) frontier
+positions are reported for all arms against the computed `cost_constrained_value` curve.
+
+**Mechanics:** `--route-mode walk`: hop-by-hop route choice on the candidate-route trie (first
+hops collide on these instances, groups of 4 and 9); the policy's deployable mixture is computed
+EXACTLY as the trie branch product. Build suite-gated 2026-07-06 (trie round-trip, distribution
+exactness, Kaliningrad shared-edge gate, frontier LP; 131 green).
+
+**Decision metric (PRIMARY; fixes both wave-1 biases, symmetric across arms):**
+`Expl_TAP` = interception of the TRAILING-AVERAGED POLICY distribution (mean of the exact policy
+route distributions at the last TAP_K=5 evals, eval every 250; vanilla evaluated on the same
+cadence) under the oracle best-response interdictor.
+> **PRIMARY:** `Expl_TAP(sacred) < Expl_TAP(vanilla)` on 3/3 seeds AND pooled, AND
+> `Expl_TAP(sacred) < 0.455` (the uniform anchor). **STRONG:** `Expl_TAP(sacred)` within 0.05 of
+> the equilibrium 0.167 (B2-P).
+Secondaries (reported, not gated): frontier positions (expl_TAP vs clean cost) of all arms;
+window/avg/final-policy readings (wave-1 continuity); sacred's mass on the shared duplicates
+(mechanism check: should -> 0); distance-to-equilibrium trajectory; B2-S replication.
+
+**Arms and budget:** shortest_path, uniform (computed), vanilla, sacred, equilibrium (oracle);
+seeds {0,1,2}; 3000 sorties/arm; walk adds 1-2 extra policy forwards per sortie (estimate
+~0.3-0.45 s/sortie -> ~2-2.5 h for B2-P x 3 seeds serial; timing refined from the first run's
+first minutes, per the timing rule).
+
+**Launch: NOT LAUNCHED. Awaiting Kilian's explicit go (hard rule).** Command at launch:
+```bash
+for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --k-extra 8 --route-mode walk --sorties 3000 --seed $s \
+  --json-out models/runs/gen08_interdiction_I3/B2P_seed$s.json; done   # B2-S: add --od 110-135
+```
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash

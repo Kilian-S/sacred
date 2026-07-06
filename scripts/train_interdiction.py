@@ -30,13 +30,14 @@ from src.agents.networks import featurize_state
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.env.smdp_wrapper import SMDPTransition
 from src.baselines.interdiction_oracle import (
-    best_response_attacker, route_distribution_from_first_hops, solve)
+    best_response_attacker, cost_constrained_value, route_distribution_from_first_hops, solve)
 from src.envs.interdiction import make_interdiction_env
 
+TAP_K = 5   # trailing-averaged-policy window: mean of the policy distributions at the last 5 evals
 
-def first_hop_probs(prot: ProtagonistSAC, env, obs) -> dict:
-    """Policy probabilities over the defender's first hops (its route mixture at the base)."""
-    allowed = env.defender_action_mask()[0]
+
+def hop_probs(prot: ProtagonistSAC, obs, allowed: list) -> dict:
+    """Policy probabilities over the allowed next hops at the observed convoy position."""
     pyg = featurize_state(obs, 0).to(prot.device)
     pyg.x = _clip_x(pyg.x, prot.node_in_dim); pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
     node_ids = list(obs["nodes"].keys()); n2i = {n: i for i, n in enumerate(node_ids)}
@@ -49,16 +50,15 @@ def first_hop_probs(prot: ProtagonistSAC, env, obs) -> dict:
     return {allowed[i]: float(probs[i]) for i in range(len(allowed))}
 
 
-def defender_route_distribution(prot, env) -> np.ndarray:
+def defender_route_distribution(prot, env, mode: str = "first_hop") -> np.ndarray:
+    """The policy's EXACT deployable route mixture: first-hop probabilities on disjoint route
+    sets, or the trie branch-product on shared-edge sets (walk mode)."""
+    if mode == "walk":
+        return env.walk_distribution(
+            lambda node, allowed: hop_probs(prot, env.observe_at(node), allowed))
     obs = env.reset()
-    return route_distribution_from_first_hops(env.game, env.base, first_hop_probs(prot, env, obs))
-
-
-def exploitability(prot, env) -> float:
-    """Interception of the defender's route distribution under the oracle best-response interdictor."""
-    d = defender_route_distribution(prot, env)
-    _, expl = best_response_attacker(env.game, d)
-    return expl
+    allowed = env.defender_action_mask()[0]
+    return route_distribution_from_first_hops(env.game, env.base, hop_probs(prot, obs, allowed))
 
 
 def _hist(seq, n: int) -> np.ndarray:
@@ -69,19 +69,39 @@ def _hist(seq, n: int) -> np.ndarray:
     return h / h.sum() if h.sum() > 0 else np.ones(n) / n
 
 
-def final_metrics(prot, env, played_seq, window: int) -> dict:
-    """The three exploitability readings of a trained arm: the POLICY route distribution (the
-    deployable object: what sampling the frozen stochastic policy each sortie exposes), the
-    TRAILING-WINDOW empirical play (late-training fictitious-play average), and the ALL-HISTORY
-    empirical play (includes early exploration; the I2 metric, kept for continuity)."""
-    d_pol = defender_route_distribution(prot, env)
+def final_metrics(prot, env, played_seq, window: int, mode: str, pol_hist: list) -> dict:
+    """The four exploitability readings of a trained arm: TAP = the TRAILING-AVERAGED POLICY
+    distribution (mean of the exact policy route distributions at the last TAP_K evals: the
+    deployable late-training pattern, no fictitious-play mid-cycle bias, no exploration credit;
+    the B2 primary), plus the final POLICY distribution, the TRAILING-WINDOW empirical play and
+    the ALL-HISTORY empirical play (the wave-1/I2 continuity readings)."""
+    d_pol = pol_hist[-1] if pol_hist else defender_route_distribution(prot, env, mode)
+    d_tap = np.mean(pol_hist[-TAP_K:] if pol_hist else [d_pol], axis=0)
     _, expl_pol = best_response_attacker(env.game, d_pol)
+    _, expl_tap = best_response_attacker(env.game, d_tap)
     d_win = _hist(played_seq[-window:], env.game.n_routes)
     _, expl_win = best_response_attacker(env.game, d_win)
     d_avg = _hist(played_seq, env.game.n_routes)
     _, expl_avg = best_response_attacker(env.game, d_avg)
-    return {"expl_policy": expl_pol, "expl_window": expl_win, "expl_avg": expl_avg,
-            "dist_policy": d_pol.tolist(), "dist_window": d_win.tolist()}
+    clean_cost = float(np.asarray(d_tap) @ env.game.travel_cost)
+    return {"expl_tap": expl_tap, "expl_policy": expl_pol, "expl_window": expl_win,
+            "expl_avg": expl_avg, "clean_cost_tap": clean_cost,
+            "dist_tap": np.asarray(d_tap).tolist(), "dist_policy": d_pol.tolist(),
+            "dist_window": d_win.tolist()}
+
+
+def _prot_walk_transition(obs, hop, mask, reward, next_obs, next_mask, done) -> SMDPTransition:
+    """Per-hop walk transition: intermediate hops carry zero reward and bootstrap through the
+    next branch state (allowed_destinations enrichment per the SAC update contract); the terminal
+    hop carries the sortie reward."""
+    next_state = {}
+    if not done:
+        next_state = dict(next_obs)
+        next_state["active_truck"] = 0
+        next_state["allowed_destinations"] = {"protagonist": {0: list(next_mask[0])}}
+    return SMDPTransition(agent="protagonist", state=obs, action={0: hop}, reward=reward,
+                          next_state=next_state, done=done, elapsed_ticks=1,
+                          action_mask={"protagonist": mask}, info={})
 
 
 def _prot_transition(obs, first_hop, reward, mask) -> SMDPTransition:
@@ -91,7 +111,8 @@ def _prot_transition(obs, first_hop, reward, mask) -> SMDPTransition:
 
 
 def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial, eval_every, sol,
-                   reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0, window=500):
+                   reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0, window=500,
+                   mode="first_hop"):
     torch.manual_seed(seed); np.random.seed(seed)
     prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=lr_actor,
@@ -100,39 +121,60 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
     history = []
     played = np.zeros(env.game.n_routes)   # empirical route-play histogram (fictitious-play average)
     played_seq: list[int] = []             # per-sortie route log (for the trailing-window reading)
+    pol_hist: list[np.ndarray] = []        # exact policy route distributions at eval points (TAP)
     for k in range(sorties):
         if adversarial and (committed is None or k % switch_every == 0):
             # oracle best-response to the defender's empirical average play (fictitious play, which
             # CONVERGES; best-responding to the instantaneous policy makes the defender chase/oscillate).
             avg = played / played.sum() if played.sum() > 0 else np.ones(env.game.n_routes) / env.game.n_routes
             committed, _ = best_response_attacker(env.game, avg)
-        obs = env.reset()
-        mask = env.defender_action_mask()
-        act = prot.select_action(obs, mask, deterministic=False)
-        fh = act[0]
-        ri = env.route_of_first_hop(fh)
+        if mode == "walk":
+            # hop-by-hop route choice on the candidate-route trie (shared-edge instances).
+            obs, done, ri = env.begin_walk()
+            steps = []  # (obs, hop, mask, next_obs, next_mask)
+            while not done:
+                mask = env.walk_mask()
+                act = prot.select_action(obs, mask, deterministic=False)
+                nobs, done, ri = env.step_walk(act[0])
+                nmask = env.walk_mask() if not done else None
+                steps.append((obs, act[0], mask, nobs, nmask))
+                obs = nobs
+        else:
+            obs = env.reset()
+            mask = env.defender_action_mask()
+            act = prot.select_action(obs, mask, deterministic=False)
+            ri = env.route_of_first_hop(act[0])
         played[ri] += 1.0
         played_seq.append(ri)
         if adversarial:
             env.commit(committed)
-            out = env.resolve_first_hop(fh)
+            out = env.resolve(ri)
         else:
             # no adversary: reward is the nominal travel cost only (drives to the shortest route).
             out = type("O", (), {"defender_reward": -env.config.travel_cost_weight * env.game.travel_cost[ri]})()
-        prot.replay_buffer.push(_prot_transition(obs, fh, out.defender_reward, mask))
+        if mode == "walk":
+            for i, (o, h, m, no, nm) in enumerate(steps):
+                last = i == len(steps) - 1
+                prot.replay_buffer.push(_prot_walk_transition(
+                    o, h, m, out.defender_reward if last else 0.0, no, nm, last))
+        else:
+            prot.replay_buffer.push(_prot_transition(obs, act[0], out.defender_reward, mask))
         prot.update(batch_size)
         if eval_every and (k + 1) % eval_every == 0:
-            # the three readings: policy distribution (deployable), trailing-window empirical play
-            # (late fictitious-play average), all-history empirical play (the I2 continuity metric).
-            expl_pol = exploitability(prot, env)
+            # four readings: TAP (trailing-averaged policy: the B2 primary), final policy,
+            # trailing-window empirical play, all-history empirical play (I2/wave-1 continuity).
+            d_pol = defender_route_distribution(prot, env, mode)
+            pol_hist.append(d_pol)
+            _, expl_pol = best_response_attacker(env.game, d_pol)
+            _, expl_tap = best_response_attacker(env.game, np.mean(pol_hist[-TAP_K:], axis=0))
             _, expl_win = best_response_attacker(env.game, _hist(played_seq[-window:], env.game.n_routes))
             _, expl_avg = best_response_attacker(env.game, _hist(played_seq, env.game.n_routes))
-            history.append((k + 1, expl_pol, expl_win, expl_avg))
-            print(f"    sortie {k+1:5d}: expl policy {expl_pol:.3f} | window {expl_win:.3f} | "
-                  f"avg {expl_avg:.3f}   (loss_mixed={sol.value:.3f}, loss_det={sol.loss_det:.3f})",
-                  flush=True)
+            history.append((k + 1, expl_pol, expl_tap, expl_win, expl_avg))
+            print(f"    sortie {k+1:5d}: expl policy {expl_pol:.3f} | TAP {expl_tap:.3f} | "
+                  f"window {expl_win:.3f} | avg {expl_avg:.3f}   "
+                  f"(loss_mixed={sol.value:.3f}, loss_det={sol.loss_det:.3f})", flush=True)
     prot._played = played  # expose the empirical strategy for final eval
-    return prot, history, played_seq
+    return prot, history, played_seq, pol_hist
 
 
 def main():
@@ -151,6 +193,8 @@ def main():
     p.add_argument("--k-extra", type=int, default=0, help="0 = clean edge-disjoint routes only")
     p.add_argument("--edge-vuln-band", type=str, default="",
                    help="lo,hi: heterogeneous soft interception (I3 asymmetric instance); '' = hard")
+    p.add_argument("--route-mode", type=str, default="first_hop", choices=("first_hop", "walk"),
+                   help="walk = hop-by-hop trie routing (REQUIRED for shared-edge instances, k-extra > 0)")
     p.add_argument("--window", type=int, default=500, help="trailing-window size for empirical play")
     p.add_argument("--json-out", type=str, default="", help="write the result record here (matrix aggregation)")
     args = p.parse_args()
@@ -161,9 +205,12 @@ def main():
                                 travel_cost_weight=args.travel_cost_weight, k_extra_routes=args.k_extra,
                                 edge_vuln_band=band, seed=args.seed)
     sol = solve(env.game)
-    print(f"Interdiction {s}->{t} K={args.K} band={band}: {env.game.n_routes} routes, "
-          f"{len(env.first_hops)} first hops; oracle loss_det={sol.loss_det:.3f}, "
-          f"loss_mixed={sol.value:.3f}, gap={sol.gap:.3f}\n")
+    if args.route_mode == "first_hop" and max(len(v) for v in env.routes_by_first_hop.values()) > 1:
+        print("WARNING: candidate routes share first hops (shared prefixes); first_hop mode cannot "
+              "express every route: use --route-mode walk.", flush=True)
+    print(f"Interdiction {s}->{t} K={args.K} band={band} mode={args.route_mode}: "
+          f"{env.game.n_routes} routes, {len(env.first_hops)} first hops; "
+          f"oracle loss_det={sol.loss_det:.3f}, loss_mixed={sol.value:.3f}, gap={sol.gap:.3f}\n")
 
     # deterministic shortest-path reference (the operational default) + uniform mixing reference
     # (what UNCALIBRATED randomisation buys; on asymmetric instances it is measurably suboptimal).
@@ -175,37 +222,55 @@ def main():
     print(f"[uniform]       exploitability = {expl_uni:.3f} (uncalibrated mixing reference)\n")
 
     print("[vanilla] training defender with NO adversary (nominal travel-cost objective)...")
-    vprot, _, vseq = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
-                                    batch_size=args.batch_size, seed=args.seed, adversarial=False,
-                                    eval_every=0, sol=sol, reward_scale=args.reward_scale,
-                                    lr_actor=args.lr_actor, window=args.window)
-    vfin = final_metrics(vprot, env, vseq, args.window)
-    print(f"[vanilla] final expl: policy {vfin['expl_policy']:.3f} | window {vfin['expl_window']:.3f} "
-          f"| avg {vfin['expl_avg']:.3f}\n")
+    vprot, vhist, vseq, vpol = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
+                                              batch_size=args.batch_size, seed=args.seed, adversarial=False,
+                                              eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
+                                              lr_actor=args.lr_actor, window=args.window, mode=args.route_mode)
+    vfin = final_metrics(vprot, env, vseq, args.window, args.route_mode, vpol)
+    print(f"[vanilla] final expl: TAP {vfin['expl_tap']:.3f} | policy {vfin['expl_policy']:.3f} | "
+          f"window {vfin['expl_window']:.3f} | avg {vfin['expl_avg']:.3f}\n")
 
     print("[sacred] training defender vs the ORACLE best-response interdictor (fictitious play)...")
-    sprot, hist, sseq = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
-                                       batch_size=args.batch_size, seed=args.seed, adversarial=True,
-                                       eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
-                                       lr_actor=args.lr_actor, window=args.window)
-    sfin = final_metrics(sprot, env, sseq, args.window)
-    print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}, band={band}, seed={args.seed}) ===")
-    print(f"  arm             expl_policy  expl_window  expl_avg")
-    print(f"  shortest_path   {expl_sp:11.3f}  {expl_sp:11.3f}  {expl_sp:8.3f}")
-    print(f"  uniform         {expl_uni:11.3f}  {expl_uni:11.3f}  {expl_uni:8.3f}")
-    print(f"  vanilla         {vfin['expl_policy']:11.3f}  {vfin['expl_window']:11.3f}  {vfin['expl_avg']:8.3f}")
-    print(f"  sacred          {sfin['expl_policy']:11.3f}  {sfin['expl_window']:11.3f}  {sfin['expl_avg']:8.3f}")
-    print(f"  equilibrium (loss_mixed) = {sol.value:.3f}; loss_det = {sol.loss_det:.3f}")
-    print(f"  -> sacred policy-distribution distance to equilibrium: "
-          f"{abs(sfin['expl_policy'] - sol.value):.3f}")
+    sprot, hist, sseq, spol = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
+                                             batch_size=args.batch_size, seed=args.seed, adversarial=True,
+                                             eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
+                                             lr_actor=args.lr_actor, window=args.window, mode=args.route_mode)
+    sfin = final_metrics(sprot, env, sseq, args.window, args.route_mode, spol)
+    eq_cost = float(sol.defender_strategy @ env.game.travel_cost)
+    print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}, band={band}, mode={args.route_mode}, "
+          f"seed={args.seed}) ===")
+    print(f"  arm             expl_TAP  expl_policy  expl_window  expl_avg  cost(TAP)")
+    print(f"  shortest_path   {expl_sp:8.3f}  {expl_sp:11.3f}  {expl_sp:11.3f}  {expl_sp:8.3f}  "
+          f"{float(env.game.travel_cost.min()):9.1f}")
+    print(f"  uniform         {expl_uni:8.3f}  {expl_uni:11.3f}  {expl_uni:11.3f}  {expl_uni:8.3f}  "
+          f"{float(uni @ env.game.travel_cost):9.1f}")
+    print(f"  vanilla         {vfin['expl_tap']:8.3f}  {vfin['expl_policy']:11.3f}  "
+          f"{vfin['expl_window']:11.3f}  {vfin['expl_avg']:8.3f}  {vfin['clean_cost_tap']:9.1f}")
+    print(f"  sacred          {sfin['expl_tap']:8.3f}  {sfin['expl_policy']:11.3f}  "
+          f"{sfin['expl_window']:11.3f}  {sfin['expl_avg']:8.3f}  {sfin['clean_cost_tap']:9.1f}")
+    print(f"  equilibrium (loss_mixed) = {sol.value:.3f} at cost {eq_cost:.1f}; loss_det = {sol.loss_det:.3f}")
+    print(f"  -> sacred TAP distance to equilibrium: {abs(sfin['expl_tap'] - sol.value):.3f}")
     if args.json_out:
+        budgets = sorted({round(float(b), 4) for b in env.game.travel_cost} | {round(eq_cost, 4)})
+        frontier = []
+        for b in budgets:
+            try:
+                v, _ = cost_constrained_value(env.game, b)
+                frontier.append([b, v])
+            except ValueError:
+                continue
         record = {"od": args.od, "K": args.K, "band": band, "seed": args.seed,
-                  "sorties": args.sorties, "window": args.window,
-                  "loss_det": sol.loss_det, "loss_mixed": sol.value,
+                  "sorties": args.sorties, "window": args.window, "mode": args.route_mode,
+                  "tap_k": TAP_K, "loss_det": sol.loss_det, "loss_mixed": sol.value,
                   "equilibrium_defender": sol.defender_strategy.tolist(),
-                  "arms": {"shortest_path": {"expl_policy": expl_sp},
-                           "uniform": {"expl_policy": expl_uni},
-                           "vanilla": vfin, "sacred": {**sfin, "history": hist}}}
+                  "equilibrium_cost": eq_cost, "route_costs": env.game.travel_cost.tolist(),
+                  "frontier": frontier,
+                  "arms": {"shortest_path": {"expl_tap": expl_sp,
+                                             "clean_cost_tap": float(env.game.travel_cost.min())},
+                           "uniform": {"expl_tap": expl_uni,
+                                       "clean_cost_tap": float(uni @ env.game.travel_cost)},
+                           "vanilla": {**vfin, "history": vhist},
+                           "sacred": {**sfin, "history": hist}}}
         Path(args.json_out).write_text(json.dumps(record, indent=2))
         print(f"  [written] {args.json_out}")
 

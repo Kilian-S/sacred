@@ -18,13 +18,16 @@
 > I1 env core + G1 gate (`src/envs/interdiction.py`, reproduces the oracle); I1b SAC-trainable env
 > (make_interdiction_env + masks); **I2 feasibility slice PASSED (`scripts/train_interdiction.py`):
 > the PROJECT'S FIRST POSITIVE RESULT: adversarial training cut interception 100% (shortest-path)
-> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** I3a BUILD DONE (2026-07-06, suite
-> 127 green): heterogeneous edge-vulnerability instances (soft interception; class (c) first +
-> length-band model, Kilian's calls; K>=2-alone-is-not-asymmetry corrected in ROADMAP): oracle
-> closed form d_i ~ 1/p_i* verified, G3 fidelity gate PASSED, primary instance pinned by
-> `scratch/vuln_band_probe.py` (33->71 band (0.15,0.95) K=1: equilibrium 0.063, uniform 2.51x
-> suboptimal, shortest 0.449), I3 pre-registration DRAFTED in the gen08 ledger. NEXT = I3 matrix
-> LAUNCH (⛔K, ~2.4 h serial) + later class (b) shared-edge routes + learned-antagonist co-evolution.
+> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** THEN (all 2026-07-06, suite 131
+> green): I3a class-(c) vulnerability instances BUILT + WAVE 1 RUN: **primary FAILED (sacred ~
+> vanilla: cost-vulnerability correlation lets vanilla imitate the equilibrium; window metric
+> biased against fictitious play), headline sacred << shortest_path REPLICATED 3/3 seeds**;
+> descending-band probe killed the inverse fix (class (c) exhausted); **class (b) shared-edge
+> B2 BUILT + PRE-REGISTERED (the decisive design): route-walk trie + exact policy mixtures + TAP
+> metric + frontier LP; oracle proves NO cost mixture beats 0.467 on B2-P while equilibrium =
+> 0.167 (tie impossible by construction). B2 LAUNCH AWAITS KILIAN (hard rule after the A+C
+> kill: NEVER launch without his explicit go).** Waves A (K sweep) + C remain pre-registered,
+> unlaunched. Then learned-antagonist co-evolution.
 > Key gotchas already paid for: SAC `reward_scale` default 0.001 is far too small (use ~1.0 with
 > interception_loss ~10); best-respond to the defender's EMPIRICAL AVERAGE play (fictitious play),
 > not the instantaneous policy, or it oscillates/chases. Kilian's decisions: Kaliningrad graph,
