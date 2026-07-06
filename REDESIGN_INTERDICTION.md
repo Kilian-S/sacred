@@ -1,11 +1,18 @@
 # REDESIGN_INTERDICTION.md: the winnable redesign (opened 2026-07-06)
 
-> **STATUS: proposed redesign, GAME-THEORETICALLY PROVEN, awaiting Kilian's go for the build.**
-> This supersedes the gen07 *destination-arena exploitability* attempt, which hit a structural
-> wall (the flat attack landscape: `experiments/gen07_contested_matrix.md`, corrected-gate
-> result). It keeps the SACRED invariants (SAC, protagonist/antagonist, RL) and Application 1
-> (contested autonomous resupply); it changes the PROBLEM so adversarial RL is *necessary* and
-> *provably* beats the classical baseline. Proof: `scratch/interdiction_game_probe.py`.
+> **STATUS: APPROVED DIRECTION (Kilian, 2026-07-06). GAME-THEORETICALLY PROVEN; build not yet
+> started.** This is the project's CURRENT NORTH STAR: a new agent should read this file first
+> (after `HANDOVER.md`). It supersedes the gen07 *destination-arena exploitability* attempt, which
+> hit a structural wall (the flat attack landscape: `experiments/gen07_contested_matrix.md`,
+> corrected-gate result). It keeps the SACRED invariants (SAC, protagonist/antagonist, RL) and
+> Application 1 (contested autonomous resupply); it changes the PROBLEM so adversarial RL is
+> *necessary* and *provably* beats the classical baseline. Proof: `scratch/interdiction_game_probe.py`.
+>
+> **Locked decisions (Kilian, 2026-07-06):** (1) adopt the interdiction-game redesign; (2) arena =
+> the **Kaliningrad** graph (not a synthetic theatre), on a high-edge-connectivity OD pair;
+> (3) **single convoy first** (nail the clean headline result before adding multi-convoy VRP
+> richness); (4) freeze target unchanged (Aug 3); thesis due 28 Aug. Active plan: `ROADMAP.md`
+> (interdiction build phases). Forward pre-registration: `experiments/gen08_interdiction.md`.
 
 ## 0. TL;DR
 
@@ -23,6 +30,43 @@ ONLY defence is **anticipation + unpredictable routing**: which is a **Stackelbe
 and the minimax **mixed-strategy** router provably cuts interception. And the reversal that makes
 this beautiful: **SAC's max-entropy objective, which sabotaged us in the queueing problem, is
 exactly the mechanism that produces the mixed strategy the equilibrium demands.**
+
+## 0.5 Why the pivot was necessary (the full evidence chain, for handover)
+
+A new agent must understand this is not a whim: it is the forced conclusion of a long, rigorous,
+pre-registered campaign. The chain:
+
+1. **gen03-gen06 (the campaign, `SACRED_PROGRESS.md` 7-10):** adversarial co-training against a
+   congestion adversary does NOT confer robustness and measurably WORSENS it (gen06:
+   dD_targeted −881 ± 284). Robustness ranking greedy > vanilla > adversarially-trained. The
+   learned adversary attacks *below random* (gen03/04); the reactive classical dispatcher is the
+   most robust policy (Ritzinger reactive-dominance, measured in our own framework).
+2. **The exploitability reframe (`DIRECTION.md`, 2026-07-06):** the right instinct: minimax
+   training's native product is *worst-case* performance against a *strategic* adversary
+   (exploitability), not average-case robustness. We built five learnability fixes (twin reward,
+   entropy repair, curriculum, attacker population, credit horizon; all on branch
+   `gen07-contested`, suite 109 green) and a pre-registered matrix.
+3. **The arena-scoping probes (`experiments/gen07_contested_matrix.md`, `scratch/*probe*.py`):**
+   before spending the matrix, we probed the lever. Findings: raising truck capacity DESTROYS the
+   lever (it de-stresses the system); the load "sweet spot" was noise (powered sweep); crude
+   unpredictability against the *reactive* congestion attacker is thin-to-negative.
+4. **The corrected BR gate (the decisive test):** with ALL fixes applied (counterfactual reward +
+   entropy repair + γ), a best-response attacker trained against greedy still lands at 0.35×
+   random. Telemetry: entropy pinned ~2.2 while α collapsed to 0.08 → the near-uniform policy
+   reflects **near-zero Q-spread**, not entropy pressure. **The unifying root cause:** on the
+   stressed queueing arena the attack landscape is *flat* (every route-reach block causes similar
+   cascading damage, so random ≈ optimal and there is no differentially-best attack to learn);
+   where it might be differentiated (low stress) it is *thin*. **Flat-where-large,
+   thin-where-differentiated**: a structural property of the "block edges in a queueing network"
+   adversary, NOT a fixable optimisation issue. This explains gen03/04/06 mechanistically.
+5. **The conclusion:** no reward/entropy/curriculum fix rescues a congestion adversary, because
+   the failure is in the PROBLEM's game structure (observable + reroutable + reversible →
+   reactive-dominated + flat). The only way to "make it work" is to change the adversary to one
+   where anticipation and unpredictability are the *necessary* defence. That is interdiction.
+
+The campaign was not wasted: it is the rigorous, published-shape negative that *motivates and
+justifies* the redesign, and the evaluation methodology (pre-registration, competence gates,
+held-out portfolios, gating expensive training on cheap probes) carries over intact.
 
 ## 1. The proof (game-theoretic, before any training)
 
@@ -138,12 +182,30 @@ shortest-path. Full pre-registration in a new ledger (`gen08_interdiction`) befo
   guaranteed result; gate the build on a cheap "does SACRED beat shortest-path on one theatre"
   slice before the full matrix.
 
-## 8. Immediate next steps (proposed)
+## 8. Immediate next steps (build plan lives in `ROADMAP.md`)
 
-1. Kilian confirms the redesign direction.
-2. Open `experiments/gen08_interdiction.md` (pre-registration).
+1. ~~Kilian confirms the redesign direction.~~ **DONE 2026-07-06** (Kaliningrad, single convoy first).
+2. Open `experiments/gen08_interdiction.md` (pre-registration): **stub committed; finalise before training.**
 3. Build the interdiction env layer (hidden committed interdiction + interception reward) on the
-   graph scaffolding; unit-test; wire `--problem interdiction`.
-4. Cheap feasibility slice: train SACRED vs vanilla vs shortest-path on ONE high-connectivity
-   theatre; show sacred's interception < baselines and → loss_mixed. Gate the full matrix on it.
-5. Full matrix + K/connectivity sweeps + equilibrium validation + ZST.
+   graph scaffolding; unit-test; wire `--problem interdiction`. **Single convoy, Kaliningrad,
+   one high-edge-connectivity OD pair (e.g. 33→71, edge-conn 6).**
+4. Cheap feasibility slice: train SACRED vs vanilla vs shortest-path on that one OD pair; show
+   sacred's interception < baselines and → loss_mixed (the computed equilibrium). Gate the full
+   matrix on it.
+5. Full matrix + K / edge-connectivity sweeps + equilibrium validation + ZST; multi-convoy is a
+   LATER richness add (single convoy first, per the locked decision).
+
+## 9. Scope guardrails (single-convoy-first, Kilian 2026-07-06)
+
+- **Single convoy** = one OD pair (base→FOB), one vehicle per sortie, choosing a route (a path or a
+  distribution over paths). This is the cleanest instance of the security game and where the
+  headline (det 100% → mixed 17-33%) lives. Do NOT add multi-convoy / multi-FOB coordination until
+  the single-convoy positive result is banked.
+- **Kaliningrad graph** (not synthetic): keeps continuity with the campaign and pre-empts the
+  "toy" critique; the 190+ high-connectivity OD pairs make it a rich testbed. The synthetic
+  corridor stays only as an illustrative sanity instance in the probe.
+- **Route representation decision (for the build):** the policy can either emit a full path
+  (sequence of next-hops, the existing next-hop routing machinery) or a distribution over a
+  precomputed candidate route set. Start with next-hop routing (reuses `routing_mode`), so the
+  mixed strategy emerges from SAC's per-step entropy; the candidate-set form is a fallback if
+  credit assignment over long paths bites (the equilibrium oracle uses the candidate-set form).

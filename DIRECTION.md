@@ -1,7 +1,18 @@
 # DIRECTION.md: the contested-resupply redirection (opened 2026-07-06)
 
-> **STATUS: agreed with Kilian 2026-07-06 · SUPERVISOR SIGN-OFF PENDING · Phase-B build DONE
-> (5 fixes + arena, branch `gen07-contested`, suite 107 green, no training launched).** The
+> **⚠️ SUPERSEDED / CRYSTALLISED (2026-07-06, latest): the exploitability reframe in this file was
+> the right instinct but its destination-arena / learned-BR *realization* hit a structural wall
+> (the FLAT attack landscape: the corrected best-response gate lands at 0.35× random; a congestion
+> adversary is observable/reroutable/reversible, so every block is equally damaging and no learned
+> attacker beats random). The direction has crystallised into the INTERDICTION-GAME REDESIGN, read
+> `REDESIGN_INTERDICTION.md` (the north star) and `ROADMAP.md` Phase I. This file remains the
+> intellectual bridge: it explains WHY worst-case/exploitability is the right register (minimax
+> training's native product), which the interdiction redesign then realises in a game structure
+> where it provably works. Sections below are the exploitability reasoning as it stood; the
+> §4/gen07 probe results are what forced the crystallisation.**
+>
+> **STATUS (historical): agreed with Kilian 2026-07-06 · Phase-B build DONE
+> (5 fixes + arena, branch `gen07-contested`, suite 109 green, no matrix training launched).** The
 > gen03-gen06 campaign record (`HANDOVER.md`,
 > `SACRED_PROGRESS.md`, the `experiments/genNN_*.md` ledgers) stands unchanged and is the evidence
 > base for everything here. This file records the **new view and the new direction**. The active

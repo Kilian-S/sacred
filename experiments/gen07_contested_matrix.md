@@ -1,11 +1,19 @@
 # Generation: gen07_contested_matrix (Act IV: does adversarial co-training buy unexploitability?)
 
-- **status: DRAFT PRE-REGISTRATION (opened 2026-07-06 at `fd7e383`; Kilian approved drafting).**
-  Runs NOTHING. Becomes binding when: (1) supervisor signs off the reframe (ROADMAP A1),
-  (2) Phase B is built and the B9 gates pass, (3) Kilian approves launch; the launch record then
-  pins the SHA and every TO-FINALISE slot below. Per house rule, all decision metrics here are
-  fixed BEFORE any result is looked at; TO-FINALISE slots may only be pinned by pre-launch
-  probes, never by outcomes.
+- **status: CLOSED 2026-07-06: the matrix never ran; the pre-launch probes + BR gate produced the
+  decisive finding that MOTIVATED THE INTERDICTION REDESIGN (`REDESIGN_INTERDICTION.md`).** This
+  ledger is the record of the exploitability-on-the-contested-destination-arena attempt. Outcome:
+  the arena-scoping probes (capacity, stress) showed the unpredictability lever is thin-to-negative
+  against the *reactive* congestion attacker, and the CORRECTED BR gate (all five fixes applied,
+  §B9.iv below) showed a best-response attacker plateaus at **0.35× random** with entropy pinned
+  and near-zero Q-spread. **Root cause (the flat attack landscape): congestion is
+  observable/reroutable/reversible, so every route-reach block causes similar cascading damage,
+  random is already near-optimal, and no learned adversary has an edge.** This is a structural
+  property of the congestion adversary, not a fixable optimisation issue, and it is exactly why the
+  project pivots to interdiction (hidden/irreversible/pre-committed → a security game where the
+  mixed strategy provably wins). The five learnability fixes (branch `gen07-contested`, suite 109
+  green) and the whole evaluation discipline carry forward to gen08. **Original pre-registration
+  preserved below for the record; the matrix decision metrics were never triggered.**
 - **strategy/rationale:** `DIRECTION.md` (exploitability register, five fixes, contested skin).
 - **branch policy:** all gen07 code on branch `gen07-contested`; `main` carries no `src/`
   changes (ROADMAP Phase B separation policy).

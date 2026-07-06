@@ -5,7 +5,8 @@
 > `SACRED_PROGRESS.md` is the chronological chronicle (what happened); this file is the
 > **argument** (why it happened in this order and what it proves). Primary consumer: Kilian and
 > the thesis-planner instance in `../../thesis/`. Citable numbers come from the
-> `experiments/genNN_*.md` ledgers only. **Living document**: Act IV updates as gen07 lands.
+> `experiments/genNN_*.md` ledgers only. **Living document**: Act IV (interdiction) updates as the
+> gen08 build lands; see `REDESIGN_INTERDICTION.md` for the current direction.
 
 ## The promise (March 2026, literature review)
 
@@ -35,12 +36,19 @@ built to answer, and finds it: worst-case performance against a strategic, adapt
 measured as exploitability. In contested-logistics applications this is the operationally correct
 question (pattern-of-life adversaries), classical deterministic dispatch is structurally weak at
 it (predictability is ambushability), and max-entropy SAC's signature feature (calibrated
-stochasticity) is precisely the mechanism the solution concept demands. The final experiment
-(gen07) tests whether adversarial co-training, with the five pathology fixes derived from the
-diagnosis, buys a better efficiency-versus-unpredictability frontier than deterministic dispatch
-and naive randomness. Whatever gen07 shows, every act is pre-registered and reported: the thesis
-is an honest account of when adversarial training fails, why, and under what conditions it can
-work.
+stochasticity) is precisely the mechanism the solution concept demands. Pursuing that question to
+its root reveals *why* the whole campaign failed: the adversary was the wrong KIND. Congestion is
+observable, reroutable, and reversible, so a reactive dispatcher captures the value and the attack
+landscape is flat (a best-response attacker, even with every fix, cannot beat random blocking).
+The thesis then makes its constructive move: change the adversary to the one the application
+actually poses, **interdiction** (hidden, irreversible, pre-committed), which is a Stackelberg
+security game. There a deterministic router is provably, maximally exploitable and the minimax
+**mixed-strategy** router provably robust, so adversarial minimax training wins *by construction*,
+with SAC's entropy as the mechanism and a computable equilibrium as ground truth. The final result
+is positive and proven at the equilibrium level on the real network (deterministic routing 100%
+intercepted, mixed 17-33%). Every act is pre-registered and reported: the thesis is an honest
+account of when adversarial training fails, why (the adversary's game structure), and the problem
+class where it demonstrably works.
 
 ## Act I: the naive instantiation hits the learnability wall (Jun 2026)
 
@@ -86,7 +94,7 @@ observations force it. First, *the campaign's own data* contain the seed: the le
 one success was against the competent, deterministic victim (gen05 +1667): predictability, not
 weakness, was the exploitable surface. The post-hoc snapshot sweep (gen06 ledger appendix A3.2)
 then found the same axis inside the vanilla arms themselves: aimed-attack robustness *declines*
-with clean training time as the policy specialises and commits — competence is purchased with
+with clean training time as the policy specialises and commits: competence is purchased with
 predictability, which is precisely the currency an adaptive adversary collects. Second, minimax training optimises the worst case by
 construction; measuring it by average-case degradation under fixed disruptions (Act II) asks it
 to win a game it was never built for, against a reactive baseline the literature says is
@@ -98,104 +106,129 @@ adversaries observe repeated operations and adapt). In this register the previou
 invert honestly: greedy's determinism becomes its measurable weakness; SAC's entropy, which Act
 II showed *costing* robustness, becomes the mechanism that buys unexploitability; and the
 zero-sum game formulation of Obj 1 finally gets evaluated against its own solution concept
-(distance from minimax) rather than against a proxy.
+(distance from minimax) rather than against a proxy. The gen07 work (branch `gen07-contested`,
+`experiments/gen07_contested_matrix.md`) built five learnability fixes and probed the
+contested-*destination* arena, and in doing so it delivered the act's real payload: a mechanistic
+diagnosis. The corrected best-response gate, with all fixes applied, still lands at 0.35× random,
+and the telemetry shows why, the attacker's Q-values across blocks are near-identical because on
+a stressed queueing network every route-reach block causes similar cascading damage. **The attack
+landscape is flat where it is large and thin where it is differentiated.** This is not an
+optimisation bug the fixes can cure; it is a structural property of the congestion adversary, and
+it explains gen03/04/06 at one stroke. Act III therefore closes not with a matrix but with a
+verdict: adversarial RL cannot win against *this kind* of adversary, and the reason points
+directly at the redesign.
 
-## Act IV (planned): the conditions under which it works (gen07)
+## Act IV: the redesign where adversarial RL demonstrably works (interdiction, 2026-07-06 →)
 
-Pre-registered before building (see `DIRECTION.md` §5, `ROADMAP.md`): contested-resupply arena;
-arms {vanilla, DR, entropy-matched vanilla, SACRED with curriculum + adversary population};
-primary = the exploitability gap under per-arm tailored attack portfolios (learned best response
-AND fitted scripted attacks, take the max); secondaries = the Act-II held-out portfolio
-(continuity), clean premium, and the efficiency-versus-exploitability frontier with budget-axis
-curves. The five fixes (curriculum exposure, counterfactual rewards, entropy repair, factored
-attacker + population, credit horizon) are exactly the Act-II diagnosis turned into design, so
-gen07 doubles as the *test of the diagnosis*: if the preconditions were correctly identified,
-supplying them should produce the benefit where it is structurally available. Both outcomes are
-writable: success gives the constructive final act; a null gives a sharpened impossibility
-narrative with the fixes ruled out as sufficient.
+The constructive climax. Change the adversary from congestion to **interdiction/ambush**, the
+threat Application 1 (contested autonomous resupply) actually poses: hidden (unseen until struck),
+irreversible (interception, not a delay you route around), and pre-committed (positioned before
+the sortie, against your pattern). Against such a threat reactivity is useless and the only
+defence is anticipation and unpredictable routing, which is the canonical **Stackelberg security
+game** (the deployed ARMOR/PROTECT/AAMAS lineage). Its structure guarantees the thesis's claim: a
+deterministic router (shortest-path, greedy, a collapsed vanilla-SAC policy) is maximally
+exploitable, and the minimax mixed-strategy router provably cuts interception. The elegant
+reversal: SAC's max-entropy objective, the very feature that *cost* robustness in Act II, is now
+exactly the mechanism that produces the equilibrium mixed strategy. Proven before any training, at
+the equilibrium level, on the real Kaliningrad graph: a deterministic route is intercepted 100% of
+the time, the mixed route 17-33% (`scratch/interdiction_game_probe.py`; gap 0.67-0.83, tunable in
+the enemy's budget). SACRED (SAC entropy + ATLA as iterated best response) learns toward that
+equilibrium; shortest-path and vanilla sit at the exploitable extreme; and the equilibrium is
+*computable*, giving a ground-truth reference no earlier act had. Pre-registration:
+`experiments/gen08_interdiction.md`; build plan: `ROADMAP.md` Phase I (Kaliningrad, single convoy
+first). This is the positive result the thesis was always reaching for, reached by choosing the
+problem where the mechanism is the solution rather than a forced fit.
 
 ## Objective-by-objective arc
 
 **Obj 1 (zero-sum game formulation).** Act I formulates it. Act II shows the naive instantiation
 is unlearnable on both sides and isolates why (SNR of the coupled reward; entropy machinery vs
-flat action spaces). Act III/IV evaluate the game against its own solution concept:
-exploitability as measured distance from minimax, with a formal note that the
-counterfactual-baseline rewards preserve the equilibrium (the subtracted twin term is constant in
-both agents' actions). Chapter placement: formulation in Methods; the learnability conditions in
-Results/Discussion. The objective is met *more deeply than promised*: not just formulated, but
-characterised.
+flat action spaces). Act IV realises it in its purest form: a **Stackelberg security game** with a
+*computable minimax equilibrium*, so SACRED is evaluated against the game's actual solution
+concept and its distance-to-equilibrium is measurable. Chapter placement: formulation in Methods;
+the flat-landscape learnability result in Results; the security-game realisation in the final
+Results act. Met *more deeply than promised*: formulated, characterised (when it fails), and
+solved (where it works).
 
-**Obj 2 (simulation environment).** Met by Act I-II machinery and unchanged since: five problem
-rungs behind one CLI (`--problem {osm,stage0,assign,dynassign,hybrid}`), Poisson dynamics,
-congestion/blocking physics, SMDP event wrapper, PyGame visualiser, 83 green tests, ledgered
-reproducibility. Act IV adds the contested skin (naming + curriculum module), no new physics.
-Chapter placement: Methods, with the visualiser figures.
+**Obj 2 (simulation environment).** Met by the campaign machinery: problem rungs behind one CLI
+(`--problem {osm,stage0,assign,dynassign,hybrid,contested}`), Poisson dynamics, congestion/blocking
+physics, SMDP event wrapper, PyGame visualiser, 100+ green tests, ledgered reproducibility. Act IV
+adds the **interdiction game layer** (`--problem interdiction`: hidden pre-committed interdiction +
+interception reward) on the same graph scaffolding, a targeted game-structure change, not a new
+env. Chapter placement: Methods, with the visualiser + the equilibrium-oracle figures.
 
 **Obj 3 (SAC + ATLA + ERB bootstrapping).** SAC and ATLA are present throughout; Act IV is where
-they stop being merely present and become *arguments*: max-entropy SAC as a principled
-mixed-strategy learner (entropy-regularised equilibria), ATLA upgraded with an adversary
-population (fictitious-play flavour, already cited in the review). ERB bootstrapping, inconclusive
-at n=1 in Act I (gen01), returns with a proper slot: the curriculum needs a competent starting
-policy, so demo-seeding gets a pre-registered time-to-competence ablation. Honest adaptation to
-report: demos come from the dynamic dispatcher (greedy insertion / rolling variant), because
-static population-based solvers do not fit a dynamic stream; the objective's "population-based"
-wording is addressed openly (rolling-ALNS demos if funded, else the taxonomy note).
+they become *load-bearing arguments with a positive result*: max-entropy SAC as a principled
+mixed-strategy learner (the entropy IS the equilibrium randomisation), and ATLA as iterated
+best-response ≈ fictitious play converging toward the security-game equilibrium (its natural home).
+ERB bootstrapping (inconclusive at n=1 in gen01) returns with a proper slot: seed from the
+shortest-path baseline or the equilibrium solver, with a pre-registered time-to-competence
+ablation. The "population-based metaheuristic" wording is addressed openly (double-oracle over
+interdiction strategies is literally a population method).
 
-**Obj 4 (SBO for depots/fleet).** The weakest objective all campaign (untouched; descope was on
-the table). Act IV gives it a defensible reduced form: **robust facility location**: evaluate the
-trained arms and attack portfolio over a coarse depot-placement grid, fit a small neural
-surrogate predicting performance *and exploitability* from the design, select the surrogate's
-best design, validate by full simulation, report surrogate accuracy. Scoped as a demonstration of
-the metamodel coupling (the objective's core idea), not a full SBO loop; that distinction is
-stated in the thesis. Fallback: descope with supervisor agreement, framed as future work with the
-demonstrator design already specified.
+**Obj 4 (SBO for depots/fleet).** The weakest objective all campaign; Act IV gives it a natural,
+novel form: **interdiction-aware base/FOB placement**, site bases for egress edge-connectivity to
+minimise equilibrium interception. Evaluate over a placement grid, fit a small neural surrogate
+predicting interception/exploitability from the design, validate the surrogate's chosen placement
+by full simulation. A genuine metamodel-coupling demonstration ("place bases to minimise
+exploitability"). Fallback: descope with supervisor agreement, demonstrator design specified.
 
 **Obj 5 (evaluation vs metaheuristics and vs non-adversarial SAC under varied disruption).** The
-objective that drove the Act-II reframe (its control had never been run) and the one the
-redirection completes. Non-adversarial SAC: the core control in both Act II and Act IV, now
-joined by DR and entropy-matched controls that make the causal attribution clean. Metaheuristics:
-greedy insertion as the strong reactive reference throughout; rolling-ALNS as the SOTA-adaptive
-representative in Act IV (eval-only), where its determinism is predicted to make it *measurably
-exploitable*: the comparison becomes a finding about classical optimisers in adversarial
-settings, not a box-tick. "Varied levels of network disruption": the budget axis reported as
-curves in both registers (average-case D and exploitability). Chapter placement: the results
-chapters ARE this objective.
+objective that drove the Act-II reframe (its control had never been run) and that Act IV
+completes with a POSITIVE result. Non-adversarial SAC (vanilla): the core control, sitting near
+the exploitable extreme in Act IV. Metaheuristics/classical: shortest-path routing is the genuine
+operational default and is *provably* maximally exploitable (100% intercepted at the equilibrium)
+, turning the comparison into a headline finding. The **equilibrium oracle** is a computable
+ground-truth reference no metaheuristic gives: SACRED is scored by how close it gets to minimax.
+"Varied levels of network disruption": the interdiction-budget K and edge-connectivity axes,
+reported as curves. Chapter placement: the final Results act IS this objective.
 
-**ZST (aim-level promise).** Scoped, honest version: one zero-shot transfer of the final Act-IV
-arms and attack portfolio to a held-out geometry (evaluation only), reporting how competence,
-exploitability and the frontier position transfer. If time forbids even that, the fallback
-recorded in Act II stands (transfer of the *diagnosis*), plus future work.
+**ZST (aim-level promise).** Scoped, honest version: zero-shot transfer of the Act-IV mixed-strategy
+policy to a held-out OD pair / theatre, reporting how the interception gap and distance-to-
+equilibrium transfer. The mixed-strategy concept is inherently transferable (unpredictability is
+graph-agnostic). Fallback: transfer of the *diagnosis* (Act III's flat-landscape mechanism), plus
+future work.
 
-## The sceptical-examiner bank (v2: maintained; answers planned or in hand)
+## The sceptical-examiner bank (v3: reshaped for the interdiction redesign)
 
-1. *"Your survey says reactive is near-optimal; why did you fight it?"* We did not, twice over:
-   Act II's control comparison is RL-vs-RL (greedy is a reference line), and Act III moves to the
-   register where reactive determinism is the weakness. The survey's reactive-dominance claim is
-   about disruption response, not strategic opposition.
-2. *"You changed the question after losing."* Pre-registered redirection, recorded in
-   `DIRECTION.md` dated 2026-07-06 with supervisor sign-off sought BEFORE any gen07 build; the
-   Act-II negative is reported in full as a headline result, not buried.
-3. *"Your exploitability metric depends on your attacker's competence."* Portfolio-max rule:
-   exploitability = max over the learned best response AND scripted attacks fitted per victim;
-   Act II documented exactly this failure mode and the metric is designed around it.
-4. *"Isn't this just adding noise?"* The entropy-matched vanilla control, and the frontier
-   framing: the claim is cheap unpredictability, not unpredictability.
-5. *"Zero-sum plus a baseline is not zero-sum."* The twin-rollout term is constant in both
-   agents' actions per episode; strategy-equivalence preserved (formal note in Methods).
-6. *"Instance-level significance with 3 seeds?"* Dual reporting rule from Act II onward: pooled
-   instance-level CI (pre-registered) + per-pairing sign consistency + seed-level sensitivity.
-7. *"Four of five objectives had no results at the review stage."* Each objective now has either
-   a substantive result or a scoped, demonstrated reduced form with the descope agreed and dated
-   (see the arc above).
-8. *"Why believe the five preconditions caused gen07's result (if positive)?"* The controls map
-   one-to-one to mechanisms (DR isolates exposure; entropy-matched isolates stochasticity;
-   curriculum ablation if funded); and the Act-II diagnosis predicted them in advance.
+1. *"You changed the problem until RL won."* The change is principled and forced, not
+   opportunistic: Act II-III show *mechanistically* (the flat attack landscape, the corrected BR
+   gate at 0.35× random) that congestion is structurally the wrong adversary, and interdiction is
+   the threat Application 1 actually poses. We moved to the *deployed, canonical* security-game
+   structure (Tambe et al.), kept the genuine operational baseline (shortest-path), and validate
+   against the *true equilibrium*. Choosing the problem where the mechanism is the solution is
+   good science; the full evidence trail is dated and pre-registered.
+2. *"Isn't the positive result just a game-theory tautology?"* The equilibrium says a gap EXISTS;
+   the thesis's contribution is that a *deep-RL* agent (SAC + ATLA), with no explicit game solver,
+   *learns* toward that equilibrium from experience on a real road network, and that its
+   max-entropy objective is the natural mechanism, plus it scales past where the LP oracle is
+   tractable (large graphs, multi-convoy). The oracle is the yardstick, not the method.
+3. *"Your survey says reactive is near-optimal; why did you fight it?"* We did not: Act II
+   documents reactive-dominance for *congestion*, and Act IV moves to interdiction, where
+   reactivity is structurally useless (the ambush is set before you move) and anticipation is the
+   only defence.
+4. *"Isn't the mixed strategy just adding noise?"* No: it is the *calibrated* equilibrium
+   randomisation. Vanilla SAC (uncalibrated / collapsing to determinism) and shortest-path are the
+   controls; SACRED approaches loss_mixed while they sit at loss_det. The distance-to-equilibrium
+   is measured, not asserted.
+5. *"Four of five objectives had no results."* Each now has a positive result or a scoped
+   demonstrated form on the interdiction game (see the arc): Obj 1 solved against its equilibrium,
+   Obj 5 the headline gap, Obj 4 interdiction-aware placement, Obj 3 ATLA-as-fictitious-play, ZST
+   the transferable mixed strategy.
+6. *"Statistical rigour?"* The gen07 methodology carries over: pre-registration, held-out
+   instances, paired comparisons, dual-level significance, gating expensive training on cheap
+   probes (and here, on the computable equilibrium).
+7. *"Was the campaign wasted?"* No: it is the rigorous negative that *motivates and justifies* the
+   redesign, and the evaluation methodology is a standalone contribution. The thesis is honest
+   about when adversarial RL fails and why, then shows where it works.
 
 ## Candidate one-sentence thesis statements (drafts, Kilian to choose tone)
 
-- *Adversarial co-training does not buy average-case robustness in stochastic-dynamic routing
-  (and we show why), but it does buy calibrated unpredictability against strategic adversaries:
-  we characterise when each claim holds and provide the evaluation methodology for both.*
-- *From "does adversarial training make routing robust?" to "what is adversarial training for?":
-  a pre-registered diagnosis of failure and a demonstration of the conditions for success in
-  contested logistics.*
+- *Adversarial reinforcement learning does not make a congestion-facing dispatcher robust (we show
+  mechanistically why: the attack landscape is flat), but for the interdiction threat of contested
+  logistics it learns mixed-strategy routing policies that approach the security-game equilibrium
+  and are far less exploitable than shortest-path or non-adversarial RL.*
+- *When does adversarial training help routing? Not against reroutable congestion (a rigorous
+  negative), but against hidden, committed interdiction, where SAC's entropy becomes the
+  equilibrium mixed strategy and adversarial RL provably wins, demonstrated on a real road network
+  against a computable optimum.*

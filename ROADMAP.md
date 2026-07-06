@@ -11,6 +11,59 @@
 > experimental freeze **Aug 3, HARD (Kilian 2026-07-06)**; after Aug 3, writing wins every
 > conflict.
 
+> **⚠️ ACTIVE PLAN = PHASE I (INTERDICTION) BELOW.** The redesign (`REDESIGN_INTERDICTION.md`,
+> approved 2026-07-06) supersedes the contested-destination exploitability plan. Phases A-E further
+> down are HISTORICAL: Phase A (sign-off, probes) and Phase B (the five learnability fixes, suite
+> 109 green on branch `gen07-contested`) are DONE and partly carry over; Phase C (the gen07
+> destination matrix) is SUPERSEDED by the flat-landscape finding and never ran. The new build is
+> Phase I.
+
+## Phase I: the interdiction-game build (ACTIVE, 2026-07-06 → Aug 3 freeze)
+
+Goal: the positive thesis result, convoy routing as a Stackelberg interdiction game where SACRED
+learns a mixed-strategy route policy that is less exploitable to interception than shortest-path
+and vanilla SAC, approaching the computable minimax equilibrium. Kaliningrad graph, single convoy
+first (Kilian 2026-07-06). Full design: `REDESIGN_INTERDICTION.md`. Pre-registration:
+`experiments/gen08_interdiction.md`. New code on a branch off `main` (e.g. `gen08-interdiction`);
+the gen07 fixes on `gen07-contested` are cherry-picked in as needed (twin/counterfactual reward,
+evaluation discipline). Separation policy from the redirection still holds (`main` frozen for
+`src/`; regression-guarded flags; historical modes reproduce).
+
+- [ ] **I0. Equilibrium oracle (DONE as a probe; harden into a module).** `scratch/interdiction_game_probe.py`
+      computes loss_det / loss_mixed (minimax LP over route × interdiction-set payoff). Promote to a
+      reusable evaluator: given a graph, OD pair, candidate route set, and K, return the equilibrium
+      value + the defender's equilibrium mixed strategy (the ground truth SACRED is validated against).
+- [ ] **I1. Interdiction env layer** (`--problem interdiction`; ⛔K to design-lock). On the graph
+      scaffolding: (a) the antagonist COMMITS K interdiction assets to edges per sortie, HIDDEN from
+      the defender until struck; (b) the convoy routes base→FOB (next-hop routing first, so the mixed
+      strategy emerges from SAC per-step entropy; candidate-set form as fallback); (c) interception
+      reward: struck on an interdicted edge → discrete high-magnitude loss; protagonist reward =
+      delivered value − interception loss − travel cost; antagonist = interception loss (zero-sum).
+      Single convoy, Kaliningrad, one high-edge-connectivity OD pair (e.g. 33→71). Unit tests:
+      commit/hidden timing, interception accounting, zero-sum, reward SNR (interception is
+      attributable). Competence/feasibility probe: shortest-path interception ≈ loss_det, mixed
+      ≈ loss_mixed on this instance (reproduce the probe through the env).
+- [ ] **I2. Cheap feasibility slice** (⛔K launch). Train {shortest-path (ref), vanilla SAC, SACRED
+      (ATLA vs learned interdictor)} on the ONE OD pair. Pre-registered readout: SACRED interception
+      under a best-response interdictor < vanilla < shortest-path, and SACRED → loss_mixed. This is
+      the GO/NO-GO for the full matrix. Expected PASS (the equilibrium gap is structural); if the
+      learned interdictor lags, the equilibrium oracle supplies the strong evaluator (a strong
+      attacker EXISTS here, unlike the congestion arena).
+- [ ] **I3. The matrix + sweeps** (⛔K). Arms × seeds; K sweep and edge-connectivity sweep reported
+      as curves; exploitability (best-response interdictor) + distance-to-equilibrium; the gen07
+      evaluation discipline (held-out, paired, dual-level stats). Ledger `gen08_interdiction`.
+- [ ] **I4. Objective extensions** (eval-mostly, as time allows before Aug 3): Obj-4 interdiction-aware
+      FOB/base placement (site for egress connectivity, surrogate over the design grid); ZST (transfer
+      the mixed policy to a held-out OD pair / theatre); Obj-3 ERB from the equilibrium/shortest-path.
+- [ ] **I5. Multi-convoy richness (LATER, only after the single-convoy positive is banked).**
+      Multiple convoys/FOBs, coordinated routing so the fleet spreads interdiction risk (the VRP
+      flavour). Do not start before I2/I3 land the headline.
+
+**Contingency:** if I2 somehow does NOT beat shortest-path (the equilibrium gap says it should),
+diagnose via the oracle (is SACRED failing to reach a computable mixed strategy? that's a solvable
+RL problem, not a structural one) before any freeze decision. The gen03-07 negative + the redesign
+proof remain a complete thesis even in the worst case.
+
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 
 - [x] **A1. Decision agenda: RESOLVED BY KILIAN 2026-07-06** (see DIRECTION.md §9 log):
