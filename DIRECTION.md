@@ -1,7 +1,8 @@
 # DIRECTION.md: the contested-resupply redirection (opened 2026-07-06)
 
-> **STATUS: agreed with Kilian 2026-07-06 · SUPERVISOR SIGN-OFF PENDING · nothing built, no CPU
-> spent on this direction yet.** The gen03-gen06 campaign record (`HANDOVER.md`,
+> **STATUS: agreed with Kilian 2026-07-06 · SUPERVISOR SIGN-OFF PENDING · Phase-B build DONE
+> (5 fixes + arena, branch `gen07-contested`, suite 107 green, no training launched).** The
+> gen03-gen06 campaign record (`HANDOVER.md`,
 > `SACRED_PROGRESS.md`, the `experiments/genNN_*.md` ledgers) stands unchanged and is the evidence
 > base for everything here. This file records the **new view and the new direction**. The active
 > plan lives in `ROADMAP.md`; the thesis-facing argument lives in `THESIS_STORYLINE.md`. House
