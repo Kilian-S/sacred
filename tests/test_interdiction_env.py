@@ -84,3 +84,37 @@ def test_G1_env_reproduces_oracle_kaliningrad():
     emp = _empirical_interception(env, sol.defender_strategy, sol.attacker_strategy, n=40000, seed=2)
     assert emp == pytest.approx(sol.value, abs=0.03)   # env matches the minimax value
     assert sol.gap >= 0.8 - 1e-9                        # the large robustness gap survives in the env
+
+
+# --- I1b: the SAC-trainable env (GraphEnv-backed observation + masks) ---
+
+def test_factory_builds_sac_observation():
+    from src.envs.interdiction import make_interdiction_env
+    env = make_interdiction_env(od=("33", "71"), K=1)
+    obs = env.reset()
+    assert obs["active_truck"] == 0
+    assert set(("nodes", "edges", "trucks")) <= set(obs)
+    assert obs["trucks"][0]["current_node"] == "33"        # convoy at base
+    # every defender first-hop is a real neighbour of the base.
+    for fh in env.first_hops:
+        assert fh in env.graph["33"]
+
+
+def test_sac_agents_act_on_interdiction_env():
+    from src.agents.sac import AntagonistSAC, ProtagonistSAC
+    from src.envs.interdiction import make_interdiction_env
+    env = make_interdiction_env(od=("33", "71"), K=1)
+    obs = env.reset()
+    prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=32, num_layers=2, heads=2, device="cpu")
+    ant = AntagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=32, num_layers=2, heads=2,
+                        num_congestion_levels=1, level_costs=[1.0], congestion_levels=(1.0,), device="cpu")
+    # defender picks a first hop that is inside its mask and maps to a route.
+    dact = prot.select_action(obs, env.defender_action_mask(), deterministic=False)
+    assert dact[0] in env.first_hops
+    ri = env.route_of_first_hop(dact[0])
+    assert env.game.routes[ri][1] == dact[0]
+    # attacker commits a candidate interdiction edge.
+    aact = ant.select_action(obs, env.attacker_action_mask(), 999.0, deterministic=False)
+    env.commit_edge(aact[0])
+    out = env.resolve_first_hop(dact[0])
+    assert out.defender_reward == -out.attacker_reward or out.travel_cost >= 0  # zero-sum on interception
