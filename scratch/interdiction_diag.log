@@ -1,0 +1,13 @@
+game: 6 disjoint routes, 6 first-hops; loss_det=1.000 loss_mixed=0.167
+    sortie    50: exploitability 0.421  (loss_mixed=0.167, loss_det=1.000)
+    sortie   100: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   150: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   200: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   250: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   300: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   350: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   400: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   450: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   500: exploitability 1.000  (loss_mixed=0.167, loss_det=1.000)
+    sortie   550: exploitability 0.861  (loss_mixed=0.167, loss_det=1.000)
+    sortie   600: exploitability 0.404  (loss_mixed=0.167, loss_det=1.000)

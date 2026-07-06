@@ -1,0 +1,24 @@
+Interdiction 33->71 K=1: 6 routes, 6 first hops; oracle loss_det=1.000, loss_mixed=0.167, gap=0.833
+
+[shortest_path] exploitability = 1.000 (deterministic; the operational default)
+
+[vanilla] training defender with NO adversary (nominal travel-cost objective)...
+[vanilla] final exploitability (avg play) = 0.275
+
+[sacred] training defender vs the ORACLE best-response interdictor (fictitious play)...
+    sortie   150: exploitability(avg-play) 0.427  (loss_mixed=0.167, loss_det=1.000)
+    sortie   300: exploitability(avg-play) 0.297  (loss_mixed=0.167, loss_det=1.000)
+    sortie   450: exploitability(avg-play) 0.233  (loss_mixed=0.167, loss_det=1.000)
+    sortie   600: exploitability(avg-play) 0.235  (loss_mixed=0.167, loss_det=1.000)
+    sortie   750: exploitability(avg-play) 0.255  (loss_mixed=0.167, loss_det=1.000)
+    sortie   900: exploitability(avg-play) 0.243  (loss_mixed=0.167, loss_det=1.000)
+    sortie  1050: exploitability(avg-play) 0.218  (loss_mixed=0.167, loss_det=1.000)
+    sortie  1200: exploitability(avg-play) 0.199  (loss_mixed=0.167, loss_det=1.000)
+    sortie  1350: exploitability(avg-play) 0.238  (loss_mixed=0.167, loss_det=1.000)
+    sortie  1500: exploitability(avg-play) 0.235  (loss_mixed=0.167, loss_det=1.000)
+
+=== RESULT (Kaliningrad 33->71, K=1) ===
+  shortest_path exploitability : 1.000
+  vanilla-SAC   exploitability : 0.275
+  SACRED        exploitability : 0.235   (equilibrium loss_mixed = 0.167)
+  -> adversarial training cut interception 100% -> 23% (distance to equilibrium 0.068)
