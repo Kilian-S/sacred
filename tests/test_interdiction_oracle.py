@@ -8,7 +8,8 @@ import pytest
 
 from src.baselines.interdiction_oracle import (
     best_response_attacker, build_interdiction_game, edges_of_route,
-    interception_of_distribution, solve)
+    interception_of_distribution, length_band_vulnerability, solve,
+    survival_intercept_fn)
 
 
 def _synthetic():
@@ -81,3 +82,63 @@ def test_kaliningrad_high_connectivity_has_large_gap():
 
 def test_edges_of_route():
     assert edges_of_route(("a", "b", "c")) == {frozenset({"a", "b"}), frozenset({"b", "c"})}
+
+
+# --- I3: heterogeneous edge vulnerability (soft interception, non-uniform equilibria) ---
+
+
+def _heterogeneous():
+    # 3 edge-disjoint routes with DISTINCT edge lengths -> distinct vulnerabilities under the band map.
+    G = nx.Graph()
+    G.add_edge("S", "A", w=4.0); G.add_edge("A", "T", w=2.0)
+    G.add_edge("S", "B", w=1.0); G.add_edge("B", "T", w=2.0)
+    G.add_edge("S", "C", w=2.0); G.add_edge("C", "T", w=3.0)
+    return G
+
+
+def test_length_band_vulnerability_maps_lengths_into_band():
+    G = _heterogeneous()
+    edges = [frozenset(e) for e in G.edges()]
+    vuln = length_band_vulnerability(G, edges, band=(0.2, 0.9))
+    assert set(vuln) == set(edges)
+    assert vuln[frozenset({"S", "B"})] == pytest.approx(0.2)   # shortest edge -> band lo
+    assert vuln[frozenset({"S", "A"})] == pytest.approx(0.9)   # longest edge -> band hi
+    # affine in length: w=2 sits at (2-1)/(4-1) of the band.
+    assert vuln[frozenset({"A", "T"})] == pytest.approx(0.2 + 0.7 / 3.0)
+    # degenerate all-equal lengths -> band midpoint.
+    H = nx.Graph(); H.add_edge("x", "y", w=1.0); H.add_edge("y", "z", w=1.0)
+    mid = length_band_vulnerability(H, [frozenset({"x", "y"}), frozenset({"y", "z"})], band=(0.2, 0.9))
+    assert all(v == pytest.approx(0.55) for v in mid.values())
+
+
+def test_survival_intercept_fn_multi_edge():
+    vuln = {frozenset({"S", "A"}): 0.9, frozenset({"A", "T"}): 0.4}
+    fn = survival_intercept_fn(vuln)
+    route = frozenset({frozenset({"S", "A"}), frozenset({"A", "T"})})
+    # K=1 reduces to p_e; a missed route is 0; two hits compose by independent survival.
+    assert fn(route, (frozenset({"S", "A"}),)) == pytest.approx(0.9)
+    assert fn(route, (frozenset({"X", "Y"}),)) == pytest.approx(0.0)
+    both = (frozenset({"S", "A"}), frozenset({"A", "T"}))
+    assert fn(route, both) == pytest.approx(1.0 - 0.1 * 0.6)
+
+
+def test_soft_equilibrium_matches_closed_form():
+    # On disjoint routes with per-route max vulnerability p_i*, the attacker's dominant edge per
+    # route is its max-p edge, so the game reduces to: value = 1 / sum_i(1/p_i*), defender
+    # d_i ~ 1/p_i* (equalising d_i * p_i*). The LP must reproduce this exactly.
+    G = _heterogeneous()
+    edges = [frozenset(e) for e in G.edges()]
+    vuln = length_band_vulnerability(G, edges, band=(0.2, 0.9))
+    game = build_interdiction_game(G, "S", "T", K=1, k_extra=0,
+                                   intercept_fn=survival_intercept_fn(vuln))
+    sol = solve(game)
+    p_star = np.array([max(vuln[e] for e in re) for re in game.route_edges])
+    inv = 1.0 / p_star
+    assert sol.value == pytest.approx(1.0 / inv.sum(), abs=1e-6)
+    np.testing.assert_allclose(sol.defender_strategy, inv / inv.sum(), atol=1e-6)
+    # the equilibrium is genuinely non-uniform (the asymmetry I3 needs).
+    assert sol.defender_strategy.max() > sol.defender_strategy.min() + 0.1
+    # loss_det < 1 under soft interception (the best deterministic route survives sometimes),
+    # and the mixed equilibrium still beats it.
+    assert sol.loss_det == pytest.approx(p_star.min(), abs=1e-9)
+    assert sol.value < sol.loss_det

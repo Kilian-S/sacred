@@ -24,8 +24,11 @@ from pathlib import Path
 from typing import Any
 
 import networkx as nx
+import numpy as np
 
-from src.baselines.interdiction_oracle import InterdictionGame, build_interdiction_game
+from src.baselines.interdiction_oracle import (
+    InterdictionGame, build_interdiction_game, build_route_set, edges_of_route,
+    length_band_vulnerability, survival_intercept_fn)
 from src.env.graph_env import GraphEnv
 from src.utils.graph_utils import load_osm_graph_and_demands
 
@@ -44,6 +47,12 @@ class InterdictionConfig:
     travel_cost_weight: float = 0.0        # small defender-only per-distance cost (0 = pure game)
     k_extra_routes: int = 8
     weight: str = "w"
+    # I3 asymmetric instances: per-edge interception probability (frozenset edge -> p in (0, 1]).
+    # None = hard interception (crossing an interdicted edge intercepts with certainty), the I2
+    # symmetric instance whose equilibrium is uniform; a heterogeneous map gives a NON-uniform
+    # equilibrium (d_i ~ 1/p_i* on disjoint routes) that separates SACRED from vanilla.
+    edge_vulnerability: dict | None = None
+    seed: int = 0                          # env RNG seed (Bernoulli interception outcomes)
 
 
 @dataclass
@@ -70,8 +79,12 @@ class InterdictionEnv:
         if s not in graph or t not in graph:
             raise ValueError(f"OD nodes {s!r},{t!r} not in graph")
         self.base, self.fob = s, t
+        intercept_fn = (survival_intercept_fn(config.edge_vulnerability)
+                        if config.edge_vulnerability is not None else None)
         self.game: InterdictionGame = build_interdiction_game(
-            graph, s, t, config.K, k_extra=config.k_extra_routes, weight=config.weight)
+            graph, s, t, config.K, k_extra=config.k_extra_routes, weight=config.weight,
+            intercept_fn=intercept_fn)
+        self._rng = np.random.default_rng(config.seed)
         if self.game.n_routes < 2:
             raise ValueError("interdiction game needs >= 2 candidate routes (pick a higher-connectivity OD)")
         self.routes_by_first_hop: dict[NodeId, list[int]] = {}
@@ -137,11 +150,13 @@ class InterdictionEnv:
         return min(idxs, key=lambda i: self.game.travel_cost[i])
 
     def resolve(self, route_index: int) -> InterdictionOutcome:
-        """Defender commits to a route; compute interception + rewards vs the committed interdiction."""
+        """Defender commits to a route; sample interception vs the committed interdiction. The
+        payoff entry is the interception PROBABILITY (0/1 under hard interception, so the draw
+        reproduces the deterministic behaviour exactly; fractional under edge vulnerability)."""
         if self._committed_iset is None:
             raise RuntimeError("attacker has not committed this sortie")
         j = self._committed_iset
-        intercepted = bool(self.game.payoff[route_index, j] > 0.0)
+        intercepted = bool(self._rng.random() < float(self.game.payoff[route_index, j]))
         travel = float(self.game.travel_cost[route_index])
         loss = self.config.interception_loss if intercepted else 0.0
         defender_reward = -loss - self.config.travel_cost_weight * travel
@@ -168,12 +183,16 @@ def make_interdiction_env(
     interception_loss: float = 1.0,
     travel_cost_weight: float = 0.0,
     k_extra_routes: int = 8,
+    edge_vuln_band: tuple[float, float] | None = None,
+    seed: int = 0,
     nodes_path: str = _DEFAULT_NODES,
     edges_path: str = _DEFAULT_EDGES,
     tasks_path: str = _DEFAULT_TASKS,
 ) -> InterdictionEnv:
     """Build the single-convoy interdiction env on the Kaliningrad graph: base (depot, truck 0) ->
-    FOB (demand), plus the NetworkX graph for the oracle/game core. Default OD 33->71 (edge-conn 6)."""
+    FOB (demand), plus the NetworkX graph for the oracle/game core. Default OD 33->71 (edge-conn 6).
+    ``edge_vuln_band=(lo, hi)`` switches to heterogeneous soft interception: candidate-edge
+    vulnerabilities length-mapped into the band (the I3 asymmetric instances); None = hard."""
     s, t = od
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
     if s not in nodes or t not in nodes:
@@ -187,6 +206,14 @@ def make_interdiction_env(
     G = nx.Graph()
     for u, v, d in edges:
         G.add_edge(str(u), str(v), w=float(d.get("distance", 1.0)))
+    vuln = None
+    if edge_vuln_band is not None:
+        # vulnerabilities cover exactly the candidate edges of the game the env will build
+        # (same route-set construction), normalised over that population.
+        routes = build_route_set(G, str(s), str(t), k_extra_routes, "w")
+        cand = set().union(*(edges_of_route(r) for r in routes))
+        vuln = length_band_vulnerability(G, cand, band=tuple(edge_vuln_band), weight="w")
     cfg = InterdictionConfig(od=(str(s), str(t)), K=K, interception_loss=interception_loss,
-                             travel_cost_weight=travel_cost_weight, k_extra_routes=k_extra_routes, weight="w")
+                             travel_cost_weight=travel_cost_weight, k_extra_routes=k_extra_routes,
+                             weight="w", edge_vulnerability=vuln, seed=seed)
     return InterdictionEnv(G, cfg, graph_env=graph_env)

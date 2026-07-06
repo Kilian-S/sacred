@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import networkx as nx
 import numpy as np
@@ -165,6 +165,51 @@ def interception_of_distribution(game: InterdictionGame, defender_strategy: np.n
     """Expected interception of a defender route-distribution vs a given attacker distribution."""
     d = np.asarray(defender_strategy, float); a = np.asarray(attacker_strategy, float)
     return float(d @ game.payoff @ a)
+
+
+# ---------------------------------------------------------------------------
+# Heterogeneous edge vulnerability (soft interception): the I3 asymmetric instances.
+# On edge-disjoint routes with HARD interception the equilibrium is uniquely UNIFORM for every K
+# (best response = the top-K defender masses, minimised only by uniform), so vanilla's incidental
+# max-entropy mixing is near-optimal and the SACRED-vs-vanilla gap is thin (the I2 caveat).
+# Per-edge interception probabilities break that symmetry: for disjoint routes with per-route max
+# vulnerability p_i* the equilibrium is d_i proportional to 1/p_i* with value 1/sum_i(1/p_i*),
+# a NON-uniform target vanilla does not track (closed form; verified in tests).
+
+
+def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
+                              band: tuple[float, float] = (0.2, 0.9),
+                              weight: str = "w") -> dict[frozenset, float]:
+    """Per-edge interception probability from edge length: exposure scales with transit time, so
+    each candidate edge's length is mapped affinely into ``band`` (shortest edge -> band[0],
+    longest -> band[1]; all-equal lengths -> the band midpoint). Objective and graph-derived (no
+    hand-tuned threat map); the band itself is pinned in the ledger by an oracle probe
+    (`scratch/vuln_band_probe.py`) BEFORE any training."""
+    es = sorted(edges, key=repr)
+    if not es:
+        raise ValueError("no candidate edges to assign vulnerability to")
+    lo, hi = band
+    if not (0.0 < lo <= hi <= 1.0):
+        raise ValueError(f"band must satisfy 0 < lo <= hi <= 1, got {band}")
+    lens = {e: float(G[u][v].get(weight, 1.0)) for e in es for u, v in [tuple(e)]}
+    lmin, lmax = min(lens.values()), max(lens.values())
+    if lmax <= lmin:
+        return {e: (lo + hi) / 2.0 for e in es}
+    return {e: lo + (hi - lo) * (lens[e] - lmin) / (lmax - lmin) for e in es}
+
+
+def survival_intercept_fn(vulnerability: dict[frozenset, float]) -> Callable[[frozenset, tuple[frozenset, ...]], float]:
+    """``intercept_fn`` for ``build_interdiction_game``: each interdicted edge the route crosses is
+    survived independently with probability 1 - p_e, so interception = 1 - prod(1 - p_e) over the
+    crossed interdicted edges (reduces to p_e for K=1). Raises KeyError on an edge without an
+    assigned vulnerability (the factory guarantees coverage of all candidate edges)."""
+    def fn(route_edges: frozenset, iset: tuple[frozenset, ...]) -> float:
+        survival = 1.0
+        for e in iset:
+            if e in route_edges:
+                survival *= 1.0 - vulnerability[e]
+        return 1.0 - survival
+    return fn
 
 
 def route_distribution_from_first_hops(game: InterdictionGame, s: NodeId,

@@ -20,6 +20,8 @@ Run: PYTHONPATH=. python scripts/train_interdiction.py --sorties 3000 --seed 0
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -59,15 +61,27 @@ def exploitability(prot, env) -> float:
     return expl
 
 
-def empirical_exploitability(prot, env) -> tuple[float, np.ndarray]:
-    """Exploitability of the defender's empirical average play (the deployable mixed strategy)."""
-    played = getattr(prot, "_played", None)
-    if played is None or played.sum() == 0:
-        d = np.ones(env.game.n_routes) / env.game.n_routes
-    else:
-        d = played / played.sum()
-    _, expl = best_response_attacker(env.game, d)
-    return expl, d
+def _hist(seq, n: int) -> np.ndarray:
+    """Empirical route distribution of a play sequence (uniform if empty)."""
+    h = np.zeros(n)
+    for i in seq:
+        h[i] += 1.0
+    return h / h.sum() if h.sum() > 0 else np.ones(n) / n
+
+
+def final_metrics(prot, env, played_seq, window: int) -> dict:
+    """The three exploitability readings of a trained arm: the POLICY route distribution (the
+    deployable object: what sampling the frozen stochastic policy each sortie exposes), the
+    TRAILING-WINDOW empirical play (late-training fictitious-play average), and the ALL-HISTORY
+    empirical play (includes early exploration; the I2 metric, kept for continuity)."""
+    d_pol = defender_route_distribution(prot, env)
+    _, expl_pol = best_response_attacker(env.game, d_pol)
+    d_win = _hist(played_seq[-window:], env.game.n_routes)
+    _, expl_win = best_response_attacker(env.game, d_win)
+    d_avg = _hist(played_seq, env.game.n_routes)
+    _, expl_avg = best_response_attacker(env.game, d_avg)
+    return {"expl_policy": expl_pol, "expl_window": expl_win, "expl_avg": expl_avg,
+            "dist_policy": d_pol.tolist(), "dist_window": d_win.tolist()}
 
 
 def _prot_transition(obs, first_hop, reward, mask) -> SMDPTransition:
@@ -77,7 +91,7 @@ def _prot_transition(obs, first_hop, reward, mask) -> SMDPTransition:
 
 
 def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial, eval_every, sol,
-                   reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0):
+                   reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0, window=500):
     torch.manual_seed(seed); np.random.seed(seed)
     prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=lr_actor,
@@ -85,6 +99,7 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
     committed = None
     history = []
     played = np.zeros(env.game.n_routes)   # empirical route-play histogram (fictitious-play average)
+    played_seq: list[int] = []             # per-sortie route log (for the trailing-window reading)
     for k in range(sorties):
         if adversarial and (committed is None or k % switch_every == 0):
             # oracle best-response to the defender's empirical average play (fictitious play, which
@@ -97,6 +112,7 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
         fh = act[0]
         ri = env.route_of_first_hop(fh)
         played[ri] += 1.0
+        played_seq.append(ri)
         if adversarial:
             env.commit(committed)
             out = env.resolve_first_hop(fh)
@@ -106,22 +122,17 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
         prot.replay_buffer.push(_prot_transition(obs, fh, out.defender_reward, mask))
         prot.update(batch_size)
         if eval_every and (k + 1) % eval_every == 0:
-            # exploitability of the empirical average play over a trailing window (the deployable
-            # mixed strategy), the fictitious-play quantity that converges to the equilibrium.
-            w = min(k + 1, 1000)
-            recent = _recent_hist(env, prot, played, k)  # trailing-window empirical distribution
-            _, expl_avg = best_response_attacker(env.game, recent)
-            history.append((k + 1, expl_avg))
-            print(f"    sortie {k+1:5d}: exploitability(avg-play) {expl_avg:.3f}  "
-                  f"(loss_mixed={sol.value:.3f}, loss_det={sol.loss_det:.3f})", flush=True)
+            # the three readings: policy distribution (deployable), trailing-window empirical play
+            # (late fictitious-play average), all-history empirical play (the I2 continuity metric).
+            expl_pol = exploitability(prot, env)
+            _, expl_win = best_response_attacker(env.game, _hist(played_seq[-window:], env.game.n_routes))
+            _, expl_avg = best_response_attacker(env.game, _hist(played_seq, env.game.n_routes))
+            history.append((k + 1, expl_pol, expl_win, expl_avg))
+            print(f"    sortie {k+1:5d}: expl policy {expl_pol:.3f} | window {expl_win:.3f} | "
+                  f"avg {expl_avg:.3f}   (loss_mixed={sol.value:.3f}, loss_det={sol.loss_det:.3f})",
+                  flush=True)
     prot._played = played  # expose the empirical strategy for final eval
-    return prot, history
-
-
-def _recent_hist(env, prot, played, k):
-    """Empirical route distribution over all sorties so far (running average)."""
-    tot = played.sum()
-    return played / tot if tot > 0 else np.ones(env.game.n_routes) / env.game.n_routes
+    return prot, history, played_seq
 
 
 def main():
@@ -138,38 +149,65 @@ def main():
     p.add_argument("--reward-scale", type=float, default=1.0)
     p.add_argument("--lr-actor", type=float, default=3e-4)
     p.add_argument("--k-extra", type=int, default=0, help="0 = clean edge-disjoint routes only")
+    p.add_argument("--edge-vuln-band", type=str, default="",
+                   help="lo,hi: heterogeneous soft interception (I3 asymmetric instance); '' = hard")
+    p.add_argument("--window", type=int, default=500, help="trailing-window size for empirical play")
+    p.add_argument("--json-out", type=str, default="", help="write the result record here (matrix aggregation)")
     args = p.parse_args()
     torch.set_num_threads(4)
     s, t = args.od.split("-")
+    band = tuple(float(x) for x in args.edge_vuln_band.split(",")) if args.edge_vuln_band else None
     env = make_interdiction_env(od=(s, t), K=args.K, interception_loss=args.interception_loss,
-                                travel_cost_weight=args.travel_cost_weight, k_extra_routes=args.k_extra)
+                                travel_cost_weight=args.travel_cost_weight, k_extra_routes=args.k_extra,
+                                edge_vuln_band=band, seed=args.seed)
     sol = solve(env.game)
-    print(f"Interdiction {s}->{t} K={args.K}: {env.game.n_routes} routes, {len(env.first_hops)} first "
-          f"hops; oracle loss_det={sol.loss_det:.3f}, loss_mixed={sol.value:.3f}, gap={sol.gap:.3f}\n")
+    print(f"Interdiction {s}->{t} K={args.K} band={band}: {env.game.n_routes} routes, "
+          f"{len(env.first_hops)} first hops; oracle loss_det={sol.loss_det:.3f}, "
+          f"loss_mixed={sol.value:.3f}, gap={sol.gap:.3f}\n")
 
-    # shortest-path reference (deterministic).
+    # deterministic shortest-path reference (the operational default) + uniform mixing reference
+    # (what UNCALIBRATED randomisation buys; on asymmetric instances it is measurably suboptimal).
     det = np.zeros(env.game.n_routes); det[env.shortest_route_index()] = 1.0
     _, expl_sp = best_response_attacker(env.game, det)
-    print(f"[shortest_path] exploitability = {expl_sp:.3f} (deterministic; the operational default)\n")
+    uni = np.ones(env.game.n_routes) / env.game.n_routes
+    _, expl_uni = best_response_attacker(env.game, uni)
+    print(f"[shortest_path] exploitability = {expl_sp:.3f} (deterministic; the operational default)")
+    print(f"[uniform]       exploitability = {expl_uni:.3f} (uncalibrated mixing reference)\n")
 
     print("[vanilla] training defender with NO adversary (nominal travel-cost objective)...")
-    vprot, _ = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
-                              batch_size=args.batch_size, seed=args.seed, adversarial=False,
-                              eval_every=0, sol=sol, reward_scale=args.reward_scale, lr_actor=args.lr_actor)
-    expl_vanilla, dv = empirical_exploitability(vprot, env)
-    print(f"[vanilla] final exploitability (avg play) = {expl_vanilla:.3f}\n")
+    vprot, _, vseq = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
+                                    batch_size=args.batch_size, seed=args.seed, adversarial=False,
+                                    eval_every=0, sol=sol, reward_scale=args.reward_scale,
+                                    lr_actor=args.lr_actor, window=args.window)
+    vfin = final_metrics(vprot, env, vseq, args.window)
+    print(f"[vanilla] final expl: policy {vfin['expl_policy']:.3f} | window {vfin['expl_window']:.3f} "
+          f"| avg {vfin['expl_avg']:.3f}\n")
 
     print("[sacred] training defender vs the ORACLE best-response interdictor (fictitious play)...")
-    sprot, hist = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
-                                 batch_size=args.batch_size, seed=args.seed, adversarial=True,
-                                 eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale, lr_actor=args.lr_actor)
-    expl_sacred, ds = empirical_exploitability(sprot, env)
-    print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}) ===")
-    print(f"  shortest_path exploitability : {expl_sp:.3f}")
-    print(f"  vanilla-SAC   exploitability : {expl_vanilla:.3f}")
-    print(f"  SACRED        exploitability : {expl_sacred:.3f}   (equilibrium loss_mixed = {sol.value:.3f})")
-    print(f"  -> adversarial training cut interception {expl_sp:.0%} -> {expl_sacred:.0%}"
-          f" (distance to equilibrium {abs(expl_sacred - sol.value):.3f})")
+    sprot, hist, sseq = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
+                                       batch_size=args.batch_size, seed=args.seed, adversarial=True,
+                                       eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
+                                       lr_actor=args.lr_actor, window=args.window)
+    sfin = final_metrics(sprot, env, sseq, args.window)
+    print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}, band={band}, seed={args.seed}) ===")
+    print(f"  arm             expl_policy  expl_window  expl_avg")
+    print(f"  shortest_path   {expl_sp:11.3f}  {expl_sp:11.3f}  {expl_sp:8.3f}")
+    print(f"  uniform         {expl_uni:11.3f}  {expl_uni:11.3f}  {expl_uni:8.3f}")
+    print(f"  vanilla         {vfin['expl_policy']:11.3f}  {vfin['expl_window']:11.3f}  {vfin['expl_avg']:8.3f}")
+    print(f"  sacred          {sfin['expl_policy']:11.3f}  {sfin['expl_window']:11.3f}  {sfin['expl_avg']:8.3f}")
+    print(f"  equilibrium (loss_mixed) = {sol.value:.3f}; loss_det = {sol.loss_det:.3f}")
+    print(f"  -> sacred policy-distribution distance to equilibrium: "
+          f"{abs(sfin['expl_policy'] - sol.value):.3f}")
+    if args.json_out:
+        record = {"od": args.od, "K": args.K, "band": band, "seed": args.seed,
+                  "sorties": args.sorties, "window": args.window,
+                  "loss_det": sol.loss_det, "loss_mixed": sol.value,
+                  "equilibrium_defender": sol.defender_strategy.tolist(),
+                  "arms": {"shortest_path": {"expl_policy": expl_sp},
+                           "uniform": {"expl_policy": expl_uni},
+                           "vanilla": vfin, "sacred": {**sfin, "history": hist}}}
+        Path(args.json_out).write_text(json.dumps(record, indent=2))
+        print(f"  [written] {args.json_out}")
 
 
 if __name__ == "__main__":
