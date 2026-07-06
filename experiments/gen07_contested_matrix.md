@@ -22,15 +22,35 @@ policy, not temperature).
 
 ## Arena (contested resupply; TO-FINALISE by the B9 probes, recommendation recorded)
 
-Recommended: **dynassign dynamics + route-reach attacker surface** — Poisson λ=0.06 assignment
-(the rung where protagonists demonstrably reach competence: gen03/06 band) with
-`antag_reach="route"` and full-block antagonist so that BOTH scripted and learned attacks aim
-along committed routes (the surface where learned BRs demonstrably work, gen05). Budget
-TO-FINALISE by the recoverability probe (target: fitted-scripted attack costs greedy +30-60%
-with attacked delivery in a trainable band, NOT the gen06 collapse regime). Escalation rule
-(pre-registered): if the B9.v coping-channel probe FAILS on this arena (see Gates), the arena
-moves to the fixed hybrid with the learnability fixes, and this ledger is re-issued BEFORE any
-training.
+Recommended: **dynassign dynamics + route-reach attacker surface**: Poisson assignment (the rung
+where protagonists demonstrably reach competence: gen03/06 band) with `antag_reach="route"` and
+full-block antagonist so that BOTH scripted and learned attacks aim along committed routes (the
+surface where learned BRs demonstrably work, gen05). Budget TO-FINALISE by the recoverability
+probe (target: fitted-scripted attack costs greedy +30-60% with attacked delivery in a trainable
+band, NOT the gen06 collapse regime). Escalation rule (pre-registered): if the B9.v coping-channel
+probe FAILS on this arena (see Gates), the arena moves to the fixed hybrid with the learnability
+fixes, and this ledger is re-issued BEFORE any training.
+
+**Arena-scoping probes (2026-07-06; capacity + load; `scratch/capacity_probe.py`,
+`scratch/stress_sweep.py`; greedy rollouts only, NO training; pin TO-FINALISE slots, never
+outcomes):**
+- **Capacity stays 1 (probe-refuted raising it).** Raising truck capacity 1→3→5 de-stresses the
+  system (clean W 5908→1133→1036; attacker bite D 4768→1783→697) and DESTROYS the exploitability
+  lever (lever 217→−39→−88). The lever is a stress phenomenon, not a capacity one; capacity slack
+  absorbs the disruption predictability would otherwise cost. So capacity-1 (the original
+  placeholder) is the regime where the thesis is testable. This also settles B8: rolling-ALNS
+  degenerates at capacity 1 → use greedy (already reactive/rolling) as the Obj-5 reactive
+  reference; ALNS is future work (it earns its keep only in the higher-capacity VRP we've ruled
+  out).
+- **Load (λ) is the difficulty knob → TO-FINALISE by the powered stress sweep.** The 12-instance
+  probe hinted the lever roughly doubles from λ=0.06 (217, ratio 1.36, delivery 0.75) to λ=0.08
+  (491, ratio 2.5, delivery 0.56) before collapse at 0.10-0.12. The powered sweep
+  (`scratch/stress_sweep.py`, 40 instances, per-instance lever 95% CI) pins the operating λ =
+  the largest CI-positive lever whose delivery stays trainable (well above the gen06 collapse
+  band). Honest caveat: even at the sweet spot the greedy-measured lever is ~10% of D (a LOWER
+  bound; crude ε-random assignment), so the destination-mode lever is real but thin; the hybrid
+  routing arena remains the recorded escalation if it proves too thin for a learned policy to
+  capture.
 
 ## Arms (identical env/reward/nets/hparams; only training-time exposure differs)
 
@@ -70,7 +90,7 @@ deterministic). D(a, atk) = W(atk) − W(none), paired per instance.
 > individually positive, AND the competence gate + clean-premium bound below hold.**
 
 **Secondary headline (reported, not gating the primary):** `Expl(sacred) < Expl(greedy)` with
-the same portfolio construction fitted to greedy — the deterministic classical dispatcher's
+the same portfolio construction fitted to greedy: the deterministic classical dispatcher's
 exploitability is the operational comparison the contested framing cares about.
 
 **Gates and bounds on interpretation (pre-registered):**
@@ -83,7 +103,7 @@ exploitability is the operational comparison the contested framing cares about.
   consistency AND the 3-pairing t sensitivity, always reported together.
 
 **Secondaries (reported):** the gen06-style held-out rows (D under random/pathrand/targeted and
-dD between arms — continuity with Act II; Tier 2); the `dr` and `vanilla@tau` rows under the
+dD between arms: continuity with Act II; Tier 2); the `dr` and `vanilla@tau` rows under the
 full portfolio (causal isolation: exposure-at-all vs aimed exposure vs raw noise); per-arm
 realised policy entropy at the selected checkpoints; budget-axis sweep curves (eval-only) for
 Expl and D; Obj-4/ZST eval-only extensions per supervisor decisions (separate sections appended
@@ -114,7 +134,7 @@ variant reserved for selection only), never on test attacks or test instances.
 ## Pre-registered interpretive branches
 
 1. Primary met + Tier-2 secondaries ≈ 0: *adversarial co-training buys worst-case
-   (unexploitability) but not average-case robustness* — the expected two-register outcome;
+   (unexploitability) but not average-case robustness*: the expected two-register outcome;
    Act IV headline.
 2. Primary met + `dr` ≈ `sacred`: exposure-at-all suffices in this arena; the claim downgrades
    from "adversarial" to "attacked training"; reported as such (the controls exist exactly to
@@ -123,7 +143,7 @@ variant reserved for selection only), never on test attacks or test instances.
    enough here"; the frontier comparison (clean cost at matched Expl) then decides whether
    co-training earns anything.
 4. Primary NOT met (with gates passed): the five fixes are insufficient for the benefit even in
-   its native register — Act IV becomes the sharpened impossibility result; freeze-and-write on
+   its native register: Act IV becomes the sharpened impossibility result; freeze-and-write on
    the three-act diagnosis (still a complete thesis).
 5. Any gate fails: recorded consequence fires (see the gate); no post-hoc metric changes, ever.
 
@@ -137,7 +157,7 @@ PYTHONPATH=. python scripts/train_sacred.py --problem contested [--vanilla | --d
 PYTHONPATH=. python scripts/evaluate_portfolio.py --problem contested --policy ... --br ... --attackers none,random,<fitted...>,br_* --instances 30 --out experiments/gen07_portfolio_pair<k>.json
 ```
 
-## Launch record (EMPTY — to be filled at launch; binding from that moment)
+## Launch record (EMPTY: to be filled at launch; binding from that moment)
 
 - git SHA: -
 - arms/seeds: -
