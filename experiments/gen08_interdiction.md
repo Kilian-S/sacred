@@ -1,13 +1,15 @@
 # Generation: gen08_interdiction (Act IV: adversarial RL that provably works: convoy routing as a security game)
 
-- **status: DRAFT PRE-REGISTRATION (opened 2026-07-06). Runs NOTHING yet.** Becomes binding when
-  the interdiction env (ROADMAP Phase I1) is built + unit-tested, the feasibility slice (I2) is
-  set up, and Kilian approves launch. Design: `REDESIGN_INTERDICTION.md`. Why this replaces gen07:
-  the congestion adversary has a FLAT attack landscape (gen07 corrected BR gate = 0.35× random);
-  interdiction is a Stackelberg security game where the mixed-strategy defender provably wins.
-  Proof (game-theoretic, before training): `scratch/interdiction_game_probe.py`: deterministic
-  routing 100% intercepted → minimax mixed 17-33% on the real Kaliningrad graph.
-- **git SHA:** to pin at launch (new branch `gen08-interdiction` off `main`).
+- **status: I3 WAVE 1 LAUNCHED 2026-07-06 (Kilian's go; window-primary metric CONFIRMED).**
+  History: opened 2026-07-06 as a draft; G1 + G2 gates PASSED same day (below); I3 pre-registered
+  and wave 1 (instance B x seeds 0-2) launched same day. Design: `REDESIGN_INTERDICTION.md`. Why
+  this replaces gen07: the congestion adversary has a FLAT attack landscape (gen07 corrected BR
+  gate = 0.35× random); interdiction is a Stackelberg security game where the mixed-strategy
+  defender provably wins. Proof (game-theoretic, before training):
+  `scratch/interdiction_game_probe.py`: deterministic routing 100% intercepted → minimax mixed
+  17-33% on the real Kaliningrad graph.
+- **git SHA:** I2 slice = `008cd1d` era (see G2). **I3 wave 1 code = `af1aada`** (the I3a build;
+  docs commit `d3dd2ba` on top; no code changes between them).
 
 ## Question (fixed before looking)
 
@@ -126,8 +128,9 @@ reference row, computed not trained), vanilla (SAC, travel-cost objective, no ad
 ~1500; 2x margin); measured ~0.27 s/sortie (2026-07-06 smoke) -> ~27 min per instance-seed run
 (both trained arms), ~2.4 h serial for the matrix, ~3x parallelisable on the M4.
 
-**Decision metric (PRIMARY, on instance B):** exploitability of the TRAILING-WINDOW empirical
-play (window 500) under the oracle best-response interdictor, end of training:
+**Decision metric (PRIMARY, on instance B; CONFIRMED by Kilian 2026-07-06 pre-launch):**
+exploitability of the TRAILING-WINDOW empirical play (window 500) under the oracle best-response
+interdictor, end of training:
 > `Expl_win(sacred) < Expl_win(vanilla)` on >= 3/3 seeds AND in the pooled mean, and
 > `Expl_win(sacred) < Expl(shortest_path)`.
 Rationale for the window reading as primary: the Stackelberg adversary best-responds to the
@@ -153,8 +156,10 @@ mixture is still uncalibrated; the gap claim stands or falls on the measured win
 **Gates:** G3 soft-instance fidelity: **PASSED 2026-07-06** (env reproduces the soft oracle
 equilibrium by Monte Carlo, `tests/test_interdiction_env.py::test_G3_soft_env_reproduces_oracle_kaliningrad`;
 closed-form equilibrium verified in `tests/test_interdiction_oracle.py`; suite 127 green).
-Timing gate: measured (smoke above). **Launch: waiting on Kilian (never before this section is
-finalised + SHA pinned).**
+Timing gate: measured (smoke above). **Launch: wave 1 (instance B x seeds {0,1,2}, 3000 sorties,
+serial detached) APPROVED + LAUNCHED by Kilian 2026-07-06 at code SHA `af1aada`; outputs under
+`models/runs/gen08_interdiction_I3/` (logs + per-seed JSONs). Waves A (hard K sweep) and C
+(connectivity contrast) launch only after the wave-1 interim read (⛔K again).**
 
 **Commands (matrix sketch):**
 ```bash
