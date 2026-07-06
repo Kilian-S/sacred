@@ -54,6 +54,7 @@ class ATLACoevolutionTrainer:
         update_every: int = 1,
         attack_curriculum=None,
         scripted_attacker_pool=None,
+        frozen_protagonist_chooser=None,
     ) -> None:
         if mode not in ("atla", "vanilla", "antagonist_only", "scripted_adversary"):
             raise ValueError(f"unknown trainer mode {mode!r}")
@@ -85,6 +86,10 @@ class ATLACoevolutionTrainer:
         # whose member is resampled each episode, overriding self.scripted_attacker for that episode.
         # None = the single fixed scripted attacker. Composes with the B3 curriculum.
         self.scripted_attacker_pool = scripted_attacker_pool
+        # antagonist_only gate: drive the FROZEN protagonist with this per-truck chooser (e.g. greedy)
+        # instead of the SAC net, so a best-response attacker can be trained against a competent
+        # deterministic victim (the exploitability BR gate; gen05 only transferred BRs to greedy).
+        self.frozen_protagonist_chooser = frozen_protagonist_chooser
         # Update-to-data ratio: run a gradient update once every N decision epochs (per agent)
         # instead of every one. N=1 = the historical behaviour. The hybrid rung makes ~10x more
         # (edge-level) decisions per episode than destination-mode rungs, so update-per-decision
@@ -171,8 +176,11 @@ class ATLACoevolutionTrainer:
                     # Sequential per-truck decisions with projection + claiming live in the shared
                     # transition builder (single source of truth, also used by the ERB demo
                     # generator so demos are byte-identical to live transitions).
-                    def _choose(projected_obs, truck_mask, truck_id):
-                        return self.protag.select_action(projected_obs, truck_mask, deterministic=False)
+                    if self.frozen_protagonist_chooser is not None:
+                        _choose = self.frozen_protagonist_chooser  # e.g. greedy victim (BR gate)
+                    else:
+                        def _choose(projected_obs, truck_mask, truck_id):
+                            return self.protag.select_action(projected_obs, truck_mask, deterministic=False)
 
                     next_event, t_transitions = collect_protagonist_transitions(self.smdp, event, _choose)
                     if self.mode != "antagonist_only":  # a frozen protagonist stores nothing

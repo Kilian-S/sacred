@@ -205,6 +205,36 @@ def hybrid_greedy_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
     return policy
 
 
+def hybrid_greedy_chooser(smdp: SMDPDecisionWrapper):
+    """Per-truck form of hybrid_greedy_policy for the transition builder (choose(projected_obs,
+    truck_mask, truck_id) -> {truck_id: node}). Used to drive greedy as the FROZEN protagonist
+    when training a best-response attacker against it (the exploitability BR gate). Same logic as
+    hybrid_greedy_policy: assignment -> nearest congestion-aware request from the claim-reduced
+    mask; routing -> forward next-hop on the congestion-aware shortest path to the target."""
+    def choose(projected_obs, truck_mask, truck_id):
+        env = smdp.env
+        dests = truck_mask.get(truck_id, [])
+        if not dests:
+            return {}
+        truck = env.trucks[truck_id]
+        source = truck.current_node
+        if source is None:
+            return {truck_id: dests[0]}
+        if getattr(truck, "assigned_target", None) is None:
+            requests = [d for d in dests if env.graph.nodes[d]["demand"] > 0.0]
+            if requests:
+                best = min(requests, key=lambda d: (_congestion_aware_distance(env, source, d), _id_key(d)))
+                return {truck_id: best}
+            return {truck_id: dests[0]}
+        try:
+            path = nx.dijkstra_path(env.graph, source, truck.assigned_target, weight="effective_weight")
+            nxt = path[1] if len(path) > 1 else dests[0]
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            nxt = dests[0]
+        return {truck_id: nxt if nxt in dests else dests[0]}
+    return choose
+
+
 def no_antagonist_policy(event: DecisionEvent) -> None:
     """Antagonist that never congests (clean, no-attack baseline)."""
     return None
