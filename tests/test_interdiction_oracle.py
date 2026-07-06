@@ -109,6 +109,10 @@ def test_length_band_vulnerability_maps_lengths_into_band():
     H = nx.Graph(); H.add_edge("x", "y", w=1.0); H.add_edge("y", "z", w=1.0)
     mid = length_band_vulnerability(H, [frozenset({"x", "y"}), frozenset({"y", "z"})], band=(0.2, 0.9))
     assert all(v == pytest.approx(0.55) for v in mid.values())
+    # a DESCENDING band inverts the correlation: shortest edge -> highest vulnerability.
+    inv = length_band_vulnerability(G, edges, band=(0.9, 0.2))
+    assert inv[frozenset({"S", "B"})] == pytest.approx(0.9)
+    assert inv[frozenset({"S", "A"})] == pytest.approx(0.2)
 
 
 def test_survival_intercept_fn_multi_edge():

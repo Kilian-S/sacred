@@ -180,17 +180,20 @@ def interception_of_distribution(game: InterdictionGame, defender_strategy: np.n
 def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
                               band: tuple[float, float] = (0.2, 0.9),
                               weight: str = "w") -> dict[frozenset, float]:
-    """Per-edge interception probability from edge length: exposure scales with transit time, so
-    each candidate edge's length is mapped affinely into ``band`` (shortest edge -> band[0],
-    longest -> band[1]; all-equal lengths -> the band midpoint). Objective and graph-derived (no
-    hand-tuned threat map); the band itself is pinned in the ledger by an oracle probe
-    (`scratch/vuln_band_probe.py`) BEFORE any training."""
+    """Per-edge interception probability from edge length: each candidate edge's length is mapped
+    affinely into ``band`` (shortest edge -> band[0], longest -> band[1]; all-equal lengths -> the
+    band midpoint). An ASCENDING band models exposure scaling with transit time (long edges
+    dangerous: vulnerability correlates with travel cost); a DESCENDING band (band[0] > band[1])
+    inverts the correlation (short edges = watched chokepoints), making cost and security CONFLICT
+    so cost-driven mixing is miscalibrated by construction (the I3 wave-1 lesson). Objective and
+    graph-derived (no hand-tuned threat map); the band itself is pinned in the ledger by an oracle
+    probe (`scratch/vuln_band_probe.py`) BEFORE any training."""
     es = sorted(edges, key=repr)
     if not es:
         raise ValueError("no candidate edges to assign vulnerability to")
     lo, hi = band
-    if not (0.0 < lo <= hi <= 1.0):
-        raise ValueError(f"band must satisfy 0 < lo <= hi <= 1, got {band}")
+    if not (0.0 < min(lo, hi) and max(lo, hi) <= 1.0):
+        raise ValueError(f"band values must lie in (0, 1], got {band}")
     lens = {e: float(G[u][v].get(weight, 1.0)) for e in es for u, v in [tuple(e)]}
     lmin, lmax = min(lens.values()), max(lens.values())
     if lmax <= lmin:

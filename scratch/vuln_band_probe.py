@@ -24,7 +24,10 @@ from src.utils.graph_utils import load_osm_graph_and_demands
 from src.envs.interdiction import _DEFAULT_NODES, _DEFAULT_EDGES, _DEFAULT_TASKS
 
 ODS = [("33", "71"), ("110", "135")]
-BANDS = [(0.2, 0.9), (0.15, 0.95), (0.3, 0.8)]
+# ascending bands: vulnerability correlates with travel cost (the wave-1 instances).
+# DESCENDING bands: inverse correlation (short edges = watched chokepoints), the B' candidates:
+# cost and security conflict, so cost-driven mixing is miscalibrated by construction.
+BANDS = [(0.2, 0.9), (0.15, 0.95), (0.3, 0.8), (0.95, 0.15), (0.9, 0.2)]
 KS = [1, 2]
 
 

@@ -170,6 +170,53 @@ for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
 # instance C: --od 110-135 --edge-vuln-band 0.15,0.95
 ```
 
+### I3 wave 1 RESULT (2026-07-06, instance B x seeds {0,1,2}, code SHA `af1aada`): PRIMARY FAILED
+
+Runs: 3000 sorties/arm, serial, ~28 min/seed; logs + JSONs
+`models/runs/gen08_interdiction_I3/B_seed{0,1,2}.{log,json}`. References: shortest_path 0.449,
+uniform 0.158, equilibrium (loss_mixed) 0.063, loss_det 0.266.
+
+| seed | arm | expl_policy | **expl_window (primary)** | expl_avg |
+|---|---|---|---|---|
+| 0 | vanilla | 0.138 | **0.112** | 0.100 |
+| 0 | sacred | 0.104 | **0.133** | 0.085 |
+| 1 | vanilla | 0.135 | **0.139** | 0.098 |
+| 1 | sacred | 0.259 | **0.133** | 0.080 |
+| 2 | vanilla | 0.131 | **0.141** | 0.095 |
+| 2 | sacred | 0.140 | **0.143** | 0.077 |
+
+- **PRIMARY `Expl_win(sacred) < Expl_win(vanilla)`: FAIL.** 1/3 seeds (seed 1 only); pooled
+  sacred 0.136 vs vanilla 0.131 (sign reversed). The two arms are statistically
+  indistinguishable on the window reading.
+- **`Expl_win(sacred) < Expl(shortest_path)`: PASS 3/3** (0.133-0.143 vs 0.449, a ~3.3x gap):
+  the I2 headline REPLICATES across seeds on an asymmetric instance.
+- **STRONG (within 0.05 of equilibrium): FAIL** on the window reading (0.133-0.143 vs 0.063).
+- Secondary all-history: sacred < vanilla on 3/3 seeds (0.077-0.085 vs 0.095-0.100), gaps
+  0.015-0.020: directionally consistent but small and exploration-flattered. Secondary policy
+  reading: 1/3 (it snapshots the FP mid-cycle; seed 1 caught it at 0.259).
+
+**Mechanism (both channels were pre-flagged as risks in this section and both materialised):**
+1. **Vanilla is incidentally near-calibrated on this instance.** Length-derived vulnerability
+   correlates with travel cost, so vanilla's cost-tilted SAC-entropy mixture (it never collapsed;
+   entropy keeps it mixed across 6 similar-cost routes) lands at window 0.11-0.14 without ever
+   seeing an adversary: below uniform (0.158), leaving sacred only ~0.07 of calibration headroom
+   above the equilibrium (0.063).
+2. **The trailing-window reading of a fictitious-play learner measures MID-CYCLE play, not the
+   converged mixture.** Sacred's window oscillates 0.10-0.15 from sortie ~1750 with no trend
+   (the FP cycle amplitude, not under-training) while its long-run average holds ~0.08. The
+   window-primary choice, made to avoid exploration-flattering, is systematically biased against
+   the FP learner: a methodological finding in its own right, recorded here rather than patched
+   retroactively.
+
+**Consequences (nothing amended post hoc; next steps need a NEW pre-registered instance/metric,
+⛔K):** (a) candidate instance B' = INVERSE correlation (vulnerability concentrated on short
+edges: watched chokepoints), making cost and security CONFLICT so incidental cost-driven mixing
+is miscalibrated by construction; (b) candidate metric refinement for the FP learner = the
+trailing average of POLICY route-distributions (the deployed late-training pattern, no mid-cycle
+bias, no exploration credit), reported alongside the existing three readings; (c) waves A
+(hard-instance K sweep + seeds: the headline replication) and C (connectivity contrast) are
+unaffected by this diagnosis and remain launchable as pre-registered.
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
