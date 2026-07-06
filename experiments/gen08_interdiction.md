@@ -290,6 +290,56 @@ for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
   --json-out models/runs/gen08_interdiction_I3/B2P_seed$s.json; done   # B2-S: add --od 110-135
 ```
 
+### B2-P RESULT (2026-07-06 night, 3 seeds, ~40 min/seed): PRIMARY FAILED; mechanism isolated; instance design VALIDATED
+
+| seed | arm | **expl_TAP (primary)** | expl_policy | expl_window | expl_avg | cost(TAP) |
+|---|---|---|---|---|---|---|
+| 0 | vanilla | **0.482** | 0.479 | 0.482 | 0.431 | 8.3 |
+| 0 | sacred | **0.615** | 0.881 | 0.770 | 0.259 | 11.7 |
+| 1 | vanilla | **0.452** | 0.495 | 0.494 | 0.445 | 8.5 |
+| 1 | sacred | **0.597** | 0.968 | 0.858 | 0.261 | 11.8 |
+| 2 | vanilla | **0.454** | 0.490 | 0.486 | 0.429 | 8.4 |
+| 2 | sacred | **0.361** | 0.309 | 0.520 | 0.242 | 20.6 |
+
+Anchors: shortest_path 1.000 @ 4.1; uniform 0.455 @ 12.4; equilibrium 0.167 @ 16.0.
+
+- **PRIMARY FAIL:** 1/3 seeds; pooled TAP sacred 0.524 vs vanilla 0.463.
+- **The instance design was VALIDATED by the control:** vanilla's TAP landed 0.452-0.482 with
+  0.48-0.50 of its mass on the shared duplicates: within noise of the pre-registered oracle
+  bound (>= 0.467 for any cost-calibrated mixture). The wave-1 imitation channel stayed closed.
+- **SACRED learned the structural content of the game:** policy mass on the shared duplicates
+  0.01 / 0.00 / 0.19 (equilibrium: exactly 0), and its ALL-HISTORY average play beats vanilla on
+  3/3 seeds (0.242-0.261 vs 0.429-0.445; the pre-registered continuity secondary), plateauing
+  ~0.25 from ~sortie 1500 (~0.08 above the equilibrium).
+- **Failure mode (trajectories + mass decomposition):** large-amplitude LAST-ITERATE
+  fictitious-play cycling WITHIN the disjoint six. The policy passes through phases of near-pure
+  single-route play (expl_policy up to 0.97; on disjoint routes one interdictor covers one route,
+  so 0.97 means ~97% of mass on ONE route), because the defender best-responds to a PURE
+  committed BR held for 50-sortie blocks under hard all-or-nothing rewards. TAP-over-5-evals sits
+  inside single cycle phases: wave-1's mid-cycle bias reappears at ~5x amplitude. The plateaued
+  average shows longer runs alone cannot close the gap: the cycling tax is structural to
+  one-sided best-response play.
+
+### B2-P2 pre-registration (draft 2026-07-06: the mechanism fix; binding at launch)
+
+**One training change (textbook two-sided fictitious play):** each sortie, the committed
+interdiction is SAMPLED from the attacker's HISTORICAL best-response mixture (the empirical
+average of all BRs computed so far) instead of the latest pure BR held for a block. The defender
+then faces a slowly-varying MIXED attacker, whose mixture converges to the equilibrium attacker;
+the defender's entropy-regularised best response to a mixed attacker is itself mixed and stable,
+so the LAST ITERATE should converge toward the equilibrium mixture and the cycling amplitude
+should collapse. Telemetry added (this run's diagnostic gap): protagonist alpha and base-branch
+policy entropy logged per eval.
+
+Same instance (B2-P), anchors, arms, seeds {0,1,2}, TAP_K=5, and the SAME primary:
+`Expl_TAP(sacred) < Expl_TAP(vanilla)` 3/3 + pooled AND `< 0.455`; STRONG within 0.05 of 0.167.
+Recorded prediction: `Expl_TAP(sacred) <= 0.30`. **Contingent branch (stated now, before the
+run):** if last-iterate cycling persists (TAP primary fails again while the average-play
+secondary beats vanilla 3/3 again), the thesis claim falls back to the average-strategy framing:
+the deployable object is the logged route mixture (operationally natural: the planner samples
+from trained route frequencies), measured as burn-in-excluded average play; acknowledged as the
+weaker form. **Launch: awaits Kilian's explicit go.**
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
