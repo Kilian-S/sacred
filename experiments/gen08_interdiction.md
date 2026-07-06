@@ -338,7 +338,17 @@ run):** if last-iterate cycling persists (TAP primary fails again while the aver
 secondary beats vanilla 3/3 again), the thesis claim falls back to the average-strategy framing:
 the deployable object is the logged route mixture (operationally natural: the planner samples
 from trained route frequencies), measured as burn-in-excluded average play; acknowledged as the
-weaker form. **Launch: awaits Kilian's explicit go.**
+weaker form.
+
+**Launch: B2-P2 LAUNCHED 2026-07-06 night (Kilian: "build plus smoke and then launch"); code SHA
+`240e6a6`.** Smoke (300 sorties, authorised) before launch: policy reading STABLE 0.26-0.29
+(vs B2-P's 0.24-0.99 cycling), TAP 0.272 < vanilla 0.397 at sortie 300, alpha 0.98->0.92,
+H(route mixture) ~2.0. Command:
+```bash
+for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --k-extra 8 --route-mode walk --attacker-mode mixture --sorties 3000 --seed $s \
+  --eval-every 250 --json-out models/runs/gen08_interdiction_I3/B2P2_seed$s.json; done
+```
 
 ## Commands (sketch; exact + SHA at launch)
 
