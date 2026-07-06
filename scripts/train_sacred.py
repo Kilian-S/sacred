@@ -160,6 +160,35 @@ def main() -> None:
              "the SAME value for every arm of a generation.",
     )
     parser.add_argument(
+        "--gamma",
+        type=float,
+        default=0.99,
+        help="SAC discount factor (applied per SMDP tick as gamma^elapsed_ticks). Default 0.99 "
+             "reproduces every historical run. gen07 (B5) raises it to ~0.997 to fight the "
+             "gamma-myopia diagnosed in gen04 (0.99^300~0.05 buries the queue-compounding payoff; "
+             "0.997^300~0.41 keeps it in horizon). Applied to BOTH agents; use the SAME value for "
+             "every arm of a generation.",
+    )
+    parser.add_argument(
+        "--protag-target-entropy",
+        type=float,
+        default=None,
+        help="B2 entropy repair. None (default) = the historical dynamic target 0.45*ln(N) over "
+             "the action-set size N. Setting an ABSOLUTE value decouples the target from N, which "
+             "under attack is the inflated pending-queue size (the M2 pathology: the attack forces "
+             "the max-entropy objective to demand MORE randomness exactly where indecision is "
+             "punished). Protagonist only; use the SAME value across a generation's arms.",
+    )
+    parser.add_argument(
+        "--antag-target-entropy",
+        type=float,
+        default=None,
+        help="B2 entropy repair, antagonist side (the gen04b hypothesis made testable). None "
+             "(default) = the historical 0.5*ln(N) target that pinned the attacker near-uniform "
+             "(gen04 entropy pinning). A LOWER absolute value lets the attacker commit to a "
+             "strategic block instead of being mandated toward the random attacker.",
+    )
+    parser.add_argument(
         "--scripted-attacker",
         type=str,
         choices=["targeted", "pathrand"],
@@ -366,11 +395,13 @@ def main() -> None:
         heads=4,
         lr_actor=5e-5,
         lr_critic=1e-3,
-        gamma=0.99,
+        gamma=args.gamma,
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        target_entropy=None,  # None -> sane discrete-SAC fallback; -1.0 caused alpha runaway/critic divergence
+        # B2: absolute target if --protag-target-entropy set, else the historical dynamic
+        # 0.45*ln(N) fallback (None). -1.0 caused alpha runaway/critic divergence — never that.
+        target_entropy=args.protag_target_entropy,
         reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
     )
@@ -388,11 +419,13 @@ def main() -> None:
         congestion_levels=config.congestion_levels,
         lr_actor=5e-5,
         lr_critic=1e-3,
-        gamma=0.99,
+        gamma=args.gamma,
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        target_entropy=None,  # None -> sane discrete-SAC fallback; -1.0 caused alpha runaway/critic divergence
+        # B2: absolute target if --antag-target-entropy set (the gen04b entropy-pinning fix),
+        # else the historical dynamic 0.5*ln(N) fallback (None).
+        target_entropy=args.antag_target_entropy,
         reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
     )
