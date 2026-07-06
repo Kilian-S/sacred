@@ -182,6 +182,31 @@ variant reserved for selection only), never on test attacks or test instances.
   > `evaluate_portfolio.py --problem contested --br gate=<actor> --attackers
   > none,random,pathrand,targeted,br_gate --instances 24 --seed-base 20000019`. Result appended
   > when done; if PASS, a no-fix contested control run attributes the effect to the fixes.
+  >
+  > **CORRECTED GATE RESULT (2026-07-06): FAILS ROBUSTLY, and reveals the deeper mechanism.**
+  > Held-out (24 val instances, greedy W(none)=6729): D(random)=+4733±213, D(pathrand)=+4618±176,
+  > D(targeted)=+4920±218, **D(br_fixed)=+1666±185**. br/random = **0.35** (WORSE than the unfixed
+  > hybrid gate's 0.84). Robust across snapshots: D(br) ep100=457, ep200=1890, ep300=1666: the
+  > counterfactual reward DID help it climb (457->~1800) but it plateaus at ~0.35-0.39x random.
+  > Telemetry (the diagnosis): antagonist entropy stayed **pinned at ~2.2 throughout** despite the
+  > lowered 0.5 target, while alpha COLLAPSED (0.80->0.08): so the near-uniform policy is NOT held
+  > up by entropy pressure (alpha is tiny) but by a **near-zero Q-spread** across block actions.
+  > The counterfactual reward cleaned the TOTAL damage signal (Antag R stable ~4000) yet could not
+  > create Q-spread that is not in the problem.
+  >
+  > **The unifying finding (deeper than gen04's "entropy pinning"):** on the stressed arena (ρ≈1)
+  > the attack landscape is **large but FLAT**: every route-reach block causes similar cascading
+  > queue damage, so there is no differentially-best attack to learn, and RANDOM blocking is
+  > already near-optimal (4733 ≈ 96% of scripted's 4920). Where the landscape might be
+  > differentiated (low stress) it is thin (capacity/stress probes). So a learned adversary has no
+  > regime with an edge over simple random/scripted blocking: the attack surface is flat-where-
+  > large and thin-where-differentiated. Entropy pinning is a SYMPTOM of the flat Q-landscape,
+  > which is a property of the "block edges in a queueing network" adversary, not a fixable
+  > optimisation issue. This explains gen03/04/06's below-random learned attackers at a mechanistic
+  > level, and it also means the contested arena's attacks SATURATE (~4600-4920, all near-ceiling),
+  > leaving no headroom to differentiate a vanilla from a sacred victim (gen05 ceiling-compression
+  > in another guise). **Consequence:** the learned-BR component of the exploitability metric is
+  > dead here (fair test, deep mechanism); freeze recommendation on record (session).
 - **B9.v coping-channel probe**: an ε-randomised greedy (assignment noise, ε grid on validation
   instances) must reduce D under the fitted `targeted` attack relative to deterministic greedy
   by a nonzero margin (CI excluding 0). FAIL consequence: the unpredictability channel is dead
