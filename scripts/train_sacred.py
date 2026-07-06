@@ -102,14 +102,16 @@ def main() -> None:
     parser.add_argument(
         "--problem",
         type=str,
-        choices=["osm", "stage0", "assign", "dynassign", "hybrid"],
+        choices=["osm", "stage0", "assign", "dynassign", "hybrid", "contested"],
         default="osm",
         help=(
             "Which problem to train. 'osm' (default) = the static-demand Kaliningrad "
             "baseline. 'stage0' = single-truck next-hop route-choice validation rung. "
             "'assign' = the 3b multi-truck assignment probe (static, RETIRED baseline). "
             "'dynassign' = Stage 1.5 dynamic assignment (Poisson arrivals, 2 trucks, latency). "
-            "'hybrid' = Stage 2 hybrid (assignment + next-hop routing, chokepoint geometry, static)."
+            "'hybrid' = Stage 2 hybrid (assignment + next-hop routing, chokepoint geometry, static). "
+            "'contested' = gen07 contested-resupply arena (dynassign dynamics + route-reach "
+            "antagonist; the exploitability headline arena — see src/envs/contested.py)."
         ),
     )
     parser.add_argument(
@@ -278,6 +280,23 @@ def main() -> None:
             env_factory = lambda: make_dynamic_assign_env(arrival_rate=args.arrival_rate)
         smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config)
         reward_scale = 0.1
+    elif args.problem == "contested":
+        print("Initializing SACRED contested-resupply arena (dynassign dynamics + route reach)...")
+        import itertools
+        from src.envs.contested import contested_config, make_contested_env
+
+        # Single source of truth for the arena config (train + eval share it; see contested.py).
+        config = contested_config(congestion_budget=args.congestion_budget)
+        # Same reproducible per-episode Poisson demand stream as dynassign (fresh env each reset;
+        # a counter advances the stream so a fixed seed does not repeat one instance).
+        if args.seed is not None:
+            _demand_counter = itertools.count(args.seed * 100003)
+            env_factory = lambda: make_contested_env(
+                arrival_rate=args.arrival_rate, demand_seed=next(_demand_counter))
+        else:
+            env_factory = lambda: make_contested_env(arrival_rate=args.arrival_rate)
+        smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config)
+        reward_scale = 0.1
     elif args.problem == "hybrid":
         print("Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...")
         from src.envs.assignment_factory import make_hybrid_assign_env
@@ -436,6 +455,14 @@ def main() -> None:
         # Multi-seed, fixed-adversary eval (a few fixed Poisson instances) — the metric the
         # static-3b retraction demands. make_env_for_seed(seed) -> a zero-arg factory bound to it.
         make_env_for_seed = lambda seed: (lambda: _mkd(arrival_rate=args.arrival_rate, demand_seed=seed))
+        eval_fn = lambda ep: eval_dynamic_cells(protag, antag, make_env_for_seed, config, seeds=(0, 1, 2))
+        eval_every = args.eval_every
+    elif args.problem == "contested" and args.eval_every > 0:
+        from scripts.evaluate_dynamic_assign import eval_dynamic_cells
+        from src.envs.contested import make_contested_env as _mkc
+        # Same dynamics as dynassign -> reuse its multi-seed fixed-adversary eval, with the
+        # contested (route-reach) config so the periodic signal matches training.
+        make_env_for_seed = lambda seed: (lambda: _mkc(arrival_rate=args.arrival_rate, demand_seed=seed))
         eval_fn = lambda ep: eval_dynamic_cells(protag, antag, make_env_for_seed, config, seeds=(0, 1, 2))
         eval_every = args.eval_every
     elif args.problem == "hybrid" and args.eval_every > 0:

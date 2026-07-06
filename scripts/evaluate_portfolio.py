@@ -78,6 +78,13 @@ def _problem_setup(problem: str, arrival_rate: float):
         cfg = hybrid_config()
         mk = lambda seed: make_hybrid_assign_env  # static demand: the seed only drives rollouts
         return cfg, mk, hybrid_greedy_policy, True
+    if problem == "contested":
+        # gen07 arena: dynassign dynamics + route reach (single source of truth in contested.py).
+        from src.envs.contested import contested_config, make_contested_env
+
+        cfg = contested_config()
+        mk = lambda seed: (lambda: make_contested_env(arrival_rate=arrival_rate, demand_seed=seed))
+        return cfg, mk, greedy_insertion_policy, False
     raise ValueError(f"unsupported problem {problem!r}")
 
 
@@ -303,7 +310,7 @@ def select_best_under_attack(run_dir: str, cfg: SMDPConfig, make_env_for_seed,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Robustness-portfolio evaluation.")
-    parser.add_argument("--problem", choices=["dynassign", "hybrid"], default="dynassign")
+    parser.add_argument("--problem", choices=["dynassign", "hybrid", "contested"], default="dynassign")
     parser.add_argument("--arrival-rate", type=float, default=0.06, help="dynassign only")
     parser.add_argument("--policy", action="append", default=[], metavar="NAME=ACTOR.PT",
                         help="learned arm (repeatable); greedy is always included")
