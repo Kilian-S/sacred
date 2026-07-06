@@ -45,14 +45,14 @@
         determinism levels (both arms sharpened equally; labelled diagnostic, dogma-compliant).
         Distinguishes "knowledge deficit" from "temperature deficit". Eval-only, ~30-60 min. ⛔K.
       - A3.4 Seed-level statistics note for gen05/gen06 (dual-reporting rule). Zero CPU.
-- [ ] **A4. gen07 ledger draft**: `experiments/gen07_contested_matrix.md` opened with the full
-      pre-registration (arms, seeds, instance seeds, exploitability estimator: attack-level max
-      of per-attack mean D with paired bootstrap CI (to be finalised in the ledger BEFORE
-      looking), success thresholds, gates, branches). Drafting is free; **nothing runs from it
-      until Phase B gates pass and Kilian launches** (⛔K). **HELD 2026-07-06:** the evening
-      decision round conflated this with a conference item ("pre-registration" here means the
-      experiments ledger, nothing external); Kilian to confirm or decline 2026-07-07 morning,
-      together with the Phase-B start decision.
+- [x] **A4. gen07 ledger draft** — **DONE 2026-07-06** (Kilian confirmed after the morning
+      clarification): `experiments/gen07_contested_matrix.md` opened as a DRAFT
+      pre-registration (commit `2089e1f`): portfolio-max exploitability estimator with paired
+      bootstrap + dual-level stats; arms vanilla/dr/sacred + eval-time entropy-matched control;
+      five pre-launch gates (suite, timing, competence/recoverability, BR gate, coping-channel
+      probe) with a pre-registered arena escalation rule; five interpretive branches. **Nothing
+      runs from it until Phase B gates pass and Kilian launches** (⛔K); TO-FINALISE slots may
+      be pinned only by probes, never by outcomes.
 
 **Exit criteria:** A1 decisions recorded in `DIRECTION.md` §9; A4 ledger reviewed by Kilian.
 **If A1 rejects the reframe:** fall back to the recorded freeze-and-write on gen06 (still fully
