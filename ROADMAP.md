@@ -8,17 +8,17 @@
 > marked **⛔K** need Kilian's explicit go (CPU spend, launches, design changes, external
 > communication); **⛔S** additionally need supervisor agreement. When unsure, consult Kilian.
 > Hard calendar rails: thesis + poster due **10:00, Fri 28 Aug 2026** (12,000 words max);
-> proposed experimental freeze **Aug 3-7** (⛔S); after Aug 7, writing wins every conflict.
+> experimental freeze **Aug 3, HARD (Kilian 2026-07-06)**; after Aug 3, writing wins every
+> conflict.
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 
-- [ ] **A1. Supervisor conversation** (⛔S; Kilian holds it; target this week).
-      Materials: `DIRECTION.md` + `THESIS_STORYLINE.md`. Decisions needed:
-      (a) exploitability reframe + contested-resupply skin; (b) freeze moves to Aug 3-7;
-      (c) Obj-4 reduced form vs descope; (d) rolling-ALNS baseline arm yes/no;
-      (e) ERB ablation yes/no + "population-based" wording; (f) ZST scope.
-      (Conference/publication topics are OFF the agenda: Kilian 2026-07-06, "don't think about
-      conference apps now at all".)
+- [x] **A1. Decision agenda — RESOLVED BY KILIAN 2026-07-06** (see DIRECTION.md §9 log):
+      (a) reframe ADOPTED; (b) freeze Aug 3 hard; (c) Obj-4 reduced form; (d) rolling-ALNS arm
+      funded; (e) ERB ablation included, modest scope; (f) ZST one transfer test. The
+      supervisor conversation itself still happens (Kilian's comms; framing question from
+      DIRECTION decision 2), but the build no longer waits on it — Kilian authorised the
+      Phase-B start 2026-07-06. (Conference/publication topics remain OFF the table.)
 - [ ] **A2. Thesis planner launch** (⛔K: Kilian opens the session in `../../thesis/` and says
       "read THESIS_PLANNER_HANDOFF.md and begin"). Pre-step DONE 2026-07-06: the handoff file
       carries the redirection banner (trio pointers, three-act branch-robust structure, updated
@@ -93,9 +93,10 @@ results remain reproducible from `main` regardless of gen07's fate.
       n-step targets. Tests: n-step equivalence at n=1.
 - [ ] **B6. Contested-resupply skin**: `--problem contested` factory (chokepoint arena reuse,
       naming, config defaults per gen07 ledger). Tests: factory smoke + config lock.
-- [ ] **B7 (if funded ⛔K). ERB demo generator refresh**: dynamic-dispatcher demos (optionally
-      under mixed attacks) for the Obj-3 ablation; reuse `generate_erb_*` machinery.
-- [ ] **B8 (if funded ⛔K). Rolling-ALNS baseline**: eval-only rolling wrapper over the existing
+- [ ] **B7 (FUNDED, modest scope). ERB demo generator refresh**: dynamic-dispatcher demos
+      (optionally under mixed attacks) for the Obj-3 ablation; reuse `generate_erb_*`
+      machinery. First to drop if the calendar bites (Kilian 2026-07-06).
+- [ ] **B8 (FUNDED). Rolling-ALNS baseline**: eval-only rolling wrapper over the existing
       ALNS for the Obj-5 reference arm (no training).
 - [ ] **B9. Pre-launch gates** (cheap, pre-registered in the gen07 ledger):
       - Suite green (≥83 tests + new ones).
