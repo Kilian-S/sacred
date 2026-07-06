@@ -130,14 +130,15 @@ output pasted). No behaviour change to any historical mode (gen03-06 configs mus
 > judgment for Kilian, see B8 below). The factored learned-antagonist head (B4 part i) is deferred
 > with B4-full/the BR gate (B4-lite uses scripted attackers, so it does not need it).
 
-**Separation policy (Kilian 2026-07-06: "make sure the changes are not deleterious to what we
-have already built"):** three layers. (1) `main` stays the frozen campaign record: from
-2026-07-06 onward no `src/` changes land on `main`; docs, ledger appendices and `scratch/`
-analyses may. (2) All Phase-B/C code work happens on a dedicated branch (`gen07-contested`,
-created when Phase B starts) that merges only after the suite is green and Kilian reviews.
-(3) Within the code, every gen07 behaviour is behind a new flag with defaults preserving the
-historical modes, enforced by regression tests. Ledgers pin SHAs per house rule, so gen03-06
-results remain reproducible from `main` regardless of gen07's fate.
+**Separation policy (Kilian 2026-07-06; UPDATED at gen07 close).** Original: `main` stays the
+frozen campaign record during the gen07 exploration; all gen07 code on branch `gen07-contested`,
+flag-gated with defaults preserving historical modes + regression tests; ledgers pin SHAs so
+gen03-06 stay reproducible. **Update (gen07 closed → redesign):** gen07's exploration concluded
+(the flat-landscape finding), so the frozen-main caution has served its purpose; `gen07-contested`
+(tested 109 green, additive, flag-gated) was **fast-forwarded into `main`** so there is a single
+authoritative branch for handover, gen03-06 reproducibility is intact (SHAs pinned; historical
+modes preserved by flags + tests). The new interdiction build (Phase I) branches from `main` as
+`gen08-interdiction`; the same discipline applies (flag-gated, tested, ledger-pinned SHAs).
 
 - [ ] **B1. Counterfactual twin rewards** (PAUSED: DESIGN FORK for Kilian). Per-episode
       action-independent baseline b(t) subtracted from the per-tick latency reward. Any
