@@ -234,6 +234,15 @@ def main() -> None:
                              "difficulty up one level (default 0.4).")
     parser.add_argument("--curriculum-window", type=int, default=20,
                         help="B3: number of attacked episodes averaged for the ramp gate (default 20).")
+    parser.add_argument(
+        "--attacker-mixture",
+        type=str,
+        default=None,
+        help="B4-lite adversary population (scripted_adversary only). Comma spec of "
+             "name:weight, e.g. 'targeted:1,pathrand:1,gateway:1'. One member is sampled per "
+             "episode (fictitious-play-flavoured; denies the policy a single attacker to overfit). "
+             "Overrides --scripted-attacker. Names: targeted, pathrand, gateway, random.",
+    )
     args = parser.parse_args()
 
     if sum([args.vanilla, args.train_antagonist_only, args.scripted_adversary]) > 1:
@@ -545,13 +554,28 @@ def main() -> None:
         eval_every = args.eval_every
 
     scripted_attacker = None
+    scripted_attacker_pool = None
     if trainer_mode == "scripted_adversary":
-        from src.baselines.attackers import random_path_block_policy, targeted_block_policy
-        if args.scripted_attacker == "pathrand":
-            scripted_attacker = random_path_block_policy(smdp, seed=args.seed or 0)
+        from src.baselines.attackers import (
+            ScriptedAttackerMixture, build_scripted_attacker,
+            random_path_block_policy, targeted_block_policy)
+        if args.attacker_mixture:
+            # B4-lite: parse "name:weight,..." into a per-episode-sampled population.
+            members = []
+            for i, part in enumerate(args.attacker_mixture.split(",")):
+                name, _, w = part.strip().partition(":")
+                weight = float(w) if w else 1.0
+                # Distinct seed per stochastic member so mixture draws don't correlate.
+                members.append((name, build_scripted_attacker(name, smdp, seed=(args.seed or 0) + i), weight))
+            scripted_attacker_pool = ScriptedAttackerMixture(members, seed=args.seed or 0)
+            scripted_attacker = scripted_attacker_pool.sample()[1]  # placeholder; resampled per episode
+            print(f"Scripted adversary POPULATION (B4-lite): {args.attacker_mixture}")
         else:
-            scripted_attacker = targeted_block_policy(smdp)
-        print(f"Scripted adversary: {args.scripted_attacker}")
+            if args.scripted_attacker == "pathrand":
+                scripted_attacker = random_path_block_policy(smdp, seed=args.seed or 0)
+            else:
+                scripted_attacker = targeted_block_policy(smdp)
+            print(f"Scripted adversary: {args.scripted_attacker}")
 
     attack_curriculum = None
     if args.attack_curriculum:
@@ -585,6 +609,7 @@ def main() -> None:
         scripted_attacker=scripted_attacker,
         update_every=args.update_every,
         attack_curriculum=attack_curriculum,
+        scripted_attacker_pool=scripted_attacker_pool,
     )
 
     # 5. Run coevolutionary training

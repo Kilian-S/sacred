@@ -16,7 +16,7 @@ comparable to learned attackers.
 from __future__ import annotations
 
 import random
-from typing import Any
+from typing import Any, Callable
 
 import networkx as nx
 
@@ -129,3 +129,46 @@ def targeted_block_policy(smdp: SMDPDecisionWrapper):
         return (edge, max(lbe[edge]))
 
     return policy
+
+
+class ScriptedAttackerMixture:
+    """B4-lite adversary population: a FIXED weighted mixture of scripted attackers, one sampled
+    per episode (deterministic by ``seed``). Training the defender against a mixture rather than a
+    single fixed attacker is fictitious-play-flavoured (the literature review's cited stabiliser):
+    it exposes the policy to a diversity of interdiction patterns and denies it a single attacker
+    to overfit, which is the co-evolution-cycling failure the campaign kept hitting. No inner
+    best-response training loop (that is the recorded B4-full stretch); this is cheap and stationary.
+
+    ``members`` is a list of ``(name, policy_callable, weight)``. Each policy is a ready attacker
+    (already bound to its wrapper). ``sample()`` returns ``(name, policy)`` for the next episode.
+    """
+
+    def __init__(self, members: list[tuple[str, Callable[[DecisionEvent], Any], float]], seed: int = 0):
+        if not members:
+            raise ValueError("mixture needs at least one member")
+        if any(w < 0 for _, _, w in members) or sum(w for _, _, w in members) <= 0:
+            raise ValueError("weights must be non-negative and sum to > 0")
+        self.names = [n for n, _, _ in members]
+        self._policies = [p for _, p, _ in members]
+        self._weights = [w for _, _, w in members]
+        self._rng = random.Random(seed)
+        self.counts = {n: 0 for n in self.names}
+
+    def sample(self) -> tuple[str, Callable[[DecisionEvent], Any]]:
+        idx = self._rng.choices(range(len(self._policies)), weights=self._weights, k=1)[0]
+        self.counts[self.names[idx]] += 1
+        return self.names[idx], self._policies[idx]
+
+
+def build_scripted_attacker(name: str, smdp: SMDPDecisionWrapper, seed: int = 0):
+    """Factory: map an attacker name to a ready policy bound to ``smdp`` (used by the mixture and
+    the training CLI). 'gateway' = the mask-first route attacker; 'random' = undirected floor."""
+    if name == "targeted":
+        return targeted_block_policy(smdp)
+    if name == "pathrand":
+        return random_path_block_policy(smdp, seed=seed)
+    if name == "gateway":
+        return mask_first_block_policy
+    if name == "random":
+        return random_block_policy(seed=seed)
+    raise ValueError(f"unknown scripted attacker {name!r}")

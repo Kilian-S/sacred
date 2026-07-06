@@ -53,6 +53,7 @@ class ATLACoevolutionTrainer:
         scripted_attacker: Callable | None = None,
         update_every: int = 1,
         attack_curriculum=None,
+        scripted_attacker_pool=None,
     ) -> None:
         if mode not in ("atla", "vanilla", "antagonist_only", "scripted_adversary"):
             raise ValueError(f"unknown trainer mode {mode!r}")
@@ -80,6 +81,10 @@ class ATLACoevolutionTrainer:
         # while the defender stays competent. None = the historical constant-attack regime.
         self.attack_curriculum = attack_curriculum
         self._episode_attacked = True  # per-episode flag; overwritten each episode when curriculum set
+        # B4-lite adversary population (optional; scripted_adversary only). A ScriptedAttackerMixture
+        # whose member is resampled each episode, overriding self.scripted_attacker for that episode.
+        # None = the single fixed scripted attacker. Composes with the B3 curriculum.
+        self.scripted_attacker_pool = scripted_attacker_pool
         # Update-to-data ratio: run a gradient update once every N decision epochs (per agent)
         # instead of every one. N=1 = the historical behaviour. The hybrid rung makes ~10x more
         # (edge-level) decisions per episode than destination-mode rungs, so update-per-decision
@@ -144,6 +149,10 @@ class ATLACoevolutionTrainer:
             if self.attack_curriculum is not None:
                 self._episode_attacked, ep_budget = self.attack_curriculum.decide()
                 self.smdp.budget = CongestionBudget(ep_budget)
+            # B4-lite: resample this episode's attacker from the population (if any).
+            self._episode_attacker_name = None
+            if self.scripted_attacker_pool is not None:
+                self._episode_attacker_name, self.scripted_attacker = self.scripted_attacker_pool.sample()
             ep_protag_reward = 0.0
             ep_antag_reward = 0.0
             ep_ticks = 0
