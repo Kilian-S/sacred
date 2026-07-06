@@ -350,6 +350,54 @@ for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
   --eval-every 250 --json-out models/runs/gen08_interdiction_I3/B2P2_seed$s.json; done
 ```
 
+### B2-P2 RESULT (2026-07-07, 3 seeds): PRIMARY FAILED, WORSE THAN B2-P; mechanism telemetry-confirmed
+
+| seed | arm | **expl_TAP** | expl_policy | expl_avg | cost(TAP) |
+|---|---|---|---|---|---|
+| 0 | vanilla / sacred | **0.456 / 0.509** | 0.496 / 0.802 | 0.428 / 0.316 | 8.3 / 9.3 |
+| 1 | vanilla / sacred | **0.463 / 0.749** | 0.540 / 0.748 | 0.417 / 0.439 | 8.3 / 8.2 |
+| 2 | vanilla / sacred | **0.480 / 0.444** | 0.455 / 0.676 | 0.432 / 0.394 | 8.3 / 23.1 |
+
+- **PRIMARY FAIL** (1/3; pooled TAP sacred 0.567 vs vanilla 0.466); prediction (TAP <= 0.30)
+  badly missed; even the all-history average DEGRADED vs B2-P (0.32-0.44 vs 0.24-0.26; seed 1 no
+  longer beats vanilla), so the pre-registered fallback branch is NOT triggered by this run
+  (B2-P remains the best sacred training run).
+- **Telemetry-confirmed mechanism: the uniform all-history BR mixture goes STALE and
+  under-disciplines.** Seeds 0/1 park 0.75-0.80 of the final policy on the CHEAPEST route
+  (entropy collapsing monotonically 2.0 -> 0.7 while expl_policy climbs 0.25 -> 0.80); seed 2
+  parks 0.68 on the most expensive. As the mixture balances, per-route interception differences
+  flatten and the travel-cost gradient dominates; parking is punished at only ~1/6 frequency by
+  the stale mixture though the true best response intercepts it at 100%.
+- **The two runs now BRACKET the failure space of fictitious-play discipline:** latest-pure-BR
+  (B2-P) over-disciplines -> high-amplitude cycling with a good converging average; all-history
+  mixture (B2-P2) under-disciplines -> cost-gradient parking and a degraded average.
+- **Methodological lesson (recorded): a 300-sortie smoke validates plumbing, not slow-timescale
+  dynamics.** The parking drift only becomes visible from ~sortie 1000 (H_pol trend).
+
+### B2-P3 pre-registration (2026-07-07: smooth fictitious play; binding at launch)
+
+**The canonical middle between the bracketing failures.** Attacker = SMOOTH best response: every
+`switch_every`=50 sorties, compute per-iset expected interception `e_j` against the defender's
+TRAILING-250 empirical play; each sortie sample the committed interdiction from
+`softmax(e_j / tau)` with **tau = 0.05, pinned by `scratch/smooth_fp_tau_probe.py`**: against an
+equilibrium-like defender the attacker stays maximally mixed (H 3.7 nats: no camping, no cycling
+pressure); against a parked defender it covers the parked route with probability 1.00 (drift
+punished within a ~250-300-sortie lag); the transition is smooth in the defender's concentration.
+Both players are then smoothed (defender: SAC entropy; attacker: softmax): smooth-FP dynamics,
+whose last iterates converge to the smoothed-game equilibrium, unlike pure-BR FP.
+
+Everything else UNCHANGED from B2-P/B2-P2: instance (33->71 k8 K=1 hard), arms, seeds {0,1,2},
+3000 sorties, TAP_K=5, PRIMARY `Expl_TAP(sacred) < Expl_TAP(vanilla)` 3/3 + pooled AND < 0.455;
+STRONG within 0.05 of 0.167. Prediction: `Expl_TAP(sacred) <= 0.30` with H_pol stabilising
+(not collapsing) and expl_policy flat over the last 4 evals. Smoke = 1000 sorties (the B2-P2
+lesson: long enough to see the drift signature in H_pol/expl_policy), authorised with the build.
+
+**EXIT CRITERION (pre-committed): B2-P3 is the LAST dynamics iteration.** If its TAP primary
+fails, we stop tuning training dynamics, invoke B2-P's pre-registered average-strategy fallback
+(sacred's logged mixture 0.242-0.261 vs vanilla 0.429-0.445, 3/3: the deployable-mixture claim,
+acknowledged weaker), and spend the remaining calendar on the pre-registered sweeps (waves A/C),
+the learned-antagonist co-evolution demonstration, and writing. **Launch: awaits Kilian.**
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
