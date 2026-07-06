@@ -64,6 +64,15 @@ way.
 All behind flags, additive, suite-guarded (`PYTHONPATH=. pytest tests/` after each item, raw
 output pasted). No behaviour change to any historical mode (gen03-06 configs must reproduce).
 
+> **BUILD PROGRESS (2026-07-06 overnight, branch `gen07-contested`).** Done, tested, committed:
+> **B6** (contested arena, commit `15fd798`, +5 tests), **B2 + B5** (entropy repair + gamma flag,
+> commit `9557ced`, +5 tests). Suite **93 green**; every historical mode preserved (all new
+> behaviour flag-gated, defaults unchanged); smoke-trained `--problem contested` end-to-end
+> (delivery ~38-47%, budget-bound, in the trainable band, not the gen06 collapse regime).
+> **PAUSED at B1** pending a design decision from Kilian (the baseline choice shapes the headline
+> mechanism claim; "consult me if unsure" applies) — see the DESIGN FORK under B1 below. B3, B4,
+> B7, B8 not started (B4 also carries a design choice — population architecture — flagged below).
+
 **Separation policy (Kilian 2026-07-06: "make sure the changes are not deleterious to what we
 have already built"):** three layers. (1) `main` stays the frozen campaign record: from
 2026-07-06 onward no `src/` changes land on `main`; docs, ledger appendices and `scratch/`
@@ -73,11 +82,30 @@ created when Phase B starts) that merges only after the suite is green and Kilia
 historical modes, enforced by regression tests. Ledgers pin SHAs per house rule, so gen03-06
 results remain reproducible from `main` regardless of gen07's fate.
 
-- [ ] **B1. Counterfactual twin rewards**: per-episode clean-twin rollout (common random
-      numbers: same demand seed, no attack, frozen reference policy); defender reward minus twin
-      baseline; attacker reward = damage above twin. Flag: `--reward-baseline twin`.
-      Tests: telescoping invariant preserved; twin isolation (no state leakage); zero-sum-up-to-
-      constant property.
+- [ ] **B1. Counterfactual twin rewards** (PAUSED — DESIGN FORK for Kilian). Per-episode
+      action-independent baseline b(t) subtracted from the per-tick latency reward. Any
+      action-independent b(t) preserves the game up to a per-episode constant (verified property:
+      sum_t [r(t) − b(t)] = total_wait − sum_t b(t)); the choice is purely about variance
+      reduction / which uncontrollable component to strip. Feasibility confirmed: `env`
+      exposes `_arrival_schedule` and per-tick `remaining_demand`, so both options below are
+      clean to implement and both are numerically test-verifiable.
+      - **Option A — arrival baseline** `b(t) = −cumulative_arrivals(t)`. Zero extra rollout cost
+        (read from `_arrival_schedule`). Strips the arrival-driven backlog trend (the dominant
+        uncontrollable term under a fixed demand seed). Does NOT remove attack damage.
+      - **Option B — greedy no-attack twin** `b(t) = −remaining_demand` of a deterministic greedy
+        rollout on a twin env replaying the same `_arrival_schedule` with NO attacker. One greedy
+        rollout per episode (the B9.ii timing probe measures the overhead; greedy ~0.2-0.6 s/ep).
+        Strips both the arrival trend AND the "unavoidable under a competent clean policy"
+        component — i.e. it directly targets the M1 pathology (attack damage flooding the signal),
+        because what remains is the marginal latency THIS policy incurs beyond clean-greedy.
+      - **Recommendation: B** (it is the one that addresses the diagnosed SNR mechanism; A only
+        removes the arrival trend, which competence already handles). Open sub-questions for the
+        same conversation: (i) reference policy = greedy-insertion (recommended) vs the ε-greedy
+        coping baseline; (ii) attacker reward symmetry — attacker gets the negation of the same
+        difference reward (keeps zero-sum-up-to-constant) vs its own twin; recommend the former.
+      Flag (either option): `--reward-baseline {none,arrivals,twin}` (default `none` = historical).
+      Tests: numeric telescoping-up-to-constant on a real episode; baseline independence from the
+      agent's actions; twin isolation (no state leak into the live env); default path unchanged.
 - [ ] **B2. Entropy repair**: `--target-entropy-mode {lnN,absolute}` with per-decision-type
       absolute targets; separate antagonist target (the gen04b hypothesis becomes testable here);
       log per-decision-type entropy. Tests: alpha-loss sign regression, target selection.
@@ -85,10 +113,25 @@ results remain reproducible from `main` regardless of gen07's fate.
       ramp), competence-gated ramp rule (attack strength rises only while a windowed training
       delivery/W stays inside a band). Flag: `--attack-curriculum`. Tests: schedule determinism,
       gating logic.
-- [ ] **B4. Attacker learnability package**: factored antagonist head (pick asset, then edge on
-      its route; masks compose), plus the adversary-population loop (portfolio of scripted
-      attackers + successively trained BRs; defender trains vs a mixture with recorded weights).
-      Tests: mask correctness, action round-trip, population sampling reproducibility.
+- [ ] **B4. Attacker learnability package + adversary population** (carries a DESIGN CHOICE for
+      Kilian). Two separable parts: (i) the factored antagonist head (pick asset, then edge on
+      its route; masks compose) — a mechanical, additive change, low risk; (ii) the
+      adversary-population training loop. **Design choice on (ii):** how rich a population?
+      - **B4-lite (recommended for the thesis timeline):** the defender trains against a FIXED
+        mixture of the existing scripted attackers (`targeted`, `pathrand`, `gateway`/mask-first)
+        sampled per episode with logged weights. No inner BR-training loop. Cheap, deterministic,
+        directly attacks the co-evolution cycling (fictitious-play flavour) without the
+        compute/complexity of nested best-response training. This alone is a defensible "adversary
+        population" for Obj-3.
+      - **B4-full:** periodically freeze the defender, train a fresh BR attacker against it, add it
+        to the population (PSRO/double-oracle). Strongest theoretically; expensive (nested training
+        loops) and the gen03/04 evidence says learned BRs are weak in leashed arenas (though gen05
+        says they bite under route reach, which the contested arena has). Higher risk on the
+        Aug-3 calendar.
+      - **Recommendation: build B4-lite now; keep B4-full as a recorded stretch** gated on the
+        C1 result and remaining calendar. The factored head (i) is worth building regardless.
+      Tests: mask correctness, action round-trip, population sampling reproducibility + logged
+      weights.
 - [ ] **B5. Credit horizon options**: γ flag surfaced (0.997+ default for gen07), optional
       n-step targets. Tests: n-step equivalence at n=1.
 - [ ] **B6. Contested-resupply skin**: `--problem contested` factory (chokepoint arena reuse,
