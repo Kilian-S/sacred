@@ -18,9 +18,13 @@
 > I1 env core + G1 gate (`src/envs/interdiction.py`, reproduces the oracle); I1b SAC-trainable env
 > (make_interdiction_env + masks); **I2 feasibility slice PASSED (`scripts/train_interdiction.py`):
 > the PROJECT'S FIRST POSITIVE RESULT: adversarial training cut interception 100% (shortest-path)
-> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** NEXT = I3: asymmetric instances
-> (non-uniform equilibria) to separate SACRED from vanilla cleanly (the symmetric slice gave a thin
-> sacred-vs-vanilla gap), + K/connectivity sweeps + seeds + learned-antagonist co-evolution.
+> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** I3a BUILD DONE (2026-07-06, suite
+> 127 green): heterogeneous edge-vulnerability instances (soft interception; class (c) first +
+> length-band model, Kilian's calls; K>=2-alone-is-not-asymmetry corrected in ROADMAP): oracle
+> closed form d_i ~ 1/p_i* verified, G3 fidelity gate PASSED, primary instance pinned by
+> `scratch/vuln_band_probe.py` (33->71 band (0.15,0.95) K=1: equilibrium 0.063, uniform 2.51x
+> suboptimal, shortest 0.449), I3 pre-registration DRAFTED in the gen08 ledger. NEXT = I3 matrix
+> LAUNCH (⛔K, ~2.4 h serial) + later class (b) shared-edge routes + learned-antagonist co-evolution.
 > Key gotchas already paid for: SAC `reward_scale` default 0.001 is far too small (use ~1.0 with
 > interception_loss ~10); best-respond to the defender's EMPIRICAL AVERAGE play (fictitious play),
 > not the instantaneous policy, or it oscillates/chases. Kilian's decisions: Kaliningrad graph,

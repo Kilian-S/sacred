@@ -54,15 +54,28 @@ evaluation discipline). Separation policy from the redirection still holds (`mai
       Caveat driving I3: the instance is SYMMETRIC (uniform equilibrium) -> thin SACRED-vs-vanilla
       gap; the clean contrast here is vs deterministic shortest-path.
 
-- [ ] **I3. The experiment matrix** (⛔K launches; the thesis's positive Results act). Build on I2:
+- [ ] **I3. The experiment matrix** (⛔K launches; the thesis's positive Results act). Build on I2.
+      **I3a BUILD DONE 2026-07-06** (decisions Kilian 2026-07-06: class (c) first, length-derived
+      band): heterogeneous edge vulnerability = soft interception end-to-end
+      (`length_band_vulnerability` + `survival_intercept_fn` in the oracle; `edge_vulnerability` +
+      seeded Bernoulli `resolve()` in the env; `--edge-vuln-band` + three-way exploitability
+      reporting (policy | trailing-window | all-history) + `--json-out` in
+      `scripts/train_interdiction.py`). Closed form verified (disjoint routes: d_i ~ 1/p_i*, value
+      1/sum(1/p_i*)); G3 fidelity gate PASSED; suite 127 green. Instances pinned by
+      `scratch/vuln_band_probe.py`: PRIMARY = 33->71 band (0.15,0.95) K=1 (equilibrium 0.063,
+      uniform 2.51x suboptimal, shortest 0.449). Pre-registration drafted in the gen08 ledger
+      (I3 section); launch waits on Kilian.
       1. **Asymmetric instances (the priority): open the SACRED-vs-vanilla gap.** The symmetric
          6-disjoint-route game makes vanilla's max-entropy mixing incidentally near-optimal. Create
          NON-UNIFORM equilibria so vanilla (uniform-ish) is measurably exploitable and SACRED must
-         learn the specific mixed strategy: (a) K>=2 interdictors; (b) shared-edge / non-disjoint
-         candidate routes (needs route-choice beyond first-hop = the multi-branch next-hop or an
-         explicit route-index policy head, since first-hop != route when routes share prefixes);
-         (c) heterogeneous route vulnerability (different lengths/values). The oracle already handles
-         all of these (`build_interdiction_game` with any K, any route set). Pick 2-3 OD pairs.
+         learn the specific mixed strategy: (a) ~~K>=2 interdictors~~ **CORRECTED 2026-07-06: K>=2
+         alone is NOT an asymmetry source (on disjoint routes with hard interception the equilibrium
+         is uniquely uniform for every K: best response = the top-K defender masses); K stays the
+         budget/sweep axis**; (b) shared-edge / non-disjoint candidate routes (needs route-choice
+         beyond first-hop = the multi-branch next-hop or an explicit route-index policy head, since
+         first-hop != route when routes share prefixes; the LATER class); (c) heterogeneous route
+         vulnerability: **BUILT (I3a, the priority class)**. The oracle handles all of these
+         (`build_interdiction_game` with any K, any route set, any `intercept_fn`). Pick 2-3 OD pairs.
       2. **Arms x seeds:** shortest_path, vanilla, sacred, + the equilibrium oracle (ground truth);
          >=3 seeds; report exploitability (best-response) + distance-to-equilibrium, dual-level stats.
       3. **Sweeps as curves:** interdiction budget K, edge-connectivity of the OD pair.

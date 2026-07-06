@@ -89,6 +89,82 @@ defender's realised route distribution vs the equilibrium mixed strategy (mechan
   all-history running average used here) would sit closer to 0.167. (3) Multiple seeds + the K /
   connectivity sweeps are the I3 matrix.
 
+## I3 pre-registration (DRAFT, opened 2026-07-06 after the I2 pass; binding at launch with SHA)
+
+**Goal:** open the SACRED-vs-vanilla gap that the symmetric I2 instance could not show (uniform
+equilibrium: vanilla's incidental mixing is near-optimal there), via ASYMMETRIC instances with
+non-uniform equilibria; plus seeds, and the K / connectivity axes as curves.
+
+**Design decisions (Kilian, 2026-07-06):** asymmetry class = heterogeneous edge vulnerability
+first (class (c): probabilistic interception, no action-space change; shared-edge route sets and
+the route-trie policy are the later class (b)); vulnerability model = LENGTH-DERIVED band
+(exposure scales with transit time: candidate-edge lengths mapped affinely into a band; objective,
+graph-derived, no hand-tuned threat map). **Correction recorded:** K>=2 alone is NOT an asymmetry
+source: on edge-disjoint routes with hard interception the equilibrium is uniquely uniform for
+every K (best response = the top-K defender masses), so K stays the budget/sweep axis only.
+
+**Instances (pinned by the oracle probe `scratch/vuln_band_probe.py`, 2026-07-06: pinned by
+probes, never by outcomes):**
+
+| id | OD | routes | interception | K | loss_det | shortest | uniform | equilibrium | uniform/eq |
+|---|---|---|---|---|---|---|---|---|---|
+| A (I2 headline) | 33->71 | 6 disjoint | hard | 1 (sweep 1-3) | 1.000 | 1.000 | 0.167 | 0.167 | 1.00x |
+| **B (primary)** | 33->71 | 6 disjoint | band (0.15, 0.95) | 1 (sweep 1-2) | 0.266 | 0.449 | 0.158 | **0.063** | **2.51x** |
+| C (connectivity contrast) | 110->135 | 3 disjoint | band (0.15, 0.95) | 1 | 0.690 | 0.950 | 0.317 | 0.258 | 1.23x |
+
+Instance B's equilibrium is strongly non-uniform (d in [0.066, 0.237], d_i ~ 1/p_i*, closed form
+verified against the LP in tests); uniform mixing is 2.51x suboptimal, which is exactly the
+separation the vanilla control cannot track. Instance C shows where calibrated mixing has little
+headroom (few routes, similar p*): reported as the connectivity axis, not a gap claim.
+
+**Arms:** shortest_path (deterministic operational default), uniform (uncalibrated-mixing
+reference row, computed not trained), vanilla (SAC, travel-cost objective, no adversary), sacred
+(SAC vs the oracle best-response interdictor on the empirical average play, as I2), equilibrium
+(oracle ground truth). Learned-antagonist co-evolution is the I3 follow-on build, not this matrix.
+
+**Seeds and budget:** seeds {0, 1, 2} per trained arm; 3000 sorties per arm (I2 converged by
+~1500; 2x margin); measured ~0.27 s/sortie (2026-07-06 smoke) -> ~27 min per instance-seed run
+(both trained arms), ~2.4 h serial for the matrix, ~3x parallelisable on the M4.
+
+**Decision metric (PRIMARY, on instance B):** exploitability of the TRAILING-WINDOW empirical
+play (window 500) under the oracle best-response interdictor, end of training:
+> `Expl_win(sacred) < Expl_win(vanilla)` on >= 3/3 seeds AND in the pooled mean, and
+> `Expl_win(sacred) < Expl(shortest_path)`.
+Rationale for the window reading as primary: the Stackelberg adversary best-responds to the
+defender's observed PATTERN of play, which is the empirical mixture (also the fictitious-play
+quantity that converges); the instantaneous-policy reading `Expl_policy` oscillates around it (FP
+dynamics, visible in the smoke) and is reported as a SECONDARY alongside `Expl_avg` (all-history,
+the I2 continuity metric). **STRONG:** `Expl_win(sacred)` within 0.05 of loss_mixed on B.
+
+**Secondaries (reported, not gated):** distance-to-equilibrium trajectories; the defender's route
+distribution vs the equilibrium mixed strategy; vanilla's late-training collapse check (does its
+window exploitability rise toward the shortest-route bound as entropy anneals?); K sweep on A
+(value K/6) and B; the A-vs-B-vs-C connectivity/asymmetry comparison; clean travel-cost premium
+of sacred vs shortest_path.
+
+**Honest instance property (recorded up front):** length-derived vulnerability correlates with
+travel cost (long edges are both slow and exposed), so the nominal objective partially aligns
+with the security objective and early-training vanilla can sit below uniform (seen in the smoke).
+The pre-registered comparison is therefore on END-of-training play, and the probe already fixes
+the relevant endpoints: vanilla collapsing to the shortest route lands at 0.449 vs equilibrium
+0.063 on B. If vanilla does not fully collapse in 3000 sorties, that is reported as-is (its
+mixture is still uncalibrated; the gap claim stands or falls on the measured window numbers).
+
+**Gates:** G3 soft-instance fidelity: **PASSED 2026-07-06** (env reproduces the soft oracle
+equilibrium by Monte Carlo, `tests/test_interdiction_env.py::test_G3_soft_env_reproduces_oracle_kaliningrad`;
+closed-form equilibrium verified in `tests/test_interdiction_oracle.py`; suite 127 green).
+Timing gate: measured (smoke above). **Launch: waiting on Kilian (never before this section is
+finalised + SHA pinned).**
+
+**Commands (matrix sketch):**
+```bash
+# instance B (primary), 3 seeds:
+for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --sorties 3000 --seed $s --edge-vuln-band 0.15,0.95 --json-out results_B_seed$s.json; done
+# instance A (headline, hard): drop --edge-vuln-band; K sweep: --K {1,2,3}
+# instance C: --od 110-135 --edge-vuln-band 0.15,0.95
+```
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
