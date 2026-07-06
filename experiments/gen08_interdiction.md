@@ -227,11 +227,13 @@ consultative: builds, launches and CPU spend are proposed to Kilian, not taken u
 The evaluation discipline (pre-registration before looking, probes pin instances, honest
 reporting of failures) stays in force: it is what makes a positive result citable.**
 
-### I3 waves A + C: LAUNCHED 2026-07-06 evening (code SHA `64e08f6`)
+### I3 waves A + C: LAUNCHED 2026-07-06 evening, **KILLED BY KILIAN ~20:00 same evening**
 
-Launched during the brief initial broad-mandate window, before the clarification above; both
-waves were already pre-registered and Kilian retains the kill switch (`pkill -f
-train_interdiction`). As pre-registered above (unaffected by the wave-1 diagnosis). Wave A: instance A (33->71, hard,
+Launched by the agent during the brief initial broad-mandate window, before the clarification
+above; Kilian ordered them stopped and they were killed mid-first-run (only `A_K1_seed0` had
+started; no run completed, no results to record; the partial log is discarded evidence-wise).
+Waves A and C remain pre-registered and unlaunched. **Standing rule reaffirmed: NO launch
+without Kilian's explicit go, ever.** Wave A: instance A (33->71, hard,
 edge-disjoint) x K {1,2,3} x seeds {0,1,2}, 3000 sorties/arm: the headline replication + the K
 curve (equilibrium K/6; does sacred track it?). Wave C: 110->135 band (0.15,0.95) K=1 x seeds
 {0,1,2}: the low-connectivity contrast row. 12 runs serial, ~5.5 h; outputs
