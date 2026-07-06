@@ -1,0 +1,11 @@
+Powered stress sweep: cap=1, lambdas=[0.06, 0.07, 0.08, 0.09, 0.1], 40 instances, 5 rollouts, eps=0.3
+
+ lambda |  W_clean  deliv |   D_det |       LEVER (95% CI) | clean_cost |  ratio | sig?
+---------------------------------------------------------------------------------------
+   0.06 |     6736   0.70 |    5004 |      179 +/-     174 |        142 |   1.26 | YES
+   0.07 |     9774   0.61 |    5049 |      149 +/-     207 |        183 |   0.82 | no
+   0.08 |    12544   0.53 |    5228 |       85 +/-     253 |        226 |   0.38 | no
+   0.09 |    15365   0.48 |    5602 |      207 +/-     194 |        243 |   0.85 | YES
+   0.10 |    18017   0.44 |    5549 |      379 +/-     274 |        264 |   1.44 | YES
+
+Decision inputs: pick the lambda with the largest CI-positive lever whose delivery is still trainable (well above the gen06 collapse band ~0.2-0.3). That load, at capacity 1, is the gen07 arena's operating point.
