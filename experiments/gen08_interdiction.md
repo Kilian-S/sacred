@@ -208,14 +208,33 @@ uniform 0.158, equilibrium (loss_mixed) 0.063, loss_det 0.266.
    the FP learner: a methodological finding in its own right, recorded here rather than patched
    retroactively.
 
-**Consequences (nothing amended post hoc; next steps need a NEW pre-registered instance/metric,
-⛔K):** (a) candidate instance B' = INVERSE correlation (vulnerability concentrated on short
+**Consequences (nothing amended post hoc; next steps need a NEW pre-registered instance/metric):**
+(a) candidate instance B' = INVERSE correlation (vulnerability concentrated on short
 edges: watched chokepoints), making cost and security CONFLICT so incidental cost-driven mixing
-is miscalibrated by construction; (b) candidate metric refinement for the FP learner = the
-trailing average of POLICY route-distributions (the deployed late-training pattern, no mid-cycle
-bias, no exploration credit), reported alongside the existing three readings; (c) waves A
-(hard-instance K sweep + seeds: the headline replication) and C (connectivity contrast) are
-unaffected by this diagnosis and remain launchable as pre-registered.
+is miscalibrated by construction: **KILLED BY PROBE same day** (descending bands flatten the
+equilibrium: every route contains a short edge so p* saturates at the band top; uniform/eq
+1.10x): class-(c) band variants are structurally exhausted on disjoint routes; (b) candidate
+metric refinement for the FP learner = the trailing average of POLICY route-distributions (the
+deployed late-training pattern, no mid-cycle bias, no exploration credit), reported alongside
+the existing three readings: adopted as the B2 primary (pre-registered below before launch);
+(c) waves A (hard-instance K sweep + seeds: the headline replication) and C (connectivity
+contrast) are unaffected by this diagnosis and remain launchable as pre-registered.
+
+**Mandate update (Kilian, 2026-07-06 evening): full autonomy granted to the agent to drive the
+interdiction programme to a working positive result ("make this adversarial training work");
+launches no longer individually gated. The evaluation discipline (pre-registration before
+looking, probes pin instances, honest reporting of failures) stays in force: it is what makes a
+positive result citable.**
+
+### I3 waves A + C: LAUNCHED 2026-07-06 evening (code SHA `64e08f6`)
+
+As pre-registered above (unaffected by the wave-1 diagnosis). Wave A: instance A (33->71, hard,
+edge-disjoint) x K {1,2,3} x seeds {0,1,2}, 3000 sorties/arm: the headline replication + the K
+curve (equilibrium K/6; does sacred track it?). Wave C: 110->135 band (0.15,0.95) K=1 x seeds
+{0,1,2}: the low-connectivity contrast row. 12 runs serial, ~5.5 h; outputs
+`models/runs/gen08_interdiction_I3/{A_K*_seed*,C_seed*}.{log,json}`. Read: curves + all four
+exploitability readings; no gap claim pre-registered for A (symmetric: vanilla mixes
+incidentally, the I2 caveat) or C (thin headroom, ratio 1.23x).
 
 ## Commands (sketch; exact + SHA at launch)
 
