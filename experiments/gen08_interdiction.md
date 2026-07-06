@@ -60,10 +60,34 @@ defender's realised route distribution vs the equilibrium mixed strategy (mechan
   mixed defender vs equilibrium attacker → the minimax value, ±0.03) on synthetic AND Kaliningrad
   33→71 (gap ≥ 0.8). Oracle: `src/baselines/interdiction_oracle.py`. Tests:
   `tests/test_interdiction_{oracle,env}.py`.
-- **G2 feasibility slice (I2, the GO/NO-GO):** on the ONE OD pair, `Expl(sacred) < Expl(shortest_path)`
-  and SACRED trends toward `loss_mixed`. Expected PASS (the gap is structural). FAIL consequence:
-  diagnose via the oracle (an RL-convergence problem, not a structural one: a strong attacker
-  EXISTS here, unlike the congestion arena), then decide.
+- **G2 feasibility slice (I2, the GO/NO-GO): PASSED 2026-07-06.** Kaliningrad 33->71, K=1, 6
+  edge-disjoint routes (oracle loss_det=1.000, loss_mixed=0.167). Defender SAC trained vs the
+  ORACLE best-response interdictor (fictitious play on the empirical average, which converges),
+  `scripts/train_interdiction.py`, 1500 sorties, seed 0:
+
+  | arm | exploitability (interception under best-response) |
+  |---|---|
+  | shortest_path (deterministic classical) | **1.000** |
+  | vanilla SAC (no adversary) | 0.275 |
+  | **SACRED (adversarial)** | **0.235** (equilibrium 0.167) |
+
+  **Adversarial training cut interception 100% -> 23%**, converging toward the computed equilibrium
+  (trajectory 0.43 -> 0.20-0.24 over training; distance-to-equilibrium 0.068). The direction WORKS:
+  a deep-RL routing agent learns a mixed strategy approaching the security-game equilibrium and is
+  ~4x less exploitable than the deterministic classical baseline. **This is the project's first
+  positive result.** Config that mattered (a fixed reward-scaling bug + fictitious-play averaging):
+  reward_scale 1.0, interception_loss 10, lr_actor 3e-4, best-response to the empirical AVERAGE
+  play (not the instantaneous policy, which oscillates/chases).
+
+  **Honest caveats (refinements for the full experiment I3):** (1) the SACRED-vs-vanilla gap is
+  THIN here (0.235 vs 0.275) because this instance is SYMMETRIC (6 equivalent disjoint routes ->
+  uniform equilibrium), so vanilla's max-entropy SAC mixes incidentally and is already fairly
+  robust; the deterministic classical baseline is the clean contrast. To separate SACRED from
+  vanilla cleanly, I3 needs ASYMMETRIC instances (non-uniform equilibria: shared-edge routes, K>=2,
+  or heterogeneous vulnerability) where vanilla's uniform-ish mixing is measurably suboptimal and
+  SACRED must learn the specific non-uniform equilibrium. (2) A trailing-window average (vs the
+  all-history running average used here) would sit closer to 0.167. (3) Multiple seeds + the K /
+  connectivity sweeps are the I3 matrix.
 
 ## Commands (sketch; exact + SHA at launch)
 
