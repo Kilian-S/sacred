@@ -369,3 +369,11 @@
   validated against the equilibrium), Obj 4 (interdiction-aware base placement), ZST (transferable
   mixed strategy). The methodology (pre-registration, gates, held-out, the equilibrium oracle)
   carries over intact.
+- **BUILD + FIRST POSITIVE RESULT (2026-07-06 late; branch `gen08-interdiction`; ledger G1/G2):**
+  built the equilibrium oracle (I0), the interdiction env with the G1 fidelity gate passing (I1),
+  the SAC-trainable env (I1b), and ran the I2 feasibility slice: **shortest_path 1.000 > vanilla
+  0.275 > SACRED 0.235 (equilibrium 0.167); adversarial training cut interception 100%->23%,
+  converging toward the computed equilibrium.** The project's first positive result: a deep-RL
+  router learns a mixed strategy approaching the security-game equilibrium, ~4x less exploitable
+  than deterministic classical routing. Honest caveat (I3 work): the symmetric instance gives a
+  thin SACRED-vs-vanilla gap; asymmetric instances (non-uniform equilibria) are next.

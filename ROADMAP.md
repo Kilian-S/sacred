@@ -45,34 +45,47 @@ evaluation discipline). Separation policy from the redirection still holds (`mai
       (reuses the antagonist's edge-selection). Verified ProtagonistSAC/AntagonistSAC act on it and a
       sortie resolves. Suite 122 green. (Multi-branch next-hop physics deferred; first-hop = route
       for the disjoint-route single-convoy headline.)
-- [ ] **I2. ATLA feasibility slice** (the GO/NO-GO; ⛔K launch). A one-step-per-sortie ATLA loop on
-      `make_interdiction_env`: alternately train the defender (SAC, first-hop → route) vs a frozen
-      interdictor and the interdictor (SAC, edge commit) vs the frozen defender. Arms: shortest-path
-      (ref), vanilla (defender only, no adversary), sacred (ATLA). Readout: `Expl(sacred) <
-      Expl(shortest_path)` under the best-response/oracle interdictor, and the defender's route
-      distribution → loss_mixed (validate against the equilibrium via `route_distribution_from_first_hops`).
-      A dedicated slim loop (the game is one decision each per sortie, so the full SMDP ATLA trainer
-      is unnecessary); logs exploitability + distance-to-equilibrium over training.
-- [ ] **I2. Cheap feasibility slice** (⛔K launch). Train {shortest-path (ref), vanilla SAC, SACRED
-      (ATLA vs learned interdictor)} on the ONE OD pair. Pre-registered readout: SACRED interception
-      under a best-response interdictor < vanilla < shortest-path, and SACRED → loss_mixed. This is
-      the GO/NO-GO for the full matrix. Expected PASS (the equilibrium gap is structural); if the
-      learned interdictor lags, the equilibrium oracle supplies the strong evaluator (a strong
-      attacker EXISTS here, unlike the congestion arena).
-- [ ] **I3. The matrix + sweeps** (⛔K). Arms × seeds; K sweep and edge-connectivity sweep reported
-      as curves; exploitability (best-response interdictor) + distance-to-equilibrium; the gen07
-      evaluation discipline (held-out, paired, dual-level stats). Ledger `gen08_interdiction`.
-- [ ] **I4. Objective extensions** (eval-mostly, as time allows before Aug 3): Obj-4 interdiction-aware
-      FOB/base placement (site for egress connectivity, surrogate over the design grid); ZST (transfer
-      the mixed policy to a held-out OD pair / theatre); Obj-3 ERB from the equilibrium/shortest-path.
-- [ ] **I5. Multi-convoy richness (LATER, only after the single-convoy positive is banked).**
-      Multiple convoys/FOBs, coordinated routing so the fleet spreads interdiction risk (the VRP
-      flavour). Do not start before I2/I3 land the headline.
+- [x] **I2. Feasibility slice: DONE + PASSED 2026-07-06** (`scripts/train_interdiction.py`,
+      `experiments/gen08_interdiction.md` G2). Defender SAC vs the ORACLE best-response interdictor
+      (fictitious play on the empirical average). **First positive result: shortest_path 1.000 >
+      vanilla 0.275 > SACRED 0.235 (equilibrium 0.167); adversarial training cut interception
+      100%->23%.** Paid-for gotchas: reward_scale 0.001->1.0 (default swamps the signal);
+      best-respond to the empirical AVERAGE play, not the instantaneous policy (else it oscillates).
+      Caveat driving I3: the instance is SYMMETRIC (uniform equilibrium) -> thin SACRED-vs-vanilla
+      gap; the clean contrast here is vs deterministic shortest-path.
 
-**Contingency:** if I2 somehow does NOT beat shortest-path (the equilibrium gap says it should),
-diagnose via the oracle (is SACRED failing to reach a computable mixed strategy? that's a solvable
-RL problem, not a structural one) before any freeze decision. The gen03-07 negative + the redesign
-proof remain a complete thesis even in the worst case.
+- [ ] **I3. The experiment matrix** (⛔K launches; the thesis's positive Results act). Build on I2:
+      1. **Asymmetric instances (the priority): open the SACRED-vs-vanilla gap.** The symmetric
+         6-disjoint-route game makes vanilla's max-entropy mixing incidentally near-optimal. Create
+         NON-UNIFORM equilibria so vanilla (uniform-ish) is measurably exploitable and SACRED must
+         learn the specific mixed strategy: (a) K>=2 interdictors; (b) shared-edge / non-disjoint
+         candidate routes (needs route-choice beyond first-hop = the multi-branch next-hop or an
+         explicit route-index policy head, since first-hop != route when routes share prefixes);
+         (c) heterogeneous route vulnerability (different lengths/values). The oracle already handles
+         all of these (`build_interdiction_game` with any K, any route set). Pick 2-3 OD pairs.
+      2. **Arms x seeds:** shortest_path, vanilla, sacred, + the equilibrium oracle (ground truth);
+         >=3 seeds; report exploitability (best-response) + distance-to-equilibrium, dual-level stats.
+      3. **Sweeps as curves:** interdiction budget K, edge-connectivity of the OD pair.
+      4. **Learned-antagonist co-evolution (Obj 1):** replace the oracle interdictor with an
+         antagonist SAC (edge-selection; the env already exposes the antagonist mask). Reference the
+         SMDP trainer's antagonist transition enrichment (`src/agents/sacred_atla.py` ~L197-220) for
+         the transition format. Show co-evolution -> equilibrium alongside the oracle result. This
+         is the full ATLA demonstration; the oracle version is the strong-adversary baseline.
+      5. **Refinements from I2:** trailing-window average (closer to loss_mixed than all-history);
+         confirm vanilla collapses to deterministic on asymmetric instances (higher exploitability).
+      Ledger: extend `experiments/gen08_interdiction.md` (or gen09 for the matrix); pre-register the
+      metric/gates before launching, per house rule.
+- [ ] **I4. Objective extensions** (eval-mostly): Obj-4 interdiction-aware base/FOB placement
+      (site for egress connectivity; surrogate over a placement grid, validate argmax); ZST (transfer
+      the mixed policy to a held-out OD pair / theatre); Obj-3 ERB from shortest-path/equilibrium.
+- [ ] **I5. Multi-convoy richness (LATER, after the single-convoy matrix lands):** multiple
+      convoys/FOBs, coordinated routing spreading interdiction risk (the VRP flavour).
+
+**Status:** I2 PASSED (the go/no-go is green: adversarial RL beats deterministic classical routing
+and approaches the computable equilibrium). The gen03-07 negative + the redesign proof + the I2
+positive already form a complete, defensible thesis; I3 strengthens it (SACRED-vs-vanilla,
+sweeps, co-evolution). If any I3 step stalls, diagnose against the oracle (a solvable
+RL-convergence question, not a structural one) before any freeze.
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 

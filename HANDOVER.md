@@ -1,5 +1,31 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-06)
 
+> **★ START HERE (new agent, 2026-07-06 end-of-session). READ ORDER for exact parity with the
+> previous instance:**
+> 1. **`REDESIGN_INTERDICTION.md`**: the north star: why the pivot was necessary (§0.5 full
+>    evidence chain) + the equilibrium proof (§1).
+> 2. **`ROADMAP.md` Phase I**: the build plan; I0/I1/I1b/I2 are DONE (see below), I3 is next and
+>    detailed there.
+> 3. **`experiments/gen08_interdiction.md`**: the pre-registration + the **G1 and G2 gate results
+>    (both PASSED)**; the citable interdiction numbers.
+> 4. **`THESIS_STORYLINE.md`**: the 4-act positive arc (the written-thesis spine).
+> 5. Then history/bridge as needed: `DIRECTION.md` (why worst-case is the right register),
+>    `experiments/gen07_contested_matrix.md` (the flat-landscape finding that forced the pivot),
+>    `SACRED_PROGRESS.md` entries 11-12, `SYSTEM.md` (dogmas), and §1-5 of this file (the campaign).
+>
+> **BUILD STATE (branch `gen08-interdiction`, off `main`; suite 122+ green; the interdiction code
+> is the live work):** DONE: I0 equilibrium oracle (`src/baselines/interdiction_oracle.py`);
+> I1 env core + G1 gate (`src/envs/interdiction.py`, reproduces the oracle); I1b SAC-trainable env
+> (make_interdiction_env + masks); **I2 feasibility slice PASSED (`scripts/train_interdiction.py`):
+> the PROJECT'S FIRST POSITIVE RESULT: adversarial training cut interception 100% (shortest-path)
+> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** NEXT = I3: asymmetric instances
+> (non-uniform equilibria) to separate SACRED from vanilla cleanly (the symmetric slice gave a thin
+> sacred-vs-vanilla gap), + K/connectivity sweeps + seeds + learned-antagonist co-evolution.
+> Key gotchas already paid for: SAC `reward_scale` default 0.001 is far too small (use ~1.0 with
+> interception_loss ~10); best-respond to the defender's EMPIRICAL AVERAGE play (fictitious play),
+> not the instantaneous policy, or it oscillates/chases. Kilian's decisions: Kaliningrad graph,
+> single convoy first. Plan-first rule; Kilian owns CPU/launches.
+>
 > **⚠️⚠️ CURRENT DIRECTION (2026-07-06, latest): THE INTERDICTION-GAME REDESIGN.**
 > Read **`REDESIGN_INTERDICTION.md` FIRST**: it is the north star. Short version: the campaign
 > (gen03-06) and the exploitability follow-up (gen07) established that adversarial RL cannot win
