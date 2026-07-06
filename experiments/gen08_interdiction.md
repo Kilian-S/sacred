@@ -220,15 +220,18 @@ the existing three readings: adopted as the B2 primary (pre-registered below bef
 (c) waves A (hard-instance K sweep + seeds: the headline replication) and C (connectivity
 contrast) are unaffected by this diagnosis and remain launchable as pre-registered.
 
-**Mandate update (Kilian, 2026-07-06 evening): full autonomy granted to the agent to drive the
-interdiction programme to a working positive result ("make this adversarial training work");
-launches no longer individually gated. The evaluation discipline (pre-registration before
-looking, probes pin instances, honest reporting of failures) stays in force: it is what makes a
-positive result citable.**
+**Mandate update (Kilian, 2026-07-06 evening; CLARIFIED same evening): the goal is to make the
+adversarial training demonstrably work, and the agent has broad freedom in RESEARCH DIRECTION
+(which instances, metrics, designs to recommend, and how strongly). Execution stays
+consultative: builds, launches and CPU spend are proposed to Kilian, not taken unilaterally.
+The evaluation discipline (pre-registration before looking, probes pin instances, honest
+reporting of failures) stays in force: it is what makes a positive result citable.**
 
 ### I3 waves A + C: LAUNCHED 2026-07-06 evening (code SHA `64e08f6`)
 
-As pre-registered above (unaffected by the wave-1 diagnosis). Wave A: instance A (33->71, hard,
+Launched during the brief initial broad-mandate window, before the clarification above; both
+waves were already pre-registered and Kilian retains the kill switch (`pkill -f
+train_interdiction`). As pre-registered above (unaffected by the wave-1 diagnosis). Wave A: instance A (33->71, hard,
 edge-disjoint) x K {1,2,3} x seeds {0,1,2}, 3000 sorties/arm: the headline replication + the K
 curve (equilibrium K/6; does sacred track it?). Wave C: 110->135 band (0.15,0.95) K=1 x seeds
 {0,1,2}: the low-connectivity contrast row. 12 runs serial, ~5.5 h; outputs
