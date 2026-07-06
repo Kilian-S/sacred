@@ -39,11 +39,20 @@ evaluation discipline). Separation policy from the redirection still holds (`mai
       node-selection); interception terminal + travel-cost reward (zero-sum). **G1 env-fidelity gate
       PASSES**: the env reproduces the oracle's loss_det and loss_mixed end-to-end (Monte Carlo) on
       synthetic AND Kaliningrad 33→71 (gap ≥ 0.8). Suite 120 green.
-- [ ] **I1b. Next-hop routing env + SAC observation** (next build piece). Wire the convoy onto the
-      graph so it routes next-hop (reuse graph_env/SMDP next-hop), producing the graph observation the
-      existing ProtagonistSAC featurises; the first-hop decision is the route decision for disjoint
-      routes. Attacker = the existing edge-selection antagonist committing at sortie start. `--problem
-      interdiction`. This makes the env SAC-trainable while staying genuinely "routing".
+- [x] **I1b. SAC-trainable env: DONE 2026-07-06** (`make_interdiction_env` + masks, +2 tests).
+      GraphEnv-backed `observe()` yields the observation the existing `featurize_state` consumes;
+      defender mask = first-hop nodes (reuses node-selection), attacker mask = candidate edges
+      (reuses the antagonist's edge-selection). Verified ProtagonistSAC/AntagonistSAC act on it and a
+      sortie resolves. Suite 122 green. (Multi-branch next-hop physics deferred; first-hop = route
+      for the disjoint-route single-convoy headline.)
+- [ ] **I2. ATLA feasibility slice** (the GO/NO-GO; ⛔K launch). A one-step-per-sortie ATLA loop on
+      `make_interdiction_env`: alternately train the defender (SAC, first-hop → route) vs a frozen
+      interdictor and the interdictor (SAC, edge commit) vs the frozen defender. Arms: shortest-path
+      (ref), vanilla (defender only, no adversary), sacred (ATLA). Readout: `Expl(sacred) <
+      Expl(shortest_path)` under the best-response/oracle interdictor, and the defender's route
+      distribution → loss_mixed (validate against the equilibrium via `route_distribution_from_first_hops`).
+      A dedicated slim loop (the game is one decision each per sortie, so the full SMDP ATLA trainer
+      is unnecessary); logs exploitability + distance-to-equilibrium over training.
 - [ ] **I2. Cheap feasibility slice** (⛔K launch). Train {shortest-path (ref), vanilla SAC, SACRED
       (ATLA vs learned interdictor)} on the ONE OD pair. Pre-registered readout: SACRED interception
       under a best-response interdictor < vanilla < shortest-path, and SACRED → loss_mixed. This is
