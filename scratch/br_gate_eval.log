@@ -1,0 +1,8 @@
+Portfolio: arms=['greedy'] attackers=['none', 'random', 'targeted', 'gateway', 'br_gate'] instances=24 rollouts=1 -> 120 episodes
+
+=== W(arm, attack): mean total_wait ± SEM (lower = better) ===
+       arm |               none |             random |           targeted |            gateway |            br_gate
+    greedy |       847 ±     0 |      1878 ±    84 |      2001 ±     0 |      1561 ±     0 |      1718 ±     0
+
+=== D(arm, attack) = W(attack) − W(none): degradation under attack ===
+    greedy | random:    +1031 ±   84 | targeted:    +1154 ±    0 | gateway:     +714 ±    0 | br_gate:     +871 ±    0

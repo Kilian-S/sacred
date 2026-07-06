@@ -142,6 +142,32 @@ variant reserved for selection only), never on test attacks or test instances.
   > factored head and re-gate, or fall back to fitted-scripted-only exploitability, or, if that
   > lever is also thin, the exploitability direction is not viable and we freeze on the gen03-06
   > diagnosis). Result appended below when training + eval complete.
+  >
+  > **RESULT (2026-07-06): GATE FAILED.** BR trained 300 ep vs frozen greedy, eval on 24 held-out
+  > validation instances (greedy W(none)=847):
+  >
+  > | attacker | D vs greedy |
+  > |---|---|
+  > | random | +1031 ± 84 |
+  > | targeted (scripted) | +1154 |
+  > | gateway (scripted) | +714 |
+  > | **br_gate (trained BR)** | **+871** |
+  >
+  > br/random = **0.84** (PASS needed ≥ 1.25): the trained BR is WEAKER than random blocking, and
+  > weaker than the scripted `targeted` attack (1154). This reproduces gen04's ratio (0.84)
+  > EXACTLY: even in the route-reach arena, against a competent deterministic victim, the learned
+  > attacker cannot beat random. (Eval validity: the scripted rows reproduce gen05's greedy rows
+  > exactly: targeted 1154, gateway 714.) The training log's rising attacked-latency (~2123 at
+  > ep300) was exploration noise; the learned deterministic attack is weak (871): the classic
+  > gen03/04 entropy-pinning signature. gen05's +1667 was a TRANSFER artifact (BR trained vs
+  > exploitable learned policies, transferred to greedy), not a robustly trainable BR vs greedy.
+  >
+  > **Consequence:** the exploitability metric cannot rest on a learned BR against a competent
+  > deterministic victim. Nuance kept for the decision: greedy's optimal congestion-aware
+  > rerouting may be the HARDEST possible victim (a moving target); the metric's actual victims
+  > are the learned arms, and the portfolio-max means a weak BR is simply dominated by the fitted
+  > scripted attacks. Escalation decision is Kilian's (see the session record): factored head
+  > re-gate, a minimal vanilla-vs-sacred training slice, or freeze on gen03-06.
 - **B9.v coping-channel probe**: an ε-randomised greedy (assignment noise, ε grid on validation
   instances) must reduce D under the fitted `targeted` attack relative to deterministic greedy
   by a nonzero margin (CI excluding 0). FAIL consequence: the unpredictability channel is dead
