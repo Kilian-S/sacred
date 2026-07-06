@@ -121,10 +121,27 @@ variant reserved for selection only), never on test attacks or test instances.
 - **B9.iii** competence/recoverability probe: greedy band reachable; fitted-scripted attack in
   the +30-60% band on greedy; attacked delivery within the trainable band (0.4-0.8) at the
   curriculum's opening strength.
-- **B9.iv BR gate** (gen04 re-run with the learnability package, victim = greedy):
-  **PASS = D(br vs greedy) ≥ 1.25 × D(random vs greedy)** on 16 validation instances.
+- **B9.iv BR gate** (victim = greedy):
+  **PASS = D(br vs greedy) ≥ 1.25 × D(random vs greedy)** on held-out validation instances.
   FAIL consequence: exploitability proceeds on the fitted-scripted portfolio alone (the max is
   still well-defined) and the BR failure is itself a reported finding.
+
+  > **RUN PRE-REGISTRATION (2026-07-06, before looking, promoted to the pivotal go/no-go).**
+  > The greedy lever probes (`stress_sweep.py`, `hybrid_lever_probe.py`) showed crude
+  > unpredictability vs a REACTIVE attacker is thin/negative, so the whole direction hinges on
+  > whether an ANTICIPATORY best-response attacker can exploit a competent deterministic policy.
+  > This gate tests exactly that. Setup: BR antagonist trained vs FROZEN greedy on the hybrid
+  > route-reach arena (`scripts/br_gate.py`, 300 ep, existing flat head + route-reach mask; the
+  > factored head is deferred and only built if this comes in marginal). Eval:
+  > `evaluate_portfolio.py --problem hybrid --br gate=<actor> --attackers
+  > none,random,targeted,gateway,br_gate --instances 24 --seed-base 20000019`.
+  > Pre-registered readout: **PASS** = D(br) ≥ 1.25×D(random); **STRONG** = additionally D(br) ≥
+  > D(targeted) (reproduces gen05's transferred +1667 > +1154, now trained). **FAIL** (BR ≤
+  > random) = the learned attacker cannot exploit even a competent deterministic victim in
+  > route-reach → the exploitability metric cannot rest on a learned BR; escalate (build the
+  > factored head and re-gate, or fall back to fitted-scripted-only exploitability, or, if that
+  > lever is also thin, the exploitability direction is not viable and we freeze on the gen03-06
+  > diagnosis). Result appended below when training + eval complete.
 - **B9.v coping-channel probe**: an ε-randomised greedy (assignment noise, ε grid on validation
   instances) must reduce D under the fitted `targeted` attack relative to deterministic greedy
   by a nonzero margin (CI excluding 0). FAIL consequence: the unpredictability channel is dead
