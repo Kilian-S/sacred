@@ -282,10 +282,11 @@ seeds {0,1,2}; 3000 sorties/arm; walk adds 1-2 extra policy forwards per sortie 
 ~0.3-0.45 s/sortie -> ~2-2.5 h for B2-P x 3 seeds serial; timing refined from the first run's
 first minutes, per the timing rule).
 
-**Launch: NOT LAUNCHED. Awaiting Kilian's explicit go (hard rule).** Command at launch:
+**Launch: B2-P LAUNCHED 2026-07-06 (Kilian's explicit go: "launch B2-P"); code SHA `9148e5e`.**
+B2-S waits for the B2-P read. Command as pre-registered:
 ```bash
 for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
-  --k-extra 8 --route-mode walk --sorties 3000 --seed $s \
+  --k-extra 8 --route-mode walk --sorties 3000 --seed $s --eval-every 250 \
   --json-out models/runs/gen08_interdiction_I3/B2P_seed$s.json; done   # B2-S: add --od 110-135
 ```
 
