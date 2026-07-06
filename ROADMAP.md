@@ -13,20 +13,20 @@
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 
-- [x] **A1. Decision agenda — RESOLVED BY KILIAN 2026-07-06** (see DIRECTION.md §9 log):
+- [x] **A1. Decision agenda: RESOLVED BY KILIAN 2026-07-06** (see DIRECTION.md §9 log):
       (a) reframe ADOPTED; (b) freeze Aug 3 hard; (c) Obj-4 reduced form; (d) rolling-ALNS arm
       funded; (e) ERB ablation included, modest scope; (f) ZST one transfer test. The
       supervisor conversation itself still happens (Kilian's comms; framing question from
-      DIRECTION decision 2), but the build no longer waits on it — Kilian authorised the
+      DIRECTION decision 2), but the build no longer waits on it: Kilian authorised the
       Phase-B start 2026-07-06. (Conference/publication topics remain OFF the table.)
 - [ ] **A2. Thesis planner launch** (⛔K: Kilian opens the session in `../../thesis/` and says
       "read THESIS_PLANNER_HANDOFF.md and begin"). Pre-step DONE 2026-07-06: the handoff file
       carries the redirection banner (trio pointers, three-act branch-robust structure, updated
       ledger list and timeline). **Kilian 2026-07-06: not now** (launch timing stays his call).
-- [x] **A3. Evidence-hardening probes** — **DONE 2026-07-06 (overnight)**; approved by Kilian,
+- [x] **A3. Evidence-hardening probes**: **DONE 2026-07-06 (overnight)**; approved by Kilian,
       executed autonomously; results appended to the gen05/gen06 ledgers as post-hoc analyses
       (primaries untouched). Headlines: A3.1 telemetry reproduced and committed; A3.2 vanilla's
-      aimed-attack robustness DECLINES with training (specialisation → predictability — direct
+      aimed-attack robustness DECLINES with training (specialisation → predictability: direct
       in-house support for the exploitability register); A3.3 the gen06 gap is NOT sampling
       temperature (persists/widens at matched determinism; tau 1.0 sanity rows reproduce the
       ledger exactly); A3.4 dual-level statistics recorded (pooled significant + 3/3 signs;
@@ -45,7 +45,7 @@
         determinism levels (both arms sharpened equally; labelled diagnostic, dogma-compliant).
         Distinguishes "knowledge deficit" from "temperature deficit". Eval-only, ~30-60 min. ⛔K.
       - A3.4 Seed-level statistics note for gen05/gen06 (dual-reporting rule). Zero CPU.
-- [x] **A4. gen07 ledger draft** — **DONE 2026-07-06** (Kilian confirmed after the morning
+- [x] **A4. gen07 ledger draft**: **DONE 2026-07-06** (Kilian confirmed after the morning
       clarification): `experiments/gen07_contested_matrix.md` opened as a DRAFT
       pre-registration (commit `2089e1f`): portfolio-max exploitability estimator with paired
       bootstrap + dual-level stats; arms vanilla/dr/sacred + eval-time entropy-matched control;
@@ -70,8 +70,8 @@ output pasted). No behaviour change to any historical mode (gen03-06 configs mus
 > behaviour flag-gated, defaults unchanged); smoke-trained `--problem contested` end-to-end
 > (delivery ~38-47%, budget-bound, in the trainable band, not the gen06 collapse regime).
 > **PAUSED at B1** pending a design decision from Kilian (the baseline choice shapes the headline
-> mechanism claim; "consult me if unsure" applies) — see the DESIGN FORK under B1 below. B3, B4,
-> B7, B8 not started (B4 also carries a design choice — population architecture — flagged below).
+> mechanism claim; "consult me if unsure" applies): see the DESIGN FORK under B1 below. B3, B4,
+> B7, B8 not started (B4 also carries a design choice: population architecture: flagged below).
 
 **Separation policy (Kilian 2026-07-06: "make sure the changes are not deleterious to what we
 have already built"):** three layers. (1) `main` stays the frozen campaign record: from
@@ -82,26 +82,26 @@ created when Phase B starts) that merges only after the suite is green and Kilia
 historical modes, enforced by regression tests. Ledgers pin SHAs per house rule, so gen03-06
 results remain reproducible from `main` regardless of gen07's fate.
 
-- [ ] **B1. Counterfactual twin rewards** (PAUSED — DESIGN FORK for Kilian). Per-episode
+- [ ] **B1. Counterfactual twin rewards** (PAUSED: DESIGN FORK for Kilian). Per-episode
       action-independent baseline b(t) subtracted from the per-tick latency reward. Any
       action-independent b(t) preserves the game up to a per-episode constant (verified property:
       sum_t [r(t) − b(t)] = total_wait − sum_t b(t)); the choice is purely about variance
       reduction / which uncontrollable component to strip. Feasibility confirmed: `env`
       exposes `_arrival_schedule` and per-tick `remaining_demand`, so both options below are
       clean to implement and both are numerically test-verifiable.
-      - **Option A — arrival baseline** `b(t) = −cumulative_arrivals(t)`. Zero extra rollout cost
+      - **Option A: arrival baseline** `b(t) = −cumulative_arrivals(t)`. Zero extra rollout cost
         (read from `_arrival_schedule`). Strips the arrival-driven backlog trend (the dominant
         uncontrollable term under a fixed demand seed). Does NOT remove attack damage.
-      - **Option B — greedy no-attack twin** `b(t) = −remaining_demand` of a deterministic greedy
+      - **Option B: greedy no-attack twin** `b(t) = −remaining_demand` of a deterministic greedy
         rollout on a twin env replaying the same `_arrival_schedule` with NO attacker. One greedy
         rollout per episode (the B9.ii timing probe measures the overhead; greedy ~0.2-0.6 s/ep).
         Strips both the arrival trend AND the "unavoidable under a competent clean policy"
-        component — i.e. it directly targets the M1 pathology (attack damage flooding the signal),
+        component: i.e. it directly targets the M1 pathology (attack damage flooding the signal),
         because what remains is the marginal latency THIS policy incurs beyond clean-greedy.
       - **Recommendation: B** (it is the one that addresses the diagnosed SNR mechanism; A only
         removes the arrival trend, which competence already handles). Open sub-questions for the
         same conversation: (i) reference policy = greedy-insertion (recommended) vs the ε-greedy
-        coping baseline; (ii) attacker reward symmetry — attacker gets the negation of the same
+        coping baseline; (ii) attacker reward symmetry: attacker gets the negation of the same
         difference reward (keeps zero-sum-up-to-constant) vs its own twin; recommend the former.
       Flag (either option): `--reward-baseline {none,arrivals,twin}` (default `none` = historical).
       Tests: numeric telescoping-up-to-constant on a real episode; baseline independence from the
@@ -115,7 +115,7 @@ results remain reproducible from `main` regardless of gen07's fate.
       gating logic.
 - [ ] **B4. Attacker learnability package + adversary population** (carries a DESIGN CHOICE for
       Kilian). Two separable parts: (i) the factored antagonist head (pick asset, then edge on
-      its route; masks compose) — a mechanical, additive change, low risk; (ii) the
+      its route; masks compose): a mechanical, additive change, low risk; (ii) the
       adversary-population training loop. **Design choice on (ii):** how rich a population?
       - **B4-lite (recommended for the thesis timeline):** the defender trains against a FIXED
         mixture of the existing scripted attackers (`targeted`, `pathrand`, `gateway`/mask-first)
