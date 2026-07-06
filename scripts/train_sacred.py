@@ -160,6 +160,17 @@ def main() -> None:
              "the SAME value for every arm of a generation.",
     )
     parser.add_argument(
+        "--reward-baseline",
+        type=str,
+        choices=["none", "twin"],
+        default="none",
+        help="B1 counterfactual reward baseline (contested arena). 'none' (default) = the raw "
+             "latency reward, unchanged for every historical run. 'twin' = subtract a per-tick "
+             "greedy no-attack baseline replaying the same arrivals (difference reward: strips the "
+             "arrival trend + unavoidable-under-clean-greedy damage that floods the signal under "
+             "attack, the gen06 M1 SNR fix). Zero-sum preserved up to a per-episode constant.",
+    )
+    parser.add_argument(
         "--gamma",
         type=float,
         default=0.99,
@@ -311,11 +322,19 @@ def main() -> None:
         reward_scale = 0.1
     elif args.problem == "contested":
         print("Initializing SACRED contested-resupply arena (dynassign dynamics + route reach)...")
+        import dataclasses
         import itertools
-        from src.envs.contested import contested_config, make_contested_env
+        from src.envs.contested import (
+            contested_config, make_contested_env, make_greedy_twin_baseline_provider)
 
         # Single source of truth for the arena config (train + eval share it; see contested.py).
         config = contested_config(congestion_budget=args.congestion_budget)
+        # B1: opt into the twin difference reward on the config + inject the provider (default off).
+        baseline_provider = None
+        if args.reward_baseline == "twin":
+            config = dataclasses.replace(config, reward_baseline="twin")
+            baseline_provider = make_greedy_twin_baseline_provider(config, arrival_rate=args.arrival_rate)
+            print("Reward baseline: greedy no-attack twin (B1 difference reward).")
         # Same reproducible per-episode Poisson demand stream as dynassign (fresh env each reset;
         # a counter advances the stream so a fixed seed does not repeat one instance).
         if args.seed is not None:
@@ -324,7 +343,7 @@ def main() -> None:
                 arrival_rate=args.arrival_rate, demand_seed=next(_demand_counter))
         else:
             env_factory = lambda: make_contested_env(arrival_rate=args.arrival_rate)
-        smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config)
+        smdp = SMDPDecisionWrapper(env_factory=env_factory, config=config, baseline_provider=baseline_provider)
         reward_scale = 0.1
     elif args.problem == "hybrid":
         print("Initializing SACRED Stage-2 HYBRID (assignment + next-hop routing, static demand)...")

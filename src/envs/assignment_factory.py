@@ -152,6 +152,7 @@ def make_dynamic_assign_env(
     truck_speed: float = 1.0,
     max_time: int = 800,
     demand_seed: int | None = None,
+    arrival_schedule: list[tuple[int, str, float]] | None = None,
 ) -> GraphEnv:
     """Stage 1.5: the contested multi-truck assignment geometry made *dynamic*.
 
@@ -160,6 +161,10 @@ def make_dynamic_assign_env(
     queue can build and the antagonist's congestion compounds the backlog (the headroom
     hypothesis). ``arrival_rate`` is a placeholder — the Step-4 headroom gate tunes it to the
     ρ≈1 operating point. Destination-mode assignment (routing deferred), capacity 1.
+
+    ``arrival_schedule`` (B1 twin baseline): if given, REPLAY this exact list of
+    ``(tick, node, size)`` arrivals instead of sampling a Poisson process — used to build a twin
+    env with byte-identical arrivals to a real episode (the arrival fn then ignores its rng).
     """
     if len(depots) < 1:
         raise ValueError("need at least one depot")
@@ -174,6 +179,12 @@ def make_dynamic_assign_env(
     for depot_id in depots:
         nodes[depot_id]["has_depot"] = True
 
+    if arrival_schedule is not None:
+        _replay = list(arrival_schedule)
+        arrival_fn = lambda rng, horizon: _replay  # deterministic replay (rng/horizon ignored)
+    else:
+        arrival_fn = poisson_arrival_fn(hotspot_nodes, arrival_rate)
+
     env = GraphEnv(
         nodes=nodes,
         edges=edges,
@@ -182,7 +193,7 @@ def make_dynamic_assign_env(
         truck_starting_nodes=list(depots),
         truck_speed=truck_speed,
         max_time=max_time,
-        demand_arrival_fn=poisson_arrival_fn(hotspot_nodes, arrival_rate),
+        demand_arrival_fn=arrival_fn,
         demand_seed=demand_seed,
     )
     env.assignment_depots = tuple(depots)

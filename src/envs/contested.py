@@ -19,7 +19,11 @@ hand across two files -- this arena does not repeat that).
 
 from __future__ import annotations
 
-from src.env.smdp_wrapper import SMDPConfig
+from dataclasses import replace
+from typing import Callable
+
+from src.env.graph_env import GraphEnv
+from src.env.smdp_wrapper import SMDPConfig, SMDPDecisionWrapper
 from src.envs.assignment_factory import make_dynamic_assign_env
 
 # Budget is TO-FINALISE by the B9 recoverability probe (gen07 ledger): the target is a
@@ -53,3 +57,43 @@ def contested_config(congestion_budget: float = DEFAULT_CONTESTED_BUDGET) -> SMD
 # The env itself is the dynassign env (same geometry/demand). Re-exported under a
 # contested-framing name so call sites read in the arena's own language.
 make_contested_env = make_dynamic_assign_env
+
+
+def make_greedy_twin_baseline_provider(
+    cfg: SMDPConfig, arrival_rate: float = 0.06,
+) -> Callable[[GraphEnv], tuple[dict[int, float], float]]:
+    """B1 Option B provider: `provider(real_env) -> (series, last)` where `series[t]` is the
+    outstanding-demand count at tick ``t`` of a deterministic GREEDY, NO-ATTACK rollout that
+    replays ``real_env``'s exact arrivals, and ``last`` is its final value (the pad for ticks the
+    real episode reaches but the clean twin did not).
+
+    This is the action-independent baseline b(t) = twin remaining_demand(t): it depends only on
+    the demand realisation (via the replayed schedule), never on the live agents' actions, so
+    subtracting it preserves the zero-sum game up to a per-episode constant. It strips both the
+    arrival trend and the latency that is unavoidable even under a competent clean policy,
+    leaving the marginal, controllable, attack-sensitive latency this policy incurs (the gen06
+    M1 SNR fix). Cost: one greedy rollout per episode (the B9 timing probe measures it).
+    """
+    # The twin runs greedy with the antagonist inert; force reward_baseline off so it never
+    # recurses into a provider, and keep every other physics knob identical to the live arena.
+    twin_cfg = replace(cfg, reward_baseline="none")
+
+    def provider(real_env: GraphEnv) -> tuple[dict[int, float], float]:
+        # Lazy import breaks any envs<->baselines import-time coupling (baselines imports env).
+        from src.baselines.greedy_dispatch import (
+            greedy_insertion_policy, no_antagonist_policy, run_episode)
+
+        schedule = list(getattr(real_env, "_arrival_schedule", []))
+        twin = SMDPDecisionWrapper(
+            env_factory=lambda: make_contested_env(
+                arrival_rate=arrival_rate, arrival_schedule=schedule),
+            config=twin_cfg,
+        )
+        twin._baseline_record = []  # capture per-tick remaining_demand during the rollout
+        run_episode(twin, greedy_insertion_policy(twin), no_antagonist_policy)
+        series = dict(twin._baseline_record)  # tick -> outstanding demand (last write per tick wins)
+        last = series[max(series)] if series else 0.0
+        return series, last
+
+    return provider
+

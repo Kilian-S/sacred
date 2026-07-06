@@ -71,6 +71,17 @@ class SMDPConfig:
     # its target, so it can pre-block the gateway *ahead* of the truck (anticipation). Route-reach is
     # the Stage-2 hybrid setting; a leashed adversary gives the protagonist nothing to anticipate.
     antag_reach: str = "leashed"
+    # Reward baseline (B1, gen07). "none" (default) = the raw latency reward, unchanged for every
+    # historical run. "twin" = subtract a per-tick action-INDEPENDENT baseline b(t) from the
+    # latency reward, so protagonist_reward = -(remaining_demand - b(t)). b(t) is supplied by a
+    # baseline_provider injected into the wrapper (gen07 uses the remaining-demand trace of a
+    # deterministic greedy, no-attack rollout replaying the same arrivals). Since b(t) does not
+    # depend on either agent's in-episode actions, the episode reward telescopes to
+    # total_wait - sum_t b(t) = total_wait minus a per-episode constant: the zero-sum game and its
+    # equilibrium are preserved (antagonist_reward = -protagonist_reward throughout), only the
+    # gradient variance changes (strips the arrival trend + the unavoidable-under-clean-greedy
+    # damage that floods the signal under attack — the gen06 M1 SNR pathology).
+    reward_baseline: str = "none"
 
 
 @dataclass(slots=True)
@@ -150,10 +161,20 @@ class SMDPDecisionWrapper:
         *,
         env_factory: Callable[[], GraphEnv] = make_toy_graph_env,
         config: SMDPConfig | None = None,
+        baseline_provider: Callable[[GraphEnv], tuple[dict[int, float], float]] | None = None,
     ) -> None:
         self.env_factory = env_factory
         self.config = config or SMDPConfig()
         self.env = self.env_factory()
+        # B1 reward baseline (see SMDPConfig.reward_baseline). `baseline_provider(env) ->
+        # (series, last)` maps post-step env.time -> b(t) plus a pad value for ticks past the
+        # provider's range; called once per reset when reward_baseline != "none". `_baseline_record`
+        # is a recording buffer used to CAPTURE a series during a provider's own rollout (set
+        # externally, never by reset) — one mechanism does double duty (record then subtract).
+        self._baseline_provider = baseline_provider
+        self._reward_baseline_series: dict[int, float] | None = None
+        self._reward_baseline_last: float = 0.0
+        self._baseline_record: list[tuple[int, float]] | None = None
         self.budget = CongestionBudget(self.config.congestion_budget)
         self.active_congestion: dict[EdgeId, int] = {}
         self.congestion_heap: list[tuple[int, EdgeId]] = []
@@ -192,6 +213,13 @@ class SMDPDecisionWrapper:
         self._in_sequential_epoch = False
         self._antag_epoch_actions = 0
         self._goal_dist_cache = {}
+        # B1: compute this episode's action-independent baseline from the freshly-generated
+        # arrivals (the provider replays them clean under greedy). Skipped when disabled or when
+        # this wrapper is itself a provider's twin (no provider injected). `_baseline_record` is
+        # left untouched so a provider can capture a series across this reset.
+        if self.config.reward_baseline == "twin" and self._baseline_provider is not None:
+            self._reward_baseline_series, self._reward_baseline_last = \
+                self._baseline_provider(self.env)
         if self.config.routing_mode in ("next_hop", "hybrid"):
             # Auto-resolve any forced moves to the first real (>=2-option) decision.
             return self.advance_until_decision()
@@ -704,7 +732,18 @@ class SMDPDecisionWrapper:
             # accruing its penalty. Summed over the episode this telescopes to total latency,
             # i.e. sum over units of (delivery_tick - arrival_tick). Using units (not nodes)
             # keeps it correct when a single node holds many units (the next-hop target).
-            protagonist_reward = -float(self.env.remaining_demand)
+            remaining = float(self.env.remaining_demand)
+            # B1 recording pass: capture this tick's remaining_demand for a provider's twin series.
+            if self._baseline_record is not None:
+                self._baseline_record.append((int(self.env.time), remaining))
+            # B1 subtraction pass: strip the action-independent baseline b(t). Ticks past the
+            # provider's range (the real episode ran longer under attack than the clean twin) pad
+            # with the twin's final value. b(t) is constant in both agents' actions -> zero-sum and
+            # the telescoped total shift by exactly sum_t b(t) (a per-episode constant).
+            if self._reward_baseline_series is not None:
+                remaining = remaining - self._reward_baseline_series.get(
+                    int(self.env.time), self._reward_baseline_last)
+            protagonist_reward = -remaining
         else:
             delivered = sum(delivery["delivered"] for delivery in step_result.info["deliveries"])
             remaining_demand = self._remaining_demand()
