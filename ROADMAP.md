@@ -64,14 +64,18 @@ way.
 All behind flags, additive, suite-guarded (`PYTHONPATH=. pytest tests/` after each item, raw
 output pasted). No behaviour change to any historical mode (gen03-06 configs must reproduce).
 
-> **BUILD PROGRESS (2026-07-06 overnight, branch `gen07-contested`).** Done, tested, committed:
-> **B6** (contested arena, commit `15fd798`, +5 tests), **B2 + B5** (entropy repair + gamma flag,
-> commit `9557ced`, +5 tests). Suite **93 green**; every historical mode preserved (all new
-> behaviour flag-gated, defaults unchanged); smoke-trained `--problem contested` end-to-end
-> (delivery ~38-47%, budget-bound, in the trainable band, not the gen06 collapse regime).
-> **PAUSED at B1** pending a design decision from Kilian (the baseline choice shapes the headline
-> mechanism claim; "consult me if unsure" applies): see the DESIGN FORK under B1 below. B3, B4,
-> B7, B8 not started (B4 also carries a design choice: population architecture: flagged below).
+> **BUILD PROGRESS (2026-07-06 overnight, branch `gen07-contested`).** The five fixes + arena are
+> BUILT, tested and committed; Kilian chose B1 Option B and B4-lite. Done:
+> **B6** contested arena (`15fd798`), **B2+B5** entropy repair + gamma (`9557ced`), **B1** twin
+> difference reward Option B (`a5a818e`, invariant verified numerically), **B3** exposure/strength
+> curriculum (`c7e0ba6`), **B4-lite** scripted-attacker population (`6e9bffd`), **B7** contested
+> ERB generator (`96d96c0`). Suite **107 green**; every historical mode preserved (all new
+> behaviour flag-gated, regression-guarded); the FULL gen07 sacred stack (twin + curriculum +
+> mixture + gamma 0.997 + absolute entropy targets) smoke-trains end-to-end in the viable band
+> (delivery ~65-68%, not the gen06 collapse regime). Training NOT launched (Kilian greenlights).
+> **Deferred: B8** rolling-ALNS (eval-only, blocks nothing; carries a faithfulness/scoping
+> judgment for Kilian, see B8 below). The factored learned-antagonist head (B4 part i) is deferred
+> with B4-full/the BR gate (B4-lite uses scripted attackers, so it does not need it).
 
 **Separation policy (Kilian 2026-07-06: "make sure the changes are not deleterious to what we
 have already built"):** three layers. (1) `main` stays the frozen campaign record: from
@@ -139,8 +143,17 @@ results remain reproducible from `main` regardless of gen07's fate.
 - [ ] **B7 (FUNDED, modest scope). ERB demo generator refresh**: dynamic-dispatcher demos
       (optionally under mixed attacks) for the Obj-3 ablation; reuse `generate_erb_*`
       machinery. First to drop if the calendar bites (Kilian 2026-07-06).
-- [ ] **B8 (FUNDED). Rolling-ALNS baseline**: eval-only rolling wrapper over the existing
-      ALNS for the Obj-5 reference arm (no training).
+- [ ] **B8 (FUNDED, DEFERRED for a scoping call).** Eval-only rolling-ALNS Obj-5 reference arm.
+      Deferred overnight 2026-07-06 because it carries a faithfulness judgment better made with
+      Kilian: the existing `AdaptiveLargeNeighborhoodSearchVRP` is STATIC + single-depot, so a
+      rolling multi-depot adaptation (re-solve the pending-request -> truck assignment at each
+      decision event over current truck positions) is a substantial change to a 483-line class,
+      and at capacity-1 / 2-trucks the VRP degenerates so ALNS may reduce to ~greedy sequencing (a
+      weak "SOTA metaheuristic" undersells the Obj-5 comparison). Options: (a) build the faithful
+      rolling-ALNS anyway; (b) raise truck capacity so the VRP is rich enough for ALNS to earn its
+      keep; (c) use rolling greedy-insertion as the deterministic "reactive SOTA" reference and
+      record ALNS as future work. Eval-only, blocks nothing; add before Phase C (C3). No default
+      change either way.
 - [ ] **B9. Pre-launch gates** (cheap, pre-registered in the gen07 ledger):
       - Suite green (≥83 tests + new ones).
       - Timing probe: s/ep for BOTH phases and the twin-rollout overhead (SYSTEM.md lesson);

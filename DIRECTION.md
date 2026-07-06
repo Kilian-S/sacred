@@ -226,18 +226,28 @@ Full argument in `THESIS_STORYLINE.md`. Summary:
 
 ## 9. Decision gates pending (Kilian owns all; supervisor where marked)
 
-> **Decision log 2026-07-06 (morning round 2, Kilian — the A1 agenda resolved directly):**
+> **Decision log 2026-07-06 (morning round 2, Kilian: the A1 agenda resolved directly):**
 > (1) **Reframe ADOPTED** (exploitability headline, three-act thesis). (2) **Applications:** per
-> recommendation — contested autonomous resupply leads; humanitarian logistics as civilian
+> recommendation: contested autonomous resupply leads; humanitarian logistics as civilian
 > motivation; asset escort recorded as stretch. (3) **Freeze: Aug 3, HARD.** (4) **Obj 4:
 > reduced-form demonstrator** (robust depot placement surrogate). (5) **Rolling-ALNS arm:
 > funded** (eval-only). (6) **ERB bootstrapping: include, modestly scoped** ("at least a
-> little" — the wave-2 time-to-competence ablation, first to drop if the calendar bites).
+> little": the wave-2 time-to-competence ablation, first to drop if the calendar bites).
 > (7) **ZST: one held-out-geometry transfer test, confirmed.** Kilian also authorised the
 > **Phase-B build start immediately** (ahead of the supervisor conversation; fallback to
 > freeze-on-gen06 unchanged if that conversation redirects). Status banner above remains
 > accurate: supervisor sign-off itself is still pending as an event; the working decisions are
 > now Kilian's own.
+>
+> **Decision log 2026-07-06 (build round, Kilian):** B1 reward baseline = **Option B**
+> (greedy no-attack twin; directly targets the M1 SNR pathology). B4 population = **B4-lite**
+> (fixed scripted-attacker mixture; B4-full/PSRO stays a recorded stretch). **Environment/graph
+> is UNCHANGED** from gen02-gen06 (same Kaliningrad OSM graph, depots 110/135, hotspot band,
+> Poisson arrivals): the contested arena differs from dynassign only by `antag_reach="route"`,
+> a masking rule, so gen07 is directly comparable to the campaign in the same measured
+> environment. The only deliberate other-geometry uses are the scoped ZST transfer test and the
+> Obj-4 depot-placement grid (both eval-only, both later). Build proceeds; **training NOT
+> launched** (Kilian will greenlight).
 >
 > **Decision log 2026-07-06 (evening, Kilian):** (1) git commit approved; separation required
 > for framework changes → `main` frozen for `src/` from now, gen07 code on a dedicated branch
