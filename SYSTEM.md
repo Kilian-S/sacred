@@ -37,7 +37,13 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Separation of concerns.** The physics engine (`graph_env.py`) stays unaware of RL hyperparameters; apply RL logic (γ discounting, reward scaling) on the agent/wrapper side using `elapsed_ticks`.
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
-## 5. Current epic (state only — the living record is `SACRED_PROGRESS.md` + `HANDOVER.md`)
+## 5. Current epic (state only; the living record is `DIRECTION.md` + `ROADMAP.md`)
+**UPDATE 2026-07-06 (evening): REDIRECTED.** The gen03-gen06 campaign below is closed and its
+record stands; the new epic is the **contested-resupply / exploitability redirection** (Kilian's
+carte-blanche brief; supervisor sign-off pending): read `DIRECTION.md`, then `ROADMAP.md`
+(active plan), then `THESIS_STORYLINE.md`. New standing rule from Kilian: **plan first, never
+dive in; consult him when unsure.** The paragraph below describes the state at campaign close.
+
 **THE EXPERIMENTAL CAMPAIGN IS COMPLETE (2026-07-06; gen03→gen06, all pre-registered).**
 Definitive finding (gen06, competence-gated, all arms within +5.5–7.0% of greedy clean):
 **adversarial training worsens held-out robustness** (pooled dD_targeted = −881 ± 284, 0/3

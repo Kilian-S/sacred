@@ -283,3 +283,38 @@
 - **Thesis fit:** Objectives 1/3/5 all get evidenced answers (negative but rigorous); the
   discussion chapter's "when does adaptive RL help" question gets its honest empirical answer
   for this problem class.
+
+## 11. Contested-resupply redirection: analysis + direction, no training  (2026-07-06 · docs `DIRECTION.md`/`ROADMAP.md`/`THESIS_STORYLINE.md`)
+
+- **Goal (prospective):** answer Kilian's carte-blanche brief after gen06 closed the campaign:
+  can adversarial training be made to show a real benefit if anything may change except SAC, the
+  protagonist/antagonist dynamic, and RL? Context: the supervisor wants alternative applications
+  (deck `../../Weekly Presentations/06.07..pptx`: contested drone resupply, humanitarian
+  logistics, asset escort, LEO/Kessler) and pointed at Panopticon AI and AAMAS.
+- **Headline results (analysis only, no runs):** (a) a comparative session read of the gen06
+  tfevents found systematic arm differences beyond the ledgered SNR story: the
+  adversarially-trained arms trained in a collapse regime (delivery 0.18-0.27 vs 0.66; queue
+  ~2x) with temperature never annealing (final alpha 0.62-0.86 vs 0.13; entropy 0.47-0.52 vs
+  0.37-0.39), while protagonist Q_Spread was HIGHER under attack (13-15 vs 2.6-3.8), so the
+  gen03/04 "critic cannot discriminate" wording does not transfer to the gen06 protagonist;
+  three mechanism candidates recorded (M1 reward SNR, M2 entropy-target mis-scaling with
+  backlog, M3 collapse-regime state distribution); to be reproduced by a committed probe and
+  appended to the gen06 ledger (ROADMAP A3). (b) Direction converged with Kilian: move the
+  headline to **exploitability** (worst case against a strategic, adaptive attacker; portfolio-
+  max measurement) in a **contested-resupply** skin of the existing stack; five fixes map
+  one-to-one to the campaign's diagnosed pathologies (exposure curriculum, counterfactual twin
+  rewards, entropy repair, factored attacker + adversary population, credit horizon).
+- **What we learned:** minimax training's native claim is worst-case, not average-case; the
+  campaign's negative is register-valid, and the in-house existence proofs for the reframe are
+  already ledgered (gen05's +1667 learned-attacker-vs-greedy nugget; gen06 BR rows).
+  Deterministic dispatch's predictability becomes the measurable weakness; SAC's entropy becomes
+  the mechanism, not the nuisance.
+- **Thesis progression:** `DIRECTION.md` (new view + direction), `ROADMAP.md` (phased plan with
+  gates), `THESIS_STORYLINE.md` (objective-by-objective argument) opened; gen07 pre-registration
+  drafting is ROADMAP A4. Supervisor sign-off pending; nothing built; no CPU spent.
+- **What it means for the thesis:** the narrative becomes three acts: diagnosis (gen03-06) →
+  the right question (exploitability) → conditions under which adversarial training works
+  (gen07, pre-registered either way).
+- **Thesis fit:** Obj 1/3/5 gain a positive path (game evaluated against its own solution
+  concept; SAC-as-mixed-strategy; controls that make Obj 5 causal); Obj 4 gains a reduced-form
+  surrogate demonstrator option; ZST scoped as one held-out-geometry transfer test.

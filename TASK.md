@@ -1,5 +1,9 @@
 # TASK.md — state record + plan
 
+> **⚠️ 2026-07-06: THE ACTIVE PLAN IS NOW `ROADMAP.md`** (contested-resupply redirection; see
+> `DIRECTION.md`). Everything below, including the 2026-07-06 "campaign complete" banner, is the
+> historical record.
+
 > **⚠️ REFRAMED 2026-07-02 (Kilian + Fable) — the plan below this banner is HISTORICAL.**
 > The critique (`CRITIQUE.md`) was accepted: the headline is now the **robustness claim**
 > (SACRED/ATLA vs an identical but non-adversarially-trained vanilla SAC, under a held-out attack

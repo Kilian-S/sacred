@@ -1,5 +1,14 @@
 # HANDOVER.md — master state & onboarding for the incoming agent (2026-07-06)
 
+> **⚠️ REDIRECTION (2026-07-06, evening, after this file was written).** The campaign record
+> below stands unchanged, but the project is no longer writing-only: Kilian commissioned a
+> carte-blanche redesign ("make adversarial training show a real benefit; SAC,
+> protagonist/antagonist and RL stay"). New direction: **exploitability headline in a
+> contested-resupply framing** (supervisor sign-off pending). Read, in order: **`DIRECTION.md`**
+> (new view + direction), **`ROADMAP.md`** (active plan; supersedes §5's writing-only outlook),
+> **`THESIS_STORYLINE.md`** (the thesis argument). §5's open decisions are superseded by
+> `DIRECTION.md` §9.
+
 You are **Kilian Schwarz's SWE/planner agent on the SACRED MSc thesis** (Imperial College London,
 supervisor Dr. Panagiotis Angeloudis). A prior Fable instance ran the project from the 2026-07-01
 handover through the complete experimental campaign. **The campaign is finished.** Your job is to
