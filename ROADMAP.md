@@ -29,20 +29,21 @@ the gen07 fixes on `gen07-contested` are cherry-picked in as needed (twin/counte
 evaluation discipline). Separation policy from the redirection still holds (`main` frozen for
 `src/`; regression-guarded flags; historical modes reproduce).
 
-- [ ] **I0. Equilibrium oracle (DONE as a probe; harden into a module).** `scratch/interdiction_game_probe.py`
-      computes loss_det / loss_mixed (minimax LP over route × interdiction-set payoff). Promote to a
-      reusable evaluator: given a graph, OD pair, candidate route set, and K, return the equilibrium
-      value + the defender's equilibrium mixed strategy (the ground truth SACRED is validated against).
-- [ ] **I1. Interdiction env layer** (`--problem interdiction`; ⛔K to design-lock). On the graph
-      scaffolding: (a) the antagonist COMMITS K interdiction assets to edges per sortie, HIDDEN from
-      the defender until struck; (b) the convoy routes base→FOB (next-hop routing first, so the mixed
-      strategy emerges from SAC per-step entropy; candidate-set form as fallback); (c) interception
-      reward: struck on an interdicted edge → discrete high-magnitude loss; protagonist reward =
-      delivered value − interception loss − travel cost; antagonist = interception loss (zero-sum).
-      Single convoy, Kaliningrad, one high-edge-connectivity OD pair (e.g. 33→71). Unit tests:
-      commit/hidden timing, interception accounting, zero-sum, reward SNR (interception is
-      attributable). Competence/feasibility probe: shortest-path interception ≈ loss_det, mixed
-      ≈ loss_mixed on this instance (reproduce the probe through the env).
+- [x] **I0. Equilibrium oracle: DONE 2026-07-06** (`src/baselines/interdiction_oracle.py`, +7 tests,
+      commit after the redesign docs). build_interdiction_game + solve() → minimax value (loss_mixed),
+      loss_det, both equilibrium mixed strategies; best_response_attacker + interception_of_distribution
+      (exploitability of any learned defender); route_distribution_from_first_hops (next-hop policy →
+      route mixture). The ground truth SACRED is validated against.
+- [x] **I1. Interdiction env CORE: DONE 2026-07-06** (`src/envs/interdiction.py`, +4 tests). Attacker
+      commits K interdiction assets (hidden); defender picks a route via first-hop node (reuses
+      node-selection); interception terminal + travel-cost reward (zero-sum). **G1 env-fidelity gate
+      PASSES**: the env reproduces the oracle's loss_det and loss_mixed end-to-end (Monte Carlo) on
+      synthetic AND Kaliningrad 33→71 (gap ≥ 0.8). Suite 120 green.
+- [ ] **I1b. Next-hop routing env + SAC observation** (next build piece). Wire the convoy onto the
+      graph so it routes next-hop (reuse graph_env/SMDP next-hop), producing the graph observation the
+      existing ProtagonistSAC featurises; the first-hop decision is the route decision for disjoint
+      routes. Attacker = the existing edge-selection antagonist committing at sortie start. `--problem
+      interdiction`. This makes the env SAC-trainable while staying genuinely "routing".
 - [ ] **I2. Cheap feasibility slice** (⛔K launch). Train {shortest-path (ref), vanilla SAC, SACRED
       (ATLA vs learned interdictor)} on the ONE OD pair. Pre-registered readout: SACRED interception
       under a best-response interdictor < vanilla < shortest-path, and SACRED → loss_mixed. This is

@@ -55,8 +55,11 @@ defender's realised route distribution vs the equilibrium mixed strategy (mechan
 
 ## Gates (cheap, pre-registered; gate expensive training on them: the campaign dogma)
 
-- **G1 env-fidelity:** shortest-path interception ≈ `loss_det` and a hand-set mixed router ≈
-  `loss_mixed` when driven through the env (the env reproduces the equilibrium probe).
+- **G1 env-fidelity: PASSED 2026-07-06.** The env (`src/envs/interdiction.py`) reproduces the
+  oracle's `loss_det` (deterministic defender, Monte Carlo → 1.0) and `loss_mixed` (equilibrium
+  mixed defender vs equilibrium attacker → the minimax value, ±0.03) on synthetic AND Kaliningrad
+  33→71 (gap ≥ 0.8). Oracle: `src/baselines/interdiction_oracle.py`. Tests:
+  `tests/test_interdiction_{oracle,env}.py`.
 - **G2 feasibility slice (I2, the GO/NO-GO):** on the ONE OD pair, `Expl(sacred) < Expl(shortest_path)`
   and SACRED trends toward `loss_mixed`. Expected PASS (the gap is structural). FAIL consequence:
   diagnose via the oracle (an RL-convergence problem, not a structural one: a strong attacker
