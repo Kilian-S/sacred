@@ -145,3 +145,15 @@ victim the learned adversary is now the strongest attacker in the portfolio. Thi
 rehabilitates learned attackers **for this arena** (gen03/04's "weaker than random" was the
 leashed dynassign setting) and is relevant to any future competent-protagonist matrix and to the
 back-pocket ATLA option.
+
+## Post-hoc analysis (2026-07-06, ROADMAP A3.4; primary unchanged): seed-level sensitivity
+
+Dual-reporting note (generation remains closed; this adds an inference-level sensitivity to the
+recorded primary). The pre-registered primary pooled paired instances across the 3 seed pairings
+(n=72). Treating the PAIRING as the unit instead (n=3; conservative, seeds as random effects):
+per-pairing dD_gateway = {−106.2, −219.0, −251.2} (recomputed from the raw portfolio JSONs,
+matching the recorded values), seed-level mean −192.1, SD 76.2, **t(2) 95% CI [−381.3, −2.9]
+(excludes zero)**, sign consistency 3/3 negative (one-sided sign p = 0.125). Here the
+conservative level agrees in sign and significance with the pooled level (the gen05 reversal is
+small but consistent). Interpretation unchanged: the matrix is competence-void, so no robustness
+reading either way. Script: `scratch/gen0506_seedlevel_stats.py`.

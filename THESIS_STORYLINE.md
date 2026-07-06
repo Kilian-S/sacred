@@ -84,7 +84,10 @@ by a documented failure.
 The pivot of the argument, and the moment the thesis stops being only a diagnosis. Two
 observations force it. First, *the campaign's own data* contain the seed: the learned attacker's
 one success was against the competent, deterministic victim (gen05 +1667): predictability, not
-weakness, was the exploitable surface. Second, minimax training optimises the worst case by
+weakness, was the exploitable surface. The post-hoc snapshot sweep (gen06 ledger appendix A3.2)
+then found the same axis inside the vanilla arms themselves: aimed-attack robustness *declines*
+with clean training time as the policy specialises and commits — competence is purchased with
+predictability, which is precisely the currency an adaptive adversary collects. Second, minimax training optimises the worst case by
 construction; measuring it by average-case degradation under fixed disruptions (Act II) asks it
 to win a game it was never built for, against a reactive baseline the literature says is
 near-unbeatable there. The question adversarial training is *for* is: **how badly can an

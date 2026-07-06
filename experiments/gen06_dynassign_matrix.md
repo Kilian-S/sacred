@@ -115,3 +115,104 @@ random attacker's ~1700–2200, and 3–4× below the scripted attacks) — cons
 the gen05 finding that learned attackers become strong under ROUTE reach is arena-specific.
 br_scripted transfers somewhat better (~1500–1900 vs all victims) than br_vanilla (577–1148) but
 neither approaches the scripted heuristics. No change to the primary. **gen06 closed.**
+
+## Post-hoc analyses (2026-07-06, ROADMAP A3; generation stays closed, primary unchanged)
+
+Approved by Kilian 2026-07-06 as evidence-hardening for the thesis's mechanism chapter. All
+read-only over the artifacts above; scripts committed under `scratch/`.
+
+### A3.1 — training-telemetry comparison between the arms (`scratch/gen06_telemetry_probe.py`)
+
+Windowed means from the six runs' tfevents (ep 1–100 → 700–800). The arms differ systematically
+in ways the mechanism paragraph above did not capture:
+
+| quantity | vanilla (3 seeds) | scripted (3 seeds) |
+|---|---|---|
+| SAC alpha (end) | **0.13** (all seeds) | **0.62–0.86** (never anneals) |
+| policy entropy (end) | 0.37–0.39 | 0.47–0.52 |
+| Q_Spread | 2.6–3.8 | **13.0–15.1 (HIGHER)** |
+| critic loss | ~195–226 | ~856–1131 (4–5×) |
+| training Total_Wait | ~7.0–7.8k | ~13.6–15.6k (~2×) |
+| training delivery rate | ~0.65–0.66 | **0.18–0.27** |
+| final queue | ~17 | ~35–40 |
+
+Reading: (a) the scripted arms trained in a near-collapse regime (a quarter of requests
+delivered, double the backlog) — the training distribution is far from the evaluation regime;
+(b) their temperature never annealed, so the extra stochasticity is baked into the actors;
+(c) the protagonist's critic under attack discriminates MORE, not less (Q_Spread 4×) — the
+"critic can't resolve" wording from the gen03/04 *antagonist* diagnosis does **not** transfer to
+the gen06 protagonist; the SNR mechanism must be stated as noisier targets (critic loss 4–5×)
+plus mis-scaled entropy pressure, not as a flat "no signal". Clean periodic-eval curves are flat
+from ~ep 50 in all six arms (learning plateaus almost immediately at the competence band).
+Mechanism candidates recorded in `DIRECTION.md` §4: M1 reward SNR, M2 entropy-target mis-scaling
+(the 0.45·ln N target grows with the attack-inflated backlog), M3 collapse-regime state
+distribution.
+
+### A3.2 — robustness vs training time (`scratch/gen06_snapshot_robustness.py`)
+
+Question: why did selection pick ep100 for two of three vanilla arms? Every protagonist snapshot
+of all six runs evaluated under both aimed attackers on the 8 validation instances (the selection
+machinery, swept over training time; W_attacked ≈ D trend since clean W is flat from ~ep 50 per
+the Eval curves). Early (ep50–200) vs late (ep650–800) window means:
+
+| run | pathrand | targeted |
+|---|---|---|
+| vanilla_seed0 | 14028 → 14892 (+6.2%) | 14939 → 14930 (−0.1%) |
+| vanilla_seed1 | 13970 → 15472 (+10.8%) | 14709 → 15702 (+6.8%) |
+| vanilla_seed2 | 13686 → 15603 (+14.0%) | 14500 → 15924 (+9.8%) |
+| scripted_seed0 | 15466 → 15178 (−1.9%) | 15999 → 15345 (−4.1%) |
+| scripted_seed1 | 14388 → 14844 (+3.2%) | 15126 → 14604 (−3.4%) |
+| scripted_seed2 | 15019 → 14626 (−2.6%) | 15385 → 14955 (−2.8%) |
+
+**Reading: in the vanilla arms, aimed-attack robustness DECLINES with clean training** (5/6
+cells worse late, up to +14%; the ep100 selections and seed0's ep750-dip selection are exactly
+what a min over this drift picks). The scripted arms start substantially worse and improve only
+slowly, converging toward the same ~14.5–16k band. So neither arm's trajectory is "learning
+robustness": vanilla's early advantage is the generality of an under-specialised policy, and
+clean-task specialisation (entropy 0.56 → 0.38, alpha → 0.13 per A3.1) progressively erodes it —
+growing commitment = growing predictability = growing vulnerability to aimed attacks. This is
+the exploitability axis (DIRECTION.md §2) surfacing in the closed campaign's own data: training
+on this reward buys clean competence at the price of attackability, in BOTH arms' end states.
+Caveat: 8 validation instances (per-point SEM ~±400–600); the seed1/seed2 vanilla trends exceed
+it, seed0's are within noise. Raw per-snapshot values: `scratch/gen06_snapshot_robustness.json`.
+
+### A3.3 — matched-temperature diagnostic (`scratch/gen06_matched_temperature.py`)
+
+Question: the arms converged at different temperatures (A3.1), and eval is stochastic — is the
+robustness gap just sampling temperature, or is it in what the policies learned? Both arms of
+each pairing re-evaluated on the same 30 paired test instances at matched determinism
+(tau = 1.0 as trained; tau = 0.5 sharpened; argmax — symmetric labelled diagnostic, not a
+headline protocol). Sanity: the tau = 1.0 rows reproduce the recorded portfolio numbers
+**exactly** (pooled dD_targeted = −881 ± 284, per-pair −1379/−785/−479 — same episode seeds,
+same sampling path).
+
+| sampling | pooled dD_targeted (n=90) | per-pair |
+|---|---|---|
+| tau = 1.0 (as trained) | **−881 ± 284** | −1379 / −785 / −479 |
+| tau = 0.5 (sharpened) | **−1284 ± 310** | −2035 / −1234 / −585 |
+| argmax | **−956 ± 370** | −1987 / −1211 / +328 (n.s.) |
+
+**Reading: the deficit is NOT temperature.** At matched (and fully deterministic) sampling the
+adversarially-trained arm remains significantly less robust; sharpening actually *widens* the
+gap (the scripted arms' mode policies are worse than their sampled behaviour — their extra
+entropy was partially masking the deficit, not causing it). So the gen06 reversal reflects a
+genuinely worse learned policy under aimed attack, strengthening the training-time mechanisms
+(M1 noisy critic targets, M3 collapse-regime training distribution) over an evaluation-time
+temperature artifact; M2 (entropy-target mis-scaling) remains relevant as a *training-time*
+channel (it shapes what was learned), not as an eval-time one. Side observation, consistent with
+house dogma: argmax-ing hurts BOTH arms' attacked performance (e.g. pair2 vanilla D_targeted
+5882 → 8014), so mixing has real value for every max-entropy policy here — stochastic evaluation
+remains the only honest headline protocol.
+
+### A3.4 — seed-level sensitivity of the primary (`scratch/gen0506_seedlevel_stats.py`)
+
+Dual-reporting note. The pre-registered primary pooled paired instances (n=90): dD_targeted
+= −881 ± 284, CI excluding zero — that criterion stands as recorded. Treating the seed PAIRING
+as the unit instead (n=3, conservative): per-pairing means {−1379.0, −785.4, −479.2} (recomputed
+from the raw JSONs, matching the recorded values), seed-level mean −881.2, SD 457.5, **t(2) 95%
+CI [−2017.7, +255.3] — includes zero**; sign consistency 3/3 negative (one-sided p = 0.125).
+Same picture for dD_pathrand ({−1353.3, −303.5, −668.7}, t(2) CI [−2099.1, +548.7]). The thesis
+must therefore say: *reversed under the pre-registered pooled criterion, with full sign
+consistency across pairings; the 3-seed random-effects view is directionally consistent but not
+individually significant.* (For contrast, gen05's smaller reversal IS seed-level significant —
+see that ledger's A3.4 note.)

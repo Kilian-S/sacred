@@ -298,8 +298,9 @@
   0.37-0.39), while protagonist Q_Spread was HIGHER under attack (13-15 vs 2.6-3.8), so the
   gen03/04 "critic cannot discriminate" wording does not transfer to the gen06 protagonist;
   three mechanism candidates recorded (M1 reward SNR, M2 entropy-target mis-scaling with
-  backlog, M3 collapse-regime state distribution); to be reproduced by a committed probe and
-  appended to the gen06 ledger (ROADMAP A3). (b) Direction converged with Kilian: move the
+  backlog, M3 collapse-regime state distribution); reproduced same night by the committed A3
+  probes (`scratch/gen06_telemetry_probe.py` and siblings), results in the gen06 ledger's
+  post-hoc appendix. (b) Direction converged with Kilian: move the
   headline to **exploitability** (worst case against a strategic, adaptive attacker; portfolio-
   max measurement) in a **contested-resupply** skin of the existing stack; five fixes map
   one-to-one to the campaign's diagnosed pathologies (exposure curriculum, counterfactual twin

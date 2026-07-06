@@ -23,9 +23,17 @@
       "read THESIS_PLANNER_HANDOFF.md and begin"). Pre-step DONE 2026-07-06: the handoff file
       carries the redirection banner (trio pointers, three-act branch-robust structure, updated
       ledger list and timeline). **Kilian 2026-07-06: not now** (launch timing stays his call).
-- [ ] **A3. Evidence-hardening probes** (**APPROVED, all four: Kilian 2026-07-06**, executed
-      autonomously overnight; all read-only or scratch-script). Outputs get appended to the
-      gen05/gen06 ledgers as clearly labelled post-hoc analyses (primaries untouched):
+- [x] **A3. Evidence-hardening probes** — **DONE 2026-07-06 (overnight)**; approved by Kilian,
+      executed autonomously; results appended to the gen05/gen06 ledgers as post-hoc analyses
+      (primaries untouched). Headlines: A3.1 telemetry reproduced and committed; A3.2 vanilla's
+      aimed-attack robustness DECLINES with training (specialisation → predictability — direct
+      in-house support for the exploitability register); A3.3 the gen06 gap is NOT sampling
+      temperature (persists/widens at matched determinism; tau 1.0 sanity rows reproduce the
+      ledger exactly); A3.4 dual-level statistics recorded (pooled significant + 3/3 signs;
+      3-pairing t-CI includes zero for gen06, excludes it for gen05). Scripts:
+      `scratch/gen06_telemetry_probe.py`, `scratch/gen06_snapshot_robustness.py`,
+      `scratch/gen06_matched_temperature.py`, `scratch/gen0506_seedlevel_stats.py` (+ JSONs).
+      Original sub-item specs (for the record):
       - A3.1 `scratch/gen06_telemetry_probe.py`: reproduce and commit the arm-comparison
         telemetry (alpha, entropy, queue, delivery, Q_Spread, critic loss) currently recorded
         only as the session analysis in `DIRECTION.md` §4. Zero CPU beyond seconds.

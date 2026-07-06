@@ -1,0 +1,40 @@
+[   29.3s] vanilla_seed0 / pathrand:
+   ep50:13510 ep100:14125 ep150:13970 ep200:14507 ep250:13887 ep300:14971 ep350:14925 ep400:15305 ep450:14918 ep500:14686 ep550:15202 ep600:16323 ep650:15851 ep700:15416 ep750:13408
+[   59.0s] vanilla_seed0 / targeted:
+   ep50:14257 ep100:14976 ep150:14831 ep200:15691 ep250:15135 ep300:15196 ep350:15935 ep400:15777 ep450:15186 ep500:15183 ep550:15626 ep600:16402 ep650:15950 ep700:15303 ep750:13537
+[   88.7s] vanilla_seed1 / pathrand:
+   ep50:13898 ep100:13707 ep150:13941 ep200:14333 ep250:14218 ep300:14452 ep350:14796 ep400:14768 ep450:14985 ep500:14697 ep550:16594 ep600:14596 ep650:15358 ep700:15147 ep750:15911
+[  118.7s] vanilla_seed1 / targeted:
+   ep50:14483 ep100:14601 ep150:14680 ep200:15071 ep250:14536 ep300:14857 ep350:14524 ep400:14603 ep450:15093 ep500:15012 ep550:16755 ep600:14044 ep650:15660 ep700:15268 ep750:16177
+[  148.9s] vanilla_seed2 / pathrand:
+   ep50:13800 ep100:13315 ep150:13696 ep200:13932 ep250:14400 ep300:14581 ep350:14000 ep400:15179 ep450:14543 ep500:15230 ep550:15400 ep600:15765 ep650:16044 ep700:15410 ep750:15354
+[  178.7s] vanilla_seed2 / targeted:
+   ep50:14646 ep100:14685 ep150:14283 ep200:14387 ep250:14532 ep300:14642 ep350:14706 ep400:15374 ep450:14315 ep500:15098 ep550:15568 ep600:15509 ep650:15761 ep700:15894 ep750:16116
+[  208.0s] dynassign_scripted_seed0 / pathrand:
+   ep50:15879 ep100:15429 ep150:15066 ep200:15492 ep250:16134 ep300:15141 ep350:15228 ep400:15662 ep450:14543 ep500:14810 ep550:14682 ep600:14915 ep650:15228 ep700:14805 ep750:15503
+[  237.1s] dynassign_scripted_seed0 / targeted:
+   ep50:16746 ep100:15922 ep150:15925 ep200:15402 ep250:15962 ep300:15045 ep350:15504 ep400:15842 ep450:14984 ep500:15097 ep550:14858 ep600:14795 ep650:15289 ep700:14887 ep750:15858
+[  266.8s] dynassign_scripted_seed1 / pathrand:
+   ep50:15349 ep100:14459 ep150:14092 ep200:13654 ep250:14539 ep300:14366 ep350:15426 ep400:15594 ep450:14307 ep500:14841 ep550:14871 ep600:15220 ep650:15310 ep700:14465 ep750:14756
+[  291.0s] dynassign_scripted_seed1 / targeted:
+   ep50:16281 ep100:15014 ep150:14740 ep200:14470 ep250:14610 ep300:14782 ep350:15128 ep400:15704 ep450:14351 ep500:15010 ep550:14676 ep600:15222 ep650:14715 ep700:14833 ep750:14266
+[  315.8s] dynassign_scripted_seed2 / pathrand:
+   ep50:14521 ep100:14989 ep150:16043 ep200:14525 ep250:14796 ep300:14365 ep350:14241 ep400:14339 ep450:15928 ep500:15103 ep550:13976 ep600:13971 ep650:14474 ep700:15292 ep750:14112
+[  339.7s] dynassign_scripted_seed2 / targeted:
+   ep50:15532 ep100:15059 ep150:15896 ep200:15053 ep250:15289 ep300:14681 ep350:14148 ep400:14903 ep450:15589 ep500:15366 ep550:14271 ep600:14823 ep650:14604 ep700:15056 ep750:15204
+
+Wrote scratch/gen06_snapshot_robustness.json
+
+=== attacked validation wait, early (ep50-200) vs late (ep650-800) ===
+vanilla_seed0                pathrand  early    14028 -> late    14892 ( +6.2%)
+vanilla_seed0                targeted  early    14939 -> late    14930 ( -0.1%)
+vanilla_seed1                pathrand  early    13970 -> late    15472 (+10.8%)
+vanilla_seed1                targeted  early    14709 -> late    15702 ( +6.8%)
+vanilla_seed2                pathrand  early    13686 -> late    15603 (+14.0%)
+vanilla_seed2                targeted  early    14500 -> late    15924 ( +9.8%)
+dynassign_scripted_seed0     pathrand  early    15466 -> late    15178 ( -1.9%)
+dynassign_scripted_seed0     targeted  early    15999 -> late    15345 ( -4.1%)
+dynassign_scripted_seed1     pathrand  early    14388 -> late    14844 ( +3.2%)
+dynassign_scripted_seed1     targeted  early    15126 -> late    14604 ( -3.4%)
+dynassign_scripted_seed2     pathrand  early    15019 -> late    14626 ( -2.6%)
+dynassign_scripted_seed2     targeted  early    15385 -> late    14955 ( -2.8%)

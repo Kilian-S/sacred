@@ -120,18 +120,33 @@ contract for the build phase (`ROADMAP.md` Phase B).
 | 4 | The learned adversary cannot learn in a flat ~120-option action space (gen03/04: below random; entropy pinning) | **Attacker learnability package**: factored action (pick asset, then edge on its route), route-reach mask, motion features (built, gen04 N1), counterfactual reward, sane entropy target; plus an **adversary population** (scripted seeds + successive learned BRs; defender trains against the mixture) to kill co-evolution cycling | gen05's +1667 existence proof; PSRO/double-oracle and fictitious self-play (the latter already cited in the literature review) |
 | 5 | γ = 0.99/tick myopia vs 100+-tick consequences | γ 0.997+ or per-event discounting emphasis, n-step targets | Standard |
 
-**Telemetry note (session analysis 2026-07-06, NOT yet ledgered).** A comparative read of the
-gen06 tfevents (`logs/tb_runs/gen06_dynassign_matrix`, windowed means) found systematic arm
-differences that the gen06 ledger's mechanism paragraph does not capture: final SAC alpha 0.13
-(vanilla, all seeds) vs 0.62-0.86 (scripted arms); final policy entropy 0.37-0.39 vs 0.47-0.52;
-training-time delivery 0.66 vs 0.18-0.27 and final queue ~17 vs ~35-40; protagonist Q_Spread
-2.6-3.8 vs 13-15 (HIGHER under attack, contradicting a naive "critic cannot discriminate"
-reading for the protagonist; that reading belongs to the gen03/04 antagonist only); critic loss
-~200-225 vs ~870-1130; clean eval curves flat from ~ep 50 in all six arms. Three mechanism
-candidates are recorded: M1 reward SNR (as ledgered), M2 entropy-target mis-scaling with backlog,
-M3 collapse-regime state distribution. These numbers must be reproduced by a committed probe
-script and appended to the gen06 ledger as a post-hoc analysis before the thesis cites them
-(`ROADMAP.md` A3).
+**Telemetry note (2026-07-06; reproduced and ledgered per ROADMAP A3.1).** A comparative read of
+the gen06 tfevents (`logs/tb_runs/gen06_dynassign_matrix`, windowed means; committed probe
+`scratch/gen06_telemetry_probe.py`, results in the gen06 ledger's post-hoc appendix) found
+systematic arm differences that the gen06 ledger's original mechanism paragraph does not capture:
+final SAC alpha 0.13 (vanilla, all seeds) vs 0.62-0.86 (scripted arms); final policy entropy
+0.37-0.39 vs 0.47-0.52; training-time delivery 0.66 vs 0.18-0.27 and final queue ~17 vs ~35-40;
+protagonist Q_Spread 2.6-3.8 vs 13-15 (HIGHER under attack, contradicting a naive "critic cannot
+discriminate" reading for the protagonist; that reading belongs to the gen03/04 antagonist only);
+critic loss ~200-225 vs ~870-1130; clean eval curves flat from ~ep 50 in all six arms. Three
+mechanism candidates are recorded: M1 reward SNR (as ledgered), M2 entropy-target mis-scaling
+with backlog, M3 collapse-regime state distribution. The A3.2 (robustness-vs-training-time) and
+A3.3 (matched-temperature) probes discriminate between them; their results live in the same
+gen06 ledger appendix.
+
+**Probe outcomes (2026-07-06, overnight; details in the gen06 ledger appendix).** A3.3 rules
+out evaluation-time temperature as the cause of the gen06 gap: at matched determinism the
+reversal persists and even widens (pooled dD_targeted −1284 ± 310 at tau 0.5, −956 ± 370 at
+argmax; tau 1.0 reproduces the ledgered −881 ± 284 exactly). The deficit is in the learned
+policy; M2 stays relevant only as a training-time channel, M1+M3 carry the mechanism. A3.2 adds
+the sharpest new fact: **vanilla's aimed-attack robustness DECLINES with clean training time**
+(5/6 run-attack cells worse at ep650-800 than ep50-200, up to +14%), while the scripted arms
+start worse and only slowly recover. Clean-task specialisation buys competence at the price of
+predictability, in the campaign's own data: direct in-house support for the exploitability
+register (§2) and for the frontier claim (calibrated, not incidental, unpredictability). A3.4:
+the gen06 reversal is significant under the pre-registered pooled criterion with 3/3 sign
+consistency, but the conservative 3-pairing t-CI includes zero; the thesis wording carries both
+levels.
 
 ## 5. The gen07 programme (concept level)
 

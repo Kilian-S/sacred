@@ -1,0 +1,14 @@
+[   30.0s] tau1.0  pair0: vanilla W0=6618 D_tgt=+5196 | scripted W0=6538 D_tgt=+6575 | dD_targeted=-1379 ± 519
+[   59.9s] tau1.0  pair1: vanilla W0=6635 D_tgt=+5627 | scripted W0=6609 D_tgt=+6413 | dD_targeted=-785 ± 510
+[   89.9s] tau1.0  pair2: vanilla W0=6590 D_tgt=+5882 | scripted W0=6600 D_tgt=+6361 | dD_targeted=-479 ± 400
+          tau1.0  POOLED dD_targeted = -881 ± 284 (n=90)
+[  119.5s] tau0.5  pair0: vanilla W0=6598 D_tgt=+5284 | scripted W0=6512 D_tgt=+7319 | dD_targeted=-2035 ± 536
+[  149.2s] tau0.5  pair1: vanilla W0=6654 D_tgt=+5624 | scripted W0=6621 D_tgt=+6858 | dD_targeted=-1234 ± 419
+[  178.8s] tau0.5  pair2: vanilla W0=6574 D_tgt=+6281 | scripted W0=6600 D_tgt=+6866 | dD_targeted=-585 ± 533
+          tau0.5  POOLED dD_targeted = -1284 ± 310 (n=90)
+[  207.6s] argmax  pair0: vanilla W0=6612 D_tgt=+5352 | scripted W0=6547 D_tgt=+7339 | dD_targeted=-1987 ± 555
+[  235.5s] argmax  pair1: vanilla W0=6554 D_tgt=+6366 | scripted W0=6629 D_tgt=+7577 | dD_targeted=-1211 ± 497
+[  262.7s] argmax  pair2: vanilla W0=6519 D_tgt=+8014 | scripted W0=6610 D_tgt=+7687 | dD_targeted=+328 ± 578
+          argmax  POOLED dD_targeted = -956 ± 370 (n=90)
+
+Wrote scratch/gen06_matched_temperature.json
