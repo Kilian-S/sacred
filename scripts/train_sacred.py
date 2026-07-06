@@ -215,6 +215,25 @@ def main() -> None:
              " the learned adversary cannot learn to attack). The protagonist trains every episode;"
              " the antagonist nets are never used.",
     )
+    parser.add_argument(
+        "--attack-curriculum",
+        action="store_true",
+        help="B3: ramp attack exposure/strength instead of the gen06 constant-full-budget regime "
+             "(scripted_adversary only). Mixes clean/attacked episodes (--p-attack) and raises the "
+             "budget from --budget-min toward the config budget only while windowed delivery stays "
+             ">= --competence-floor. Addresses the M3 collapse-regime training distribution.",
+    )
+    parser.add_argument("--p-attack", type=float, default=0.75,
+                        help="B3: probability an episode is attacked (default 0.75).")
+    parser.add_argument("--budget-min", type=float, default=500.0,
+                        help="B3: attack budget at curriculum level 0 (ramps to the config budget).")
+    parser.add_argument("--curriculum-levels", type=int, default=4,
+                        help="B3: number of budget ramp levels (default 4).")
+    parser.add_argument("--competence-floor", type=float, default=0.4,
+                        help="B3: windowed delivery rate required (over attacked episodes) to ramp "
+                             "difficulty up one level (default 0.4).")
+    parser.add_argument("--curriculum-window", type=int, default=20,
+                        help="B3: number of attacked episodes averaged for the ramp gate (default 20).")
     args = parser.parse_args()
 
     if sum([args.vanilla, args.train_antagonist_only, args.scripted_adversary]) > 1:
@@ -534,6 +553,24 @@ def main() -> None:
             scripted_attacker = targeted_block_policy(smdp)
         print(f"Scripted adversary: {args.scripted_attacker}")
 
+    attack_curriculum = None
+    if args.attack_curriculum:
+        if trainer_mode != "scripted_adversary":
+            sys.exit("--attack-curriculum requires --scripted-adversary.")
+        from src.agents.curriculum import AttackCurriculum
+        attack_curriculum = AttackCurriculum(
+            budget_min=args.budget_min,
+            budget_max=config.congestion_budget,
+            n_levels=args.curriculum_levels,
+            p_attack=args.p_attack,
+            competence_floor=args.competence_floor,
+            window=args.curriculum_window,
+            seed=args.seed or 0,
+        )
+        print(f"Attack curriculum: p_attack={args.p_attack}, budget "
+              f"{args.budget_min}->{config.congestion_budget} over {args.curriculum_levels} levels, "
+              f"floor {args.competence_floor}, window {args.curriculum_window}")
+
     trainer = ATLACoevolutionTrainer(
         smdp=smdp,
         protag_agent=protag,
@@ -547,6 +584,7 @@ def main() -> None:
         mode=trainer_mode,
         scripted_attacker=scripted_attacker,
         update_every=args.update_every,
+        attack_curriculum=attack_curriculum,
     )
 
     # 5. Run coevolutionary training

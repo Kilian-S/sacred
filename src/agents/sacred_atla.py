@@ -14,7 +14,7 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from src.env.smdp_wrapper import DecisionType, SMDPDecisionWrapper, SMDPTransition
+from src.env.smdp_wrapper import CongestionBudget, DecisionType, SMDPDecisionWrapper, SMDPTransition
 from src.agents.sac import AntagonistSAC, ProtagonistSAC
 from src.agents.transition_builder import collect_protagonist_transitions
 
@@ -52,6 +52,7 @@ class ATLACoevolutionTrainer:
         mode: str = "atla",
         scripted_attacker: Callable | None = None,
         update_every: int = 1,
+        attack_curriculum=None,
     ) -> None:
         if mode not in ("atla", "vanilla", "antagonist_only", "scripted_adversary"):
             raise ValueError(f"unknown trainer mode {mode!r}")
@@ -74,6 +75,11 @@ class ATLACoevolutionTrainer:
         # trains every episode, the antagonist nets are never used).
         self.mode = mode
         self.scripted_attacker = scripted_attacker
+        # B3 attack exposure/strength curriculum (optional; scripted_adversary only). When set, it
+        # decides per episode whether the attack fires and at what budget, ramping difficulty only
+        # while the defender stays competent. None = the historical constant-attack regime.
+        self.attack_curriculum = attack_curriculum
+        self._episode_attacked = True  # per-episode flag; overwritten each episode when curriculum set
         # Update-to-data ratio: run a gradient update once every N decision epochs (per agent)
         # instead of every one. N=1 = the historical behaviour. The hybrid rung makes ~10x more
         # (edge-level) decisions per episode than destination-mode rungs, so update-per-decision
@@ -132,6 +138,12 @@ class ATLACoevolutionTrainer:
 
             # 2. Reset environment and tracking accumulators
             event = self.smdp.reset_decision_env()
+            # B3: the curriculum decides this episode's attack on/off + budget, overriding the
+            # config budget the reset just installed. Clean episodes keep viable-state experience
+            # in the replay; the budget ramps only as competence is earned (see record() below).
+            if self.attack_curriculum is not None:
+                self._episode_attacked, ep_budget = self.attack_curriculum.decide()
+                self.smdp.budget = CongestionBudget(ep_budget)
             ep_protag_reward = 0.0
             ep_antag_reward = 0.0
             ep_ticks = 0
@@ -179,7 +191,10 @@ class ATLACoevolutionTrainer:
                         # vanilla: the adversary never acts. scripted_adversary: a FIXED scripted
                         # attacker acts (strong, stationary adversarial pressure). Either way no
                         # antagonist net forward/storage/update — only the protagonist learns.
-                        action = self.scripted_attacker(event) if self.mode == "scripted_adversary" else None
+                        # B3: on a curriculum "clean" episode the scripted attacker is held back
+                        # (acts like vanilla for that episode).
+                        attack_on = self.mode == "scripted_adversary" and self._episode_attacked
+                        action = self.scripted_attacker(event) if attack_on else None
                         next_event, _ = self.smdp.step_antagonist(action)
                         ep_protag_reward += next_event.protagonist_reward
                         ep_antag_reward += next_event.antagonist_reward
@@ -255,6 +270,16 @@ class ATLACoevolutionTrainer:
                 delivered = max(0.0, initial_demands - total_demands)
                 delivery_rate = delivered / max(1e-6, initial_demands)
             budget_spent = self.smdp.budget.used
+
+            # B3: feed the delivery rate back to the curriculum (only attacked episodes drive the
+            # ramp) and log its state so the ramp is auditable post-hoc.
+            if self.attack_curriculum is not None:
+                self.attack_curriculum.record(delivery_rate)
+                cstate = self.attack_curriculum.state()
+                self.writer.add_scalar("Curriculum/Level", cstate["level"], ep)
+                self.writer.add_scalar("Curriculum/Budget", cstate["budget"], ep)
+                self.writer.add_scalar("Curriculum/Attacked", 1.0 if self._episode_attacked else 0.0, ep)
+                self.writer.add_scalar("Curriculum/Window_Mean_Delivery", cstate["window_mean_delivery"], ep)
 
             # 5. Log episode results to console
             print(
