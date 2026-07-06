@@ -168,6 +168,20 @@ variant reserved for selection only), never on test attacks or test instances.
   > are the learned arms, and the portfolio-max means a weak BR is simply dominated by the fitted
   > scripted attacks. Escalation decision is Kilian's (see the session record): factored head
   > re-gate, a minimal vanilla-vs-sacred training slice, or freeze on gen03-06.
+  >
+  > **SELF-CORRECTION + CORRECTED GATE (2026-07-06).** The gate above used the UNFIXED attacker
+  > (no counterfactual reward, default 0.5*ln(N) entropy target, gamma 0.99): it is a gen04
+  > REPLICA, so reproducing gen04 was expected and it does NOT test whether the fixes rescue the
+  > attacker. Corrected gate (running): `--arena contested --reward-baseline twin
+  > --antag-target-entropy 0.5 --gamma 0.997`, victim = frozen greedy, 300 ep. Rationale: the
+  > zero-sum twin reward makes the attacker's reward = +(remaining - clean-greedy baseline) = its
+  > MARGINAL damage stripped of the exogenous queue baseline (the SNR root cause of the small
+  > Q-spread that entropy-pins the attacker); the lower entropy target lets a policy with real
+  > Q-spread commit. Same PASS bar: D(br) >= 1.25 x D(random) on 24 held-out contested instances
+  > (random vs greedy ~1718 in gen06; scripted targeted ~5000 = the STRONG bar). Eval:
+  > `evaluate_portfolio.py --problem contested --br gate=<actor> --attackers
+  > none,random,pathrand,targeted,br_gate --instances 24 --seed-base 20000019`. Result appended
+  > when done; if PASS, a no-fix contested control run attributes the effect to the fixes.
 - **B9.v coping-channel probe**: an ε-randomised greedy (assignment noise, ε grid on validation
   instances) must reduce D under the fitted `targeted` attack relative to deterministic greedy
   by a nonzero margin (CI excluding 0). FAIL consequence: the unpredictability channel is dead
