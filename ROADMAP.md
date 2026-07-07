@@ -181,9 +181,11 @@ banked headline; this is the extension that meets all five objectives and wins b
       **G-M1 fidelity gate PASSES** (env reproduces loss_det/loss_mixed vs the oracle by Monte-Carlo);
       N=1 reduces exactly to single-convoy. Interactive Kaliningrad visualiser:
       `scratch/{multiconvoy_kaliningrad_data,build_multiconvoy_view}.py` (classical 90.4% vs SACRED 32.8%).
-- [ ] **M2. ALNS fleet-coordination baseline** (Obj-5 metaheuristic): coordinate N convoys' routes
-      minimising cost-vs-risk = the non-degenerate classical opponent (the oracle's loss_det); plus a
-      shortest-path/greedy reference.
+- [x] **M2. ALNS fleet-coordination baseline: DONE 2026-07-07** (`src/baselines/multiconvoy_planners.py`,
+      +4 tests, suite 146 green). ALNS (destroy/repair, adaptive operator weights, SA acceptance)
+      minimising worst-case mission-failure, VALIDATED to reach the oracle's loss_det exactly;
+      shortest-path naive reference; `classical_baselines` eval harness. Obj-5 ladder (110->135 N=3):
+      shortest_path 1.000 > ALNS 0.904 (= optimal deterministic) >> SACRED equilibrium 0.328.
 - [ ] **M3. Train SACRED vs the interdictor** (⛔K launch; pre-register a gen09 ledger): confirm
       SACRED LEARNS the ~0.31 mission-failure mixed strategy vs ALNS's ~0.8 and vs a non-adversarial
       SAC, on a probe-selected high-headroom instance; seeds; best-checkpoint; an entropy floor to
