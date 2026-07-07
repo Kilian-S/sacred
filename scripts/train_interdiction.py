@@ -112,13 +112,14 @@ def _prot_transition(obs, first_hop, reward, mask) -> SMDPTransition:
 
 def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial, eval_every, sol,
                    reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0, window=500,
-                   mode="first_hop", attacker_mode="latest"):
+                   mode="first_hop", attacker_mode="latest", smooth_tau=0.05, smooth_window=250):
     torch.manual_seed(seed); np.random.seed(seed)
     prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=lr_actor,
                           autotune_alpha=autotune_alpha, alpha_init=alpha_init, device="cpu")
     committed = None
     br_history: list[int] = []   # every BR iset computed so far: the attacker's FP mixture (B2-P2)
+    smooth_probs = None          # smooth-FP attacker distribution over isets (B2-P3)
     rng = np.random.default_rng(seed)
     history = []
     played = np.zeros(env.game.n_routes)   # empirical route-play histogram (fictitious-play average)
@@ -131,6 +132,14 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
             avg = played / played.sum() if played.sum() > 0 else np.ones(env.game.n_routes) / env.game.n_routes
             committed, _ = best_response_attacker(env.game, avg)
             br_history.append(int(committed))
+            if attacker_mode == "smooth":
+                # smooth fictitious play (B2-P3): softmax best response to the defender's RECENT
+                # play. Mixed against a mixed defender (no cycling pressure), sharp against a
+                # parked one (drift punished within ~smooth_window sorties). tau probe-pinned.
+                recent = _hist(played_seq[-smooth_window:], env.game.n_routes)
+                e = recent @ env.game.payoff
+                z = np.exp((e - e.max()) / smooth_tau)
+                smooth_probs = z / z.sum()
         if mode == "walk":
             # hop-by-hop route choice on the candidate-route trie (shared-edge instances).
             obs, done, ri = env.begin_walk()
@@ -150,11 +159,15 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
         played[ri] += 1.0
         played_seq.append(ri)
         if adversarial:
-            # latest = the current pure BR held for a block (B2-P: last-iterate cycling).
-            # mixture = sample from the attacker's HISTORICAL BR mixture each sortie (two-sided
-            # fictitious play, B2-P2): a slowly-varying MIXED attacker whose average converges,
-            # so the defender's entropy-regularised best response is itself mixed and stable.
-            iset = committed if attacker_mode == "latest" else br_history[int(rng.integers(len(br_history)))]
+            # latest = the current pure BR held for a block (B2-P: over-disciplines -> cycling).
+            # mixture = uniform over ALL past BRs (B2-P2: goes stale -> cost-gradient parking).
+            # smooth = smooth fictitious play (B2-P3): sample from softmax(e/tau) vs recent play.
+            if attacker_mode == "latest":
+                iset = committed
+            elif attacker_mode == "mixture":
+                iset = br_history[int(rng.integers(len(br_history)))]
+            else:
+                iset = int(rng.choice(len(smooth_probs), p=smooth_probs))
             env.commit(iset)
             out = env.resolve(ri)
         else:
@@ -206,9 +219,11 @@ def main():
                    help="lo,hi: heterogeneous soft interception (I3 asymmetric instance); '' = hard")
     p.add_argument("--route-mode", type=str, default="first_hop", choices=("first_hop", "walk"),
                    help="walk = hop-by-hop trie routing (REQUIRED for shared-edge instances, k-extra > 0)")
-    p.add_argument("--attacker-mode", type=str, default="latest", choices=("latest", "mixture"),
-                   help="mixture = sample each sortie's interdiction from the attacker's historical "
-                        "BR mixture (two-sided fictitious play, B2-P2); latest = B2-P behaviour")
+    p.add_argument("--attacker-mode", type=str, default="latest", choices=("latest", "mixture", "smooth"),
+                   help="latest = pure BR held per block (B2-P); mixture = uniform over all past BRs "
+                        "(B2-P2); smooth = smooth fictitious play, softmax BR to recent play (B2-P3)")
+    p.add_argument("--smooth-tau", type=float, default=0.05, help="smooth-FP softmax temperature")
+    p.add_argument("--smooth-window", type=int, default=250, help="smooth-FP targeting window (plays)")
     p.add_argument("--window", type=int, default=500, help="trailing-window size for empirical play")
     p.add_argument("--json-out", type=str, default="", help="write the result record here (matrix aggregation)")
     args = p.parse_args()
@@ -249,7 +264,8 @@ def main():
                                              batch_size=args.batch_size, seed=args.seed, adversarial=True,
                                              eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
                                              lr_actor=args.lr_actor, window=args.window, mode=args.route_mode,
-                                             attacker_mode=args.attacker_mode)
+                                             attacker_mode=args.attacker_mode,
+                                             smooth_tau=args.smooth_tau, smooth_window=args.smooth_window)
     sfin = final_metrics(sprot, env, sseq, args.window, args.route_mode, spol)
     eq_cost = float(sol.defender_strategy @ env.game.travel_cost)
     print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}, band={band}, mode={args.route_mode}, "
@@ -277,6 +293,7 @@ def main():
         record = {"od": args.od, "K": args.K, "band": band, "seed": args.seed,
                   "sorties": args.sorties, "window": args.window, "mode": args.route_mode,
                   "attacker_mode": args.attacker_mode,
+                  "smooth_tau": args.smooth_tau, "smooth_window": args.smooth_window,
                   "tap_k": TAP_K, "loss_det": sol.loss_det, "loss_mixed": sol.value,
                   "equilibrium_defender": sol.defender_strategy.tolist(),
                   "equilibrium_cost": eq_cost, "route_costs": env.game.travel_cost.tolist(),

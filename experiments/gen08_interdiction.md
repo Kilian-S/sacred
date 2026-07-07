@@ -392,11 +392,16 @@ STRONG within 0.05 of 0.167. Prediction: `Expl_TAP(sacred) <= 0.30` with H_pol s
 (not collapsing) and expl_policy flat over the last 4 evals. Smoke = 1000 sorties (the B2-P2
 lesson: long enough to see the drift signature in H_pol/expl_policy), authorised with the build.
 
-**EXIT CRITERION (pre-committed): B2-P3 is the LAST dynamics iteration.** If its TAP primary
-fails, we stop tuning training dynamics, invoke B2-P's pre-registered average-strategy fallback
-(sacred's logged mixture 0.242-0.261 vs vanilla 0.429-0.445, 3/3: the deployable-mixture claim,
-acknowledged weaker), and spend the remaining calendar on the pre-registered sweeps (waves A/C),
-the learned-antagonist co-evolution demonstration, and writing. **Launch: awaits Kilian.**
+**EXIT CRITERION (pre-committed; CONFIRMED BY KILIAN 2026-07-07: "take the fallback now / Build
+B2-P3. However, this is the last dynamics iteration. Otherwise we just use the fallback!").**
+The average-strategy fallback is the STANDING thesis claim as of now: sacred's logged
+fictitious-play mixture from B2-P at exploitability 0.242-0.261 vs vanilla 0.429-0.445 (3/3
+seeds; uniform 0.455, shortest-path 1.000, equilibrium 0.167), deployable as the planner's
+sampled route table; acknowledged as the weaker (average-strategy) form of the claim. B2-P3 is
+the LAST dynamics iteration and is UPGRADE-ONLY: if its TAP primary passes, the claim upgrades
+to the policy form; if it fails, the fallback stands, dynamics work ends, and the remaining
+calendar goes to the pre-registered sweeps (waves A/C), the learned-antagonist co-evolution
+demonstration, and writing.
 
 ## Commands (sketch; exact + SHA at launch)
 
