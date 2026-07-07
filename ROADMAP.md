@@ -174,9 +174,13 @@ banked headline; this is the extension that meets all five objectives and wins b
       gap median 0.48 (N=2) across 20 OD pairs, growing with fleet size; the deterministic coordinator
       (a real ALNS problem) is beaten on its cost-security frontier; a risk-neutral objective is the
       trap; boundary K < #routes. ALL FIVE objectives confirmed meetable.
-- [ ] **M1. Multi-convoy env** (⛔K build): N convoys, joint first-hop/walk routing, hidden K-asset
-      interdictor, SOFT interception (per-edge survival), mission-failure reward (loss if ANY convoy
-      lost). M0-style fidelity gate vs the multi-convoy oracle. Reuses the single-convoy env + oracle.
+- [x] **M1. Multi-convoy env: DONE 2026-07-07** (`src/baselines/multiconvoy_oracle.py`,
+      `src/envs/multiconvoy_interdiction.py`, +11 tests, suite 142 green). N convoys, sequential
+      per-convoy routing (earlier convoys' routes exposed so a policy can correlate), hidden K-asset
+      interdictor, SOFT interception, mission-failure reward, occupancy exploitability yardstick.
+      **G-M1 fidelity gate PASSES** (env reproduces loss_det/loss_mixed vs the oracle by Monte-Carlo);
+      N=1 reduces exactly to single-convoy. Interactive Kaliningrad visualiser:
+      `scratch/{multiconvoy_kaliningrad_data,build_multiconvoy_view}.py` (classical 90.4% vs SACRED 32.8%).
 - [ ] **M2. ALNS fleet-coordination baseline** (Obj-5 metaheuristic): coordinate N convoys' routes
       minimising cost-vs-risk = the non-degenerate classical opponent (the oracle's loss_det); plus a
       shortest-path/greedy reference.
