@@ -159,6 +159,22 @@ reported as measured: the strong form (within 0.05 of the equilibrium) was not m
 itself a contribution: the thesis can now say not only THAT adversarial training works here but
 WHICH realisation of it converges and why.
 
+**Act IV, the multi-convoy turn (2026-07-07).** Broadening the single-convoy headline exposed two
+things: on a SYMMETRIC instance (uniform equilibrium) adversarial training is a liability (it
+destabilises the defender; the F1 sweep was killed), and single-convoy cannot furnish Obj-5's "SOTA
+adaptive metaheuristic" opponent (one convoy makes ALNS degenerate to shortest-path). The resolution,
+proven at the oracle level before any training (`scratch/multiconvoy_*.py`), is MULTI-CONVOY
+interdiction under a LOSS-AVERSE (mission-failure) objective with soft interception: there a
+deterministic fleet coordinator (what an ALNS produces) must spread convoys across routes yet stays
+70-90% mission-exploitable, while SACRED's randomised joint routing holds mission-failure to ~30%, a
+gap that GENERALISES (median 0.48 across 20 OD pairs) and GROWS with fleet size. A risk-neutral
+objective, by contrast, lets deterministic spreading substitute for mixing (the trap), so the
+loss-averse objective is both the realistic model and the one where adversarial routing demonstrably
+pays. This meets all five objectives (Obj-5 finally gets a non-degenerate metaheuristic to beat;
+Obj-4 gains fleet composition) and sits closer to the SDVRP. The single-convoy result remains the
+banked proof; the multi-convoy game is the thesis's culminating Results act, pending the build and
+training.
+
 ## Objective-by-objective arc
 
 **Obj 1 (zero-sum game formulation).** Act I formulates it. Act II shows the naive instantiation

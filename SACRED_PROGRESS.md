@@ -426,3 +426,30 @@
   convergent realisation identified), Obj 5 (the exploitability ladder + cost-security frontier;
   the named non-adversarial control finally beaten in a pre-registered primary). Appears as the
   thesis's final Results act.
+
+## 14. F1 single-convoy sweeps -> the MULTI-CONVOY PIVOT  (2026-07-07 · branch `gen08-interdiction` · `scratch/multiconvoy_*.py`, `experiments/gen08_interdiction.md`)
+
+- **Goal (prospective):** broaden the banked B2-P3 single-convoy headline with the pre-registered
+  wave A/C sweeps (F1), then, on hitting walls, find a direction where SACRED demonstrably works AND
+  all five research objectives are met.
+- **Headline results:** F1 (single-convoy symmetric K-sweep) LAUNCHED then KILLED: on the symmetric
+  instance (uniform == equilibrium) adversarial training is a LIABILITY and sacred DESTABILISES (A-K1
+  sacred TAP 0.38/1.00/0.40 vs vanilla ~0.31; seed 1 full collapse + alpha runaway). Multi-convoy
+  ORACLE (no training): SOFT interception + a LOSS-AVERSE (mission-failure) objective gives SACRED a
+  large, general win (N=2 gap median 0.48 across 20 OD pairs, growing with fleet size), a real ALNS
+  to beat (cost-vs-risk coordination, SACRED dominates the frontier), and meets ALL FIVE objectives;
+  a risk-neutral objective is the trap (dilutes to ~0).
+- **What we learned:** (i) on a symmetric/flat game adversarial training destabilises (pick instances
+  where vanilla provably cannot imitate the equilibrium); (ii) single-convoy cannot meet Obj-5's
+  metaheuristic clause (ALNS = shortest-path); (iii) multi-convoy + soft + loss-averse resolves both,
+  and the OBJECTIVE FUNCTION is load-bearing (loss-averse required and realistic); (iv) the win
+  generalises across the graph and scales with fleet size.
+- **Thesis progression:** the multi-convoy interdiction oracle (`scratch/multiconvoy_*.py`) as a new
+  computable ground truth; the objective-spectrum + cost-frontier analyses; the direction re-pointed
+  from single-convoy to multi-convoy to satisfy the full objective set.
+- **What it means for the thesis:** the positive claim broadens from "single-convoy shared-edge"
+  (banked, B2-P3) to "multi-convoy contested resupply where adversarially-trained randomised routing
+  beats a coordinating classical metaheuristic under a realistic mission-failure objective", meeting
+  all five objectives. Oracle-level proof done; the build + training is the next act.
+- **Thesis fit:** Obj 1-5 all met (Obj-5 metaheuristic fixed; Obj-4 fleet composition added); the
+  multi-convoy game is the thesis's final Results act. Single-convoy stays the proven headline.

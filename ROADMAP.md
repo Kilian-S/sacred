@@ -11,6 +11,12 @@
 > experimental freeze **Aug 3, HARD (Kilian 2026-07-06)**; after Aug 3, writing wins every
 > conflict.
 
+> **⚠️⚠️ ACTIVE PLAN = PHASE M (MULTI-CONVOY), 2026-07-07.** Single-convoy Phase I is banked (B2-P3)
+> but F1 (the symmetric sweep) destabilised SACRED and single-convoy cannot meet Obj-5's metaheuristic
+> clause; the active build is now MULTI-CONVOY interdiction (soft interception + a loss-averse
+> mission-failure objective), oracle-proven to meet all five objectives. See
+> `REDESIGN_INTERDICTION.md` §10 and Phase M below.
+>
 > **⚠️ ACTIVE PLAN = PHASE I (INTERDICTION) BELOW.** The redesign (`REDESIGN_INTERDICTION.md`,
 > approved 2026-07-06) supersedes the contested-destination exploitability plan. Phases A-E further
 > down are HISTORICAL: Phase A (sign-off, probes) and Phase B (the five learnability fixes, suite
@@ -153,6 +159,33 @@ fact-checking; poster; final HANDOVER refresh + freeze tag.
 smoothing/optimistic or extragradient dynamics -> last-iterate to Nash); multi-convoy richness
 (I5: coordinated sortie spreading); K>=2 co-evolution; publication (Kilian's call, parked);
 BLADE/Panopticon demo; full SBO loop.
+
+## Phase M: multi-convoy interdiction (ACTIVE, 2026-07-07 -> Aug 3 freeze)
+
+**Why (supersedes the single-convoy F1 sweeps):** single-convoy cannot meet Obj-5's metaheuristic
+clause (ALNS degenerates to shortest-path) and the symmetric single-convoy sweep destabilises SACRED
+(F1 killed). Under Kilian's "make SACRED work" mandate the programme extends to MULTI-CONVOY
+interdiction. Design: `REDESIGN_INTERDICTION.md` §10. Oracle findings + forward record:
+`experiments/gen08_interdiction.md` (multi-convoy pivot section). Single-convoy B2-P3 stays the
+banked headline; this is the extension that meets all five objectives and wins bigger.
+
+- [x] **M0. Oracle proof: DONE 2026-07-07** (`scratch/multiconvoy_{probe,scan,spectrum,cost}.py`, NO
+      training). Multi-convoy + SOFT interception + a LOSS-AVERSE (mission-failure) objective: SACRED
+      gap median 0.48 (N=2) across 20 OD pairs, growing with fleet size; the deterministic coordinator
+      (a real ALNS problem) is beaten on its cost-security frontier; a risk-neutral objective is the
+      trap; boundary K < #routes. ALL FIVE objectives confirmed meetable.
+- [ ] **M1. Multi-convoy env** (⛔K build): N convoys, joint first-hop/walk routing, hidden K-asset
+      interdictor, SOFT interception (per-edge survival), mission-failure reward (loss if ANY convoy
+      lost). M0-style fidelity gate vs the multi-convoy oracle. Reuses the single-convoy env + oracle.
+- [ ] **M2. ALNS fleet-coordination baseline** (Obj-5 metaheuristic): coordinate N convoys' routes
+      minimising cost-vs-risk = the non-degenerate classical opponent (the oracle's loss_det); plus a
+      shortest-path/greedy reference.
+- [ ] **M3. Train SACRED vs the interdictor** (⛔K launch; pre-register a gen09 ledger): confirm
+      SACRED LEARNS the ~0.31 mission-failure mixed strategy vs ALNS's ~0.8 and vs a non-adversarial
+      SAC, on a probe-selected high-headroom instance; seeds; best-checkpoint; an entropy floor to
+      avoid the symmetric-instance collapse.
+- [ ] **M4. Sweeps + objectives:** N / K / connectivity curves (varied disruption, Obj-5);
+      learned-antagonist co-evolution (Obj-1/3); Obj-4 placement + fleet size; ZST. Each launch ⛔K.
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 

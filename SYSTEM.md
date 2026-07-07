@@ -38,7 +38,24 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
-**UPDATE 2026-07-07 (latest): THE HEADLINE IS BANKED.** B2-P3 passed the pre-registered
+**UPDATE 2026-07-07 (evening, LATEST): MULTI-CONVOY PIVOT.** After B2-P3 banked the single-convoy
+shared-edge headline, F1 (the single-convoy SYMMETRIC K-sweep) was launched then KILLED: the
+symmetric instance is the anti-goal (uniform == equilibrium -> vanilla mixes incidentally, sacred
+DESTABILISES under long training: A-K1 sacred TAP 0.38/1.00/0.40 vs vanilla ~0.31, seed 1 full
+collapse + alpha runaway = the early-campaign flat-landscape SAC instability). Under Kilian's "make
+SACRED work" mandate (invariants: SAC, adversarial training, deep RL, robust routing), the direction
+is now MULTI-CONVOY interdiction, which the ORACLE proves (no training; `scratch/multiconvoy_*.py`)
+makes SACRED win AND fixes the Obj-5 metaheuristic gap, in the realistic regime of SOFT interception
++ a LOSS-AVERSE (mission-failure) objective: N=2 mission-failure gap median 0.48 across 20 OD pairs
+(80% > 0.30), growing with fleet size; the deterministic coordinator (a real ALNS problem) is beaten
+on its cost-security frontier; a risk-NEUTRAL objective dilutes it to ~0 (the trap); boundary K <
+#routes. ALL FIVE objectives now met. Single-convoy B2-P3 remains the banked headline; multi-convoy
+is the extension. Oracle proof DONE; the BUILD (multi-convoy env + mission reward + ALNS baseline +
+training) is next. **New dogma: on a SYMMETRIC/flat game (uniform equilibrium) adversarial training
+is a LIABILITY (it destabilises); pick instances where vanilla provably cannot imitate the
+equilibrium.** See `HANDOVER.md`, `REDESIGN_INTERDICTION.md` §10, `ROADMAP.md`.
+
+**UPDATE 2026-07-07 (earlier): THE HEADLINE IS BANKED.** B2-P3 passed the pre-registered
 sacred-vs-vanilla primary on the shared-edge interdiction instance (TAP ladder shortest 1.000 >
 vanilla 0.477 > uniform 0.455 > SACRED 0.362 >> equilibrium 0.167; 3/3 seeds; ledger
 `experiments/gen08_interdiction.md`, SHA `874d3f3`). Dynamics work CLOSED by Kilian's

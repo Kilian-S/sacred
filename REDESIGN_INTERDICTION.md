@@ -1,5 +1,16 @@
 # REDESIGN_INTERDICTION.md: the winnable redesign (opened 2026-07-06)
 
+> **⚠️ UPDATE 2026-07-07 (LATEST DIRECTION): MULTI-CONVOY interdiction (see §10).** The single-convoy
+> security game below is PROVEN and banked (B2-P3, shared-edge, smooth-FP: sacred beats vanilla). But
+> single-convoy cannot satisfy Obj-5's metaheuristic clause (one convoy -> ALNS degenerates to
+> shortest-path), and the symmetric single-convoy sweep DESTABILISES SACRED (F1 killed 2026-07-07).
+> Under Kilian's "make SACRED work" mandate the direction extends to **MULTI-CONVOY** interdiction
+> with **soft (probabilistic) interception + a loss-averse (mission-failure) objective**, which the
+> oracle proves (§10; `scratch/multiconvoy_*.py`) makes SACRED win, generalises across the graph,
+> scales with fleet size, gives a real ALNS to beat, and meets ALL FIVE objectives. Single-convoy
+> stays the banked headline; multi-convoy is the extension. §0-9 below are the (still-valid)
+> single-convoy security game; §10 is the current multi-convoy direction.
+>
 > **STATUS: APPROVED DIRECTION (Kilian, 2026-07-06). GAME-THEORETICALLY PROVEN; build not yet
 > started.** This is the project's CURRENT NORTH STAR: a new agent should read this file first
 > (after `HANDOVER.md`). It supersedes the gen07 *destination-arena exploitability* attempt, which
@@ -209,3 +220,47 @@ shortest-path. Full pre-registration in a new ledger (`gen08_interdiction`) befo
   precomputed candidate route set. Start with next-hop routing (reuses `routing_mode`), so the
   mixed strategy emerges from SAC's per-step entropy; the candidate-set form is a fallback if
   credit assignment over long paths bites (the equilibrium oracle uses the candidate-set form).
+
+## 10. Multi-convoy extension (2026-07-07): the direction that meets all five objectives
+
+Single-convoy (§0-9) is proven and banked (B2-P3), but two facts force the extension:
+- **Obj-5's metaheuristic clause is unmeetable single-convoy:** one convoy on one route makes a SOTA
+  adaptive metaheuristic (ALNS) degenerate to shortest-path, so there is no non-trivial classical
+  opponent to beat (the deterministic optimum IS shortest-path).
+- **The symmetric single-convoy sweep destabilises SACRED** (F1 killed): where uniform == equilibrium,
+  vanilla mixes incidentally and adversarial training is a liability (it destabilises the defender).
+
+**The multi-convoy game.** N convoys route base->FOB; the interdictor commits K assets (hidden). The
+defender chooses a JOINT routing (an occupancy of convoys over routes: a coordination problem a
+metaheuristic can solve, and can randomise: a mixed strategy SACRED learns). The oracle
+(`scratch/multiconvoy_probe.py`, generalising `interdiction_oracle`) computes loss_det (best
+DETERMINISTIC joint plan = what ALNS produces), loss_mixed (minimax randomised = what SACRED targets),
+and the gap.
+
+**The key result (oracle-proven; three stress-test probes; NO training):**
+- **The OBJECTIVE decides everything.** Under a RISK-NEUTRAL objective (expected fraction of convoys
+  lost), deterministic spreading substitutes for randomisation and the SACRED gap collapses toward 0
+  as the fleet grows (the trap). Under a LOSS-AVERSE objective (mission fails if ANY convoy is lost,
+  P(>=1 lost)), mixing is irreplaceable and the gap holds/grows. The loss-averse objective is BOTH
+  the realistic model of contested resupply AND the one where adversarial routing pays: a finding.
+- **SOFT (probabilistic) interception** is required so the deterministic optimum genuinely has to
+  coordinate (spread across routes to hedge), keeping the metaheuristic non-degenerate (hard
+  interception + mission collapses the deterministic plan back to "stack on the cheapest route").
+- **Generalises** (`multiconvoy_scan.py`): 20 random high-connectivity OD pairs, N=2 mission-failure
+  gap median 0.48 (range 0.22-0.61); 80% > 0.30; 80% deterministic-coordination non-degenerate.
+- **Scales with fleet size** (`multiconvoy_spectrum.py`): the mission gap GROWS with N (e.g. 110->135
+  K=1: 0.43 -> 0.62 across N=1..5); boundary K < #routes (K >= #routes saturates coverage).
+- **A real metaheuristic to beat + SACRED dominates its frontier** (`multiconvoy_cost.py`): the
+  deterministic coordinator trades fleet travel-cost against interception risk (a multi-objective VRP
+  an ALNS solves), and SACRED's randomised frontier sits below it at every affordable budget.
+- **ALL FIVE objectives met:** Obj-1 (multi-convoy asymmetric zero-sum game, computable equilibrium),
+  Obj-2 (multi-convoy env layer), Obj-3 (SAC + learned-interdictor ATLA + ERB), Obj-4 (interdiction-
+  aware placement PLUS fleet composition, N a design lever), Obj-5 (vs non-adversarial SAC AND a
+  non-degenerate ALNS, under varied disruption = K/N/connectivity sweeps). Closer to the SDVRP.
+
+**Build (next; Kilian approved 2026-07-07):** multi-convoy env (joint routing + mission-failure
+reward, soft interception), an ALNS fleet-coordination baseline (the Obj-5 metaheuristic), then train
+SACRED vs the interdictor and confirm it LEARNS the ~0.31 mission-failure strategy against ALNS's
+~0.8. Caveats: oracle-level so far (learning the larger joint action space is the empirical test);
+the mission objective is a modelling choice (defensible and oracle-justified). Plan: `ROADMAP.md`
+Phase M; record: `experiments/gen08_interdiction.md` (multi-convoy pivot section).

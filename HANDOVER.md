@@ -1,5 +1,40 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
 
+> **★★ LATEST DIRECTION (2026-07-07 evening): THE MULTI-CONVOY PIVOT. Read THIS banner first, then
+> the B2-P3 START HERE banner below.** After B2-P3 banked the single-convoy shared-edge headline we
+> tried to broaden it (F1: the wave A/C sweeps) and hit two walls that redirected the programme:
+> 1. **F1 launched then KILLED.** The single-convoy SYMMETRIC K-sweep (wave A, 33->71 disjoint) is
+>    the ANTI-GOAL: uniform == equilibrium at every K, so vanilla mixes incidentally near-optimally
+>    and adversarial training is a LIABILITY, sacred DESTABILISES under long training (A-K1 sacred
+>    TAP 0.38 / 1.00 / 0.40 vs vanilla ~0.31; seed 1 FULLY collapsed with alpha runaway, the
+>    flat-landscape SAC instability from the early campaign). Dropped from the deliverable.
+> 2. **Obj-5's metaheuristic clause cannot be met by single-convoy.** One convoy on one route makes
+>    a "SOTA adaptive metaheuristic" (ALNS) degenerate to shortest-path, so there is no non-trivial
+>    classical opponent to beat.
+> Under Kilian's **"make SACRED work"** mandate (HARD invariants: SAC, adversarial training, deep RL,
+> robust routing; everything else fluid) the direction is now **MULTI-CONVOY interdiction**, which
+> the ORACLE proves (three stress-test probes `scratch/multiconvoy_{probe,scan,spectrum,cost}.py`,
+> NO training) both makes SACRED win AND fixes Obj-5, in the realistic regime of **SOFT
+> (probabilistic) interception + a LOSS-AVERSE (mission-failure, P(>=1 convoy lost)) objective**:
+> - GENERALISES: 20 random high-connectivity OD pairs, N=2 mission gap median **0.48** (80% > 0.30,
+>   80% deterministic-coordination non-degenerate); N=3 median 0.58 -> the gap GROWS with fleet size.
+> - REAL METAHEURISTIC: the deterministic coordinator trades travel-cost vs interception risk (a
+>   genuine ALNS problem -> Obj-5 non-degenerate); SACRED dominates its cost-security frontier.
+> - THE TRAP: a RISK-NEUTRAL (expected-fraction) objective dilutes the gap to ~0 (deterministic
+>   spreading substitutes for mixing) -> the loss-averse objective is REQUIRED and also the realistic
+>   one. Boundary: K < #routes (else the interdictor saturates coverage).
+> - **ALL FIVE objectives now met** (Obj-5 metaheuristic FIXED; Obj-4 gains fleet composition; closer
+>   to SDVRP). Confirmed against Kilian's "confirm all five or ask" gate.
+> **Single-convoy B2-P3 (shared-edge, smooth-FP) stays the BANKED, proven headline; multi-convoy is
+> the EXTENSION that meets the full objective set and wins bigger.** STATE: oracle proof DONE
+> (positive, oracle-level only); the BUILD is next (multi-convoy env + mission-failure reward + ALNS
+> baseline + training). Design: `REDESIGN_INTERDICTION.md` §10. Plan: `ROADMAP.md` (new phase).
+> Record: `experiments/gen08_interdiction.md` (multi-convoy pivot section) + `SACRED_PROGRESS.md`
+> entry 14. **Operating rules UNCHANGED: never launch training without Kilian's explicit
+> in-conversation go (F1 itself was killed on his call); oracle probes are free; plan-first; no
+> multiple-choice prompts; new dogma: on a symmetric/flat game adversarial training DESTABILISES,
+> pick instances where vanilla provably cannot imitate the equilibrium.**
+>
 > **★ START HERE (new agent, 2026-07-07 end-of-session; the previous instance signed off after
 > the B2-P3 PASS). READ ORDER for exact parity:**
 > 1. **`REDESIGN_INTERDICTION.md`**: the north star: why the pivot was necessary (§0.5 full

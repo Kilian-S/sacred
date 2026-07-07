@@ -1,6 +1,14 @@
 # TASK.md: state record + plan
 
-> **⚠️ 2026-07-06 (latest): CURRENT DIRECTION = the INTERDICTION-GAME REDESIGN. Read
+> **⚠️ 2026-07-07 (LATEST): MULTI-CONVOY PIVOT.** The single-convoy interdiction headline is banked
+> (B2-P3, shared-edge), but (a) the symmetric-instance sweep destabilises SACRED (F1 killed) and
+> (b) single-convoy cannot satisfy Obj-5's metaheuristic clause (ALNS degenerates to shortest-path).
+> Under the "make SACRED work" mandate the direction is now MULTI-CONVOY interdiction (soft
+> interception + loss-averse mission-failure objective), oracle-proven to win AND meet all five
+> objectives (`scratch/multiconvoy_*.py`). Read `HANDOVER.md` -> `REDESIGN_INTERDICTION.md` §10 ->
+> `ROADMAP.md` -> `experiments/gen08_interdiction.md`. Everything below is HISTORICAL.
+>
+> **⚠️ 2026-07-06 (interdiction pivot): CURRENT DIRECTION = the INTERDICTION-GAME REDESIGN. Read
 > `REDESIGN_INTERDICTION.md` first, then `ROADMAP.md` Phase I (active plan).** Congestion adversary
 > is unwinnable (flat attack landscape); pivot to the interdiction security game where the
 > mixed-strategy defender provably wins (proven det 100%→mixed 17-33% on Kaliningrad). Kaliningrad,

@@ -444,6 +444,95 @@ Anchors: shortest_path 1.000 @ 4.1; uniform 0.455 @ 12.4; equilibrium 0.167 @ 16
   further tuning). Next per ROADMAP I3: waves A/C (sweep curves), then the learned-antagonist
   co-evolution demonstration (I3.4), then I4 extensions: each launch ⛔K.
 
+### F1 launch (waves A + C: K-sweep + connectivity contrast): LAUNCHED 2026-07-07, attacker=LATEST
+
+**Method correction (smoke-driven, this session; a reportable finding).** F1 runs A/C with the
+PRE-REGISTERED `latest` attacker (BR to the empirical average), NOT the B2-P3 `smooth` attacker.
+A matched-seed smoke study (seed 0, 500 sorties, A-K3 33->71) established that the working
+fictitious-play discipline is INSTANCE-STRUCTURE-DEPENDENT:
+- `smooth` COLLAPSES the defender on the symmetric DISJOINT instance: sacred TAP 0.790 (WORSE than
+  vanilla 0.668), H_pol 1.43 -> 0.36, cost(TAP) 10.5 << eq cost 16.0 = cost-gradient PARKING (over
+  the many near-equivalent isets the smooth attacker is inherently diffuse -> cannot punish
+  concentration -> the travel-cost gradient parks the defender on the cheap route).
+- `latest` CONVERGES there: sacred TAP 0.615 (< vanilla 0.661), expl_policy 0.812 -> 0.581, H_pol
+  -> 1.77, cost(TAP) 14.8 ~ eq 16.0 (spreading) = the I2 positive-result mechanism.
+- `smooth` stays HEALTHY on the SHARED-EDGE B2 instance (reproduced this session: sacred TAP 0.282
+  < vanilla 0.383, H_pol ~1.7 stable, cost 16.9 spreading), matching the banked B2-P3 smoke.
+So DISJOINT sweeps (A/C) -> `latest`; SHARED-EDGE headline (B2) -> `smooth` (where `latest` cycles).
+The FP smoothing that fixes last-iterate cycling on shared-edge instances OVER-softens the attacker
+on symmetric disjoint ones: a methodological contribution, not an inconsistency.
+
+**Anchors (oracle probe pinned before launch; `scratch/gen08_f1_probe.py`):**
+
+| cell | routes | loss_det | equilibrium | uniform | shortest |
+|---|---|---|---|---|---|
+| A K=1 | 6 | 1.000 | 0.167 | 0.167 | 1.000 |
+| A K=2 | 6 | 1.000 | 0.333 | 0.333 | 1.000 |
+| A K=3 | 6 | 1.000 | 0.500 | 0.500 | 1.000 |
+| C K=1 band(0.15,0.95) | 3 | 0.690 | 0.258 | 0.317 | 0.950 |
+
+tau=0.05 was re-probed and valid across all cells, but `latest` is used per the smoke above.
+
+**Config:** 12 cells = A x K{1,2,3} x seeds{0,1,2} (9) + C(110->135, band 0.15,0.95) K=1 x
+seeds{0,1,2} (3); 3000 sorties/arm; route-mode first_hop; attacker-mode latest; interception-loss
+10, travel-cost-weight 0.05, reward-scale 1.0 (train_interdiction.py defaults, as B2-P3). Code SHA
+`61f15f8` (no code change; ledger + scratch probes/orchestrator are uncommitted docs at launch).
+3-parallel detached orchestrator `scratch/gen08_f1_orchestrator.sh`; outputs
+`models/runs/gen08_interdiction_I3/{A_K*_seed*,C_seed*}.{json,log}`. Timing: smoke-measured
+~0.28 s/sortie -> ~28 min/cell -> ~2 h at 3-parallel (script pins 4 torch threads -> 3-parallel =
+12 threads on 10 cores, mild oversubscription; ETA refined from live throughput).
+
+**Readout (PRE-REGISTERED; curves, NOT a sacred-vs-vanilla gap gate):** all four exploitability
+readings per cell. Wave A = deterministic-vs-mixed / equilibrium-TRACKING curve (shortest_path
+pinned at 1.000 at every K while sacred should track K/6 = 0.167/0.333/0.500); NO gap claim
+(symmetric: uniform == equilibrium, vanilla mixes incidentally, smoke gap ~0.04-0.05). Wave C =
+low-connectivity contrast (thin headroom, uniform/eq 1.23x); NO gap claim. Both feed Obj-5's
+"varied network disruption" curves. Results appended when the 12 cells complete.
+
+**Commands (the 12, as launched):**
+```bash
+for k in 1 2 3; do for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --od 33-71 --K $k --sorties 3000 --seed $s --eval-every 250 --attacker-mode latest \
+  --json-out models/runs/gen08_interdiction_I3/A_K${k}_seed${s}.json; done; done
+for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --od 110-135 --K 1 --sorties 3000 --seed $s --edge-vuln-band 0.15,0.95 --eval-every 250 \
+  --attacker-mode latest --json-out models/runs/gen08_interdiction_I3/C_seed${s}.json; done
+```
+
+## F1 RESULT + the MULTI-CONVOY PIVOT (2026-07-07 evening)
+
+**F1 (waves A/C, single-convoy, latest) LAUNCHED then KILLED after the first cell (A-K1) completed.**
+A-K1 (33->71 disjoint symmetric, equilibrium 0.167): vanilla TAP 0.306/0.313/0.324 vs sacred TAP
+**0.380 / 1.000 / 0.403** (seed 1 FULLY collapsed: policy -> 1.0, H_pol -> 0.00, alpha runaway
+1.4->2.4). Mechanism: on the SYMMETRIC instance uniform == equilibrium, so vanilla's incidental
+mixing is near-optimal and adversarial training is a LIABILITY; over 3000 sorties SAC's temperature
+dynamics tip the defender off the uniform knife-edge (the flat-landscape instability of the early
+campaign). Matched-seed smoke study (500 sorties): smooth-FP collapses on the disjoint instance too
+(cost-gradient parking), latest converges but still destabilises late; both confirm the symmetric
+instance is the anti-goal. Timing also ~2.6x the smoke projection under 3-parallel (12 threads / 10
+cores). Killed at Kilian's call.
+
+**The reframe (Kilian, "make SACRED work"; invariants SAC + adversarial + deep RL + robust routing).**
+Single-convoy also cannot meet Obj-5's metaheuristic clause (one convoy -> ALNS = shortest-path).
+Gate imposed by Kilian: proceed only if ALL FIVE objectives can still be met.
+
+**Multi-convoy oracle (M0, NO training; `scratch/multiconvoy_{probe,scan,spectrum,cost}.py`).** N
+convoys route base->FOB; the interdictor commits K assets; the defender chooses a joint occupancy
+(coordinate = an ALNS job, randomise = a SACRED mixed strategy). Findings:
+- **The OBJECTIVE is load-bearing.** RISK-NEUTRAL (E[fraction lost]) -> the gap collapses with fleet
+  size (deterministic spreading substitutes for mixing): the trap. LOSS-AVERSE (P(>=1 lost) =
+  mission-failure) on SOFT interception -> the gap HOLDS/GROWS: SACRED essential.
+- Generalises: 20 random high-connectivity OD pairs, N=2 mission gap median **0.48** (range
+  0.22-0.61; 80% > 0.30; 80% deterministic-coordination non-degenerate); N=3 median 0.58.
+- Representative (110->135 soft): N=2 loss_det 0.728 vs SACRED 0.314; N=3 loss_det 0.904 vs 0.328.
+- Scales with N; boundary K < #routes (K >= #routes saturates). Cost-frontier: the deterministic
+  coordinator trades cost vs risk (a real ALNS) and SACRED dominates it at every affordable budget.
+- ALL FIVE objectives meetable (Obj-5 metaheuristic FIXED; Obj-4 gains fleet composition).
+
+**Direction: BUILD multi-convoy (soft + mission)** per ROADMAP Phase M; the training generation gets
+its own gen09 ledger. Single-convoy B2-P3 stays the banked headline. `F1_orchestrator`, `A_K1_seed*`
+outputs retained under `models/runs/gen08_interdiction_I3/` (A-K1 is the recorded wave-A result).
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
