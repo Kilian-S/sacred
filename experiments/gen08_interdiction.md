@@ -413,6 +413,37 @@ for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
   --eval-every 250 --json-out models/runs/gen08_interdiction_I3/B2P3_seed$s.json; done
 ```
 
+### B2-P3 RESULT (2026-07-07, 3 seeds, SHA `874d3f3`): **PRIMARY PASSED (the programme's first sacred-vs-vanilla pass); claim upgraded to the policy form**
+
+| seed | arm | **expl_TAP (primary)** | expl_policy | expl_window | expl_avg | cost(TAP) |
+|---|---|---|---|---|---|---|
+| 0 | vanilla / sacred | **0.463 / 0.350** | 0.478 / 0.507 | 0.504 / 0.316 | 0.424 / 0.263 | 8.4 / 10.4 |
+| 1 | vanilla / sacred | **0.492 / 0.406** | 0.613 / 0.257 | 0.486 / 0.266 | 0.442 / 0.261 | 8.4 / 15.0 |
+| 2 | vanilla / sacred | **0.477 / 0.330** | 0.485 / 0.272 | 0.500 / 0.556 | 0.451 / 0.276 | 8.3 / 11.6 |
+
+Anchors: shortest_path 1.000 @ 4.1; uniform 0.455 @ 12.4; equilibrium 0.167 @ 16.0.
+
+- **PRIMARY PASS, every clause:** `Expl_TAP(sacred) < Expl_TAP(vanilla)` on 3/3 seeds; pooled
+  0.362 vs 0.477; and `Expl_TAP(sacred) < 0.455` (uniform anchor) on 3/3. Per Kilian's
+  pre-committed exit decision, the thesis claim UPGRADES from the average-strategy fallback to
+  the POLICY form. Headline ladder (TAP, pooled): shortest_path 1.000 > vanilla 0.477 >
+  uniform 0.455 > **sacred 0.362** >> equilibrium 0.167.
+- **The control validated the instance design a third time:** vanilla's TAP 0.463-0.492 sits
+  inside the oracle's cost-calibrated band (>= ~0.467) and ABOVE uniform on 3/3 seeds: on
+  shared-edge instances, cost-driven mixing is WORSE than naive noise: predictability with
+  extra steps. Sacred beats both on every seed, at clean cost 10.4-15.0 vs equilibrium 16.0.
+- **STRONG form NOT met (reported plainly):** distance-to-equilibrium 0.163-0.239 (the <= 0.05
+  bar); the TAP <= 0.30 prediction also missed (0.330-0.406). The smooth-FP policy is stable
+  and separated but lands ~half-way between uniform and the equilibrium; the average-play
+  reading (0.261-0.276) reproduces B2-P's and remains the closest quantity to the equilibrium.
+- Residual per-eval policy oscillation persists (seed 0 final-policy snapshot 0.507 vs its TAP
+  0.350): TAP, the pre-registered deployable estimator (a late-training policy ensemble), is
+  what stabilises: consistent with smooth-FP theory (smoothed iterates converge to the
+  smoothed-game equilibrium, not exactly Nash, and sampling noise remains).
+- **Dynamics work ENDS here per the pre-committed exit criterion** (upgrade achieved, no
+  further tuning). Next per ROADMAP I3: waves A/C (sweep curves), then the learned-antagonist
+  co-evolution demonstration (I3.4), then I4 extensions: each launch ⛔K.
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
