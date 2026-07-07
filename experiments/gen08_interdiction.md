@@ -403,6 +403,16 @@ to the policy form; if it fails, the fallback stands, dynamics work ends, and th
 calendar goes to the pre-registered sweeps (waves A/C), the learned-antagonist co-evolution
 demonstration, and writing.
 
+**Launch: B2-P3 LAUNCHED 2026-07-07 (authorised with the build decision); code SHA `874d3f3`.**
+Smoke (1000 sorties) passed all pre-registered signature checks before launch: H_pol stabilising
+1.7-1.9 (not collapsing), expl_policy flat after descent (0.31-0.32), TAP 0.277 < vanilla 0.398,
+cost(TAP) 16.3 ~ equilibrium cost 16.0 (spreading, not parking). Command:
+```bash
+for s in 0 1 2; do PYTHONPATH=. .venv/bin/python scripts/train_interdiction.py \
+  --k-extra 8 --route-mode walk --attacker-mode smooth --sorties 3000 --seed $s \
+  --eval-every 250 --json-out models/runs/gen08_interdiction_I3/B2P3_seed$s.json; done
+```
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash
