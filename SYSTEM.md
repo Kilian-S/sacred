@@ -38,7 +38,19 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
-**UPDATE 2026-07-06 (latest): THE INTERDICTION-GAME REDESIGN.** Read `REDESIGN_INTERDICTION.md`
+**UPDATE 2026-07-07 (latest): THE HEADLINE IS BANKED.** B2-P3 passed the pre-registered
+sacred-vs-vanilla primary on the shared-edge interdiction instance (TAP ladder shortest 1.000 >
+vanilla 0.477 > uniform 0.455 > SACRED 0.362 >> equilibrium 0.167; 3/3 seeds; ledger
+`experiments/gen08_interdiction.md`, SHA `874d3f3`). Dynamics work CLOSED by Kilian's
+pre-committed exit criterion. Remaining pre-freeze work: ROADMAP "Future work" F1-F5 (sweeps,
+co-evolution demo, Obj-4 oracle demonstrator, ZST, ERB), each launch ⛔K. Dogmas earned this
+arc: **short smokes validate plumbing, not slow-timescale dynamics** (use a 1000-sortie drift
+signature: entropy trend + policy-exploitability trend); **pre-commit an exit criterion before
+iterating on training dynamics** (it bounded the chase to three runs); **for fictitious-play
+learners, score the trailing-averaged policy (TAP), not mid-cycle snapshots**; **NEVER launch
+without Kilian's explicit go; no multiple-choice prompts, prose + firm recommendation.**
+
+**UPDATE 2026-07-06: THE INTERDICTION-GAME REDESIGN.** Read `REDESIGN_INTERDICTION.md`
 FIRST, then `ROADMAP.md` Phase I (build plan), then `THESIS_STORYLINE.md`, then
 `experiments/gen08_interdiction.md`. The gen03-06 campaign (below) and the gen07 exploitability
 follow-up established that adversarial RL cannot win with a CONGESTION adversary

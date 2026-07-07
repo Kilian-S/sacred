@@ -1,37 +1,40 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-06)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
 
-> **★ START HERE (new agent, 2026-07-06 end-of-session). READ ORDER for exact parity with the
-> previous instance:**
+> **★ START HERE (new agent, 2026-07-07 end-of-session; the previous instance signed off after
+> the B2-P3 PASS). READ ORDER for exact parity:**
 > 1. **`REDESIGN_INTERDICTION.md`**: the north star: why the pivot was necessary (§0.5 full
 >    evidence chain) + the equilibrium proof (§1).
-> 2. **`ROADMAP.md` Phase I**: the build plan; I0/I1/I1b/I2 are DONE (see below), I3 is next and
->    detailed there.
-> 3. **`experiments/gen08_interdiction.md`**: the pre-registration + the **G1 and G2 gate results
->    (both PASSED)**; the citable interdiction numbers.
-> 4. **`THESIS_STORYLINE.md`**: the 4-act positive arc (the written-thesis spine).
-> 5. Then history/bridge as needed: `DIRECTION.md` (why worst-case is the right register),
->    `experiments/gen07_contested_matrix.md` (the flat-landscape finding that forced the pivot),
->    `SACRED_PROGRESS.md` entries 11-12, `SYSTEM.md` (dogmas), and §1-5 of this file (the campaign).
+> 2. **`experiments/gen08_interdiction.md`**: THE live ledger: every gate, pre-registration,
+>    result and pinned SHA of the interdiction programme (G1/G2 PASSED; I3 wave 1 FAILED with
+>    mechanism; B2-P/B2-P2 FAILED with mechanism; **B2-P3 PASSED: the citable headline**).
+> 3. **`ROADMAP.md` Phase I**: findings to date + future work (short/mid/long term).
+> 4. **`THESIS_STORYLINE.md`** (4-act arc, Act IV updated) and `SACRED_PROGRESS.md` entry 13
+>    (the gen08 narrative in one entry).
+> 5. Then history as needed: `DIRECTION.md`, `experiments/gen07_contested_matrix.md`,
+>    `SACRED_PROGRESS.md` 1-12, `SYSTEM.md` (dogmas, updated), §1-5 of this file (the campaign).
 >
-> **BUILD STATE (branch `gen08-interdiction`, off `main`; suite 122+ green; the interdiction code
-> is the live work):** DONE: I0 equilibrium oracle (`src/baselines/interdiction_oracle.py`);
-> I1 env core + G1 gate (`src/envs/interdiction.py`, reproduces the oracle); I1b SAC-trainable env
-> (make_interdiction_env + masks); **I2 feasibility slice PASSED (`scripts/train_interdiction.py`):
-> the PROJECT'S FIRST POSITIVE RESULT: adversarial training cut interception 100% (shortest-path)
-> -> 23% (SACRED), approaching the computed equilibrium 16.7%.** THEN (all 2026-07-06, suite 131
-> green): I3a class-(c) vulnerability instances BUILT + WAVE 1 RUN: **primary FAILED (sacred ~
-> vanilla: cost-vulnerability correlation lets vanilla imitate the equilibrium; window metric
-> biased against fictitious play), headline sacred << shortest_path REPLICATED 3/3 seeds**;
-> descending-band probe killed the inverse fix (class (c) exhausted); **class (b) shared-edge
-> B2 BUILT + PRE-REGISTERED (the decisive design): route-walk trie + exact policy mixtures + TAP
-> metric + frontier LP; oracle proves NO cost mixture beats 0.467 on B2-P while equilibrium =
-> 0.167 (tie impossible by construction). B2 LAUNCH AWAITS KILIAN (hard rule after the A+C
-> kill: NEVER launch without his explicit go).** Waves A (K sweep) + C remain pre-registered,
-> unlaunched. Then learned-antagonist co-evolution.
-> Key gotchas already paid for: SAC `reward_scale` default 0.001 is far too small (use ~1.0 with
-> interception_loss ~10); best-respond to the defender's EMPIRICAL AVERAGE play (fictitious play),
-> not the instantaneous policy, or it oscillates/chases. Kilian's decisions: Kaliningrad graph,
-> single convoy first. Plan-first rule; Kilian owns CPU/launches.
+> **RESULT STATE (branch `gen08-interdiction`, suite 131 green, tree clean, nothing running):**
+> **THE PRE-REGISTERED HEADLINE IS BANKED (B2-P3, 2026-07-07, SHA `874d3f3`, ledger `ccb168e`):
+> on the shared-edge instance (33->71, 11 routes, hidden K=1 interdictor) the exploitability
+> ladder is shortest_path 1.000 > vanilla 0.477 > uniform 0.455 > SACRED 0.362 >> equilibrium
+> 0.167 (TAP metric, 3/3 seeds + pooled, every pre-registered clause).** Adversarial training
+> beats the deterministic default ~2.8x, the non-adversarial SAC control ~1.32x, and naive
+> noise; vanilla sits ABOVE uniform (cost-calibrated mixing = predictability with extra steps,
+> exactly as the oracle bound predicted). Strong form NOT met (distance-to-equilibrium
+> 0.163-0.239): reported plainly in the ledger. The road there was three pre-registered
+> dynamics iterations (pure-BR cycles / stale-mixture parks / smooth-FP passes): a measured
+> fictitious-play dynamics study that is itself thesis material. **Dynamics work is CLOSED by
+> Kilian's pre-committed exit criterion: do NOT reopen it.**
+> Key gotchas paid for: SAC `reward_scale` default 0.001 far too small (use ~1.0 with
+> interception_loss ~10); smokes validate plumbing, NOT slow-timescale dynamics (use the
+> 1000-sortie drift signature); TAP (trailing-averaged policy) is the deployable estimator for
+> FP learners; the walk trie is REQUIRED when candidate routes share first hops.
+> **Operating rules (hard, learned the hard way this session): NEVER launch any training run
+> without Kilian's explicit go in that conversation (a launch made under a briefly-broad mandate
+> was killed mid-run); no AskUserQuestion multiple-choice prompts: prose + firm recommendation;
+> plan-first; oracle-only probes (seconds, no training) are free.** Kilian's decisions on
+> record: Kaliningrad graph; single convoy first; fallback-vs-upgrade exit criterion (upgrade
+> achieved); freeze Aug 3 HARD; thesis + poster due 10:00, 28 Aug 2026.
 >
 > **⚠️⚠️ CURRENT DIRECTION (2026-07-06, latest): THE INTERDICTION-GAME REDESIGN.**
 > Read **`REDESIGN_INTERDICTION.md` FIRST**: it is the north star. Short version: the campaign
@@ -145,8 +148,9 @@ CIs always; competence gate before interpreting any robustness comparison.
 
 ## 4. State of the machinery
 
-- **Suite:** 83 tests green (`PYTHONPATH=. pytest tests/`: run after touching agents/env, paste
-  raw output). All five problem rungs runnable: `--problem {osm,stage0,assign,dynassign,hybrid}`.
+- **Suite:** 83 tests green on the frozen campaign record; **131 green on `gen08-interdiction`**
+  (`PYTHONPATH=. pytest tests/`: run after touching agents/env, paste raw output). All five
+  problem rungs runnable: `--problem {osm,stage0,assign,dynassign,hybrid}`.
 - **Selected checkpoints (gen06):** vanilla ep750/ep100/ep100, scripted ep450/ep200/ep600 under
   `models/runs/gen06_dynassign_matrix/*/snapshots/`; BR actors under `.../br_*_s0_seed0/`.
   gen05's analogues under `models/runs/gen05_hybrid_matrix/`.

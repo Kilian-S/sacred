@@ -139,6 +139,26 @@ equilibrium; shortest-path and vanilla sit at the exploitable extreme; and the e
 first). This is the positive result the thesis was always reaching for, reached by choosing the
 problem where the mechanism is the solution rather than a forced fit.
 
+**Act IV realised (2026-07-06/07; all numbers in the gen08 ledger).** The build delivered in
+four pre-registered steps. The feasibility slice banked the first positive result (interception
+100% -> 23%, equilibrium 16.7%). The first asymmetric instance (length-derived vulnerability)
+FAILED its sacred-vs-vanilla primary and taught the deepest lesson of the act: when vulnerability
+correlates with travel cost, the non-adversarial control IMITATES the equilibrium without
+understanding it, so the comparison must be staged where imitation is provably impossible. The
+shared-edge instances provide exactly that (the road network's own k-shortest structure: the
+oracle proves no cost-driven mixture gets below 2.8x the equilibrium), and there the control is
+WORSE than uniform noise: cost-calibrated mixing is predictability with extra steps. Making
+SACRED's own policy stable took a measured study in fictitious-play discipline: best-responding
+to the latest pure commitment cycles (average converges, iterates orbit), a stale all-history
+mixture lets the cost gradient park the policy, and SMOOTH fictitious play (softmax best
+response to recent play, temperature probe-pinned) stabilises: whereupon the pre-registered
+primary PASSED on every clause: **shortest-path 1.000 > vanilla 0.477 > uniform 0.455 > SACRED
+0.362 >> equilibrium 0.167** (trailing-averaged policy, 3 seeds, pooled). Honest boundary,
+reported as measured: the strong form (within 0.05 of the equilibrium) was not met (distance
+0.163-0.239); closing that last-iterate gap is future work, and the FP-dynamics bracket is
+itself a contribution: the thesis can now say not only THAT adversarial training works here but
+WHICH realisation of it converges and why.
+
 ## Objective-by-objective arc
 
 **Obj 1 (zero-sum game formulation).** Act I formulates it. Act II shows the naive instantiation

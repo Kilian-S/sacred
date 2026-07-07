@@ -377,3 +377,52 @@
   router learns a mixed strategy approaching the security-game equilibrium, ~4x less exploitable
   than deterministic classical routing. Honest caveat (I3 work): the symmetric instance gives a
   thin SACRED-vs-vanilla gap; asymmetric instances (non-uniform equilibria) are next.
+
+## 13. gen08 interdiction: I2 slice + the I3 asymmetric-instance arc, ending in the programme's first sacred-vs-vanilla PASS  (2026-07-06/07 · branch `gen08-interdiction`, SHAs pinned per run in the ledger · `experiments/gen08_interdiction.md`)
+
+- **Goal (prospective):** realise the interdiction redesign: show a SAC dispatcher trained
+  adversarially (SACRED) learns a MIXED-STRATEGY route policy less exploitable to a committed,
+  hidden interdictor than shortest-path routing AND than a non-adversarially trained SAC,
+  approaching the computable minimax equilibrium (the gen08 pre-registered question).
+- **Headline results:** I2 symmetric slice (33->71, 6 disjoint routes, K=1): **shortest_path
+  1.000 > vanilla 0.275 > sacred 0.235**, equilibrium 0.167 (interception 100% -> 23%; the
+  project's first positive result). I3 wave 1 (length-band vulnerability): primary FAILED
+  (window reading, sacred ~ vanilla) while sacred << shortest replicated 3/3. B2 shared-edge
+  instances (11 routes incl. k-shortest near-duplicates, walk mode): B2-P primary FAILED
+  (fictitious-play cycling; average play 0.242-0.261 vs vanilla 0.429-0.445, 3/3); B2-P2
+  (all-history BR mixture) failed WORSE (stale-mixture parking, telemetry-confirmed); **B2-P3
+  (smooth fictitious play) PASSED the pre-registered primary on every clause: TAP ladder
+  shortest_path 1.000 > vanilla 0.477 > uniform 0.455 > sacred 0.362 >> equilibrium 0.167
+  (3/3 seeds + pooled)**; strong form (within 0.05 of equilibrium) NOT met (distance
+  0.163-0.239).
+- **What we learned:** (i) instance structure decides whether the non-adversarial control can
+  IMITATE the equilibrium: length-band vulnerability correlates with travel cost and lets it
+  (wave 1); shared-edge overlap forbids it provably (oracle: no cost-driven mixture below 0.467
+  vs equilibrium 0.167), and there vanilla lands ABOVE uniform noise on 3/3 seeds
+  (cost-calibrated mixing is predictability with extra steps). (ii) The fictitious-play
+  discipline bracket: best-responding to the latest PURE commitment over-disciplines
+  (large-amplitude last-iterate cycling); a uniform ALL-HISTORY mixture under-disciplines (goes
+  stale; the travel-cost gradient parks the policy on one route, entropy collapsing 2.0 -> 0.7);
+  SMOOTH fictitious play (softmax best response to the trailing-250 play, tau = 0.05 pinned by
+  an oracle probe) is the stable middle and passed. (iii) Exploitability estimators for FP
+  learners: realised-play windows and even policy snapshots sit mid-cycle; the trailing-averaged
+  policy distribution (TAP) is the deployable estimator that stabilised. (iv) Short smokes
+  validate plumbing, not slow-timescale dynamics (a 300-sortie smoke missed parking that begins
+  ~sortie 1000; the 1000-sortie smoke with a pre-registered drift signature caught it).
+- **Thesis progression:** equilibrium oracle (LP + best response + frontier
+  `cost_constrained_value`), soft-interception heterogeneous instances, the route-walk trie with
+  EXACT branch-product policy mixtures, the TAP metric, smooth-FP attacker modes, alpha/entropy
+  telemetry; suite 131 green; three pre-registered result records with pinned SHAs and
+  pre-committed exit criteria (a first for the project, and it worked: the dynamics chase was
+  bounded to three iterations by design).
+- **What it means for the thesis:** the headline positive claim now exists in its pre-registered
+  POLICY form: adversarial training makes a deep-RL router ~2.8x less exploitable than the
+  deterministic operational default, ~1.32x less than non-adversarial SAC, and less exploitable
+  than uniform noise, at a quantified clean-cost premium, on the real Kaliningrad graph, scored
+  against a computable equilibrium: plus a measured dynamics study explaining WHEN adversarial
+  training converges (smooth two-sided FP) and when it does not.
+- **Thesis fit:** Obj 1 (equilibrium + the FP dynamics study), Obj 2 (interdiction layer + walk
+  trie), Obj 3 (SAC entropy as the mixing mechanism; ATLA as fictitious play, with the
+  convergent realisation identified), Obj 5 (the exploitability ladder + cost-security frontier;
+  the named non-adversarial control finally beaten in a pre-registered primary). Appears as the
+  thesis's final Results act.

@@ -99,11 +99,60 @@ evaluation discipline). Separation policy from the redirection still holds (`mai
 - [ ] **I5. Multi-convoy richness (LATER, after the single-convoy matrix lands):** multiple
       convoys/FOBs, coordinated routing spreading interdiction risk (the VRP flavour).
 
-**Status:** I2 PASSED (the go/no-go is green: adversarial RL beats deterministic classical routing
-and approaches the computable equilibrium). The gen03-07 negative + the redesign proof + the I2
-positive already form a complete, defensible thesis; I3 strengthens it (SACRED-vs-vanilla,
-sweeps, co-evolution). If any I3 step stalls, diagnose against the oracle (a solvable
-RL-convergence question, not a structural one) before any freeze.
+**Status (2026-07-07, end of the B2 arc): THE HEADLINE IS BANKED.** I3.1 concluded with the
+programme's first pre-registered sacred-vs-vanilla PASS (B2-P3, smooth fictitious play, SHA
+`874d3f3`): TAP ladder **shortest_path 1.000 > vanilla 0.477 > uniform 0.455 > SACRED 0.362 >>
+equilibrium 0.167** (3/3 seeds + pooled, every clause). Dynamics work CLOSED by Kilian's
+pre-committed exit criterion.
+
+### Findings to date (the citable spine; numbers only from `experiments/gen08_interdiction.md`)
+
+1. **Equilibrium level (proved before training):** deterministic routing is fully exploitable
+   (loss_det 1.0); the minimax mixed strategy cuts interception to 0.167-0.33 on the real graph.
+2. **I2 (symmetric slice):** adversarial RL reaches 0.235 vs shortest-path 1.000 (100% -> 23%).
+3. **Instance structure decides the control's fate:** on cost-correlated vulnerability instances
+   vanilla IMITATES the equilibrium (wave 1 primary failed); on shared-edge instances no
+   cost-driven mixture can (oracle bound 0.467 vs equilibrium 0.167) and vanilla lands ABOVE
+   uniform noise: cost-calibrated mixing is predictability with extra steps.
+4. **The FP dynamics bracket (measured):** latest-pure-BR over-disciplines (last-iterate
+   cycling, good average 0.24-0.26); all-history mixture under-disciplines (stale -> cost
+   gradient parks the policy, entropy 2.0 -> 0.7); SMOOTH fictitious play (softmax BR to
+   trailing-250 play, tau 0.05 probe-pinned) is the stable middle and PASSED.
+5. **Estimator lessons:** trailing-window/mid-cycle readings are biased against FP learners; TAP
+   (trailing-averaged policy distribution) is the deployable estimator; smokes validate
+   plumbing, not slow dynamics (1000-sortie drift signature required).
+6. **Honest open gap:** strong form unmet: SACRED lands ~half-way between uniform and the
+   equilibrium (distance 0.163-0.239) on the policy form; the average-play reading (0.26-0.28)
+   is closer. Closing it is future work (annealed smoothing / optimistic dynamics), NOT a
+   pre-freeze task.
+
+### Future work (agreed shape, 2026-07-07; every launch ⛔K)
+
+**SHORT TERM (now -> Aug 3 freeze; experiments, in priority order):**
+- [ ] **F1. Waves A + C (pre-registered, unlaunched):** hard-instance K sweep {1,2,3} x 3 seeds
+      + 110->135 connectivity contrast (~5.5 h serial): completes Obj-5's "varied disruption"
+      curves and replicates the headline across K. Ready to launch as ledgered.
+- [ ] **F2. Learned-antagonist co-evolution demonstration (I3.4, Obj 1/3):** antagonist SAC
+      (edge-selection; env mask exposed; transition enrichment per `sacred_atla.py` ~L229-252)
+      replacing the oracle interdictor on B2-P; evaluate with the ORACLE BR regardless
+      (portfolio-max). One instance x 3 seeds as a demonstration, not a matrix.
+- [ ] **F3. Obj-4 demonstrator (oracle-driven, eval-only):** interdiction-aware base/FOB
+      placement: equilibrium interception per candidate OD/placement over a grid + small
+      surrogate + argmax validation. An afternoon; zero training.
+- [ ] **F4. ZST (aim-level):** transfer the trained B2-P3 policy to a held-out OD pair; score
+      vs that pair's oracle. Eval-only afternoon.
+- [ ] **F5 (drop first if the calendar bites): ERB ablation** (seed from shortest-path or the
+      equilibrium mixture; time-to-competence, modest scope).
+
+**MID TERM (Aug 3 -> Aug 28: writing wins every conflict; Phase D below):** figures/tables
+strictly from the gen08 ledger (the ladder, the cost-security frontier via
+`cost_constrained_value`, the FP-bracket trajectories, the equilibrium maps); methods
+fact-checking; poster; final HANDOVER refresh + freeze tag.
+
+**LONG TERM (post-submission; Phase E below):** close the strong-form gap (annealed
+smoothing/optimistic or extragradient dynamics -> last-iterate to Nash); multi-convoy richness
+(I5: coordinated sortie spreading); K>=2 co-evolution; publication (Kilian's call, parked);
+BLADE/Panopticon demo; full SBO loop.
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 
