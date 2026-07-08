@@ -38,7 +38,17 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
-**UPDATE 2026-07-07 (evening, LATEST): MULTI-CONVOY PIVOT.** After B2-P3 banked the single-convoy
+**UPDATE 2026-07-08 (LATEST): M-PHASE PROGRESS (see `HANDOVER.md` top banner).** M0/M1/M2 done +
+committed (multi-convoy oracle, env + G-M1 gate, ALNS baseline reaching loss_det; suite 146 green).
+M3 (`scripts/train_multiconvoy.py`) built + smoked: SACRED BEATS the optimal classical planner
+(sacred 0.645 < ALNS 0.904, stable, no collapse) BUT sacred ~ vanilla and far from the equilibrium
+0.328 because the policy routes convoys INDEPENDENTLY, not the correlated stack-and-randomise. NEXT:
+make correlation learnable (explicit "convoys-so-far per route" observation feature) -> re-smoke ->
+full 3-seed launch (~50 min at 3-parallel `--threads 3`; ~0.368 s/sortie). **New dogma: on a JOINT /
+correlated objective, the coordination signal must be made EXPLICIT in the observation; implicit-via-
+truck-positions is under-weighted by the policy.**
+
+**UPDATE 2026-07-07 (evening): MULTI-CONVOY PIVOT.** After B2-P3 banked the single-convoy
 shared-edge headline, F1 (the single-convoy SYMMETRIC K-sweep) was launched then KILLED: the
 symmetric instance is the anti-goal (uniform == equilibrium -> vanilla mixes incidentally, sacred
 DESTABILISES under long training: A-K1 sacred TAP 0.38/1.00/0.40 vs vanilla ~0.31, seed 1 full

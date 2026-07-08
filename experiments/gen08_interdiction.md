@@ -533,6 +533,37 @@ convoys route base->FOB; the interdictor commits K assets; the defender chooses 
 its own gen09 ledger. Single-convoy B2-P3 stays the banked headline. `F1_orchestrator`, `A_K1_seed*`
 outputs retained under `models/runs/gen08_interdiction_I3/` (A-K1 is the recorded wave-A result).
 
+## M3 SMOKE (2026-07-08): multi-convoy training; primary works, CORRELATION open
+
+`scripts/train_multiconvoy.py`: each sortie is an N-step episode (route convoy 0->1->2, terminal
+reward = -interception_loss*mission_failure, bootstrap through the fleet so credit propagates across
+the joint decision); FP interdictor = oracle BR to the empirical OCCUPANCY play; vanilla = nominal
+travel objective; eval = policy occupancy distribution -> exploitability under the BR interdictor.
+Smoke: 1000 sorties, 110->135 N=3 K=1, latest FP, seed 0.
+
+**Timing (measured, for the launch estimate):** ~0.368 s/sortie STEADY (flat 367-368ms across all
+chunks, NO drift); warm-up first ~11 sorties faster (buffer < batch, update() a no-op); eval
+2.7s/250 sorties. Full run (3000/arm x 2 arms x 3 seeds): ~50 min at 3-parallel `--threads 3`
+(9 threads <= 10 cores), ~1.9 h serial (default 4 threads oversubscribes at 3-parallel).
+
+**Result (ladder, 1000 sorties):** shortest_path 1.000 > ALNS 0.904 (= loss_det) > vanilla 0.700
+(TAP) ~ sacred 0.645 (TAP) >> equilibrium (loss_mixed) 0.328.
+- **SACRED BEATS the optimal classical planner (ALNS) = the Obj-5 metaheuristic win. STABLE** (no
+  collapse; occupancy-entropy ~2.0 throughout, unlike the symmetric single-convoy F1).
+- **OPEN (the crux): sacred ~ vanilla (both ~0.68, trajectories intertwined) and far from 0.328,
+  because the policy routes the convoys ~INDEPENDENTLY.** Sacred's occupancy dist spreads over
+  [2,1,0]0.20 / [1,1,1]0.20 / [1,2,0]0.15 / [2,0,1]0.13 / [3,0,0]0.10 / ..., NOT the CORRELATED
+  stack-and-randomise equilibrium ([3,0,0]/[0,3,0]/[0,0,3], ~1/3 each). Independent mixing cannot
+  reach 0.328; vanilla mixes incidentally to ~0.68 (the symmetric-instance lesson recurring), so
+  sacred's gap over it is inside the noise. The env exposes earlier convoys' routes (truck
+  positions) but the policy under-weights the signal.
+
+**Next (Kilian deciding at pause):** RECOMMENDED = make correlation learnable (add an explicit
+"convoys-committed-so-far per route" feature to the per-convoy observation so convoys 1,2 follow
+convoy 0) -> re-smoke (expect sacred -> toward 0.328 + a clean vanilla gap) -> full 3-seed launch,
+pre-register a gen09 ledger. ALTERNATIVE: launch the primary (beats ALNS) as-is, correlation as a
+refinement. train_multiconvoy.py committed; gen09 pre-registration TBD.
+
 ## Commands (sketch; exact + SHA at launch)
 
 ```bash

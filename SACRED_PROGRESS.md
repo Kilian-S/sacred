@@ -453,3 +453,11 @@
   all five objectives. Oracle-level proof done; the build + training is the next act.
 - **Thesis fit:** Obj 1-5 all met (Obj-5 metaheuristic fixed; Obj-4 fleet composition added); the
   multi-convoy game is the thesis's final Results act. Single-convoy stays the proven headline.
+- **Phase M build progress (2026-07-08):** M0 oracle proof + M1 env/oracle (G-M1 gate) + M2 ALNS
+  baseline (reaches loss_det exactly) DONE and committed (suite 146 green); M3 trainer
+  (`scripts/train_multiconvoy.py`: N-step sortie episode, oracle-BR-to-occupancy FP interdictor,
+  vanilla control) built + smoked. Smoke (110->135 N=3, 1000 sorties): SACRED beats the optimal
+  classical planner (0.645 < ALNS 0.904), stable (no collapse), BUT sacred ~ vanilla and far from
+  the equilibrium 0.328 because the policy routes convoys INDEPENDENTLY, not the correlated
+  stack-and-randomise. Next: an explicit "convoys-so-far per route" observation feature to make
+  correlation learnable, re-smoke, then the full 3-seed launch (~50 min at 3-parallel).

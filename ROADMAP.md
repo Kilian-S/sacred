@@ -186,10 +186,15 @@ banked headline; this is the extension that meets all five objectives and wins b
       minimising worst-case mission-failure, VALIDATED to reach the oracle's loss_det exactly;
       shortest-path naive reference; `classical_baselines` eval harness. Obj-5 ladder (110->135 N=3):
       shortest_path 1.000 > ALNS 0.904 (= optimal deterministic) >> SACRED equilibrium 0.328.
-- [ ] **M3. Train SACRED vs the interdictor** (⛔K launch; pre-register a gen09 ledger): confirm
-      SACRED LEARNS the ~0.31 mission-failure mixed strategy vs ALNS's ~0.8 and vs a non-adversarial
-      SAC, on a probe-selected high-headroom instance; seeds; best-checkpoint; an entropy floor to
-      avoid the symmetric-instance collapse.
+- [~] **M3. Train SACRED vs the interdictor: BUILT + SMOKED 2026-07-08** (`scripts/train_multiconvoy.py`;
+      N-step sortie episode, oracle-BR-to-occupancy FP interdictor, vanilla control, occupancy
+      exploitability eval, `--threads`). Smoke (110->135 N=3, latest FP, seed 0, 1000 sorties): SACRED
+      BEATS the optimal classical planner (sacred 0.645 (TAP) < ALNS 0.904), STABLE (no collapse).
+      **OPEN: sacred ~ vanilla ~0.68, far from equilibrium 0.328, the policy routes convoys
+      INDEPENDENTLY (occ dist spreads over [2,1,0]/[1,1,1]/...), not the correlated stack-and-
+      randomise ([3,0,0]/[0,3,0]/[0,0,3]).** NEXT: add an explicit "convoys-so-far per route"
+      observation feature (make correlation learnable) -> re-smoke -> full 3-seed launch (⛔K,
+      pre-register gen09). Timing ~0.368 s/sortie, ~50 min at 3-parallel `--threads 3` / ~1.9 h serial.
 - [ ] **M4. Sweeps + objectives:** N / K / connectivity curves (varied disruption, Obj-5);
       learned-antagonist co-evolution (Obj-1/3); Obj-4 placement + fleet size; ZST. Each launch ⛔K.
 

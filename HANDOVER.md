@@ -1,5 +1,35 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
 
+> **★★★ M3 SMOKE UPDATE (2026-07-08): the multi-convoy trainer WORKS but needs CORRELATION. READ
+> THIS FIRST.** Phase M: M0 (oracle proof), M1 (env+oracle, G-M1 gate), M2 (ALNS baseline reaching
+> loss_det) are DONE and committed (HEAD 596708f); M3 (`scripts/train_multiconvoy.py`) is BUILT and
+> smoked (1000 sorties, 110->135 N=3 K=1, latest-FP, seed 0). Suite 146 green.
+> - **Timing (measured):** ~0.368 s/sortie STEADY (flat 367-368ms, no drift over 1000 sorties);
+>   warm-up first ~11 sorties faster (replay buffer < batch); eval 2.7 s / 250 sorties. Full run
+>   (3000 sorties/arm, vanilla+sacred, 3 seeds): **~50 min at 3-parallel `--threads 3`** (9 <= 10
+>   cores), ~1.9 h serial. (Default 4 threads oversubscribes at 3-parallel = ~1.7 h; don't.)
+> - **Result (ladder, 1000 sorties):** shortest_path 1.000 > ALNS 0.904 (optimal deterministic) >
+>   vanilla 0.700 (TAP) ~ sacred 0.645 (TAP) >> equilibrium 0.328. **SACRED BEATS the optimal
+>   classical planner (ALNS) = the Obj-5 metaheuristic win, and is STABLE (no collapse; occupancy-
+>   entropy ~2.0 throughout, unlike the symmetric single-convoy).**
+> - **THE OPEN PROBLEM (the crux to solve next): sacred ~ vanilla and both far from 0.328 because
+>   the policy routes the convoys ~INDEPENDENTLY, not the CORRELATED stack-and-randomise optimum.**
+>   The equilibrium puts ALL mass on "all 3 convoys on ONE random route" ([3,0,0]/[0,3,0]/[0,0,3]);
+>   sacred's occupancy dist instead spreads over [2,1,0]0.20/[1,1,1]0.20/[1,2,0]0.15/... (independent
+>   mixing), which cannot reach 0.328, and vanilla mixes incidentally to ~0.68 so the sacred-vs-
+>   vanilla gap is inside the noise. The env EXPOSES earlier convoys' routes (via truck positions)
+>   but the policy under-weights the signal.
+> - **NEXT STEP (Kilian was deciding at session pause, confirm it first):** RECOMMENDED = make
+>   correlation learnable: add an explicit "convoys-committed-so-far per route" feature to the
+>   per-convoy observation so convoys 1,2 learn to FOLLOW convoy 0; re-smoke (expect sacred ->
+>   toward 0.328 + a clean vanilla gap); THEN the full 3-seed launch + pre-register a gen09 ledger.
+>   ALTERNATIVE: launch the primary (beats ALNS) as-is and treat correlation as the refinement.
+> - Config: multi-convoy reward = -interception_loss(10)*mission_failure (sacred) / normalised travel
+>   (vanilla); N-step sortie episode (terminal reward on the LAST convoy, bootstrap through the
+>   fleet); FP attacker = oracle BR to the empirical OCCUPANCY play. Interactive Kaliningrad view:
+>   `scratch/build_multiconvoy_view.py` (classical 90.4% vs SACRED 32.8% at the equilibrium).
+> The MULTI-CONVOY PIVOT banner below is the strategic context; read it next.
+>
 > **★★ LATEST DIRECTION (2026-07-07 evening): THE MULTI-CONVOY PIVOT. Read THIS banner first, then
 > the B2-P3 START HERE banner below.** After B2-P3 banked the single-convoy shared-edge headline we
 > tried to broaden it (F1: the wave A/C sweeps) and hit two walls that redirected the programme:
