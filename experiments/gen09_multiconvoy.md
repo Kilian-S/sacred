@@ -321,6 +321,62 @@ leader drifts to exploit it) to try to HOLD the equilibrium; (B) bank the BEST-C
 drift to uniform is a documented over-training instability handled by best-checkpoint selection). All
 three STAB runs stand on record.
 
+## THE LOCKED MULTI-CONVOY HEADLINE (best-checkpoint; Kilian's decision 2026-07-09)
+
+**Decision (Kilian):** STOP the STAB stabilisation chase. The leader's late drift to uniform is
+INHERENT last-iterate fictitious-play cycling, resolved the standard way the single-convoy programme
+already used: **best-checkpoint selection** (the final iterate over-trains toward uniform; select the
+lowest-exploitability training point), NOT more knob-tuning toward 0.63. Stay on current code (the
+true-smooth fp_dynamics port), no revert. The old unsaved single 0.257 is confirmed to have been a
+transient best-checkpoint (both the old config-recovery and STAB-2/3 agree); it is not reproduced.
+
+**gen09-HEADLINE (PRE-REGISTERED 2026-07-09, Kilian's go): the definitive, saved, re-evaluable run.**
+Sharp-attacker config (the one that reproducibly reaches the equilibrium hedge), CURRENT code, FULL
+saving (JSON per-eval history + per-eval actor checkpoints, so the best-checkpoint is a re-evaluable
+ARTEFACT, not just a log number), ~1200 sorties so the plot shows BOTH the best-checkpoint and the
+subsequent drift. Config: tau 0.05, leader-alpha-floor 0.20, leader-ent-frac 0.5, switch-every 200,
+smooth-window 250, k8 menu-select, band 0.15-0.95, N=3, K=1, fleet-route, eval-every 100, seeds {0,1,2}.
+
+**Command (pinned; per-seed via `scratch/gen09_headline.sh`, all saved):**
+```bash
+PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
+  --od 62-97 --N 3 --K 1 --k-extra 8 --menu-select --band 0.15,0.95 \
+  --fleet-route --attacker-mode smooth --fp-tau 0.05 --switch-every 200 --smooth-window 250 \
+  --leader-ent-frac 0.5 --leader-alpha-floor 0.20 --sorties 1200 --eval-every 100 \
+  --seed $S --threads 3 --json-out models/runs/gen09_multiconvoy/headline_seed$S.json \
+  --ckpt-dir models/runs/gen09_multiconvoy/headline_seed${S}_ckpts \
+  > models/runs/gen09_multiconvoy/headline_seed$S.log 2>&1
+```
+
+**SELECTION RULE (pre-registered + disclosed, this is what makes it rigorous not a cherry-pick):**
+best-checkpoint per seed = the training point (per-eval snapshot) of LOWEST exploitability, measured as
+the deployable trailing-averaged-policy TAP under the oracle best-response interdictor. **Best-checkpoint
+by exploitability is standard for adversarial / minimax training (the last iterate over-trains toward
+uniform); the drift is disclosed plainly, not hidden.** The per-eval actor checkpoints + `pol_hist`
+occupancy distributions are saved so any window is re-evaluable.
+
+**The locked ladder (fleet-route best-checkpoint, mission-failure exploitability, lower better):**
+
+| arm | mission-failure exploitability | note |
+|---|---|---|
+| shortest_path (naive, all on cheapest) | 0.973 | interdiction-unaware |
+| vanilla (non-adversarial SAC) | ~0.945 | control |
+| ALNS forced to STACK | **0.912** | fairness: ALNS *free* to stack does far worse stacking |
+| ALNS (SOTA metaheuristic, spreads = loss_det) | 0.699 | spreads BY CHOICE (0.699 < 0.912) |
+| **SACRED (adversarial, best-checkpoint)** | **~0.28 (to lock from the run)** | randomised stack |
+| equilibrium (loss_mixed, minimax bound) | 0.216 | computable ground truth |
+
+**Fairness rows (Kilian):** (1) the equilibrium is shown alongside ALNS (the computable optimum);
+(2) "ALNS forced to stack" = 0.912 >> ALNS spread 0.699 - ALNS is FREE to stack (every stacked
+occupancy is in its search space) but SPREADS because that is its optimal deterministic plan, so
+SACRED's win is NOT that we denied ALNS stacking; SACRED beats even the spread plan by RANDOMISING
+(a mixed strategy ALNS cannot play). SHA pinned by the commit landing this pre-registration + the
+per-eval-checkpoint code.
+
+### gen09-HEADLINE RESULT
+
+_(appended after the three seeds complete: best-checkpoint TAP mean +/- std + the locked ladder)_
+
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
 **Question:** can the followers LEARN to copy the mixing leader (emergent coordination) rather than

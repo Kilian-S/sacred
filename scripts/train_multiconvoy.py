@@ -131,7 +131,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    leader_ent_frac=1.0, follower_ent_frac=0.05, alpha_lr=5e-3,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
                    save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
-                   smooth_window=250):
+                   smooth_window=250, ckpt_dir=None):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
@@ -224,6 +224,9 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             pol_hist.append(d)
             _, expl = best_response_attacker_multi(env.obj_matrix, d)
             _, expl_tap = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-TAP_K:], axis=0))
+            if ckpt_dir is not None:  # per-eval checkpoint: best-checkpoint becomes a re-evaluable artefact
+                Path(ckpt_dir).mkdir(parents=True, exist_ok=True)
+                torch.save(prot.actor.state_dict(), str(Path(ckpt_dir) / f"actor_ep{k + 1}.pt"))
             nz = d[d > 0]; h = float(-(nz * np.log(nz)).sum())
             H_lead, H_foll = role_entropies(routes, env.game.n_routes)
             stack_rate, follow_rate = coordination_stats(routes)
@@ -256,8 +259,20 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         Path(save_actor).parent.mkdir(parents=True, exist_ok=True)
         torch.save(prot.actor.state_dict(), save_actor)
         print(f"  [saved leader actor] {save_actor}")
+    # BEST-CHECKPOINT (project discipline: the final iterate is misleading under adversarial/minimax
+    # co-evolution -- the last iterate over-trains toward uniform; select the lowest-exploitability
+    # training point). Report both the deployable trailing-averaged-policy reading (min TAP, the
+    # B2-P3 estimator, the headline) and the single-checkpoint reading (min per-eval expl). Both are
+    # re-evaluable from the saved per-eval ckpt_dir actors + the pol_hist occupancy distributions.
+    best_tap = min((h[2] for h in hist), default=float("nan"))
+    best_tap_sortie = next((h[0] for h in hist if h[2] == best_tap), None)
+    best_expl = min((h[1] for h in hist), default=float("nan"))
+    best_expl_sortie = next((h[0] for h in hist if h[1] == best_expl), None)
     return {"expl": expl, "expl_tap": expl_tap, "tail_expl": tail_expl, "tail_amp": tail_amp,
             "tail_stack": tail_stack, "history": hist, "occ_dist": d.tolist(),
+            "best_tap": best_tap, "best_tap_sortie": best_tap_sortie,
+            "best_expl": best_expl, "best_expl_sortie": best_expl_sortie,
+            "pol_hist": [p.tolist() for p in pol_hist],
             "H_lead": H_lead, "H_foll": H_foll, "stack_rate": stack_rate, "follow_rate": follow_rate}
 
 
@@ -299,7 +314,10 @@ def main():
     p.add_argument("--menu-select", action="store_true",
                    help="route-index menu-select action (shared-edge); auto-on when --k-extra>0")
     p.add_argument("--save-leader", default="",
-                   help="fleet-route: save the trained mixing-leader actor to this path")
+                   help="fleet-route: save the FINAL mixing-leader actor to this path")
+    p.add_argument("--ckpt-dir", default="",
+                   help="save the leader actor at EVERY eval here, so the best-checkpoint (lowest "
+                        "exploitability) is a re-evaluable artefact, not just a number in a log")
     p.add_argument("--leader-ckpt", default="",
                    help="follower BOOTSTRAP: drive convoy 0 with a FROZEN mixing leader loaded here")
     p.add_argument("--forced-copy-warmup", type=int, default=600,
@@ -333,7 +351,7 @@ def main():
                   leader_ent_frac=args.leader_ent_frac, follower_ent_frac=args.follower_ent_frac,
                   alpha_lr=args.alpha_lr, follower_warmup=args.follower_warmup, stack_dup=args.stack_dup,
                   fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor,
-                  smooth_window=args.smooth_window)
+                  smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None))
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
@@ -370,8 +388,13 @@ def main():
         fc = train_defender(env, adversarial=True, attacker_mode=args.attacker_mode, fleet_route=True,
                             save_actor=(args.save_leader or None), **common)
         print(f"\n=== FLEET-ROUTE CONTROL ({s}->{t}, N={args.N}) ===")
-        print(f"  loss_mixed {sol.loss_mixed:.3f}   fleet-route: {fc['expl_tap']:.3f} (TAP) / "
+        print(f"  loss_mixed {sol.loss_mixed:.3f}   fleet-route FINAL: {fc['expl_tap']:.3f} (TAP) / "
               f"{fc['expl']:.3f} (policy)   stack {fc['stack_rate']:.2f} (1.00 by construction)")
+        print(f"  BEST-CHECKPOINT (lowest exploitability; final is misleading under minimax): "
+              f"TAP {fc['best_tap']:.3f} @ sortie {fc['best_tap_sortie']} | "
+              f"single-ckpt {fc['best_expl']:.3f} @ sortie {fc['best_expl_sortie']}")
+        print(f"  ladder: shortest {baselines['shortest_path']:.3f} > ALNS {baselines['alns']:.3f} "
+              f">> SACRED(best-ckpt) {fc['best_tap']:.3f} > equilibrium {sol.loss_mixed:.3f}")
         if args.json_out:
             Path(args.json_out).write_text(json.dumps(
                 {"control": "fleet_route", "loss_mixed": sol.loss_mixed, "fleet_route": fc}, indent=2))

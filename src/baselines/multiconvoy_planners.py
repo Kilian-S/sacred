@@ -121,6 +121,12 @@ def classical_baselines(game: InterdictionGame, N: int, objective: str = "missio
     sp_expl = float(M[idx[_occ(sp, game.n_routes)]].max())
     plan = alns_fleet_planner(game, N, objective, m, seed=seed)
     sol = solve_multiconvoy(game, N, objective, m)
+    # FAIRNESS: the best DETERMINISTIC STACKED plan (all N convoys on one route), worst-cased over
+    # interdiction sets. ALNS is FREE to stack (the occupancy set includes every stack) but chooses to
+    # SPREAD (its loss_det is <= this), proving the fleet spreading is ALNS's OPTIMAL choice, not a
+    # handicap we imposed -- and SACRED still beats the spread plan by RANDOMISING, which ALNS cannot.
+    forced_stack = min(float(M[idx[_occ([r] * N, game.n_routes)]].max()) for r in range(game.n_routes))
     return {"shortest_path": sp_expl, "alns": plan.exploitability,
+            "alns_forced_stack": forced_stack,
             "optimal_deterministic": sol.loss_det, "equilibrium": sol.loss_mixed,
             "alns_plan": plan}
