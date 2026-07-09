@@ -208,3 +208,33 @@ PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
   > models/runs/gen10_postfix/mc2_seed$S.log 2>&1
 ```
 SHA pinned by the commit landing this pre-registration + the flag. RESULT appended below.
+
+### gen10-MC2 RESULT (2026-07-10, 3 seeds, ~32 min at 3-parallel): NO RECOVERY; attribution resolved
+
+| seed | best-ckpt TAP @ sortie | final TAP | telemetry signature |
+|---|---|---|---|
+| 0 | 0.442 @ 700 | 0.957 | early H=0 park (~sortie 100), alpha spike to 3.9, partial escape, late drift to near-pure |
+| 1 | 0.441 @ 100 | 0.776 | best at the FIRST eval; alpha floors 0.20 then climbs to 2.1 late |
+| 2 | 0.458 @ 100 | 0.707 | same shape; alpha climbs to 4.6 late |
+
+**gen10-MC2 EXACT best-checkpoint TAP mean 0.447 +/- 0.008**: numerically identical to gen10-MC's
+0.447 +/- 0.029 (and tighter). Pre-committed reading: **>= 0.447 branch = NO recovery.**
+
+**Attribution (now clean):** reverting the role-alpha target fix changed NOTHING (0.447 with the
+fix, 0.447 without), and doubling the horizon did not help (best checkpoints land at sorties
+100-700; the tail drifts/parks). So the regression is attributable to the REPRESENTATION change
+itself: with correct embeddings, overlapping routes have near-identical mean-pooled embeddings and
+the parameter-free menu head cannot separate them the way the pre-fix accidental route-identity
+hash could. The striking reproducibility (0.447 across two independent 3-seed runs under different
+target rules) reads as a structural plateau of the current head, not noise.
+
+**Consequences (per the pre-registration):** (1) the pre-fix multi-convoy headline STANDS as the
+citable number (exact **0.295 +/- 0.024** at SHA `ad70a9c`), with the representation caveat
+disclosed; the post-fix reproduction stands at 0.447 (still beating ALNS 0.699 and vanilla 0.859
+on every seed, so the Obj-5 ordering is bug-robust). (2) The next step is a DESIGN change, not a
+knob: give the menu head undiluted per-route scalar features via the proven lever-2 pattern
+(learned weights on normalised route COST and route VULNERABILITY aggregates, computable from the
+game/threat map, at BOTH the policy and critic heads). This restores head-level discriminability
+for near-duplicate routes AND is precisely the map-conditioning ZST needs (CRITIQUE §7). Proposed
+as gen11, pre-registered separately; launch = Kilian's go. Multi-convoy work otherwise closed at
+this state.

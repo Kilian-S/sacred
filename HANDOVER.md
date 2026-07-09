@@ -14,9 +14,14 @@
 >   prediction violated, reported as measured; Obj-5 ordering still holds: 0.447 << ALNS 0.699 <<
 >   post-fix vanilla 0.859). The citable multi-convoy number stays the banked pre-fix best-ckpt,
 >   now correctly stated as the EXACT re-evaluated **0.295 +/- 0.024** (SHA `ad70a9c`; the MC 0.283
->   carried a min-selection-on-noise bias), caveat disclosed. **Proposed next (needs Kilian's go):
->   gen10-MC2 diagnostic = same config, 2400 sorties, role-alpha fix flagged OFF (isolate the
->   remaining confound).** The critique also scores all five objectives (Obj-4 SBO unmet: the F3
+>   carried a min-selection-on-noise bias), caveat disclosed. **gen10-MC2 diagnostic (2026-07-10,
+>   Kilian's go, SHA `1ff5526`): NO recovery: 0.447 +/- 0.008, identical with the role-alpha fix
+>   reverted and a doubled horizon -> the regression is the menu head losing discriminability once
+>   embeddings are correct (the pre-fix permutation was an accidental route-identity hash). Next
+>   step = a DESIGN change (gen11 proposal: undiluted per-route cost+vulnerability features at the
+>   menu head, the lever-2 pattern; also the ZST enabler), pre-registered separately, launch =
+>   Kilian's go. Kilian 2026-07-10: the single-convoy supersession (0.362 -> gen10-SC 0.276) is
+>   CONFIRMED.** The critique also scores all five objectives (Obj-4 SBO unmet: the F3
 >   demonstrator is an afternoon; ZST doubly blocked pre-fix, now needs an edge-vulnerability
 >   feature), and ranks the pre-freeze programme (§8). `SACRED_PROGRESS.md` entry 17 is the
 >   narrative; all banked numbers below stand at their pinned SHAs with the caveat disclosed.
