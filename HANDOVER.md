@@ -1,14 +1,19 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
 
-> **★★★★ MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED AS HEADLINE (2026-07-09). READ THIS FIRST.**
-> Phase M (multi-convoy interdiction, Fork A) is DONE. The banked multi-convoy headline is the
-> **fleet-route result on 62-97 k_extra=8** (shared-edge, 12-route menu, N=3, K=1, soft, mission):
-> the adversarially-trained SAC LEADER learns a randomised route mixed strategy (smooth FP) and the
-> fleet stacks on it, giving **TAP 0.257 (1.19x the equilibrium 0.216) << ALNS 0.699 << vanilla
-> ~0.945** - Obj-5 met (beats the SOTA metaheuristic AND the non-adversarial control), stable, no
-> alpha runaway. Recorded in `experiments/gen08_interdiction.md` (Phase M section) and locked there.
-> Single-convoy B2-P3 (0.362) stays the OTHER banked headline. **CAVEAT (honest, in the ledger): the
-> fleet stacking is STRUCTURAL (followers copy the leader by construction), not learned.**
+> **★★★★ MULTI-CONVOY PHASE M COMPLETE - HEADLINE LOCKED (2026-07-09). READ THIS FIRST.**
+> Phase M (multi-convoy interdiction, Fork A) is DONE. The LOCKED multi-convoy headline is the
+> **fleet-route best-checkpoint on 62-97 k_extra=8** (shared-edge, 12-route menu, N=3, K=1, soft,
+> mission; definitive 3-seed saved run gen09-HEADLINE, SHA `ad70a9c`, ledger
+> `experiments/gen09_multiconvoy.md`): **best-checkpoint TAP 0.283 +/- 0.021** (3 seeds), ladder
+> shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 > **SACRED 0.283** >
+> equilibrium 0.216 - Obj-5 met (beats the SOTA metaheuristic AND the non-adversarial control).
+> **The leader over-trains toward uniform after the best-checkpoint (inherent last-iterate FP cycling;
+> resolved the standard single-convoy way = BEST-CHECKPOINT selection, drift saved + disclosed; three
+> "hold-the-tail" stabilisation attempts gen09-STAB-1/2/3 are on record and failed, establishing the
+> equilibrium is a reproducible transient).** The old 0.257 was an unsaved transient best-checkpoint,
+> superseded by the locked 0.283 +/- 0.021. Single-convoy B2-P3 (0.362) stays the OTHER banked
+> headline. **CAVEAT (honest, in the ledger): the fleet stacking is STRUCTURAL (followers copy the
+> leader by construction), not learned.**
 >
 > **The learned-follower arc (6 attempts, the mechanistic SECONDARY result).** We tried to make the
 > followers LEARN to copy the leader (genuine emergent coordination). Blocker = a chicken-and-egg:
@@ -46,17 +51,16 @@
 > (menu_select + route-index routing + taken_node_frac + absolute_vuln_norm); `scratch/
 > multiconvoy_instance_screen.py`. All additive/flag-gated; the campaign path is byte-identical (14th
 > feature col sliced off by `_clip_x`; follow_w exists only in menu+adversarial mode; +4 tests updated
-> for the col-14 width bump). COMMITTED `e7a2209` (2026-07-09). **NEXT: (1) IN PROGRESS = LEADER
-> STABILISATION before locking the 3-seed fleet-route headline: the leader varied across seeds
-> (0.257/0.433/0.517/0.382) from leader-alpha collapsing to different depths (bad seeds over-concentrate
-> -> exploitable); fix = a leader-alpha FLOOR + higher `--leader-ent-frac` + steadier/longer smooth FP
-> (Kilian 2026-07-09); gate = 3 seeds {0,1,2} land tight ~0.25-0.30 with small std; even the worst seed
-> (0.517) already beats ALNS 0.699 and vanilla 0.945, so this is tightening, not rescuing. (2) THESIS
-> WRITING on the two banked headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257 <<
-> ALNS 0.699) - thesis planner brief `../../thesis/THESIS_PLANNER_HANDOFF.md`; (3) OPTIONAL future
-> (each launch is Kilian's explicit go): 3-seed lock of the stabilised fleet-route headline, and if
-> wanted lift learned coordination past 0.257 (more stacking experience to raise follow_w; a
-> follower-alpha floor to stop the late fixed-route decay).**
+> for the col-14 width bump). COMMITTED through `7bcb499` (2026-07-09). **NEXT: (1) DONE = MULTI-CONVOY
+> HEADLINE LOCKED (best-checkpoint TAP 0.283 +/- 0.021, 3-seed saved run gen09-HEADLINE SHA `ad70a9c`,
+> `experiments/gen09_multiconvoy.md`; the leader-stabilisation chase gen09-STAB-1/2/3 is closed - the
+> leader over-trains toward uniform, resolved via best-checkpoint selection + disclosed drift, standard
+> minimax discipline; leader-alpha floor + per-eval checkpoint saving + ALNS-forced-stack fairness row
+> all landed). NO more leader experimentation (Kilian). (2) THESIS WRITING on the two banked headlines
+> (single-convoy B2-P3 0.362; multi-convoy fleet-route best-checkpoint 0.283 +/- 0.021 << ALNS 0.699)
+> - thesis planner brief `../../thesis/THESIS_PLANNER_HANDOFF.md`; (3) OPTIONAL future (each launch is
+> Kilian's explicit go, only if runway before the freeze): the scaling tier (N / K / connectivity
+> curves); learned coordination stays the banked Obj-3 secondary.**
 > Operating rules UNCHANGED (never launch training without Kilian's in-conversation go; no
 > multiple-choice prompts, prose + firm recommendation; plan-first; oracle/screen probes are free).
 > The M3 SMOKE banner below is SUPERSEDED by this; `REDESIGN_INTERDICTION.md` §10 and the gen08
