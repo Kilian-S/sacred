@@ -1,11 +1,14 @@
 # Generation: gen09_multiconvoy (Act IV, multi-convoy: adversarially-trained randomised fleet routing beats a coordinating metaheuristic under a loss-averse mission-failure objective)
 
-- **status: RESULTS LOCKED 2026-07-09.** This ledger CONSOLIDATES and locks the two banked
-  multi-convoy Phase M results so they cannot be lost across sessions. Both were produced under the
-  pre-registration already in force (see "Pre-registration provenance" below); this file is their
-  dedicated, citable home. The narrative lives in `SACRED_PROGRESS.md` entry 15; the blow-by-blow
-  (two "Phase M" sections) lives in `experiments/gen08_interdiction.md`; the design in
-  `REDESIGN_INTERDICTION.md` §10; the plan in `ROADMAP.md` Phase M.
+- **status: HEADLINE LOCKED 2026-07-09.** The citable multi-convoy headline is the **best-checkpoint
+  TAP 0.283 +/- 0.021 (3 seeds, saved + re-evaluable)** from gen09-HEADLINE (SHA `ad70a9c`): ladder
+  shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 > **SACRED 0.283** >
+  equilibrium 0.216 (see "THE LOCKED MULTI-CONVOY HEADLINE"). The leader over-trains toward uniform
+  after the best-checkpoint (inherent last-iterate FP cycling; drift saved + disclosed; standard
+  minimax best-checkpoint discipline). The gen09-STAB-1/2/3 arc (three failed "hold-the-tail"
+  stabilisation attempts) is on record and established that the equilibrium is a reproducible transient.
+  The learned-follower bootstrap stays the banked Obj-3 SECONDARY. Narrative: `SACRED_PROGRESS.md`
+  entry 15; design `REDESIGN_INTERDICTION.md` §10; plan `ROADMAP.md` Phase M.
 - **code state (pinning):** results produced on the working tree on top of **`f801efb`** ("M3:
   multi-convoy trainer built + smoked") plus the uncommitted Phase M machinery diff
   (`scripts/train_multiconvoy.py`, `src/agents/{sac,networks}.py`,
@@ -78,13 +81,15 @@ Fork A's 3.23x.
 
 ## PRIMARY RESULT (fleet-route: leader-mix + structural fleet stacking)
 
-> **NUMBER STATUS (2026-07-09): the 0.257 below is EARLIER-INDICATIVE, not yet the citable headline.**
-> It was produced by an ad-hoc seed-0 command whose exact config was NOT saved (no JSON/log/run dir
-> survives). Across seeds the fleet-route leader varied 0.257 / 0.433 / 0.517 / 0.382 (earlier,
-> unsaved) from leader-alpha collapsing to different depths. The **citable** fleet-route number is
-> being re-established by the PINNED, saved, 3-seed leader-stabilisation re-run pre-registered in
-> "gen09-STAB" below. The qualitative result (SACRED << ALNS << vanilla, all five objectives) is
-> unchanged and robust: even the worst earlier seed (0.517) beats ALNS (0.699) and vanilla (~0.945).
+> **NUMBER STATUS (2026-07-09, RESOLVED): the citable multi-convoy headline is the LOCKED
+> best-checkpoint TAP 0.283 +/- 0.021 (3 seeds, saved, re-evaluable) from gen09-HEADLINE (SHA
+> `ad70a9c`, see "THE LOCKED MULTI-CONVOY HEADLINE" section below).** The 0.257 below is
+> EARLIER-INDICATIVE (an ad-hoc unsaved seed-0 run), now understood to have been a transient
+> best-checkpoint: with continued training the fleet-route leader over-trains toward uniform (inherent
+> last-iterate FP cycling), so the deployable object is the best-checkpoint, selected + disclosed per
+> standard minimax discipline. The earlier seed spread (0.257/0.433/0.517/0.382) was the drift caught
+> at different training lengths; the best-checkpoint is tight (0.283 +/- 0.021). Qualitative result
+> unchanged and robust: SACRED << ALNS 0.699 << vanilla ~0.945; all five objectives met.
 
 Seed 0, menu-select route-index action, 400 sorties, smooth FP (earlier-indicative):
 
@@ -373,9 +378,55 @@ SACRED's win is NOT that we denied ALNS stacking; SACRED beats even the spread p
 (a mixed strategy ALNS cannot play). SHA pinned by the commit landing this pre-registration + the
 per-eval-checkpoint code.
 
-### gen09-HEADLINE RESULT
+### gen09-HEADLINE RESULT (2026-07-09, SHA `ad70a9c`): LOCKED. best-checkpoint TAP 0.283 +/- 0.021
 
-_(appended after the three seeds complete: best-checkpoint TAP mean +/- std + the locked ladder)_
+Three seeds, saved to `models/runs/gen09_multiconvoy/headline_seed{0,1,2}.{json,log}` + 12 per-eval
+actor checkpoints each under `headline_seed{S}_ckpts/` (best-checkpoint is a re-evaluable artefact).
+
+| seed | best-ckpt TAP @ sortie | best single-ckpt expl @ sortie | final TAP (drift) |
+|---|---|---|---|
+| 0 | **0.281** @ 500 | 0.301 @ 200 | 0.838 |
+| 1 | **0.260** @ 400 | 0.280 @ 300 | 0.804 |
+| 2 | **0.310** @ 500 | 0.250 @ 500 | 0.871 |
+
+> **SACRED best-checkpoint TAP mean 0.283 +/- 0.021 (3 seeds).** Single-checkpoint reading agrees:
+> 0.277 +/- 0.021. Both tight, both consistent with STAB-2 (0.277 +/- 0.007) and STAB-3 (0.293 +/-
+> 0.029). The best-checkpoint lands ~sortie 400-500; the last iterate then over-trains toward uniform
+> (final TAP 0.80-0.87, H_lead -> uniform, alpha -> floor) - the drift is IN the saved trajectory,
+> disclosed, not hidden.
+
+**THE LOCKED MULTI-CONVOY HEADLINE LADDER (fleet-route best-checkpoint, mission-failure exploitability):**
+
+| arm | mission-failure exploitability |
+|---|---|
+| shortest_path (naive) | 0.973 |
+| vanilla (non-adversarial SAC) | ~0.945 |
+| ALNS forced to STACK (fairness) | 0.912 |
+| ALNS (SOTA metaheuristic, spreads) | 0.699 |
+| **SACRED (adversarial, best-checkpoint)** | **0.283 +/- 0.021** |
+| equilibrium (loss_mixed) | 0.216 |
+
+**What is established (Obj-5, LOCKED):** on the multi-convoy contested-resupply mission-failure
+objective, an adversarially-trained SAC dispatcher whose randomised joint routing is best-checkpoint-
+selected is far less mission-exploitable than the ALNS coordinating metaheuristic (0.283 vs 0.699,
+2.5x) AND than non-adversarial vanilla SAC (0.283 vs ~0.945), approaching the computable minimax
+equilibrium (0.283 vs 0.216 = 1.31x), tight across 3 seeds. **Fairness confirmed:** ALNS is FREE to
+stack but SPREADS by choice (spread 0.699 < forced-stack 0.912), so SACRED's advantage is the
+RANDOMISATION (a mixed strategy ALNS cannot play), not a stacking privilege we denied ALNS.
+
+**Honest caveats (disclosed, in the record):** (1) best-checkpoint selection by exploitability -
+standard for adversarial / minimax training, since the last iterate over-trains toward uniform (the
+single-convoy programme's same "final-checkpoint is misleading, use best-checkpoint" discipline); the
+drift is saved and plotted, not hidden. (2) the fleet stacking is STRUCTURAL (followers copy the
+leader), the honest caveat carried from the start; the LEARNED-follower coordination is the secondary
+Obj-3 result below. (3) the equilibrium is reached TRANSIENTLY (a stable last iterate at 0.216 is not
+achieved); closing that last-iterate gap is future work (annealed / optimistic FP), as it was for
+single-convoy B2-P3.
+
+**LOCKED: reproduce with `scratch/gen09_headline.sh` at SHA `ad70a9c`; command pinned above; metric =
+best-checkpoint TAP under the oracle best-response interdictor; seeds {0,1,2}.** No more leader
+experimentation (Kilian 2026-07-09). The learned-coordination bootstrap stays the banked Obj-3
+secondary (below).
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
