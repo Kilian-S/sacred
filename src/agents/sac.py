@@ -207,6 +207,7 @@ class ProtagonistSAC:
         role_alpha: bool = False,
         lr_alpha: float | None = None,
         alpha_floor: float | None = None,
+        legacy_next_alpha: bool = False,
     ) -> None:
         self.device = device or get_torch_device()
         self.gamma = gamma
@@ -224,6 +225,10 @@ class ProtagonistSAC:
         # floor that kills the across-seed variance from the leader over-concentrating in bad seeds
         # (mirrors the follower-alpha late-decay lesson). Default None = no floor = byte-identical.
         self.alpha_floor = alpha_floor
+        # gen10-MC2 isolation flag: True reverts the 2026-07-09 role-alpha TARGET fix (V(s')
+        # entropy term always uses the primary alpha, the pre-fix behaviour) while keeping the
+        # node-ordering fix; used to attribute the gen10-MC regression. Default False = fixed.
+        self.legacy_next_alpha = legacy_next_alpha
         # Feature widths this agent's networks consume. featurize_state may emit MORE columns
         # (new ones are appended last); _clip_x/_clip_ea slice down so checkpoints trained at a
         # narrower width keep seeing byte-identical inputs (see infer_node_in_dim/infer_edge_in_dim).
@@ -507,8 +512,11 @@ class ProtagonistSAC:
                     min_q_target = torch.min(q1_target, q2_target)
                     log_next_probs = torch.log(next_probs + 1e-9)
                     # role_alpha: the entropy term of V(s') uses the temperature of the decision
-                    # taken AT s' (follower successors get the follower alpha).
-                    a_next = (self.alpha_foll if (self.role_alpha and s.get("next_alpha_group", 0) == 1)
+                    # taken AT s' (follower successors get the follower alpha), unless the
+                    # legacy_next_alpha isolation flag reverts to the pre-fix behaviour.
+                    a_next = (self.alpha_foll
+                              if (self.role_alpha and not self.legacy_next_alpha
+                                  and s.get("next_alpha_group", 0) == 1)
                               else self.alpha)
                     v_next = torch.sum(next_probs * (min_q_target - a_next * log_next_probs))
 

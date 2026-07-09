@@ -162,13 +162,14 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    leader_ent_frac=1.0, follower_ent_frac=0.05, alpha_lr=5e-3,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
                    save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
-                   smooth_window=250, ckpt_dir=None):
+                   smooth_window=250, ckpt_dir=None, legacy_role_target=False):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
                           alpha_init=1.0, device="cpu", role_alpha=adversarial,
                           lr_alpha=(alpha_lr if adversarial else None),
-                          alpha_floor=(leader_alpha_floor if adversarial else None))
+                          alpha_floor=(leader_alpha_floor if adversarial else None),
+                          legacy_next_alpha=legacy_role_target)
     if env.config.menu_select:  # ROUTE menu-select head: give every net the per-route node indices
         menu = [torch.tensor(r, dtype=torch.long) for r in env.menu_route_node_idx()]
         for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
@@ -378,6 +379,9 @@ def main():
     p.add_argument("--smooth-window", type=int, default=250,
                    help="smooth-FP trailing window (recent sorties) the softmax BR targets; the iset "
                         "is sampled fresh EVERY sortie from it (true smooth FP, mirrors single-convoy B2-P3)")
+    p.add_argument("--legacy-role-target", action="store_true",
+                   help="gen10-MC2 isolation: revert the role-alpha TARGET fix (V(s') entropy term "
+                        "uses the primary alpha, pre-fix behaviour) while keeping the node-ordering fix")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -398,7 +402,8 @@ def main():
                   leader_ent_frac=args.leader_ent_frac, follower_ent_frac=args.follower_ent_frac,
                   alpha_lr=args.alpha_lr, follower_warmup=args.follower_warmup, stack_dup=args.stack_dup,
                   fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor,
-                  smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None))
+                  smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None),
+                  legacy_role_target=args.legacy_role_target)
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,

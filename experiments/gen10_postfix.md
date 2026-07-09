@@ -166,13 +166,45 @@ banked pre-fix 0.295 exact / 0.283 MC.
 **Single-convoy:** post-fix PASS on every clause and a large improvement (pooled 0.276 vs banked
 0.362; ~44% of the residual equilibrium gap was the representation bug). Vanilla unchanged.
 
-**Standing numbers after gen10 (recommendation, Kilian to confirm):** single-convoy headline =
-gen10-SC **0.276** (supersedes 0.362); multi-convoy headline = the banked pre-fix best-checkpoint
-(exact re-eval **0.295 +/- 0.024** at SHA `ad70a9c`) with the representation caveat disclosed,
-UNTIL a post-fix multi-convoy run matches or beats it. **Proposed diagnostic (ONE run, needs
-Kilian's go, pre-register before launch): gen10-MC2 = the MC config at 2400 sorties (seed 2 was
-still descending at cutoff) x 3 seeds, with the role-alpha target fix behind a flag set OFF, so
-the remaining confound (role-alpha targets vs menu-head discriminability) is isolated; if it
-recovers <= 0.295 the post-fix number supersedes; if not, the menu head needs a discriminability
-fix (e.g. a per-route learned embedding or route-cost/vulnerability features at the head) and that
-is a design decision, not a knob.**
+**Standing numbers after gen10 (CONFIRMED by Kilian 2026-07-10): the single-convoy headline is
+gen10-SC 0.276 (SUPERSEDES B2-P3's 0.362)**; multi-convoy headline = the banked pre-fix
+best-checkpoint (exact re-eval **0.295 +/- 0.024** at SHA `ad70a9c`) with the representation
+caveat disclosed, UNTIL a post-fix multi-convoy run matches or beats it.
+
+## gen10-MC2 pre-registration (2026-07-10, Kilian's explicit go; binding at launch)
+
+**Purpose:** attribute the gen10-MC regression and attempt the post-fix recovery. TWO deliberate
+changes vs gen10-MC, declared up front (a pragmatic recovery run, not a factorial isolation; the
+attribution reads below are partial and stated as such):
+1. **`--legacy-role-target`** (new flag, this commit): reverts the role-alpha TARGET fix (V(s')
+   entropy term uses the primary alpha, the pre-fix behaviour) while KEEPING the node-ordering
+   fix. Removes the target-scale confound.
+2. **`--sorties 2400`** (was 1200): gen10-MC seed 2 was still descending at cutoff, and seeds 0/1
+   peaked earlier/shallower than pre-fix, so the post-fix timescale may simply be longer.
+
+Everything else IDENTICAL to gen10-MC (62->97 k8 menu-select, band 0.15-0.95, N=3, K=1,
+fleet-route, smooth tau 0.05, switch-every 200, window 250, leader-ent-frac 0.5, floor 0.20,
+eval-every 100, EXACT estimator, per-eval checkpoints), seeds {0,1,2}, 3-parallel `--threads 3`.
+
+**Decision reading (pre-committed):** primary = exact best-checkpoint TAP mean +/- pop std.
+- **<= 0.295:** post-fix recovery achieved; this number SUPERSEDES the pre-fix multi-convoy
+  headline (pending Kilian's confirmation), and the regression is attributed to the target-fix
+  and/or horizon (attribution partial, stated).
+- **0.295-0.447:** partial recovery; the pre-fix 0.295 stands; the residual points at menu-head
+  discriminability under correct embeddings; the next step is a DESIGN change (route-level
+  features at the head), proposed separately, not more knobs.
+- **>= 0.447:** no recovery; same consequence as above, stronger.
+Alpha trajectories + H_lead reported per seed (the runaway/park signature is the secondary read).
+
+**Command (pinned; per-seed via `scratch/gen10_mc2.sh`, all saved under `models/runs/gen10_postfix/`):**
+```bash
+PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
+  --od 62-97 --N 3 --K 1 --k-extra 8 --menu-select --band 0.15,0.95 \
+  --fleet-route --attacker-mode smooth --fp-tau 0.05 --switch-every 200 --smooth-window 250 \
+  --leader-ent-frac 0.5 --leader-alpha-floor 0.20 --sorties 2400 --eval-every 100 \
+  --legacy-role-target --seed $S --threads 3 \
+  --json-out models/runs/gen10_postfix/mc2_seed$S.json \
+  --ckpt-dir models/runs/gen10_postfix/mc2_seed${S}_ckpts \
+  > models/runs/gen10_postfix/mc2_seed$S.log 2>&1
+```
+SHA pinned by the commit landing this pre-registration + the flag. RESULT appended below.
