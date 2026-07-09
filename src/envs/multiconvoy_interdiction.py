@@ -153,10 +153,10 @@ class MultiConvoyInterdictionEnv:
         return int(ri)
 
     def menu_route_node_idx(self) -> list[list[int]]:
-        """Per-route node indices in the observe() node ordering (for the route menu-select head:
-        each route is scored by the mean-pooled embedding of these nodes)."""
-        node_order = list(self.graph_env.observe()["nodes"].keys())
-        pos = {str(n): i for i, n in enumerate(node_order)}
+        """Per-route node indices in featurize_state's SORTED row order (for the route menu-select
+        head: each route is scored by the mean-pooled embedding of these nodes). Sorted, NOT dict
+        insertion order: featurize_state sorts node ids (the 2026-07-09 node-ordering fix)."""
+        pos = {str(n): i for i, n in enumerate(sorted(self.graph_env.observe()["nodes"].keys()))}
         return [[pos[str(n)] for n in route if str(n) in pos] for route in self.game.routes]
 
     def observe(self) -> dict:

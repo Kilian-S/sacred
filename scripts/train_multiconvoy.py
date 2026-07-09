@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.agents.networks import featurize_state
+from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
 from src.baselines.multiconvoy_oracle import best_response_attacker_multi, objective_value, solve_multiconvoy
@@ -36,7 +36,7 @@ TAP_K = 5
 def hop_probs(prot, obs, ci, allowed):
     pyg = featurize_state(obs, ci).to(prot.device)
     pyg.x = _clip_x(pyg.x, prot.node_in_dim); pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
-    node_ids = list(obs["nodes"].keys()); n2i = {n: i for i, n in enumerate(node_ids)}
+    n2i = node_index_map(obs)  # MUST match featurize_state's row order
     active = n2i[obs["trucks"][ci]["current_node"]]; mask_idx = [n2i[n] for n in allowed]
     prot.actor.eval()
     with torch.no_grad():
@@ -84,6 +84,37 @@ def _transition(obs, ci, hop, mask, reward, nobs, nci, nmask, done):
     return SMDPTransition(agent="protagonist", state=obs, action={ci: hop}, reward=reward,
                           next_state=nstate, done=done, elapsed_ticks=1,
                           action_mask={"protagonist": mask}, info={})
+
+
+def menu_leader_probs(prot, env):
+    """EXACT leader route distribution (menu-select): one forward pass at the convoy-0 decision."""
+    env.reset()
+    obs = env.observe()
+    pyg = featurize_state(obs, 0).to(prot.device)
+    pyg.x = _clip_x(pyg.x, prot.node_in_dim); pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
+    n2i = node_index_map(obs)
+    active = n2i[obs["trucks"][0]["current_node"]]
+    R = env.game.n_routes
+    taken = torch.zeros(R, device=prot.device)  # leader decision: no earlier convoys
+    prot.actor.eval()
+    with torch.no_grad():
+        probs, _ = prot.actor(pyg, active, list(range(R)), taken)
+    prot.actor.train()
+    return probs.cpu().numpy()
+
+
+def exact_fleet_occ_dist(prot, env):
+    """EXACT occupancy distribution in fleet-route + menu-select mode: the fleet stacks on the
+    leader, so the occupancy distribution is the leader's route distribution mapped onto the
+    stacked occupancies. Replaces the 400-sample Monte-Carlo estimate, whose sampling noise plus
+    min-selection bias the gen09 exact re-evaluation quantified at ~+0.012 on the best-checkpoint
+    TAP (scratch/gen09_exact_reeval.py; CRITIQUE_INTERDICTION.md §5.3)."""
+    lead = menu_leader_probs(prot, env)
+    R, N = env.game.n_routes, env.config.N
+    d = np.zeros(len(env.occupancies))
+    for r in range(R):
+        d[env._occ_index[tuple(N if i == r else 0 for i in range(R))]] = lead[r]
+    return d, lead
 
 
 def policy_occ_dist(prot, env, samples=400, fleet_route=False, leader_policy=None):
@@ -200,16 +231,19 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         # scarce (the confirmed under-sampling root cause).
         is_stack = sum(1 for c in occ if c > 0) == 1
         n_push = stack_dup if (is_stack and adversarial) else 1
+        if adversarial:
+            # role-dependent entropy. Bootstrap: convoys 1..N-1 are all followers (the leader is
+            # frozen). Otherwise convoy 0 leads and the followers switch to the low temperature
+            # only after the warmup so the critic learns the ordering before they commit.
+            # Tagged in a PRE-pass over ALL steps so that _transition's shallow next-state copy
+            # carries the NEXT decision's alpha_group too (the role-alpha target fix in sac.py).
+            for obs_j, ci_j, _, _ in steps:
+                is_follower = (ci_j != 0) and (bootstrap or k >= follower_warmup)
+                obs_j["target_entropy"] = follower_te if is_follower else leader_te
+                obs_j["alpha_group"] = 1 if is_follower else 0
         for i, (obs, ci, hop, mask) in enumerate(steps):
             if bootstrap and ci == 0:
                 continue  # convoy 0 is the FROZEN mixing leader: not trained
-            if adversarial:
-                # role-dependent entropy. Bootstrap: convoys 1..N-1 are all followers (the leader is
-                # frozen). Otherwise convoy 0 leads and the followers switch to the low temperature
-                # only after the warmup so the critic learns the ordering before they commit.
-                is_follower = (ci != 0) and (bootstrap or k >= follower_warmup)
-                obs["target_entropy"] = follower_te if is_follower else leader_te
-                obs["alpha_group"] = 1 if is_follower else 0
             last = i == N - 1
             nobs, nci, nmask = (steps[i + 1][0], steps[i + 1][1], steps[i + 1][3]) if not last else (None, None, None)
             t = _transition(obs, ci, hop, mask, reward if last else 0.0, nobs, nci, nmask, last)
@@ -219,8 +253,17 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         if eval_every and (k + 1) % eval_every == 0:
             t_train = time.time() - t_chunk
             t_ev = time.time()
-            d, routes = policy_occ_dist(prot, env, samples=400, fleet_route=fleet_route,
-                                        leader_policy=frozen_leader)
+            exact = fleet_route and env.config.menu_select
+            if exact:  # fleet-route: EXACT occupancy distribution (one forward pass, no MC noise)
+                d, lead = exact_fleet_occ_dist(prot, env)
+                nzl = lead[lead > 0]
+                H_lead, H_foll = float(-(nzl * np.log(nzl)).sum()), 0.0
+                stack_rate, follow_rate = 1.0, 1.0  # by construction in fleet-route mode
+            else:
+                d, routes = policy_occ_dist(prot, env, samples=400, fleet_route=fleet_route,
+                                            leader_policy=frozen_leader)
+                H_lead, H_foll = role_entropies(routes, env.game.n_routes)
+                stack_rate, follow_rate = coordination_stats(routes)
             pol_hist.append(d)
             _, expl = best_response_attacker_multi(env.obj_matrix, d)
             _, expl_tap = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-TAP_K:], axis=0))
@@ -228,8 +271,6 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 Path(ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(Path(ckpt_dir) / f"actor_ep{k + 1}.pt"))
             nz = d[d > 0]; h = float(-(nz * np.log(nz)).sum())
-            H_lead, H_foll = role_entropies(routes, env.game.n_routes)
-            stack_rate, follow_rate = coordination_stats(routes)
             t_eval = time.time() - t_ev
             hist.append((k + 1, expl, expl_tap, float(prot.alpha), float(prot.alpha_foll),
                          stack_rate, follow_rate, H_lead, H_foll, t_train, t_eval))
@@ -241,13 +282,19 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                       f"train {t_train:4.0f}s eval {t_eval:3.0f}s   "
                       f"(loss_mixed={sol.loss_mixed:.3f}, ALNS={baselines['alns']:.3f})", flush=True)
             t_chunk = time.time()
-    d, routes = policy_occ_dist(prot, env, samples=800, fleet_route=fleet_route,
-                                leader_policy=frozen_leader)
+    if fleet_route and env.config.menu_select:  # EXACT final reading (see the eval block above)
+        d, lead = exact_fleet_occ_dist(prot, env)
+        nzl = lead[lead > 0]
+        H_lead, H_foll = float(-(nzl * np.log(nzl)).sum()), 0.0
+        stack_rate, follow_rate = 1.0, 1.0
+    else:
+        d, routes = policy_occ_dist(prot, env, samples=800, fleet_route=fleet_route,
+                                    leader_policy=frozen_leader)
+        H_lead, H_foll = role_entropies(routes, env.game.n_routes)
+        stack_rate, follow_rate = coordination_stats(routes)
     pol_hist.append(d)
     _, expl_tap = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-TAP_K:], axis=0))
     _, expl = best_response_attacker_multi(env.obj_matrix, d)
-    H_lead, H_foll = role_entropies(routes, env.game.n_routes)
-    stack_rate, follow_rate = coordination_stats(routes)
     # STATIONARY-TAIL time-average (zero-sum FP: the equilibrium is the time-average, not per-eval
     # play): exploitability of the MEAN occupancy over the last TAIL evals, its per-eval expl
     # amplitude (std), and mean stack there -- the trustworthy read once coordination has plateaued.

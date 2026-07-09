@@ -19,6 +19,17 @@ import numpy as np
 
 _FEATURIZE_CACHE = {}
 
+
+def node_index_map(observation: dict[str, Any]) -> dict[Any, int]:
+    """Node id -> row index in the tensors ``featurize_state`` builds for this observation.
+
+    ``featurize_state`` orders rows by ``sorted(nodes.keys())``. Every consumer that indexes into
+    the featurized node matrix (active-node index, candidate-node indices, per-route node indices)
+    MUST build its map with this helper: dict insertion order differs from sorted order on the OSM
+    graphs, and using it silently reads the wrong rows (the 2026-07-09 node-ordering fix; see
+    CRITIQUE_INTERDICTION.md §5.1 and tests/test_node_ordering.py)."""
+    return {nid: idx for idx, nid in enumerate(sorted(observation["nodes"].keys()))}
+
 # Node feature width. Bumped 9 -> 11 for Stage 1.5 (request age + active truck's congestion-aware
 # ETA; zero for static problems), and 11 -> 13 for the fixed hybrid rung: column 11 marks the
 # active truck's assigned target (the goal it is routing toward — previously invisible to the

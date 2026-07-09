@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.agents.networks import featurize_state
+from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.env.smdp_wrapper import SMDPTransition
 from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
@@ -41,7 +41,7 @@ def hop_probs(prot: ProtagonistSAC, obs, allowed: list) -> dict:
     """Policy probabilities over the allowed next hops at the observed convoy position."""
     pyg = featurize_state(obs, 0).to(prot.device)
     pyg.x = _clip_x(pyg.x, prot.node_in_dim); pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
-    node_ids = list(obs["nodes"].keys()); n2i = {n: i for i, n in enumerate(node_ids)}
+    n2i = node_index_map(obs)  # MUST match featurize_state's row order
     active_idx = n2i[obs["trucks"][0]["current_node"]]
     mask_idxs = [n2i[n] for n in allowed]
     prot.actor.eval()
@@ -226,8 +226,9 @@ def main():
     p.add_argument("--smooth-window", type=int, default=250, help="smooth-FP targeting window (plays)")
     p.add_argument("--window", type=int, default=500, help="trailing-window size for empirical play")
     p.add_argument("--json-out", type=str, default="", help="write the result record here (matrix aggregation)")
+    p.add_argument("--threads", type=int, default=4, help="torch CPU threads (use 3 for 3-parallel)")
     args = p.parse_args()
-    torch.set_num_threads(4)
+    torch.set_num_threads(args.threads)
     s, t = args.od.split("-")
     band = tuple(float(x) for x in args.edge_vuln_band.split(",")) if args.edge_vuln_band else None
     env = make_interdiction_env(od=(s, t), K=args.K, interception_loss=args.interception_loss,

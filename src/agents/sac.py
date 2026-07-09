@@ -26,6 +26,7 @@ from src.agents.networks import (
     AntagonistPolicyValueNet,
     ProtagonistPolicyValueNet,
     featurize_state,
+    node_index_map,
 )
 
 
@@ -339,8 +340,7 @@ class ProtagonistSAC:
         pyg_data = featurize_state(observation, active_truck).to(self.device)
         pyg_data.x = _clip_x(pyg_data.x, self.node_in_dim)
         pyg_data.edge_attr = _clip_ea(pyg_data.edge_attr, self.edge_in_dim)
-        node_ids = list(observation["nodes"].keys())
-        node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
+        node_to_idx = node_index_map(observation)  # MUST match featurize_state's row order
 
         active_idx = node_to_idx[observation["trucks"][active_truck]["current_node"]]
         # ROUTE menu-select (multi-convoy shared-edge): allowed_nodes are route ids, scored directly.
@@ -411,7 +411,7 @@ class ProtagonistSAC:
                 continue
             action_idx = allowed_nodes.index(chosen_node)
 
-            node_to_idx = {nid: idx for idx, nid in enumerate(state["nodes"].keys())}
+            node_to_idx = node_index_map(state)  # MUST match featurize_state's row order
             active_idx = node_to_idx[state["trucks"][active_truck]["current_node"]]
             menu = getattr(self.actor, "menu_routes", None) is not None
             mask_idxs = (list(allowed_nodes) if menu
@@ -427,7 +427,7 @@ class ProtagonistSAC:
                     and "protagonist" in next_state.get("allowed_destinations", {})):
                 next_allowed = next_state["allowed_destinations"]["protagonist"].get(next_active_truck, [])
                 if next_allowed:
-                    next_node_to_idx = {nid: idx for idx, nid in enumerate(next_state["nodes"].keys())}
+                    next_node_to_idx = node_index_map(next_state)
                     next_active_idx = next_node_to_idx[next_state["trucks"][next_active_truck]["current_node"]]
                     next_mask_idxs = (list(next_allowed) if menu
                                       else [next_node_to_idx[nid] for nid in next_allowed])
@@ -457,6 +457,10 @@ class ProtagonistSAC:
                 "target_entropy": state.get("target_entropy"),
                 # optional per-decision temperature group (0 = default/leader, 1 = follower).
                 "alpha_group": state.get("alpha_group", 0),
+                # the NEXT decision's group, for the soft value V(s') (a follower successor state
+                # must use the follower temperature in its entropy term, not the leader's; the
+                # 2026-07-09 role-alpha target fix). 0 for every historical transition.
+                "next_alpha_group": next_state.get("alpha_group", 0),
                 "taken": taken, "next_taken": next_taken,  # menu route-correlation (lever 2)
             })
 
@@ -502,7 +506,11 @@ class ProtagonistSAC:
                     q2_target = self.target_q2.head(h_tq2[hn], s["next_active_idx"], s["next_mask_idxs"], nt)
                     min_q_target = torch.min(q1_target, q2_target)
                     log_next_probs = torch.log(next_probs + 1e-9)
-                    v_next = torch.sum(next_probs * (min_q_target - self.alpha * log_next_probs))
+                    # role_alpha: the entropy term of V(s') uses the temperature of the decision
+                    # taken AT s' (follower successors get the follower alpha).
+                    a_next = (self.alpha_foll if (self.role_alpha and s.get("next_alpha_group", 0) == 1)
+                              else self.alpha)
+                    v_next = torch.sum(next_probs * (min_q_target - a_next * log_next_probs))
 
             # SMDP Bellman target: y = r + gamma^dt * (1 - done) * V(s')
             target_q = (s["reward"] * self.reward_scale) + (self.gamma ** s["dt"]) * (1.0 - float(s["done"])) * v_next
@@ -907,8 +915,7 @@ class AntagonistSAC:
         pyg_data = featurize_state(observation).to(self.device)
         pyg_data.x = _clip_x(pyg_data.x, self.node_in_dim)
         pyg_data.edge_attr = _clip_ea(pyg_data.edge_attr, self.edge_in_dim)
-        node_ids = list(observation["nodes"].keys())
-        node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
+        node_to_idx = node_index_map(observation)  # MUST match featurize_state's row order
 
         # 2. Get actor policy distributions
         self.actor.eval()
@@ -993,7 +1000,7 @@ class AntagonistSAC:
                 allowed_edges = list(action_mask_dict.get("levels_by_edge", {}).keys())
             remaining_budget = trans.info.get("antagonist_budget_remaining", 0.0)
 
-            node_to_idx = {nid: idx for idx, nid in enumerate(state["nodes"].keys())}
+            node_to_idx = node_index_map(state)  # MUST match featurize_state's row order
             num_allowed = len(allowed_edges)
 
             # Resolve chosen action index in the flattened (edge x level + wait) space
@@ -1035,7 +1042,7 @@ class AntagonistSAC:
                 if next_allowed is None:
                     next_allowed = list(next_mask_dict.get("levels_by_edge", {}).keys())
                 next_budget = trans.info.get("next_antagonist_budget_remaining", remaining_budget)
-                next_node_to_idx = {nid: idx for idx, nid in enumerate(next_state["nodes"].keys())}
+                next_node_to_idx = node_index_map(next_state)
                 rec["next_allowed"] = next_allowed
                 rec["next_node_to_idx"] = next_node_to_idx
                 rec["next_budget"] = next_budget
