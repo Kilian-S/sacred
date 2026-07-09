@@ -166,9 +166,39 @@ more ad-hoc unsaved commands.
 **SHA:** pinned by the commit that lands this pre-registration + the `--leader-alpha-floor` code
 (committed BEFORE the run, so the pre-registration is on record regardless of outcome).
 
-### gen09-STAB RESULT
+### gen09-STAB RESULT (2026-07-09, SHA `eb44350`): GATE FAILED (wrong-regime convergence; diagnosis below)
 
-_(appended after the three seeds complete; leader TAP mean +/- std + alpha trajectories)_
+Three seeds {0,1,2}, saved to `models/runs/gen09_multiconvoy/fleetroute_stab_seed{0,1,2}.{json,log}`.
+
+| seed | leader-alpha trajectory (200->1200) | H_lead/lnR (tail) | per-eval policy expl (200->1200) | **final leader TAP** |
+|---|---|---|---|---|
+| 0 | 1.20 -> 0.80 -> 0.40 -> 0.30 -> 0.31 -> 0.30 | ~0.79-0.95 | 0.29 -> 0.63 -> 0.61 -> 0.78 -> 0.94 -> 0.88 | **0.818** |
+| 1 | 1.01 -> 0.86 -> 0.34 -> 0.30 -> 0.30 -> 0.30 | ~0.57-0.98 | 0.37 -> 0.31 -> 0.75 -> 0.73 -> 0.81 -> 0.78 | **0.767** |
+| 2 | 0.47 -> 0.37 -> 0.34 -> 0.30 -> 0.30 -> 0.30 | ~0.82-0.97 | 0.45 -> 0.34 -> 0.57 -> 0.73 -> 0.91 -> 0.69 | **0.715** |
+
+**Leader TAP mean 0.767 +/- 0.042 (pop std).** GATE (~0.25-0.30 tight): **FAILED** - the std is tight
+but the value is wrong (near-uniform, worse than ALNS 0.699, ~3.5x the equilibrium 0.216).
+
+**What the run establishes (both halves matter):**
+- **The leader-alpha FLOOR works mechanically:** all three seeds drive alpha down and pin at the floor
+  0.30 (vs the earlier collapse to different depths). The across-seed alpha variance is killed. That
+  half of the fix is sound and retained.
+- **But the leader converged to the WRONG regime (near-UNIFORM, not the 0.63 equilibrium), and the
+  per-eval exploitability CLIMBS over training** (the leader degrades). Root cause = **`fp-tau 0.15`
+  (borrowed from attempt-6, the FOLLOWER run) is too diffuse FOR THE LEADER:** a diffuse smooth
+  attacker does not sharply punish the leader's high-vulnerability routes, so the per-route Q-gradient
+  is flat and the leader has no incentive to concentrate onto the non-uniform equilibrium - it sits at
+  maximum entropy (uniform, H_lead/lnR ~0.9) and stays exploitable. The earlier-indicative good seed
+  (0.257) used the sharper **default tau 0.05**. Secondary error: raising `--leader-ent-frac` was the
+  wrong DIRECTION here (the leader is over-SPREAD, not over-concentrated; the floor already prevents
+  over-concentration, so more entropy target only compounds the uniformity).
+
+**Corrected re-run (gen09-STAB-2, proposed; awaiting Kilian's go before any CPU):** restore the
+LEADER's attacker sharpness `--fp-tau 0.05` (sharp attacker -> per-route Q-gradient -> the leader
+concentrates onto the non-uniform 0.63 equilibrium), KEEP the leader-alpha floor (it correctly caps
+the resulting over-concentration overshoot), and do NOT raise leader-ent-frac above the equilibrium.
+Per the pre-registered contingency this is a config tune + re-run, not a post-hoc patch; the FAILED
+result above stands on record.
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
