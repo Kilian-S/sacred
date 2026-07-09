@@ -224,9 +224,39 @@ Everything else UNCHANGED (62->97 k8, band 0.15-0.95, N=3, K=1, fleet-route, smo
 `scratch/gen09_leader_stab2.sh`. **GATE unchanged: 3 seeds land tight ~0.25-0.30 (H_lead/lnR ~0.63)
 as an OUTCOME.** SHA pinned by the commit landing this pre-registration.
 
-#### gen09-STAB-2 RESULT
+#### gen09-STAB-2 RESULT (2026-07-09, SHA `97ba7c2`): GATE FAILED, but the MECHANISM is validated; FP cycling isolated
 
-_(appended after the three seeds complete)_
+Three seeds, saved to `models/runs/gen09_multiconvoy/fleetroute_stab2_seed{0,1,2}.{json,log}`.
+
+| seed | TAP: 200->400->600->800->1000->1200 | per-eval expl tail | H_lead/lnR (early->late) | final TAP |
+|---|---|---|---|---|
+| 0 | 0.39 -> 0.39 -> **0.29** -> **0.27** -> 0.34 -> 0.45 | spikes to 0.96 | 0.55 -> 0.79 | 0.609 |
+| 1 | 0.37 -> **0.28** -> 0.37 -> 0.49 -> 0.58 -> 0.71 | spikes to 0.94 | 0.75 -> 0.90 | 0.830 |
+| 2 | 0.40 -> **0.28** -> 0.33 -> 0.39 -> 0.47 -> 0.65 | spikes to 0.92 | 0.65 -> 0.88 | 0.806 |
+
+**Leader TAP mean 0.748 +/- 0.099.** GATE (~0.25-0.30 tight): **FAILED** on the endpoint. But the run
+is the most informative yet:
+- **The adversarial mechanism is VALIDATED (as an outcome, not forced):** the SHARP attacker drives
+  all three leaders to the equilibrium hedge EARLY - **TAP 0.27-0.29 at H_lead/lnR 0.55-0.75** around
+  sortie 400-600, with alpha settling naturally ABOVE the 0.20 floor (floor not binding early). The
+  ~1/vuln hedge is produced by adversarial pressure, exactly as intended.
+- **The TAIL diverges = last-iterate FICTITIOUS-PLAY CYCLING** (the single-convoy B2-P failure mode):
+  per-eval exploitability spikes to ~0.9 (the leader jumps onto a near-pure route the attacker then
+  covers) and the policy re-spreads; TAP climbs back to 0.6-0.8.
+
+**Root cause (mechanism, investigated per the anti-knob-cranking discipline):** the multi-convoy
+"smooth" attacker is NOT actually smooth. In `train_multiconvoy.py` it samples ONE interdiction set
+and HOLDS it for the entire `switch_every`=200 block, then resamples - block-held single-iset play,
+which is the CYCLING regime. The stable single-convoy **B2-P3** did two things this code does not:
+(a) it sampled a **FRESH iset EVERY sortie** from the softmax; (b) it used a **TRAILING-WINDOW** of
+recent play, not the all-history occupancy (which goes stale and lets the leader drift to exploit the
+attacker's lag). So the multi-convoy trainer never had the FP discipline that stabilised single-convoy.
+This also retroactively explains the earlier seed-to-seed variance.
+
+**gen09-STAB-3 (proposed; awaiting Kilian's go):** mechanism fix, mirroring the B2-P3 recipe - make
+the multi-convoy smooth attacker TRULY smooth (per-sortie iset sampling from a trailing-window softmax),
+then re-run tau 0.05 + floor 0.20 + ent-frac 0.5. This is a MECHANISM correction (the FP discipline
+single-convoy proved), not tuning tau/floor toward 0.63. The two FAILED results stand on record.
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
