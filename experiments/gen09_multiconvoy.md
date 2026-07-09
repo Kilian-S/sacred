@@ -286,9 +286,40 @@ explains the earlier 0.257/0.433/0.517/0.382 variance). Report all three seeds' 
 (mean +/- std) and the per-eval tail behaviour. NO lock, NO 3-seed headline lock-in yet. SHA pinned by
 the commit landing this pre-registration + the fp_dynamics port. The two FAILED runs stand on record.
 
-#### gen09-STAB-3 RESULT
+#### gen09-STAB-3 RESULT (2026-07-09, SHA `b7b9a98`): FAILED the "hold" criterion; but the 3 runs reveal a reproducible TRANSIENT
 
-_(appended after the three seeds complete)_
+Saved to `models/runs/gen09_multiconvoy/fleetroute_stab3_seed{0,1,2}.{json,log}`.
+
+| seed | TAP: 200->400->600->800->1000->1200 | **best-ckpt TAP (min, ~sortie 400)** | final TAP | tail-avg |
+|---|---|---|---|---|
+| 0 | 0.34 -> **0.33** -> 0.38 -> 0.45 -> 0.54 -> 0.69 | 0.327 | 0.806 | 0.604 |
+| 1 | 0.49 -> **0.30** -> 0.37 -> 0.52 -> 0.59 -> 0.77 | 0.295 | 0.942 | 0.691 |
+| 2 | 0.36 -> **0.26** -> 0.32 -> 0.45 -> 0.53 -> 0.70 | 0.257 | 0.843 | 0.648 |
+
+**Final TAP mean 0.864 +/- 0.057; tail-average 0.648 +/- 0.036 (~ALNS 0.699).** GATE ("hold ~0.27
+across the tail"): **FAILED** - the ported smooth-FP discipline did NOT stop the drift (same signature
+as STAB-2: concentrate early, drift to uniform). So the block-held/all-history diagnosis was wrong;
+per-sortie sampling + trailing window changed nothing.
+
+**The reproducible finding across STAB-1/2/3 (the real result):** with the SHARP attacker (tau 0.05,
+STAB-2 and STAB-3) all three seeds concentrate to the equilibrium hedge EARLY and TIGHT
+(**best-checkpoint TAP: STAB-2 0.277 +/- 0.007, STAB-3 0.293 +/- 0.029, ~sortie 400**), all beating
+ALNS 0.699 / vanilla 0.945 and approaching the equilibrium 0.216 - THEN over-train / drift toward
+uniform (TAP -> 0.7-0.9, H_lead -> uniform, alpha -> floor). So:
+- the adversarial mechanism reproducibly PRODUCES the equilibrium hedge (validated, tight across seeds);
+- but the equilibrium is a TRANSIENT, not a stable fixed point: **uniform is a competing FP attractor**
+  and the leader over-trains into it. Kilian's "hold across the tail" criterion is NOT met.
+- **The banked 0.257 was a 400-sortie result = this transient best-checkpoint** (not a converged value).
+- The seed-to-seed variance Kilian cited (0.257/0.433/0.517/0.382) is the drift caught at different
+  training lengths; the BEST-CHECKPOINT (the project's standing discipline: final-checkpoint is
+  misleading under co-evolution, use best-checkpoint) is tight (~0.28) and reproducible.
+
+**Two honest paths (Kilian's call):** (A) one more MECHANISM attempt - `switch_every 50` (the exact
+B2-P3 weight-refresh cadence; I kept 200, leaving the attacker stale for 200-sortie stretches so the
+leader drifts to exploit it) to try to HOLD the equilibrium; (B) bank the BEST-CHECKPOINT framing
+(fleet-route best-ckpt TAP ~0.28 +/- 0.01-0.03, tight, beats ALNS, approaches equilibrium; the late
+drift to uniform is a documented over-training instability handled by best-checkpoint selection). All
+three STAB runs stand on record.
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
