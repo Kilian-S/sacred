@@ -1,16 +1,19 @@
 # TASK.md: state record + plan
 
-> **⚠️ 2026-07-09 (LATEST): MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED. Read `HANDOVER.md` top
-> banner -> `experiments/gen08_interdiction.md` (Phase M sections) -> `SACRED_PROGRESS.md` entry 15.**
-> Fork A picked shared-edge **62-97 k8** (disjoint route sets are structurally flat-FP, so asymmetry
-> needs shared edges); the leader learns a stable near-equilibrium mixed strategy and the fleet stacks:
-> **fleet-route 0.257 (1.19x eq 0.216) << ALNS 0.699 << vanilla ~0.945** = the banked multi-convoy
-> headline (structural stacking; Obj-5). The learned-follower bootstrap (6 attempts) made `follow_w`
-> climb (the critic values coordination = milestone) but saturated below 0.257 -> secondary Obj-3
-> result. Suite 146 green; COMMITTED `e7a2209` (2026-07-09), ledger `experiments/gen09_multiconvoy.md`
-> locks both headlines. NEXT: (in progress) leader stabilisation (leader-alpha floor + higher
-> leader-ent-frac + steadier/longer smooth FP) before the 3-seed lock; then thesis writing on the two
-> banked headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257). Everything below is HISTORICAL.
+> **⚠️ 2026-07-09 (LATEST): MULTI-CONVOY HEADLINE LOCKED. Read `HANDOVER.md` top banner ->
+> `experiments/gen09_multiconvoy.md` (authoritative locked record) -> `SACRED_PROGRESS.md` entry 16.**
+> Fork A shared-edge **62-97 k8** (disjoint = structurally flat-FP, asymmetry needs shared edges); the
+> leader learns a near-equilibrium mixed strategy and the fleet stacks. **LOCKED headline (gen09-HEADLINE,
+> 3-seed saved run, SHA `ad70a9c`): fleet-route best-checkpoint TAP 0.283 +/- 0.021** - ladder shortest
+> 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 >> SACRED 0.283 > eq 0.216 (Obj-5, 2.5x
+> ALNS; the fairness row proves ALNS spreads by choice, so the win is randomisation). The leader
+> over-trains toward uniform after the best-checkpoint (last-iterate FP cycling; three gen09-STAB
+> hold-the-tail attempts failed = a reproducible transient), so it is best-checkpoint-selected by
+> exploitability (standard minimax discipline; drift disclosed); the earlier single-seed 0.257 was a
+> transient. The learned-follower bootstrap (6 attempts, `follow_w` climbs, tail-avg 0.482 saturated below
+> the structural 0.283) stays the SECONDARY Obj-3 result. Suite 146 green; COMMITTED through `92e2d8a`
+> (2026-07-09). NO more leader experimentation (Kilian). NEXT: thesis writing on the two banked headlines
+> (single-convoy B2-P3 0.362; multi-convoy fleet-route best-checkpoint 0.283 +/- 0.021). Everything below is HISTORICAL.
 >
 > **⚠️ 2026-07-07: MULTI-CONVOY PIVOT.** The single-convoy interdiction headline is banked
 > (B2-P3, shared-edge), but (a) the symmetric-instance sweep destabilises SACRED (F1 killed) and

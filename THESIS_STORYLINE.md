@@ -184,9 +184,17 @@ which needs SHARED edges (one covered edge hits several routes). Fork A selected
 sharing (a 12-route menu), screened for asymmetry, margin and stack mass. There the adversarially
 trained SAC leader learns a stable, near-equilibrium randomised route strategy, and the fielded fleet
 (stacking on it) is far less mission-exploitable than the coordinating ALNS metaheuristic and than
-non-adversarial SAC: **shortest-path 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 (1.19x the
-computable equilibrium 0.216)**. That is the multi-convoy headline (Obj-5 against a computable optimum),
-banked, with an honest caveat reported as measured: the fleet stacking is STRUCTURAL (the followers copy
+non-adversarial SAC. **LOCKED headline (2026-07-09, gen09-HEADLINE, 3-seed saved run, SHA `ad70a9c`):
+shortest-path 0.973 > vanilla 0.945 > ALNS-forced-to-stack 0.912 > ALNS 0.699 >> SACRED (best-checkpoint)
+0.283 +/- 0.021 > equilibrium 0.216** (2.5x ALNS, 3.3x vanilla, 1.31x the computable equilibrium, tight
+across 3 seeds). The fairness row is load-bearing: ALNS is FREE to stack but SPREADS by choice (0.699 <
+forced-stack 0.912), so SACRED's advantage is the RANDOMISATION, not a stacking privilege. Honest
+disclosure, itself chapter-worthy: the low-exploitability leader is a BEST-CHECKPOINT (the last iterate
+over-trains toward uniform - inherent last-iterate fictitious-play cycling - so it is selected by
+exploitability, standard for adversarial/minimax training, with the drift saved and disclosed; the
+earlier single-seed 0.257 was a transient best-checkpoint, superseded). That is the multi-convoy headline
+(Obj-5 against a computable optimum), with an honest caveat reported as measured: the fleet stacking is
+STRUCTURAL (the followers copy
 the leader by construction), not learned. The attempt to make the followers LEARN the coordination is
 the act's mechanistic coda and a genuine Obj-3 contribution: it hit a diagnosed chicken-and-egg (the
 critic cannot value a joint behaviour it never experiences), which a six-step fix chain (demonstration

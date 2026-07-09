@@ -270,11 +270,19 @@ Two findings sharpened the build. (1) DISJOINT route sets are STRUCTURALLY unifo
 screen of 72 OD pairs: leader entropy H/lnR >= 0.97), i.e. a flat fictitious-play landscape where the
 single-convoy leader destabilises (33->71 cycled / alpha runaway). A learnable, stable leader needs an
 ASYMMETRIC instance, which requires SHARED edges (Fork A). (2) On shared-edge **62-97 k_extra=8**
-(route-index MENU-SELECT, no walk trie) the leader learns a stable near-equilibrium mixed strategy and
-the fleet stacks: **fleet-route 0.257 (1.19x eq 0.216) << ALNS 0.699 << vanilla ~0.945** = the BANKED
-multi-convoy headline (Obj-5), with the honest caveat that stacking is STRUCTURAL. Making the followers
-LEARN to stack (emergent coordination) is a genuine but weaker secondary Obj-3 result: a six-step fix
-chain made the critic value coordination (the learned weight `follow_w` climbs) and beats both baselines
-on the FP time-average (0.482), but saturated below the structural 0.257. So the structural fleet-route
-is the headline; the learned-coordination arc is the mechanistic coda. Coordination-dynamics work is
-CLOSED (diminishing returns).
+(route-index MENU-SELECT, no walk trie) the leader learns a near-equilibrium mixed strategy and the
+fleet stacks. **LOCKED multi-convoy headline (2026-07-09, gen09-HEADLINE, 3-seed saved run, SHA
+`ad70a9c`, ledger `experiments/gen09_multiconvoy.md`): fleet-route best-checkpoint TAP 0.283 +/- 0.021
+- ladder shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 >> SACRED 0.283 >
+equilibrium 0.216** (Obj-5; 2.5x ALNS). Two honest disclosures, both chapter-worthy: (i) the fleet
+stacking is STRUCTURAL; (ii) the low-exploitability leader is a BEST-CHECKPOINT - the last iterate
+over-trains toward uniform (inherent last-iterate fictitious-play cycling; three "hold-the-tail"
+stabilisation attempts gen09-STAB-1/2/3 failed, establishing the equilibrium is a reproducible
+transient), so it is selected by exploitability (standard for adversarial/minimax training) with the
+drift saved + disclosed; the earlier single-seed **0.257 was a transient** best-checkpoint, superseded.
+Fairness: ALNS is free to stack but SPREADS by choice (0.699 < 0.912), so the win is the RANDOMISATION.
+Making the followers LEARN to stack (emergent coordination) is a genuine but weaker secondary Obj-3
+result: a six-step fix chain made the critic value coordination (the learned weight `follow_w` climbs)
+and beats both baselines on the FP time-average (0.482), but saturated below the structural best-ckpt
+0.283. So the structural fleet-route is the headline; the learned-coordination arc is the mechanistic
+coda. Coordination-dynamics work is CLOSED (diminishing returns).

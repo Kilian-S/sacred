@@ -464,6 +464,11 @@
 
 ## 15. Multi-convoy Phase M: Fork A instance + fleet-route headline + the learned-follower arc  (2026-07-08/09 · branch `gen08-interdiction` · `scripts/train_multiconvoy.py`, `scratch/multiconvoy_instance_screen.py`, `experiments/gen08_interdiction.md`)
 
+> **UPDATE (see entry 16):** the multi-convoy fleet-route headline number in this entry (the transient
+> single-seed **0.257**) is SUPERSEDED by the LOCKED 3-seed best-checkpoint **0.283 +/- 0.021**
+> (gen09-HEADLINE, SHA `ad70a9c`, `experiments/gen09_multiconvoy.md`). Entry preserved as the Phase M
+> record; entry 16 has the stabilisation arc + the locked headline.
+
 - **Goal (prospective):** realise the multi-convoy oracle finding as trained SACRED: an adversarially
   trained dispatcher whose randomised joint routing (stack-and-randomise) beats a coordinating ALNS
   metaheuristic under the loss-averse mission-failure objective, meeting all five objectives.
@@ -501,3 +506,45 @@
   bootstrapping, now load-bearing in the learned-follower arc), Obj 4 (fleet composition, N a lever),
   Obj 5 (the fleet-route ladder shortest 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 -> eq
   0.216). The final multi-convoy Results act; single-convoy stays the proven core.
+
+## 16. gen09 multi-convoy leader-stabilisation arc -> the LOCKED best-checkpoint headline  (2026-07-09 · branch `gen08-interdiction` · `scripts/train_multiconvoy.py`, `src/baselines/fp_dynamics.py`, `experiments/gen09_multiconvoy.md`)
+
+- **Goal (prospective):** the entry-15 fleet-route headline was a single unsaved seed-0 run (0.257);
+  Kilian flagged that across seeds it varied (0.257/0.433/0.517/0.382). Turn that into a tight, saved,
+  reproducible 3-seed headline by stabilising the leader (kill the across-seed variance), pre-registering
+  and committing every attempt before running.
+- **Headline results:** three "hold-the-tail" stabilisation attempts FAILED, and the failure IS the
+  finding. STAB-1 (diffuse attacker tau 0.15): leader never concentrates (uniform). STAB-2 (sharp tau
+  0.05): leader concentrates to the equilibrium hedge EARLY and TIGHT (best-ckpt 0.277 +/- 0.007) then
+  DRIFTS to uniform. STAB-3 (ported the exact B2-P3 smooth-FP discipline into a shared
+  `src/baselines/fp_dynamics.py`, used by both trainers): SAME drift (best-ckpt 0.293 +/- 0.029). So the
+  leader's low exploitability is a REPRODUCIBLE TRANSIENT, not a stable fixed point (uniform is a
+  competing FP attractor; the last iterate over-trains toward it - inherent last-iterate fictitious-play
+  cycling, the single-convoy B2-P failure mode). **Decision (Kilian): stop the knob-tuning chase; resolve
+  it the standard single-convoy way = BEST-CHECKPOINT selection.** The **LOCKED** definitive run
+  (gen09-HEADLINE, SHA `ad70a9c`, 3 seeds, 1200 sorties, full saving incl. per-eval actor checkpoints):
+  **fleet-route best-checkpoint TAP 0.283 +/- 0.021**. Ladder: shortest 0.973 > vanilla ~0.945 >
+  ALNS-forced-stack 0.912 > ALNS 0.699 >> **SACRED 0.283** > equilibrium 0.216 (2.5x ALNS, 3.3x vanilla,
+  1.31x eq). Fairness row: ALNS is FREE to stack but SPREADS by choice (0.699 < forced-stack 0.912), so
+  SACRED's win is the RANDOMISATION, not a stacking privilege.
+- **What we learned:** (i) the sharp adversary REPRODUCIBLY produces the equilibrium hedge (validated,
+  tight across seeds) - the mechanism works; (ii) but it is a best-checkpoint transient, and
+  best-checkpoint selection by exploitability (the deployable object; the last iterate is misleading
+  under minimax) is the honest, standard resolution, with the drift SAVED and DISCLOSED, not hidden;
+  (iii) the earlier seed spread was the drift caught at different training lengths, not irreducible
+  variance; (iv) a false diagnosis is worth recording (the block-held/all-history attacker was NOT the
+  cause - porting the true-smooth B2-P3 discipline changed nothing).
+- **Thesis progression:** a shared, proven smooth-FP helper (`fp_dynamics.py`, one implementation for
+  single- and multi-convoy); the leader-alpha floor; per-eval checkpoint saving (best-checkpoint is a
+  re-evaluable ARTEFACT); the ALNS-forced-stack fairness metric. Every attempt pre-registered + committed
+  before running (11 commits, `92e2d8a` and prior). Suite 146 green.
+- **What it means for the thesis:** this is a real, chapter-worthy result and a rigorous story: the
+  multi-convoy Obj-5 headline (SACRED's randomised routing beats the SOTA metaheuristic AND non-adversarial
+  SAC, approaching a computable equilibrium) is LOCKED at 0.283 +/- 0.021, with an honest, disclosed
+  last-iterate-instability caveat resolved by best-checkpoint selection - the same discipline single-convoy
+  used. The transient/best-checkpoint finding is itself a contribution (WHERE and WHY minimax routing
+  converges vs over-trains). No more leader experimentation (Kilian); write-up next; scaling tier only if runway.
+- **Thesis fit:** Obj 5 (the LOCKED ladder + the fairness row), Obj 1 (the FP last-iterate-cycling / transient
+  characterisation), Obj 3 (SAC-entropy-as-mixed-strategy under adversarial pressure; best-checkpoint
+  discipline). `experiments/gen09_multiconvoy.md` is the authoritative locked record. The learned-follower
+  bootstrap (entry 15) stays the banked Obj-3 SECONDARY.

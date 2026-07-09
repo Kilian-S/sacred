@@ -587,6 +587,12 @@ PYTHONPATH=. python scripts/train_sacred.py --problem interdiction --od 33-71 --
 
 ## Phase M (multi-convoy): BANKED INSURANCE RESULT -- leader-mix + structural stacking beats ALNS (2026-07-08)
 
+> **SUPERSEDED FOR THE HEADLINE NUMBER (2026-07-09): the 0.257 recorded below was a transient single-seed
+> best-checkpoint. The LOCKED multi-convoy headline is now the 3-seed best-checkpoint TAP 0.283 +/- 0.021
+> in `experiments/gen09_multiconvoy.md` (gen09-HEADLINE, SHA `ad70a9c`); the leader over-trains toward
+> uniform after the best-checkpoint (last-iterate FP cycling, disclosed). This Phase M section is preserved
+> as the historical record.**
+
 **Status: LOCKED fallback headline.** A complete multi-convoy interdiction result that clears Obj-5
 on its own; it lacks LEARNED follower coordination (that is the in-progress extension below), but the
 fleet DOES stack (structurally) and the LEADER learns the mixed strategy near the equilibrium.

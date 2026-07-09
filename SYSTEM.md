@@ -38,7 +38,21 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
-**UPDATE 2026-07-09 (LATEST): MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED (see `HANDOVER.md` top
+**UPDATE 2026-07-09 (LATEST): MULTI-CONVOY HEADLINE LOCKED (gen09-HEADLINE, SHA `ad70a9c`; authoritative
+record `experiments/gen09_multiconvoy.md`).** The citable multi-convoy headline is the fleet-route
+**best-checkpoint TAP 0.283 +/- 0.021** (3-seed saved run, per-eval checkpoints re-evaluable): ladder
+shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 >> SACRED 0.283 > equilibrium
+0.216 (Obj-5, 2.5x ALNS). The leader over-trains toward uniform after the best-checkpoint (inherent
+last-iterate FP cycling; three gen09-STAB "hold-the-tail" attempts failed = the equilibrium is a
+reproducible transient), so it is best-checkpoint-selected by exploitability - STANDARD for
+adversarial/minimax training, drift saved + disclosed; the earlier single-seed 0.257 was a transient.
+Fairness: ALNS is free to stack but SPREADS by choice (0.699 < 0.912) so the win is the RANDOMISATION.
+**New dogma: the fleet-route leader's low exploitability is a best-checkpoint TRANSIENT, not a stable
+fixed point (uniform is a competing FP attractor); the deployable object is the best-checkpoint,
+disclosed.** NO more leader experimentation (Kilian); write-up next. The banner below is the prior
+(pre-lock) state.
+
+**UPDATE 2026-07-09: MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED (see `HANDOVER.md` top
 banner).** Fork A: disjoint instances are STRUCTURALLY uniform-leader (flat FP; oracle-screened over
 72 pairs), so asymmetry needs SHARED edges. On shared-edge 62-97 k8 (route-index menu-select) the
 leader learns a stable near-equilibrium mixed strategy: **fleet-route TAP 0.257 (1.19x eq 0.216) <<
@@ -46,9 +60,10 @@ ALNS 0.699 << vanilla ~0.945**, BANKED as the multi-convoy headline (structural 
 learned-follower bootstrap (6 attempts) made the critic value coordination (`follow_w` climbs = the
 milestone) and beats baselines on the time-average (0.482) but saturated below the structural 0.257,
 so it is the secondary Obj-3 result. Suite 146 green; all additive/flag-gated (campaign byte-identical);
-COMMITTED `e7a2209` (2026-07-09), ledger `experiments/gen09_multiconvoy.md` locks both headlines. IN
-PROGRESS: leader stabilisation (leader-alpha FLOOR + higher leader-ent-frac + steadier/longer smooth FP)
-before the 3-seed lock, because the fleet-route leader varied 0.257/0.433/0.517/0.382 across seeds. **New dogmas: (a) a joint/correlated objective needs the coordination
+COMMITTED through `92e2d8a` (2026-07-09). (The 0.257 in this prior banner was the transient single-seed
+best-checkpoint; the LOCKED 3-seed value 0.283 +/- 0.021 is in the update above; the seed spread
+0.257/0.433/0.517/0.382 was the drift caught at different training lengths, resolved by best-checkpoint.)
+**New dogmas: (a) a joint/correlated objective needs the coordination
 signal EXPLICIT and UNDILUTED at the scoring head, AND the CRITIC must value it (the actor cannot
 follow what the critic will not rank; `follow_w` climbing is the diagnostic); (b) disjoint route sets
 give structurally uniform leader equilibria - asymmetry needs shared edges; (c) to learn a RARE joint

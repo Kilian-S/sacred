@@ -193,23 +193,36 @@ banked headline; this is the extension that meets all five objectives and wins b
       leader (flat FP - the 33->71 leader failure is not instance-specific); asymmetry REQUIRES shared
       edges. Fork A picked shared-edge **62-97 k8** (12-route MENU-SELECT, asymmetry H/lnR 0.63, margin
       ALNS/eq 3.2x, stack 0.97), where the leader learns a stable near-equilibrium mixed strategy.
-      **HEADLINE BANKED: fleet-route (leader-mix + structural stacking) TAP 0.257 (1.19x eq 0.216) <<
-      ALNS 0.699 << vanilla ~0.945** (Obj-5). Detail: gen08 ledger Phase M sections; SACRED_PROGRESS 15.
+      **HEADLINE LOCKED (2026-07-09, gen09-HEADLINE, 3-seed saved run, SHA `ad70a9c`): fleet-route
+      best-checkpoint TAP 0.283 +/- 0.021** (ladder shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack
+      0.912 > ALNS 0.699 >> SACRED 0.283 > eq 0.216; Obj-5, 2.5x ALNS). The leader over-trains toward
+      uniform after the best-checkpoint (last-iterate FP cycling), so it is best-checkpoint-selected by
+      exploitability (standard minimax discipline; drift saved + disclosed); the earlier single-seed
+      0.257 was a transient. Detail: `experiments/gen09_multiconvoy.md` (authoritative locked record);
+      gen08 ledger Phase M sections; SACRED_PROGRESS 15 + 16.
 - [x] **M4. Learned-follower bootstrap (secondary Obj-3 result): DONE, banked as secondary.** Six
       attempts to make followers LEARN to copy (not structurally): route-correlation signal, menu-
       select, two role-alphas, forced-copy warmup vs a FROZEN mixing leader (ERB), LEVER 2 (learned
       undiluted `taken` term on policy head AND critic Q), prioritised stack replay, steadier/softer
       smooth-FP. Milestone: the critic-side term made `follow_w` CLIMB (the critic values emergent
       coordination = the four-attempt blocker fixed); tail-avg 0.482 beats ALNS + vanilla. But
-      coordination saturated weak (stack ~0.18) < the structural 0.257 -> FALLBACK is the headline.
-      Coordination-dynamics work CLOSED (diminishing returns; fp-tau was the last reserved lever). All
-      machinery additive/flag-gated, suite 146 green. COMMITTED `e7a2209` (2026-07-09); ledger
-      `experiments/gen09_multiconvoy.md` locks both headlines. IN PROGRESS: leader stabilisation
-      (leader-alpha floor + higher leader-ent-frac + steadier/longer smooth FP) before the 3-seed lock.
-- [ ] **M5. Sweeps + remaining objectives (post-headline, ⛔K):** 3-seed the fleet-route headline +
-      tighten `--leader-ent-frac` (leader varied 0.26-0.52); N / K / connectivity curves (Obj-5 varied
-      disruption); learned-antagonist co-evolution; Obj-4 placement + fleet size; ZST; and (optional)
-      lift learned coordination past 0.257 (follower-alpha floor + more stacking experience).
+      coordination saturated weak (stack ~0.18) < the structural best-ckpt 0.283 -> FALLBACK is the
+      headline. Coordination-dynamics work CLOSED (diminishing returns; fp-tau was the last reserved
+      lever). All machinery additive/flag-gated, suite 146 green. COMMITTED through `92e2d8a`
+      (2026-07-09); `experiments/gen09_multiconvoy.md` locks both headlines. LEADER-STABILISATION CHASE
+      CLOSED: the leader over-trains toward uniform after the best-checkpoint (last-iterate FP cycling);
+      resolved via best-checkpoint selection (standard minimax discipline; drift saved + disclosed), NOT
+      more knob-tuning (three gen09-STAB attempts to hold-the-tail failed = the equilibrium is a
+      reproducible transient).
+- [x] **M4b. Multi-convoy HEADLINE LOCKED (gen09-HEADLINE, SHA `ad70a9c`): DONE 2026-07-09.**
+      fleet-route best-checkpoint TAP **0.283 +/- 0.021** (3-seed saved run, per-eval checkpoints
+      re-evaluable); ladder shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 >>
+      SACRED 0.283 > eq 0.216. Fairness row (ALNS spreads by choice) + the transient/best-checkpoint
+      finding recorded. NO more leader experimentation (Kilian).
+- [ ] **M5. Sweeps + remaining objectives (post-headline, ⛔K; scaling tier only if runway before
+      freeze):** N / K / connectivity curves (Obj-5 varied disruption); learned-antagonist co-evolution;
+      Obj-4 placement + fleet size; ZST; and (optional) lift learned coordination past the structural
+      0.283 (follower-alpha floor + more stacking experience).
 
 ## Phase A: sign-off and zero-CPU groundwork (SHORT TERM: Jul 6-12)
 
