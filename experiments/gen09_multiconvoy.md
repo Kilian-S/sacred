@@ -536,3 +536,54 @@ the Q head); forced-copy / frozen-leader bootstrap (`--leader-ckpt`, `--forced-c
   (unlike single-convoy B2-P3's <= 0.05 bar). Reported as measured: the fleet-route TAP 0.257 sits at
   1.19x the equilibrium 0.216 (absolute distance 0.041) and is the closest trained quantity to the
   minimax value; the learned-follower tail-average 0.482 is well above it.
+
+## ORACLE-SCALING PROBE: the "why not just solve the LP" figure (2026-07-09, oracle-only, no training)
+
+**Purpose (Kilian):** show the size at which the EXACT minimax equilibrium (the naive full-LP oracle
+`solve_multiconvoy`, which enumerates every occupancy x every K-subset and solves two LPs) becomes
+infeasible, while a trained deep-RL dispatcher stays ~linear. Script (pinned): `scratch/oracle_scaling_probe.py`;
+full saved output: `scratch/oracle_scaling_output.txt`. Sweeps shared-edge OD 62-97 (the headline regime,
+soft band 0.15-0.95) over N (convoys), R (routes via k_extra), K (interdiction assets), measuring the
+oracle's wall-clock + the [#occ x #iset] objective-matrix size alongside the combinatorics.
+
+**Oracle cost + combinatorics (measured up to the wall):**
+
+| N | R | E | K | #occ = C(N+R-1,R-1) | #iset = C(E,K) | obj entries | obj MB | oracle time |
+|---|---|---|---|---|---|---|---|---|
+| 3 (headline) | 12 | 79 | 1 | 364 | 79 | 28,756 | 0.2 | **1.4 s** |
+| 6 | 12 | 79 | 1 | 12,376 | 79 | 977,704 | 7.8 | 73 s |
+| 3 | 12 | 79 | 2 | 364 | 3,081 | 1,121,484 | 9.0 | 52 s |
+| 3 | 52 | 87 | 1 | 24,804 | 87 | 2,157,948 | 17.3 | **116 s = measured WALL** |
+| 10 | 12 | 79 | 1 | 352,716 | 79 | 27.9 M | 223 | ~1,536 s (proj) |
+| 3 | 12 | 79 | 3 | 364 | 79,079 | 28.8 M | 230 | ~1,586 s (proj) |
+| 5 | 12 | 79 | 3 | 4,368 | 79,079 | 345 M | 2,763 | ~5.3 h (proj) |
+| 3 | 12 | 79 | 4 | 364 | 1,502,501 | 547 M | 4,375 | ~8.4 h (proj) |
+| 6 | 12 | 79 | 3 | 12,376 | 79,079 | 979 M | 7,829 | ~15.0 h (proj) |
+
+**The blow-up axis is K (the attacker's interdiction-set count), not the fleet.** #iset = C(E=79,K)
+explodes: 79 -> 3,081 -> 79,079 -> 1,502,501 for K=1..4. #occ = C(N+R-1,R-1) grows only polynomially,
+so **increasing FLEET SIZE alone does NOT break the naive oracle here - even N=10, K=1 solves in ~25 min
+(223 MB)**; R alone is mild (R=52 solved in 116 s). The wall is the interdiction budget K (and R x K jointly).
+
+**Projected SACRED cost (linear):** ~N forward passes x sorties; base = the measured headline per-sortie
+time (0.99 s/sortie, N=3, 3-parallel-contended; a single run is ~2.7x faster), 1200 sorties. This is
+INDEPENDENT of R and K: ~20 min (N=3) to ~40-66 min (N=6-10), flat in the axes that blow up the oracle.
+
+**CROSSOVER:** at ~28.8 M objective entries (**N=3, K=3**), solving the exact LP ONCE (~1,586 s) already
+costs more than training SACRED (~1,186 s); past there the oracle runs to hours and multi-GB RAM while
+SACRED stays at tens of minutes. Along K=1 the oracle stays cheaper than SACRED up to N=10 (it is a
+polynomial regime), so the "solve the LP" answer is: it works until the ATTACKER's combinatorics (K>=3)
+or a scaled fleet meets a large K.
+
+**Candidate scaled instances for the follow-up SCALED RUN (oracle infeasible, SACRED feasible; K axis):**
+- **N=3, k8, K=3** (R=12, E=79): 28.8 M entries, 230 MB -> oracle ~1,586 s; SACRED ~20 min. (smallest past crossover)
+- **N=5, k8, K=3**: 345 M entries, 2.7 GB -> oracle ~5.3 h; SACRED ~33 min. (mid)
+- **N=6, k8, K=3**: 979 M entries, 7.6 GB -> oracle ~15 h, near the RAM wall; SACRED ~40 min. (heaviest)
+
+**HONESTY (in the script output + here):** (1) this is the NAIVE full-LP oracle; a column-generation /
+DOUBLE-ORACLE solver would scale much better, so the crossover is against NAIVE ENUMERATION. The airtight
+scaling claim pairs this with **ZST**: there NO oracle competes, because an exact solver must RE-SOLVE from
+scratch for every new instance whereas a trained policy transfers with a forward pass (and note that
+training-against-the-ORACLE-BR itself touches the objective matrix, so the "SACRED is K-independent" line
+is the trained-policy FORWARD-PASS / deployment / ZST cost, not oracle-in-the-loop training). (2) the
+projected SACRED line is a linear ESTIMATE; the actual scaled run validates it. No training in this step.

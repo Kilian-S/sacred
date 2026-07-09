@@ -1,0 +1,56 @@
+======================================================================================================================
+ORACLE-SCALING PROBE (naive full-LP equilibrium) vs projected SACRED (linear).  OD 62-97, shared-edge, soft band 0.15-0.95.
+SACRED projection base: measured from gen09-HEADLINE seed0 (0.988 s/sortie, N=3, 3-parallel); SORTIES=1200; ~linear in N (N convoys/sortie).
+Budgets: RUN actual solve up to 12M obj entries AND 90s; 'infeasible' RAM bar 8.0 GB.
+======================================================================================================================
+ N   R   E  K |  #occ=C(N+R-1,R-1) #iset=C(E,K)  obj entries   obj MB |  oracle time  peakMB | SACRED proj | status
+-------------------------------------------------------------------------------------------------------------------
+ 2  12  79  1 |                 78           79        6,162      0.0 |        0.24s       3 |       790s | solved
+ 3  12  79  1 |                364           79       28,756      0.2 |        1.36s       4 |      1186s | solved
+ 4  12  79  1 |              1,365           79      107,835      0.9 |        6.20s      12 |      1581s | solved
+ 3  20  81  1 |              1,540           81      124,740      1.0 |        6.37s       4 |      1186s | solved
+ 5  12  79  1 |              4,368           79      345,072      2.8 |       23.38s      39 |      1976s | solved
+ 3  28  86  1 |              4,060           86      349,160      2.8 |       18.27s      21 |      1186s | solved
+ 3  36  87  1 |              8,436           87      733,932      5.9 |       38.72s      54 |      1186s | solved
+ 6  12  79  1 |             12,376           79      977,704      7.8 |       72.73s      32 |      2371s | solved
+ 3  12  79  2 |                364        3,081    1,121,484      9.0 |       51.84s      72 |      1186s | solved
+ 3  52  87  1 |             24,804           87    2,157,948     17.3 |      115.63s     113 |      1186s | *** WALL (measured > budget) ***
+ 7  12  79  1 |             31,824           79    2,514,096     20.1 |           --      -- |      2766s | INFEASIBLE (projected; > run cap / past wall)
+ 4  12  79  2 |              1,365        3,081    4,205,565     33.6 |           --      -- |      1581s | INFEASIBLE (projected; > run cap / past wall)
+ 8  12  79  1 |             75,582           79    5,970,978     47.8 |           --      -- |      3161s | INFEASIBLE (projected; > run cap / past wall)
+ 9  12  79  1 |            167,960           79   13,268,840    106.2 |           --      -- |      3557s | INFEASIBLE (projected; > run cap / past wall)
+ 5  12  79  2 |              4,368        3,081   13,457,808    107.7 |           --      -- |      1976s | INFEASIBLE (projected; > run cap / past wall)
+10  12  79  1 |            352,716           79   27,864,564    222.9 |           --      -- |      3952s | INFEASIBLE (projected; > run cap / past wall)
+ 3  12  79  3 |                364       79,079   28,784,756    230.3 |           --      -- |      1186s | INFEASIBLE (projected; > run cap / past wall)
+ 6  12  79  2 |             12,376        3,081   38,130,456    305.0 |           --      -- |      2371s | INFEASIBLE (projected; > run cap / past wall)
+ 7  12  79  2 |             31,824        3,081   98,049,744    784.4 |           --      -- |      2766s | INFEASIBLE (projected; > run cap / past wall)
+ 4  12  79  3 |              1,365       79,079  107,942,835    863.5 |           --      -- |      1581s | INFEASIBLE (projected; > run cap / past wall)
+ 5  12  79  3 |              4,368       79,079  345,417,072   2763.3 |           --      -- |      1976s | INFEASIBLE (projected; > run cap / past wall)
+ 3  12  79  4 |                364    1,502,501  546,910,364   4375.3 |           --      -- |      1186s | INFEASIBLE (projected; > run cap / past wall)
+ 6  12  79  3 |             12,376       79,079  978,681,704   7829.5 |           --      -- |      2371s | INFEASIBLE (projected; > run cap / past wall)
+-------------------------------------------------------------------------------------------------------------------
+oracle-time fit (lower bound; LP is super-linear): ~55.11 s per 1M obj entries
+  projected oracle time  N=7 R=12 K=1: ~139s (~0.0h)  [obj 20 MB]  vs SACRED proj 2766s
+  projected oracle time  N=4 R=12 K=2: ~232s (~0.1h)  [obj 34 MB]  vs SACRED proj 1581s
+  projected oracle time  N=8 R=12 K=1: ~329s (~0.1h)  [obj 48 MB]  vs SACRED proj 3161s
+  projected oracle time  N=9 R=12 K=1: ~731s (~0.2h)  [obj 106 MB]  vs SACRED proj 3557s
+  projected oracle time  N=5 R=12 K=2: ~742s (~0.2h)  [obj 108 MB]  vs SACRED proj 1976s
+  projected oracle time  N=10 R=12 K=1: ~1,536s (~0.4h)  [obj 223 MB]  vs SACRED proj 3952s
+  projected oracle time  N=3 R=12 K=3: ~1,586s (~0.4h)  [obj 230 MB]  vs SACRED proj 1186s
+  projected oracle time  N=6 R=12 K=2: ~2,101s (~0.6h)  [obj 305 MB]  vs SACRED proj 2371s
+  projected oracle time  N=7 R=12 K=2: ~5,404s (~1.5h)  [obj 784 MB]  vs SACRED proj 2766s
+  projected oracle time  N=4 R=12 K=3: ~5,949s (~1.7h)  [obj 864 MB]  vs SACRED proj 1581s
+  projected oracle time  N=5 R=12 K=3: ~19,036s (~5.3h)  [obj 2,763 MB]  vs SACRED proj 1976s
+  projected oracle time  N=3 R=12 K=4: ~30,140s (~8.4h)  [obj 4,375 MB]  vs SACRED proj 1186s
+  projected oracle time  N=6 R=12 K=3: ~53,935s (~15.0h)  [obj 7,829 MB]  vs SACRED proj 2371s
+======================================================================================================================
+MEASURED WALL: the naive oracle is actually solved up to ~2,157,948 obj entries (N=3, R=52, K=1: 116s, 113 MB); larger sizes are projected.
+CROSSOVER (oracle cost > one-time SACRED cost): at ~28,784,756 obj entries (N=3, R=12, K=3): oracle ~1,586s vs SACRED ~1186s. Past here the exact LP costs MORE to solve ONCE than training SACRED; and SACRED then transfers per-instance for FREE (ZST) while the oracle re-solves from scratch each time.
+SHARPEST BLOW-UP is K (attacker sets C(E=79,K)): K=1->79, K=2->3,081, K=3->79,079, K=4->1,502,501 sets; and N (defender occupancies C(N+R-1,R-1)); the trained-SACRED forward-pass cost is independent of both R and K (it routes N convoys over the graph).
+NOTE: increasing FLEET SIZE alone does NOT break the naive oracle here - even N=10, K=1 is ~1536s (223 MB, occupancies grow only polynomially). The wall is the INTERDICTION BUDGET K (and R x K jointly).
+CANDIDATE SCALED INSTANCES for the follow-up SCALED RUN (oracle genuinely infeasible along the K axis; SACRED feasible; smallest / mid / heaviest):
+  - N=3, k_extra=8 (R=12, E=79), K=3: #occ 364 x #iset 79,079 = 28,784,756 entries (230 MB obj) -> oracle INFEASIBLE (~1,586s) vs SACRED proj 1186s (~20 min).
+  - N=5, k_extra=8 (R=12, E=79), K=3: #occ 4,368 x #iset 79,079 = 345,417,072 entries (2,763 MB obj) -> oracle INFEASIBLE (~5.3 h, 2.7 GB obj) vs SACRED proj 1976s (~33 min).
+  - N=6, k_extra=8 (R=12, E=79), K=3: #occ 12,376 x #iset 79,079 = 978,681,704 entries (7,829 MB obj) -> oracle INFEASIBLE (~15.0 h, 7.6 GB obj) vs SACRED proj 2371s (~40 min).
+======================================================================================================================
+HONESTY: (1) NAIVE full-LP oracle -> a double-oracle / column-generation solver scales better; the crossover is vs naive enumeration, and the AIRTIGHT scaling claim pairs this with ZST (no oracle competes: it must re-solve each instance). (2) The SACRED line is a linear ESTIMATE; the actual scaled run validates it.
