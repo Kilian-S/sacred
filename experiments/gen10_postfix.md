@@ -96,3 +96,83 @@ Timing estimate: stage 1 ~15-25 min (3-parallel), stage 2 ~50-70 min (3-parallel
 min/seed serial), stage 3 ~15-25 min; ~1.5-2 h wall total.
 
 ## RESULT (to be appended; nothing above this line changes after launch)
+
+### gen10-MC RESULT (2026-07-09, stage 1, 3 seeds, ~15 min at 3-parallel): PREDICTION VIOLATED; post-fix is WORSE
+
+| seed | best-ckpt TAP @ sortie | best single-ckpt @ sortie | final TAP | telemetry signature |
+|---|---|---|---|---|
+| 0 | 0.478 @ 200 | 0.564 @ 100 | 0.721 | early shallow best, drift up; alpha floors ~500 then RISES late (0.20 -> 1.20) |
+| 1 | 0.409 @ 300 | 0.453 @ 100 | 0.702 | same shape |
+| 2 | 0.454 @ 1200 | 0.646 @ 1200 | 0.518 | **ALPHA RUNAWAY: H_lead pinned 0.00 for ~900 sorties, alpha 1.2 -> 71; breaks free ~sortie 1000 and is still descending at cutoff** |
+
+**Post-fix EXACT best-checkpoint TAP mean 0.447 +/- 0.029** vs the pre-fix exact comparator
+**0.295 +/- 0.024**: the recorded prediction (post-fix <= pre-fix) is VIOLATED; reported as
+measured. Per the pre-registration, **the banked pre-fix results stand as the citable multi-convoy
+numbers** (at their pinned SHAs, with the representation caveat now disclosed in
+CRITIQUE_INTERDICTION.md).
+
+**Reading (mechanism candidates, NOT post-hoc tuned):** three changes are confounded in this arm:
+(a) the representation fix itself: with CORRECT embeddings, overlapping routes now have genuinely
+similar mean-pooled embeddings, so the menu head is LESS discriminative than under the bug (the
+fixed permutation had been acting as an accidental route-identity hash: distinct random node sets
+per route made memorisation easy); (b) the role-alpha target fix changes the leader's Bellman
+targets (its bootstrap V(s') now uses the fast-collapsing follower temperature); (c) the config
+(lr, floor, ent-frac, 1200 sorties) was tuned under the buggy representation. Seed 2's 900-sortie
+H=0 park with alpha runaway is a softmax-saturation trap the old representation never showed.
+Stage 2 (single-convoy, NO role alpha, NO menu head) isolates the representation fix alone; its
+read arrives below. Any diagnostic re-run (role-alpha fix flagged off; longer horizon: seed 2 was
+still descending) is a NEW pre-registration and needs Kilian's go.
+
+### gen10-SC RESULT (2026-07-09, stage 2, 3 seeds, ~74 min at 3-parallel): PRIMARY PASSED on every clause; post-fix MARKEDLY BETTER
+
+| seed | arm | **expl_TAP (primary)** | expl_policy | expl_avg | cost(TAP) |
+|---|---|---|---|---|---|
+| 0 | vanilla / sacred | **0.483 / 0.252** | 0.480 / 0.258 | 0.430 / 0.258 | 8.4 / 13.6 |
+| 1 | vanilla / sacred | **0.485 / 0.261** | 0.529 / 0.387 | 0.436 / 0.272 | 8.4 / 13.3 |
+| 2 | vanilla / sacred | **0.472 / 0.316** | 0.487 / 0.561 | 0.437 / 0.277 | 8.4 / 12.8 |
+
+Anchors: shortest_path 1.000 @ 4.1; uniform 0.455 @ 12.4; equilibrium 0.167 @ 16.0.
+
+- **PRIMARY PASS, every clause:** sacred < vanilla on 3/3 seeds; **pooled sacred 0.276 vs vanilla
+  0.480**; all seeds < 0.455. The B2-P3 primary REPLICATES post-fix.
+- **The prediction (post-fix <= pre-fix) is CONFIRMED for this arm, and the improvement is large:
+  pooled sacred TAP 0.276 vs the banked 0.362 (distance-to-equilibrium 0.109 vs 0.195, i.e. ~44%
+  of the residual gap was the representation bug).** Vanilla is unchanged (0.480 vs 0.477), as
+  expected: cost-driven mixing does not depend on embedding quality. STRONG form (<= 0.05 of
+  0.167) still not met (best seed 0.085) but materially closer.
+- **Reading:** the clean isolation worked. The representation fix ALONE (walk mode: no role alpha,
+  no menu head) improves the equilibrium approach substantially; the multi-convoy regression in
+  stage 1 is therefore localised to the menu-head discriminability under correct embeddings and/or
+  the role-alpha target change and/or the pre-fix-tuned config, NOT to the ordering fix itself.
+- **Citable status:** gen10-SC (this SHA) SUPERSEDES B2-P3's 0.362 as the single-convoy headline
+  number, pending Kilian's confirmation: same instance, same pre-registered metric, every clause
+  passed, strictly better, produced on corrected representations. Ladder (TAP, pooled): shortest
+  1.000 > vanilla 0.480 > uniform 0.455 > **sacred 0.276** >> equilibrium 0.167.
+
+### gen10-VAN RESULT (2026-07-09, stage 3, seed 0): post-fix vanilla reference for the multi-convoy ladder
+
+Post-fix vanilla (independent convoys, travel objective) TAP **0.859** (pre-fix ~0.945); the
+sacred-independent secondary lands 0.782 (expected weak: independent routing cannot reach the
+correlated optimum, the M3 finding replicating post-fix).
+
+### gen10 OVERALL (all stages complete, 2026-07-09 23:01)
+
+**Post-fix multi-convoy ladder as measured (exact estimator):** shortest 0.973 > vanilla 0.859 >
+ALNS 0.699 > **SACRED fleet-route best-ckpt 0.447 +/- 0.029** > equilibrium 0.216. Note the
+qualitative Obj-5 ordering SURVIVES the fix on every seed (post-fix SACRED still beats ALNS by
+0.25 and vanilla by 0.41); what regressed is the MARGIN toward the equilibrium relative to the
+banked pre-fix 0.295 exact / 0.283 MC.
+
+**Single-convoy:** post-fix PASS on every clause and a large improvement (pooled 0.276 vs banked
+0.362; ~44% of the residual equilibrium gap was the representation bug). Vanilla unchanged.
+
+**Standing numbers after gen10 (recommendation, Kilian to confirm):** single-convoy headline =
+gen10-SC **0.276** (supersedes 0.362); multi-convoy headline = the banked pre-fix best-checkpoint
+(exact re-eval **0.295 +/- 0.024** at SHA `ad70a9c`) with the representation caveat disclosed,
+UNTIL a post-fix multi-convoy run matches or beats it. **Proposed diagnostic (ONE run, needs
+Kilian's go, pre-register before launch): gen10-MC2 = the MC config at 2400 sorties (seed 2 was
+still descending at cutoff) x 3 seeds, with the role-alpha target fix behind a flag set OFF, so
+the remaining confound (role-alpha targets vs menu-head discriminability) is isolated; if it
+recovers <= 0.295 the post-fix number supersedes; if not, the menu head needs a discriminability
+fix (e.g. a per-route learned embedding or route-cost/vulnerability features at the head) and that
+is a design decision, not a knob.**

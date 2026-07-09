@@ -1,5 +1,26 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-09)
 
+> **★★★★★ AUDIT + NODE-ORDERING FIX + gen10 RE-RUNS (2026-07-09 late, fix SHA `e9acb56`). READ
+> THIS FIRST; it amends the banners below.** An examiner-grade audit (`CRITIQUE_INTERDICTION.md`)
+> found a project-wide representation bug (featurize_state sorts node ids; every consumer indexed
+> by dict insertion order -> every net ever trained read a fixed permutation of the wrong nodes'
+> embeddings). Fixed (`node_index_map` + 3 regression tests, suite 149 green) together with a
+> role-alpha Bellman-target fix and EXACT fleet-route evaluation. Pre-registered re-runs
+> (`experiments/gen10_postfix.md`, Kilian's explicit go):
+> - **Single-convoy gen10-SC: PASSED every clause, pooled sacred TAP 0.276 vs vanilla 0.480**
+>   (banked B2-P3: 0.362/0.477): ~44% of the residual equilibrium gap was the bug. RECOMMENDED to
+>   supersede 0.362 as the single-convoy headline (Kilian to confirm).
+> - **Multi-convoy gen10-MC: REGRESSED to best-ckpt TAP 0.447 +/- 0.029** (exact estimator;
+>   prediction violated, reported as measured; Obj-5 ordering still holds: 0.447 << ALNS 0.699 <<
+>   post-fix vanilla 0.859). The citable multi-convoy number stays the banked pre-fix best-ckpt,
+>   now correctly stated as the EXACT re-evaluated **0.295 +/- 0.024** (SHA `ad70a9c`; the MC 0.283
+>   carried a min-selection-on-noise bias), caveat disclosed. **Proposed next (needs Kilian's go):
+>   gen10-MC2 diagnostic = same config, 2400 sorties, role-alpha fix flagged OFF (isolate the
+>   remaining confound).** The critique also scores all five objectives (Obj-4 SBO unmet: the F3
+>   demonstrator is an afternoon; ZST doubly blocked pre-fix, now needs an edge-vulnerability
+>   feature), and ranks the pre-freeze programme (§8). `SACRED_PROGRESS.md` entry 17 is the
+>   narrative; all banked numbers below stand at their pinned SHAs with the caveat disclosed.
+
 > **NEW-AGENT READ ORDER (2026-07-09; the banners below are a reverse-chronological stack = current
 > state first, then how we got here). The project has TWO banked, pre-registered headlines, both
 > scored against a computable minimax equilibrium; the experimental work is essentially DONE and the

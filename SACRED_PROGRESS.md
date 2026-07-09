@@ -507,6 +507,43 @@
   Obj 5 (the fleet-route ladder shortest 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 -> eq
   0.216). The final multi-convoy Results act; single-convoy stays the proven core.
 
+## 17. The 2026-07-09 audit: the node-ordering bug, the fix, and the gen10 post-fix re-runs  (2026-07-09 · branch `gen08-interdiction`, fix SHA `e9acb56` · `CRITIQUE_INTERDICTION.md`, `experiments/gen10_postfix.md`)
+
+*(Chronologically AFTER entry 16; placed above it so the two locked-headline entries stay adjacent
+to their supersession notes.)*
+
+- **Goal (prospective):** Kilian requested an examiner-grade critique of the whole interdiction
+  programme plus a codebase audit; then approved fixing what was found and re-running the banked
+  headline configs (gen10, pre-registered before launch).
+- **Headline results:** (i) **A project-wide representation bug found and fixed**: `featurize_state`
+  sorts node ids, every consumer indexed by dict insertion order, so every network ever trained
+  read a fixed permutation of the wrong nodes' embeddings (demonstrated: convoy at node 62 reads
+  node 167's row). Fix = `node_index_map` single source of truth + 3 regression tests; suite 149
+  green. (ii) **Exact re-evaluation of the gen09 headline** (the saved checkpoints, exact occupancy
+  distributions): best-checkpoint TAP **0.295 +/- 0.024**, not the MC 0.283 (min-selection on
+  sampling noise). (iii) **gen10-SC (single-convoy B2-P3 re-run, post-fix): PASSED every clause,
+  pooled sacred TAP 0.276 vs vanilla 0.480** (banked: 0.362 vs 0.477): ~44% of the residual
+  equilibrium gap was the bug. (iv) **gen10-MC (multi-convoy re-run): REGRESSED to 0.447 +/- 0.029**
+  (prediction violated, reported as measured; one seed showed a 900-sortie softmax-saturation park
+  with alpha runaway): the Obj-5 ordering still holds post-fix (0.447 << ALNS 0.699 << vanilla
+  0.859) but the equilibrium margin worsened; confounds = menu-head discriminability under correct
+  embeddings (the old permutation acted as an accidental route-identity hash), the role-alpha
+  target fix, and a config tuned under the bug.
+- **What we learned:** (i) representation-indexing consistency needs an explicit contract test, not
+  convention; (ii) a bug can flatter learning (the permutation made 12-way route memorisation easy)
+  so "suite green + result improved" never certifies representations; (iii) the single- vs
+  multi-convoy split cleanly isolates WHERE the fix helps (walk-mode next-hop) vs where the
+  architecture now binds (mean-pooled menu head on overlapping routes).
+- **What it means for the thesis:** single-convoy headline strengthens to 0.276 (pending Kilian's
+  confirmation it supersedes 0.362); the multi-convoy citable number stays the pre-fix banked
+  best-checkpoint (exact 0.295 +/- 0.024 at `ad70a9c`) with the caveat disclosed, until the
+  proposed gen10-MC2 diagnostic (2400 sorties, role-alpha fix flagged off; needs Kilian's go)
+  resolves the regression. Full critique (objective-fit scoring, triviality analysis, SBO/ZST/
+  scaling outlook, ranked pre-freeze programme): `CRITIQUE_INTERDICTION.md`.
+- **Thesis fit:** Methods (the audit + contract-test lesson), all Results chapters (numbers move),
+  Obj-3 (the role-alpha target correction), the honesty/self-correction narrative (a second
+  retraction-grade correction handled by pre-registration).
+
 ## 16. gen09 multi-convoy leader-stabilisation arc -> the LOCKED best-checkpoint headline  (2026-07-09 · branch `gen08-interdiction` · `scripts/train_multiconvoy.py`, `src/baselines/fp_dynamics.py`, `experiments/gen09_multiconvoy.md`)
 
 - **Goal (prospective):** the entry-15 fleet-route headline was a single unsaved seed-0 run (0.257);
