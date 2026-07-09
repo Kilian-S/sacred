@@ -200,6 +200,34 @@ the resulting over-concentration overshoot), and do NOT raise leader-ent-frac ab
 Per the pre-registered contingency this is a config tune + re-run, not a post-hoc patch; the FAILED
 result above stands on record.
 
+### gen09-STAB-2 (PRE-REGISTERED 2026-07-09, Kilian's go): sharp attacker drives the hedge
+
+**Anti-answer-fitting discipline (Kilian, explicit):** the SHARP ATTACKER must produce the ~1/vuln
+hedge; the floor and ent-frac are PERMISSIVE GUARDRAILS, NOT tuned to the oracle's known 0.63. The
+leader landing near 0.63 must be VALIDATED as an outcome of the adversarial dynamics, not forced by
+knob-sweeping. If it misses, investigate the mechanism (attacker sharpness? floor still clamping?),
+do not crank knobs toward 0.63.
+
+**Three changes from STAB-1 (each justified, none tuned to the answer):**
+1. **`--fp-tau 0.05`** (was 0.15): the driver. A sharp smooth attacker concentrates coverage on the
+   leader's high-vulnerability routes -> per-route Q-gradient -> the leader learns the non-uniform
+   hedge. (0.15 was the FOLLOWER's setting from attempt 6; diffuse => flat gradient => uniform leader.)
+2. **`--leader-alpha-floor 0.20`** (was 0.30): the one legitimate correction. In STAB-1 the floor
+   CLAMPED (all seeds pinned exactly at 0.30, holding the leader uniform); 0.20 sits below the
+   good-seed natural alpha ~0.37, so it is a genuine anti-collapse backstop, not a setpoint.
+3. **`--leader-ent-frac 0.5`** (was 0.6): deliberately BELOW the 0.63 equilibrium. The entropy
+   regulariser would PERMIT concentration past 0.63 (to 0.5*lnR), so if the leader instead settles at
+   ~0.63 that is the ATTACKER holding it there, not the target (0.6 ~= 0.63 was a confound).
+
+Everything else UNCHANGED (62->97 k8, band 0.15-0.95, N=3, K=1, fleet-route, smooth FP, switch-every
+200, 1200 sorties, eval-every 200, seeds {0,1,2}, saved JSON + logs). Orchestrator
+`scratch/gen09_leader_stab2.sh`. **GATE unchanged: 3 seeds land tight ~0.25-0.30 (H_lead/lnR ~0.63)
+as an OUTCOME.** SHA pinned by the commit landing this pre-registration.
+
+#### gen09-STAB-2 RESULT
+
+_(appended after the three seeds complete)_
+
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 
 **Question:** can the followers LEARN to copy the mixing leader (emergent coordination) rather than
