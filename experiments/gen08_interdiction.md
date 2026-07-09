@@ -1,6 +1,12 @@
 # Generation: gen08_interdiction (Act IV: adversarial RL that provably works: convoy routing as a security game)
 
-- **status: I3 WAVE 1 LAUNCHED 2026-07-06 (Kilian's go; window-primary metric CONFIRMED).**
+- **status: CLOSED (single-convoy interdiction ledger).** Reaches the **BANKED single-convoy headline
+  B2-P3** (smooth fictitious play, TAP ladder shortest 1.000 > vanilla 0.477 > uniform 0.455 > SACRED
+  0.362 >> equilibrium 0.167, 3/3 seeds, SHA `874d3f3`) via I2 PASS -> I3 wave-1 FAIL -> B2-P/B2-P2
+  FAIL -> **B2-P3 PASS**; then F1 (symmetric sweep) killed -> the MULTI-CONVOY PIVOT + Phase M sections
+  below. **The multi-convoy headline NUMBER moved to `experiments/gen09_multiconvoy.md` (LOCKED
+  best-checkpoint TAP 0.283 +/- 0.021); the Phase M sections here are the historical record.** Read
+  order for a new agent: `HANDOVER.md` top banner first.
   History: opened 2026-07-06 as a draft; G1 + G2 gates PASSED same day (below); I3 pre-registered
   and wave 1 (instance B x seeds 0-2) launched same day. Design: `REDESIGN_INTERDICTION.md`. Why
   this replaces gen07: the congestion adversary has a FLAT attack landscape (gen07 corrected BR

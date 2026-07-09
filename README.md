@@ -17,7 +17,10 @@ over-trains toward uniform, drift disclosed; the earlier single-seed 0.257 was a
 the banked multi-convoy headline (meeting Obj-5, the metaheuristic clause); the single-convoy
 shared-edge result (B2-P3) is the banked single-convoy headline. Together they meet all five objectives.
 
-Start here: `HANDOVER.md`, then `REDESIGN_INTERDICTION.md` (design, §10 = multi-convoy), `ROADMAP.md`
-(plan, Phase M), and `experiments/gen08_interdiction.md` (the live ledger). Historical campaign
-record: `CONTEXT.md`, `SACRED_PROGRESS.md`, `experiments/gen0*.md`.
+Start here: `HANDOVER.md` (the new-agent read order is at the top), then
+`experiments/gen09_multiconvoy.md` (the AUTHORITATIVE multi-convoy record: locked headline +
+stabilisation arc + oracle-scaling probe), `REDESIGN_INTERDICTION.md` (design, §10 = multi-convoy),
+and `ROADMAP.md` (plan, Phase M). Single-convoy interdiction + the banked B2-P3 pass:
+`experiments/gen08_interdiction.md`. Full progression: `SACRED_PROGRESS.md` (chronicle, entries 1-16).
+Historical campaign record: `CONTEXT.md`, `experiments/gen0[1-7]*.md`.
 

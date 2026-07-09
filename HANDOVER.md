@@ -1,4 +1,26 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-09)
+
+> **NEW-AGENT READ ORDER (2026-07-09; the banners below are a reverse-chronological stack = current
+> state first, then how we got here). The project has TWO banked, pre-registered headlines, both
+> scored against a computable minimax equilibrium; the experimental work is essentially DONE and the
+> next phase is THESIS WRITING.**
+> 1. **This top banner** (the current state: multi-convoy headline LOCKED at best-checkpoint TAP
+>    0.283 +/- 0.021; single-convoy B2-P3 0.362 the other headline).
+> 2. **`experiments/gen09_multiconvoy.md`** - the AUTHORITATIVE multi-convoy record: the locked
+>    headline + ladder + fairness rows, the gen09-STAB-1/2/3 stabilisation arc, and the oracle-scaling
+>    "why not just solve the LP" probe.
+> 3. **`REDESIGN_INTERDICTION.md`** (the north star: why interdiction; §10 = multi-convoy) ->
+>    **`THESIS_STORYLINE.md`** (the 4-act argument, Act IV realised) -> **`SACRED_PROGRESS.md`**
+>    entries 12-16 (the narrative chronicle) -> **`ROADMAP.md`** Phase M (the plan, findings, future work).
+> 4. **`experiments/gen08_interdiction.md`** - the single-convoy interdiction ledger through the banked
+>    B2-P3 pass, plus the Phase M sections (superseded-for-the-number by gen09).
+> 5. Then the campaign history as needed: **`SACRED_PROGRESS.md`** 1-11, the **`experiments/gen0[1-7]*.md`**
+>    ledgers, **`CONTEXT.md`** / **`DIRECTION.md`** / **`CRITIQUE.md`** / **`PROBLEM_REDESIGN.md`**
+>    (all banner-marked historical), and **`SYSTEM.md`** (operating dogmas - read before running anything).
+> **Operating rules (HARD): never launch training without Kilian's explicit in-conversation go; no
+> multiple-choice prompts (prose + a firm recommendation); plan-first; oracle/screen probes are free.
+> Thesis + poster due 10:00, 28 Aug 2026 (12k words); experimental freeze Aug 3.** Thesis planner brief:
+> `../../thesis/THESIS_PLANNER_HANDOFF.md`.
 
 > **★★★★ MULTI-CONVOY PHASE M COMPLETE - HEADLINE LOCKED (2026-07-09). READ THIS FIRST.**
 > Phase M (multi-convoy interdiction, Fork A) is DONE. The LOCKED multi-convoy headline is the
@@ -42,8 +64,8 @@
 > rank; disjoint routes give structurally uniform leader equilibria (asymmetry needs shared edges);
 > zero-sum FP cycles by construction, judge on the stationary-tail TIME-AVERAGE, not per-eval play.
 >
-> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, COMMITTED at `e7a2209`;
-> gen09 ledger `experiments/gen09_multiconvoy.md` locks both headlines):**
+> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, COMMITTED through `908de0f`,
+> tree clean, nothing running; gen09 ledger `experiments/gen09_multiconvoy.md` is authoritative):**
 > `scripts/train_multiconvoy.py` (all machinery: menu-select, two-alpha, route-correlation, lever-2
 > follow_w on actor+critic, forced-copy / frozen-leader bootstrap, prioritised replay `--stack-dup`,
 > `--fp-tau`); `src/agents/sac.py` + `networks.py` (menu head + follow_w + role-alpha + per-sample
