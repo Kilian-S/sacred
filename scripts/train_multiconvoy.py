@@ -24,6 +24,7 @@ import torch
 
 from src.agents.networks import featurize_state
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
+from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
 from src.baselines.multiconvoy_oracle import best_response_attacker_multi, objective_value, solve_multiconvoy
 from src.baselines.multiconvoy_planners import classical_baselines
 from src.env.smdp_wrapper import SMDPTransition
@@ -164,23 +165,17 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
     for k in range(sorties):
         if adversarial and (committed is None or k % switch_every == 0):
             if attacker_mode == "smooth":
-                # TRUE smooth fictitious play (mirrors single-convoy B2-P3, the stable recipe):
-                # softmax BR to a TRAILING-WINDOW of recent occupancy (fresh, not the stale
-                # all-history), recomputed each block; the iset is then SAMPLED FRESH EVERY sortie
-                # (below), not held for the block -- block-holding one iset is the CYCLING regime.
-                recent = np.zeros(n_occ)
-                for oi in occ_seq[-smooth_window:]:
-                    recent[oi] += 1.0
-                occ_dist = recent / recent.sum() if recent.sum() > 0 else np.ones(n_occ) / n_occ
-                e = occ_dist @ env.obj_matrix
-                z = np.exp((e - e.max()) / fp_tau); smooth_probs = z / z.sum()
+                # TRUE smooth fictitious play via the shared B2-P3-proven discipline (fp_dynamics):
+                # softmax BR to the TRAILING-WINDOW occupancy play, recomputed per block; the iset is
+                # SAMPLED FRESH EVERY sortie below (block-holding one iset is the cycling regime).
+                smooth_probs = smooth_fp_probs(occ_seq, n_occ, env.obj_matrix, fp_tau, smooth_window)
             else:
                 occ_dist = played / played.sum() if played.sum() > 0 else np.ones(n_occ) / n_occ
                 committed, _ = best_response_attacker_multi(env.obj_matrix, occ_dist)
         env.reset()
         if adversarial:
-            if attacker_mode == "smooth":  # sample a fresh committed iset EVERY sortie (smooth FP)
-                committed = int(rng.choice(len(smooth_probs), p=smooth_probs))
+            if attacker_mode == "smooth":  # fresh committed iset every sortie (smooth FP)
+                committed = sample_smooth_iset(smooth_probs, rng)
             env.commit(committed)
         copy_prob = (max(0.0, 1.0 - k / forced_copy_warmup)
                      if (frozen_leader is not None and forced_copy_warmup > 0) else 0.0)

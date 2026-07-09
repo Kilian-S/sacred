@@ -253,10 +253,42 @@ recent play, not the all-history occupancy (which goes stale and lets the leader
 attacker's lag). So the multi-convoy trainer never had the FP discipline that stabilised single-convoy.
 This also retroactively explains the earlier seed-to-seed variance.
 
-**gen09-STAB-3 (proposed; awaiting Kilian's go):** mechanism fix, mirroring the B2-P3 recipe - make
-the multi-convoy smooth attacker TRULY smooth (per-sortie iset sampling from a trailing-window softmax),
-then re-run tau 0.05 + floor 0.20 + ent-frac 0.5. This is a MECHANISM correction (the FP discipline
-single-convoy proved), not tuning tau/floor toward 0.63. The two FAILED results stand on record.
+### gen09-STAB-3 (PRE-REGISTERED 2026-07-09, Kilian's go): the ported B2-P3 smooth-FP discipline
+
+**Mechanism port, NOT a knob tune (Kilian, explicit):** the exact single-convoy B2-P3 smooth-FP
+attacker discipline is factored into a SHARED helper `src/baselines/fp_dynamics.py` and used by BOTH
+`scripts/train_interdiction.py` (routes) and `scripts/train_multiconvoy.py` (occupancies) - reusing
+the proven-stable code, not a second re-derivation. The discipline: softmax BR (temperature `tau`)
+to the defender's TRAILING-WINDOW recent play, recomputed per block, with a committed iset SAMPLED
+FRESH EVERY sortie (block-holding one iset was the cycling regime; all-history averaging went stale).
+Verified: the single-convoy B2-P3 smooth path is preserved after the refactor (400-sortie smoke:
+sacred TAP 0.259 < vanilla 0.389, H_pol stable ~2.1); suite 146 green.
+
+**ONLY change vs STAB-2 = this attacker mechanism.** tau 0.05, leader-alpha-floor 0.20,
+leader-ent-frac 0.5, switch-every 200 ALL unchanged (switch-every kept at 200 not B2-P3's 50: with
+per-sortie sampling the switch interval only sets the softmax-weight refresh cadence, the iset is
+already fresh each sortie). smooth-window 250. Instance 62->97 k8 band 0.15-0.95 N=3 K=1 fleet-route.
+
+**Command (pinned; per-seed, via `scratch/gen09_leader_stab3.sh`, all saved):**
+```bash
+PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
+  --od 62-97 --N 3 --K 1 --k-extra 8 --menu-select --band 0.15,0.95 \
+  --fleet-route --attacker-mode smooth --fp-tau 0.05 --switch-every 200 --smooth-window 250 \
+  --leader-ent-frac 0.5 --leader-alpha-floor 0.20 --sorties 1200 --eval-every 200 \
+  --seed $S --threads 3 --json-out models/runs/gen09_multiconvoy/fleetroute_stab3_seed$S.json \
+  > models/runs/gen09_multiconvoy/fleetroute_stab3_seed$S.log 2>&1
+```
+
+**SUCCESS CRITERION (pre-committed, Kilian):** (a) the leader REACHES AND HOLDS ~0.27 across the tail
+(not diverging to 0.6-0.8); (b) per-eval spikes damp and the trailing-window TAP - the FP result, since
+per-eval cycling is expected - sits STABLE near 0.27; (c) seed-to-seed variance gone (this bug also
+explains the earlier 0.257/0.433/0.517/0.382 variance). Report all three seeds' trailing-window TAP
+(mean +/- std) and the per-eval tail behaviour. NO lock, NO 3-seed headline lock-in yet. SHA pinned by
+the commit landing this pre-registration + the fp_dynamics port. The two FAILED runs stand on record.
+
+#### gen09-STAB-3 RESULT
+
+_(appended after the three seeds complete)_
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 

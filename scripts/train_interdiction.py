@@ -29,6 +29,7 @@ import torch
 from src.agents.networks import featurize_state
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.env.smdp_wrapper import SMDPTransition
+from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
 from src.baselines.interdiction_oracle import (
     best_response_attacker, cost_constrained_value, route_distribution_from_first_hops, solve)
 from src.envs.interdiction import make_interdiction_env
@@ -133,13 +134,12 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
             committed, _ = best_response_attacker(env.game, avg)
             br_history.append(int(committed))
             if attacker_mode == "smooth":
-                # smooth fictitious play (B2-P3): softmax best response to the defender's RECENT
-                # play. Mixed against a mixed defender (no cycling pressure), sharp against a
-                # parked one (drift punished within ~smooth_window sorties). tau probe-pinned.
-                recent = _hist(played_seq[-smooth_window:], env.game.n_routes)
-                e = recent @ env.game.payoff
-                z = np.exp((e - e.max()) / smooth_tau)
-                smooth_probs = z / z.sum()
+                # smooth fictitious play (B2-P3) via the shared fp_dynamics discipline: softmax best
+                # response to the defender's TRAILING-WINDOW recent play, sampled fresh each sortie
+                # (below). Mixed vs a mixed defender (no cycling pressure), sharp vs a parked one
+                # (drift punished within ~smooth_window sorties). tau probe-pinned.
+                smooth_probs = smooth_fp_probs(played_seq, env.game.n_routes, env.game.payoff,
+                                               smooth_tau, smooth_window)
         if mode == "walk":
             # hop-by-hop route choice on the candidate-route trie (shared-edge instances).
             obs, done, ri = env.begin_walk()
@@ -167,7 +167,7 @@ def train_defender(env, *, sorties, switch_every, batch_size, seed, adversarial,
             elif attacker_mode == "mixture":
                 iset = br_history[int(rng.integers(len(br_history)))]
             else:
-                iset = int(rng.choice(len(smooth_probs), p=smooth_probs))
+                iset = sample_smooth_iset(smooth_probs, rng)
             env.commit(iset)
             out = env.resolve(ri)
         else:
