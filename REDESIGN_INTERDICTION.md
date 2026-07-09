@@ -264,3 +264,17 @@ SACRED vs the interdictor and confirm it LEARNS the ~0.31 mission-failure strate
 ~0.8. Caveats: oracle-level so far (learning the larger joint action space is the empirical test);
 the mission objective is a modelling choice (defensible and oracle-justified). Plan: `ROADMAP.md`
 Phase M; record: `experiments/gen08_interdiction.md` (multi-convoy pivot section).
+
+**§10 REALISED (2026-07-08/09; full detail in the gen08 ledger Phase M sections, HANDOVER top banner).**
+Two findings sharpened the build. (1) DISJOINT route sets are STRUCTURALLY uniform-leader (an oracle
+screen of 72 OD pairs: leader entropy H/lnR >= 0.97), i.e. a flat fictitious-play landscape where the
+single-convoy leader destabilises (33->71 cycled / alpha runaway). A learnable, stable leader needs an
+ASYMMETRIC instance, which requires SHARED edges (Fork A). (2) On shared-edge **62-97 k_extra=8**
+(route-index MENU-SELECT, no walk trie) the leader learns a stable near-equilibrium mixed strategy and
+the fleet stacks: **fleet-route 0.257 (1.19x eq 0.216) << ALNS 0.699 << vanilla ~0.945** = the BANKED
+multi-convoy headline (Obj-5), with the honest caveat that stacking is STRUCTURAL. Making the followers
+LEARN to stack (emergent coordination) is a genuine but weaker secondary Obj-3 result: a six-step fix
+chain made the critic value coordination (the learned weight `follow_w` climbs) and beats both baselines
+on the FP time-average (0.482), but saturated below the structural 0.257. So the structural fleet-route
+is the headline; the learned-coordination arc is the mechanistic coda. Coordination-dynamics work is
+CLOSED (diminishing returns).

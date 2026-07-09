@@ -38,7 +38,23 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
-**UPDATE 2026-07-08 (LATEST): M-PHASE PROGRESS (see `HANDOVER.md` top banner).** M0/M1/M2 done +
+**UPDATE 2026-07-09 (LATEST): MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED (see `HANDOVER.md` top
+banner).** Fork A: disjoint instances are STRUCTURALLY uniform-leader (flat FP; oracle-screened over
+72 pairs), so asymmetry needs SHARED edges. On shared-edge 62-97 k8 (route-index menu-select) the
+leader learns a stable near-equilibrium mixed strategy: **fleet-route TAP 0.257 (1.19x eq 0.216) <<
+ALNS 0.699 << vanilla ~0.945**, BANKED as the multi-convoy headline (structural stacking; Obj-5). The
+learned-follower bootstrap (6 attempts) made the critic value coordination (`follow_w` climbs = the
+milestone) and beats baselines on the time-average (0.482) but saturated below the structural 0.257,
+so it is the secondary Obj-3 result. Suite 146 green; all additive/flag-gated (campaign byte-identical);
+UNCOMMITTED - commit first. **New dogmas: (a) a joint/correlated objective needs the coordination
+signal EXPLICIT and UNDILUTED at the scoring head, AND the CRITIC must value it (the actor cannot
+follow what the critic will not rank; `follow_w` climbing is the diagnostic); (b) disjoint route sets
+give structurally uniform leader equilibria - asymmetry needs shared edges; (c) to learn a RARE joint
+behaviour the critic must EXPERIENCE it -> demonstration bootstrapping (forced-copy vs a frozen mixing
+leader) + prioritised replay of the rare transitions; (d) zero-sum FP cycles by construction - judge on
+the stationary-tail TIME-AVERAGE, not per-eval stage play.**
+
+**UPDATE 2026-07-08: M-PHASE PROGRESS (see `HANDOVER.md` top banner).** M0/M1/M2 done +
 committed (multi-convoy oracle, env + G-M1 gate, ALNS baseline reaching loss_det; suite 146 green).
 M3 (`scripts/train_multiconvoy.py`) built + smoked: SACRED BEATS the optimal classical planner
 (sacred 0.645 < ALNS 0.904, stable, no collapse) BUT sacred ~ vanilla and far from the equilibrium

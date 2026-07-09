@@ -179,7 +179,8 @@ def interception_of_distribution(game: InterdictionGame, defender_strategy: np.n
 
 def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
                               band: tuple[float, float] = (0.2, 0.9),
-                              weight: str = "w") -> dict[frozenset, float]:
+                              weight: str = "w",
+                              norm_edges: Iterable | None = None) -> dict[frozenset, float]:
     """Per-edge interception probability from edge length: each candidate edge's length is mapped
     affinely into ``band`` (shortest edge -> band[0], longest -> band[1]; all-equal lengths -> the
     band midpoint). An ASCENDING band models exposure scaling with transit time (long edges
@@ -187,7 +188,14 @@ def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
     inverts the correlation (short edges = watched chokepoints), making cost and security CONFLICT
     so cost-driven mixing is miscalibrated by construction (the I3 wave-1 lesson). Objective and
     graph-derived (no hand-tuned threat map); the band itself is pinned in the ledger by an oracle
-    probe (`scratch/vuln_band_probe.py`) BEFORE any training."""
+    probe (`scratch/vuln_band_probe.py`) BEFORE any training.
+
+    ``norm_edges`` sets the reference edge set for the length->band affine map. None (default) =
+    normalise over ``edges`` themselves (PER-INSTANCE: the same physical road can get a different
+    p_e under a different route set, which is fine within one instance but not comparable across
+    instances). Passing the whole graph's edges makes the map ABSOLUTE (a road's vulnerability is
+    intrinsic and stable across OD instances), which cross-instance vulnerability comparison
+    requires; candidate lengths are clamped into the reference range so p stays inside the band."""
     es = sorted(edges, key=repr)
     if not es:
         raise ValueError("no candidate edges to assign vulnerability to")
@@ -195,10 +203,12 @@ def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
     if not (0.0 < min(lo, hi) and max(lo, hi) <= 1.0):
         raise ValueError(f"band values must lie in (0, 1], got {band}")
     lens = {e: float(G[u][v].get(weight, 1.0)) for e in es for u, v in [tuple(e)]}
-    lmin, lmax = min(lens.values()), max(lens.values())
+    ref = ([float(G[u][v].get(weight, 1.0)) for e in norm_edges for u, v in [tuple(e)]]
+           if norm_edges is not None else list(lens.values()))
+    lmin, lmax = min(ref), max(ref)
     if lmax <= lmin:
         return {e: (lo + hi) / 2.0 for e in es}
-    return {e: lo + (hi - lo) * (lens[e] - lmin) / (lmax - lmin) for e in es}
+    return {e: lo + (hi - lo) * (min(max(lens[e], lmin), lmax) - lmin) / (lmax - lmin) for e in es}
 
 
 def survival_intercept_fn(vulnerability: dict[frozenset, float]) -> Callable[[frozenset, tuple[frozenset, ...]], float]:

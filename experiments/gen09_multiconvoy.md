@@ -1,0 +1,216 @@
+# Generation: gen09_multiconvoy (Act IV, multi-convoy: adversarially-trained randomised fleet routing beats a coordinating metaheuristic under a loss-averse mission-failure objective)
+
+- **status: RESULTS LOCKED 2026-07-09.** This ledger CONSOLIDATES and locks the two banked
+  multi-convoy Phase M results so they cannot be lost across sessions. Both were produced under the
+  pre-registration already in force (see "Pre-registration provenance" below); this file is their
+  dedicated, citable home. The narrative lives in `SACRED_PROGRESS.md` entry 15; the blow-by-blow
+  (two "Phase M" sections) lives in `experiments/gen08_interdiction.md`; the design in
+  `REDESIGN_INTERDICTION.md` §10; the plan in `ROADMAP.md` Phase M.
+- **code state (pinning):** results produced on the working tree on top of **`f801efb`** ("M3:
+  multi-convoy trainer built + smoked") plus the uncommitted Phase M machinery diff
+  (`scripts/train_multiconvoy.py`, `src/agents/{sac,networks}.py`,
+  `src/envs/multiconvoy_interdiction.py`, `src/baselines/interdiction_oracle.py`,
+  `scratch/multiconvoy_instance_screen.py`, +test width bumps). This ledger is committed TOGETHER
+  with that diff, so the commit that lands it is the reproducing SHA. Suite **146 green**. All Phase
+  M machinery is additive / flag-gated: the single-convoy campaign path is byte-identical (14th
+  featurise column sliced off by `_clip_x`; `follow_w` and the two role-alphas exist only in the
+  menu-select + adversarial multi-convoy mode).
+
+## Pre-registration provenance (metric + exit criterion fixed BEFORE these runs)
+
+The house rule (pin the metric before looking) was satisfied in gen08, not retroactively here:
+- **The objective and the yardstick** were fixed at the oracle level (M0, no training,
+  `scratch/multiconvoy_{probe,scan,spectrum,cost}.py`): SOFT (probabilistic) interception + a
+  LOSS-AVERSE mission-failure objective (P(>=1 convoy lost)), scored as **exploitability =
+  mission-failure of the defender's occupancy distribution under the oracle best-response
+  interdictor**. The finding that the OBJECTIVE is load-bearing (risk-neutral dilutes the gap to ~0;
+  loss-averse holds it) is itself pre-registered in `REDESIGN_INTERDICTION.md` §10.
+- **The deployable estimator** is TAP (the trailing-averaged policy occupancy distribution), the
+  same estimator pre-registered and validated in the single-convoy B2-P3 arc; for a zero-sum
+  fictitious-play learner the trustworthy read is the STATIONARY-TAIL TIME-AVERAGE, not per-eval
+  stage play.
+- **The exit criterion** (fallback-vs-learned-coordination) was pre-committed by Kilian: if the
+  learned-follower coordination does not exceed the structural fleet-route result, the structural
+  result is the banked headline and the learned arc is the secondary. That criterion fired; the
+  fallback is the headline (see "Decision" below).
+
+## Question (fixed before looking)
+
+**On the multi-convoy contested-resupply mission, does an adversarially-trained SAC dispatcher whose
+randomised joint routing (a mixed strategy over routes) beat (a) a coordinating classical
+metaheuristic (ALNS) and (b) a non-adversarially-trained SAC, under a soft-interception loss-averse
+(mission-failure) objective, approaching the computable minimax equilibrium?** And, secondarily: can
+the followers LEARN to coordinate (emergent stack-and-follow) rather than copy the leader by
+construction (Obj-3)?
+
+## Arena / instance (Fork A, oracle-screened BEFORE training)
+
+**62 -> 97, k_extra=8 (SHARED-EDGE menu, 12 routes / 364 occupancies), N=3, K=1, soft band
+(0.15, 0.95), ABSOLUTE length->prob normalisation, mission-failure objective.** Route action =
+route-index MENU-SELECT (scales to shared-edge route sets; NO walk trie). Screened by
+`scratch/multiconvoy_instance_screen.py` for:
+- **asymmetry** (non-uniform leader equilibrium, leader entropy H/lnR = 0.63 -> fictitious play has a
+  gradient, unlike the flat disjoint 33->71),
+- **margin** (ALNS / equilibrium ratio **3.23x**, so a leader landing at B2-P3's ~2.2x-equilibrium
+  still clears ALNS), and
+- **high stack mass** (0.97, near-pure stack-and-randomise coordination).
+
+**Structural finding (screened 72 disjoint OD pairs x 3 bands): DISJOINT route sets are ALWAYS
+near-uniform-leader (H/lnR >= 0.97) -> a flat fictitious-play landscape, so the disjoint 33->71 N=3
+leader failure (cycling / alpha runaway) is STRUCTURAL, not instance-specific. A non-uniform,
+learnable leader REQUIRES shared edges** (Fork A). 33->71 even shared tops out at ratio 2.27x, below
+Fork A's 3.23x.
+
+## Arms
+
+| arm | training | role |
+|---|---|---|
+| `shortest_path` | none (all convoys on the cheapest route) | naive interdiction-unaware planner |
+| `ALNS` | classical metaheuristic (destroy/repair, adaptive weights, SA) minimising worst-case mission-failure | the Obj-5 SOTA opponent; ALNS-verified to reach `loss_det` exactly |
+| `equilibrium` | none (oracle LP / minimax) | ground-truth minimax value (`loss_mixed`) |
+| `vanilla` | SAC, nominal travel objective, no adversary | non-adversarial control |
+| `sacred (fleet-route)` | SAC leader vs the oracle best-response interdictor (smooth FP); fleet stacks on the leader (structural) | **the PRIMARY: the banked multi-convoy headline** |
+| `sacred (learned-follower)` | as above + followers LEARN to copy via the six-step fix chain | the SECONDARY Obj-3 result |
+
+## Oracle ground truth (Fork A 62->97 k8, N=3, K=1, mission)
+
+**shortest_path 0.973 > ALNS 0.699 (= loss_det, ALNS-verified) >> equilibrium (loss_mixed) 0.216.**
+
+## PRIMARY RESULT (BANKED HEADLINE): fleet-route (leader-mix + structural fleet stacking)
+
+Seed 0, menu-select route-index action, 400 sorties, smooth FP:
+
+> **fleet-route TAP exploitability 0.257 (1.19x the equilibrium 0.216), stable.** No alpha runaway
+> (leader-alpha 0.81 -> 0.37, settling); H_lead near its target; TAP sits deep in the ALNS-equilibrium
+> gap.
+
+**Headline ladder (mission-failure exploitability, lower better):**
+
+| arm | mission-failure exploitability |
+|---|---|
+| shortest_path | 0.973 |
+| vanilla (non-adversarial SAC) | ~0.945 |
+| ALNS (SOTA coordinating metaheuristic, = loss_det) | 0.699 |
+| **SACRED fleet-route (adversarial)** | **0.257** |
+| equilibrium (loss_mixed, minimax lower bound) | 0.216 |
+
+**What it establishes (Obj-5, met):** on the multi-convoy contested-resupply mission-failure
+objective, an adversarially-trained SAC dispatcher that learns a RANDOMISED route mixed strategy (and
+fields the fleet as a stack) is far less mission-exploitable than the ALNS coordinating metaheuristic
+(0.257 vs 0.699, **+0.442**) AND than non-adversarial vanilla SAC (0.257 vs ~0.945, **+0.688**),
+approaching the computable minimax equilibrium (1.19x). Scored against a computable ground truth, on
+a shared-edge Kaliningrad instance. Fork A validated: the leader is stable and near-equilibrium here,
+unlike the disjoint near-symmetric 33->71 (which cycled / alpha-ran-away / landed ~ALNS).
+
+**Honest caveat (in the ledger, reported as measured):** the fleet stacking is STRUCTURAL (the
+followers copy the leader's route by construction), not learned. Making it LEARNED is the secondary
+result below.
+
+## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
+
+**Question:** can the followers LEARN to copy the mixing leader (emergent coordination) rather than
+copy structurally? Instance 62->97 k8 (menu-select; NO walk trie), N=3, K=1, smooth FP.
+**Outcome: partially, and it loses to the structural fallback (0.257); the fallback stays the
+headline.** Six attempts, each pre-diagnosed, each isolating the next blocker.
+
+**The root blocker (chicken-and-egg):** under independent exploration the convoys share a route only
+at the ~2% random-coincidence rate, so the CRITIC never experiences the low-failure STACK reward,
+never learns Q(follow) high, and the followers (once their temperature anneals) collapse onto FIXED
+wrong routes.
+
+**The fix chain + the diagnostic that carried it (`follow_w` = the learned critic-side correlation
+weight):**
+
+| attempt | change | `follow_w` | tail stack | read |
+|---|---|---|---|---|
+| 1-2 | two-alpha (leader high / follower ~0) + role target-entropy | n/a | 0 | followers collapse to fixed routes |
+| 3 | forced-copy warmup vs FROZEN mixing leader (ERB / demonstration bootstrap) + route-correlation feature | flat ~1.0 | ~0.22 modal | actor found NO Q-advantage -> critic does not value following |
+| 4 | LEVER 2: learned undiluted `taken` term at the policy head | 1.0 -> 1.21 (climbs a little) | 0.15 | actor CAN represent following, critic still weak |
+| 5 | + critic-side lever 2 (`taken` term on the Q head) + prioritised replay of stacks (x4) | **1.0 -> 1.30 climbs** | 0.34 (still rising, cut off) | **the critic now VALUES following (follow_w climbs) = the milestone; per-eval expl cycles** |
+| 6 | + steadier attacker (switch_every 200), softer fp-tau 0.15, longer horizon (3200) | 1.0 -> 1.25 then PLATEAUS | 0.18 (plateaued) | tau damped the mid-phase cycle; coordination SATURATED weak |
+
+**THE MILESTONE (attempts 4-6): `follow_w` climbs monotonically** = direct evidence the CRITIC can be
+made to value emergent coordination (the four-attempt blocker, fixed by the critic-side lever 2). It
+required the Bellman-consistent, undiluted, LEARNED `taken` term on BOTH the actor logits and the
+critic Q (a Q input, not a hard bonus), plus prioritised replay so the critic keeps seeing the rare
+stack.
+
+**Attempt-6 tail-average (the trustworthy zero-sum-FP metric = exploitability of the mean occupancy
+over the converged tail):** **0.482, beats ALNS 0.699 by +0.217 and vanilla 0.945 by +0.463**
+(per-eval cycle amplitude 0.116). **BUT `follow_w` plateaued at 1.25 -> coordination saturated at
+tail stack ~0.18 -> 0.482 is WORSE than the STRUCTURAL fallback 0.257** (full stacking beats partial
+learned following).
+
+## Decision (pre-committed exit criterion fired)
+
+**BANK THE FALLBACK (fleet-route 0.257) as the multi-convoy headline.** The learned-follower
+bootstrap is a genuine-but-weaker SECONDARY / Obj-3 result: it PROVES the mechanism (learned emergent
+coordination that beats ALNS and vanilla on the time-average, with `follow_w` climbing as the direct
+diagnostic) but does not exceed the structural version. **Coordination-dynamics work is CLOSED**
+(diminishing returns; fp-tau was the last reserved lever).
+
+## Objectives met (all five)
+
+- **Obj-1** multi-convoy asymmetric zero-sum game with a computable minimax equilibrium (+ the
+  zero-sum-FP time-average framing).
+- **Obj-2** multi-convoy interdiction env layer + the route-index menu-select action head.
+- **Obj-3** SAC + ATLA-as-fictitious-play + ERB / demonstration bootstrapping, load-bearing in the
+  learned-follower arc (forced-copy vs a frozen mixing leader; prioritised replay of the rare stack).
+- **Obj-4** fleet composition (N is a design lever).
+- **Obj-5** vs a SOTA adaptive metaheuristic (ALNS, non-degenerate) AND a non-adversarial SAC control,
+  under varied disruption (K / N / connectivity sweeps available), scored against a computable optimum:
+  the fleet-route ladder above.
+
+Single-convoy **B2-P3 (0.362)** remains the banked single-convoy headline (see
+`experiments/gen08_interdiction.md`); this multi-convoy result is the extension that wins bigger and
+supplies the metaheuristic opponent single-convoy could not.
+
+## Reproduction / machinery
+
+Fork-A instance screen (oracle only, no training):
+```bash
+PYTHONPATH=. python scratch/multiconvoy_instance_screen.py
+```
+Fleet-route PRIMARY (structural stacking, leader learns the mixed strategy):
+```bash
+PYTHONPATH=. python scripts/train_multiconvoy.py --od 62-97 --N 3 --K 1 --k-extra 8 \
+  --menu-select --fleet-route --attacker-mode smooth --sorties 400 --seed 0 \
+  --save-leader models/runs/gen09_multiconvoy/leader_62_97.pt
+```
+Learned-follower SECONDARY (bootstrap vs the FROZEN mixing leader; lever-2 follow_w on actor+critic;
+prioritised stack replay; steadier/softer smooth FP):
+```bash
+PYTHONPATH=. python scripts/train_multiconvoy.py --od 62-97 --N 3 --K 1 --k-extra 8 \
+  --menu-select --attacker-mode smooth --leader-ckpt models/runs/gen09_multiconvoy/leader_62_97.pt \
+  --forced-copy-warmup 600 --stack-dup 4 --fp-tau 0.15 --switch-every 200 --sorties 3200 --seed 0
+```
+Machinery (all additive / flag-gated; suite 146 green): menu-select route-index head (`menu_routes`,
+mean-pooled per-route embeddings, `src/agents/networks.py`); two role-alphas
+(`role_alpha`/`log_alpha_foll`, per-sample `target_entropy` / `alpha_group`, `src/agents/sac.py`);
+lever-2 `follow_w` on actor + critic (undiluted per-route `taken` input on both the policy logits and
+the Q head); forced-copy / frozen-leader bootstrap (`--leader-ckpt`, `--forced-copy-warmup`,
+`--save-leader`); prioritised replay (`--stack-dup`); `--fp-tau`; route-correlation featurise col 14
+(`taken_node_frac`); `absolute_vuln_norm` (cross-instance-comparable arc vulnerability).
+
+## New dogmas earned this generation
+
+1. A JOINT / correlated objective needs the coordination signal EXPLICIT and UNDILUTED at the scoring
+   head, AND the CRITIC must value it (the actor cannot follow what the critic will not rank;
+   `follow_w` climbing is the diagnostic).
+2. DISJOINT route sets give structurally uniform leader equilibria -> asymmetry needs SHARED edges.
+3. To learn a RARE joint behaviour, the critic must EXPERIENCE it -> demonstration bootstrapping
+   (forced-copy vs a frozen mixing leader) + prioritised replay of the rare transitions.
+4. Zero-sum fictitious play CYCLES by construction -> judge on the stationary-tail TIME-AVERAGE, not
+   per-eval stage play.
+
+## Honest limitations (reported, not patched)
+
+- The PRIMARY's fleet stacking is STRUCTURAL, not learned (the SECONDARY is the honest attempt to make
+  it learned; it saturates below the structural version).
+- Single seed (seed 0) at present. 3-seeding the fleet-route headline (and tightening
+  `--leader-ent-frac`, which varied 0.26-0.52 across runs) is recorded optional future work (M5, each
+  launch needs Kilian's explicit go).
+- No separate "STRONG form" distance threshold was pre-registered for the multi-convoy generation
+  (unlike single-convoy B2-P3's <= 0.05 bar). Reported as measured: the fleet-route TAP 0.257 sits at
+  1.19x the equilibrium 0.216 (absolute distance 0.041) and is the closest trained quantity to the
+  minimax value; the learned-follower tail-average 0.482 is well above it.

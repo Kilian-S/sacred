@@ -133,7 +133,7 @@ def test_hybrid_observation_and_goal_features():
 
     node_ids = sorted(obs["nodes"].keys())
     data = featurize_state(obs, active_truck_id=0)
-    assert data.x.shape[1] == NODE_FEATURE_DIM == 13
+    assert data.x.shape[1] == NODE_FEATURE_DIM == 14
     tcol = data.x[:, 11]
     assert float(tcol.sum()) == 1.0 and float(tcol[node_ids.index(target)]) == 1.0, (
         "column 11 must mark exactly the active truck's assigned target")

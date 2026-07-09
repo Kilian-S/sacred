@@ -48,6 +48,10 @@ class MultiConvoyConfig:
     k_extra_routes: int = 0                # 0 = clean edge-disjoint routes only (first-hop routing)
     weight: str = "w"
     edge_vuln_band: tuple[float, float] | None = (0.15, 0.95)  # soft interception band; None = hard
+    absolute_vuln_norm: bool = True        # True = map arc length->prob over ALL graph arcs (intrinsic,
+                                           # cross-instance comparable); False = per-route-set normalise
+    menu_select: bool = False              # True = convoy picks a ROUTE INDEX (shared-edge menu);
+                                           # False = first-hop (disjoint). Menu is scalable, no walk trie.
     objective: str = "mission"             # mission (P>=1) | linear (E[frac]) | threshold (P>=m)
     threshold_m: int = 1
     seed: int = 0                          # interception-sampling RNG seed
@@ -78,8 +82,9 @@ class MultiConvoyInterdictionEnv:
         if config.edge_vuln_band is not None:
             routes = build_route_set(graph, s, t, config.k_extra_routes, config.weight)
             cand = set().union(*(edges_of_route(r) for r in routes))
+            norm = graph.edges() if config.absolute_vuln_norm else None
             vuln = length_band_vulnerability(graph, cand, band=tuple(config.edge_vuln_band),
-                                             weight=config.weight)
+                                             weight=config.weight, norm_edges=norm)
             intercept_fn = survival_intercept_fn(vuln)
         self.game = build_interdiction_game(graph, s, t, config.K, k_extra=config.k_extra_routes,
                                             weight=config.weight, intercept_fn=intercept_fn)
@@ -134,17 +139,41 @@ class MultiConvoyInterdictionEnv:
         return self._cur if self._cur < self.config.N else None
 
     def defender_action_mask(self) -> dict:
-        """The current convoy chooses its first hop out of base (identifies its route)."""
+        """The current convoy's action set: route ids (menu-select, shared-edge) or first hops."""
+        if self.config.menu_select:
+            return {self._cur: list(range(self.game.n_routes))}
         return {self._cur: list(self.first_hops)}
+
+    def route_convoy_by_index(self, ri: int) -> int:
+        """Route the current convoy on route index ``ri`` directly (menu-select), then advance."""
+        if self.current_convoy() is None:
+            raise RuntimeError("all convoys already routed this sortie")
+        self._convoy_routes[self._cur] = int(ri)
+        self._cur += 1
+        return int(ri)
+
+    def menu_route_node_idx(self) -> list[list[int]]:
+        """Per-route node indices in the observe() node ordering (for the route menu-select head:
+        each route is scored by the mean-pooled embedding of these nodes)."""
+        node_order = list(self.graph_env.observe()["nodes"].keys())
+        pos = {str(n): i for i, n in enumerate(node_order)}
+        return [[pos[str(n)] for n in route if str(n) in pos] for route in self.game.routes]
 
     def observe(self) -> dict:
         if self.graph_env is None:
             raise RuntimeError("no graph_env attached; use make_multiconvoy_env()")
         obs = dict(self.graph_env.observe())
         obs["active_truck"] = self._cur
-        # routes already chosen by earlier convoys (lets a policy CORRELATE; independent policies
-        # ignore this). Featurisation of this column is a later (M3) training-side change.
-        obs["routed_convoys"] = list(self._convoy_routes[:self._cur])
+        earlier = [r for r in self._convoy_routes[:self._cur] if r is not None]
+        obs["routed_convoys"] = list(earlier)
+        # route-correlation signal for the followers' menu head: per-node fraction of EARLIER convoys
+        # whose route passes through that node. A candidate route overlapping the leader's route then
+        # scores high, and the leader's EXACT route scores highest -> the followers can "follow".
+        taken: dict = {}
+        for r in earlier:
+            for n in self.game.routes[r]:
+                taken[str(n)] = taken.get(str(n), 0.0) + 1.0 / self.config.N
+        obs["taken_node_frac"] = taken
         return obs
 
     def route_of_first_hop(self, first_hop: NodeId) -> int:
@@ -243,6 +272,8 @@ def make_multiconvoy_env(
     travel_cost_weight: float = 0.0,
     k_extra_routes: int = 0,
     edge_vuln_band: tuple[float, float] | None = (0.15, 0.95),
+    absolute_vuln_norm: bool = True,
+    menu_select: bool = False,
     objective: str = "mission",
     threshold_m: int = 1,
     seed: int = 0,
@@ -267,6 +298,7 @@ def make_multiconvoy_env(
         G.add_edge(str(u), str(v), w=float(d.get("distance", 1.0)))
     cfg = MultiConvoyConfig(od=(str(s), str(t)), N=N, K=K, interception_loss=interception_loss,
                             travel_cost_weight=travel_cost_weight, k_extra_routes=k_extra_routes,
-                            weight="w", edge_vuln_band=edge_vuln_band, objective=objective,
-                            threshold_m=threshold_m, seed=seed)
+                            weight="w", edge_vuln_band=edge_vuln_band,
+                            absolute_vuln_norm=absolute_vuln_norm, menu_select=menu_select,
+                            objective=objective, threshold_m=threshold_m, seed=seed)
     return MultiConvoyInterdictionEnv(G, cfg, graph_env=graph_env)

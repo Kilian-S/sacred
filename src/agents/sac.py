@@ -159,16 +159,27 @@ class ProtagonistQNet(nn.Module):
         h: torch.Tensor,
         active_node_idx: int,
         action_mask_indices: list[int],
+        taken: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Q-head on precomputed node embeddings ``h`` (see ProtagonistPolicyValueNet.head)."""
-        if not action_mask_indices:
+        if len(action_mask_indices) == 0:
             return torch.empty(0, device=h.device)
 
         h_active = h[active_node_idx].unsqueeze(0)
-        h_candidates = h[action_mask_indices]
+        menu = getattr(self, "menu_routes", None)
+        if menu is not None:  # ROUTE menu-select: mean-pool each route's node embeddings
+            h_candidates = torch.stack([h[menu[int(r)]].mean(dim=0) for r in action_mask_indices])
+        else:
+            h_candidates = h[action_mask_indices]
         h_active_rep = h_active.expand(h_candidates.size(0), -1)
 
         q_values = self.q_bilinear(h_active_rep, h_candidates).squeeze(-1)  # [num_candidates]
+        fw = getattr(self, "follow_w", None)
+        if fw is not None and taken is not None:
+            # LEVER 2 (critic half): give Q a direct, un-GNN-diluted dependence on 'did the leader
+            # take this route' as a LEARNED input (Bellman-consistent), so it can rank the leader's
+            # route and the actor gets a gradient to grow follow_w. The missing half of the fix.
+            q_values = q_values + fw * taken
         return q_values
 
 
@@ -192,12 +203,19 @@ class ProtagonistSAC:
         device: str | None = None,
         reward_scale: float = 0.001,
         target_entropy: float | None = None,
+        role_alpha: bool = False,
+        lr_alpha: float | None = None,
     ) -> None:
         self.device = device or get_torch_device()
         self.gamma = gamma
         self.tau = tau
         self.reward_scale = reward_scale
         self.target_entropy = target_entropy
+        # Optional SECOND temperature for a per-decision "role" (multi-convoy: convoy-0 leader vs
+        # followers). A single alpha cannot hold the leader near max-entropy while driving followers
+        # to ~0, so a transition tagged state["alpha_group"]==1 uses this follower alpha in BOTH the
+        # actor loss and its own auto-tuning. Default off -> single-alpha behaviour is byte-identical.
+        self.role_alpha = role_alpha
         # Feature widths this agent's networks consume. featurize_state may emit MORE columns
         # (new ones are appended last); _clip_x/_clip_ea slice down so checkpoints trained at a
         # narrower width keep seeing byte-identical inputs (see infer_node_in_dim/infer_edge_in_dim).
@@ -257,6 +275,7 @@ class ProtagonistSAC:
 
         # 4. Temperature Entropy coefficient (alpha)
         self.autotune_alpha = autotune_alpha
+        alr = lr_alpha if lr_alpha is not None else lr_actor  # temperature LR (role_alpha wants it fast)
         if autotune_alpha:
             self.log_alpha = torch.tensor(
                 math.log(alpha_init),
@@ -264,10 +283,17 @@ class ProtagonistSAC:
                 device=self.device,
                 dtype=torch.float32,
             )
-            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr_actor)
+            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=alr)
             self.alpha = self.log_alpha.exp().item()
+            self.alpha_foll = self.alpha  # always present; overridden below when role_alpha is on
+            if self.role_alpha:
+                self.log_alpha_foll = torch.tensor(
+                    math.log(alpha_init), requires_grad=True, device=self.device, dtype=torch.float32)
+                self.alpha_foll_optimizer = optim.Adam([self.log_alpha_foll], lr=alr)
+                self.alpha_foll = self.log_alpha_foll.exp().item()
         else:
             self.alpha = alpha_init
+            self.alpha_foll = alpha_init
 
         # 5. Experience Replay Buffer
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
@@ -310,12 +336,18 @@ class ProtagonistSAC:
         node_to_idx = {nid: idx for idx, nid in enumerate(node_ids)}
 
         active_idx = node_to_idx[observation["trucks"][active_truck]["current_node"]]
-        mask_idxs = [node_to_idx[nid] for nid in allowed_nodes]
+        # ROUTE menu-select (multi-convoy shared-edge): allowed_nodes are route ids, scored directly.
+        mask_idxs = (list(allowed_nodes) if getattr(self.actor, "menu_routes", None) is not None
+                     else [node_to_idx[nid] for nid in allowed_nodes])
+        taken = None
+        if getattr(self.actor, "menu_routes", None) is not None:
+            rc = observation.get("routed_convoys", [])
+            taken = torch.tensor([float(rc.count(r)) for r in allowed_nodes], device=self.device)
 
         # 2. Get policy distribution
         self.actor.eval()
         with torch.no_grad():
-            probs, _ = self.actor(pyg_data, active_idx, mask_idxs)
+            probs, _ = self.actor(pyg_data, active_idx, mask_idxs, taken)
         self.actor.train()
 
         if len(probs) == 0:
@@ -341,6 +373,7 @@ class ProtagonistSAC:
         critic_losses = []
         actor_losses = []
         alpha_losses = []
+        alpha_foll_losses = []  # role_alpha: follower-group temperature loss (multi-convoy)
         q_values_list = []
         entropies_list = []
         q_spreads = []  # diagnostic: how discriminative the critic is across allowed actions
@@ -373,19 +406,26 @@ class ProtagonistSAC:
 
             node_to_idx = {nid: idx for idx, nid in enumerate(state["nodes"].keys())}
             active_idx = node_to_idx[state["trucks"][active_truck]["current_node"]]
-            mask_idxs = [node_to_idx[nid] for nid in allowed_nodes]
+            menu = getattr(self.actor, "menu_routes", None) is not None
+            mask_idxs = (list(allowed_nodes) if menu
+                         else [node_to_idx[nid] for nid in allowed_nodes])
+            taken = [float(state.get("routed_convoys", []).count(r)) for r in allowed_nodes] if menu else None
 
             # Does this sample bootstrap a next-state value V(s')?
             next_slot = None
             next_active_idx = None
             next_mask_idxs = None
+            next_taken = None
             if (not trans.done and next_active_truck is not None
                     and "protagonist" in next_state.get("allowed_destinations", {})):
                 next_allowed = next_state["allowed_destinations"]["protagonist"].get(next_active_truck, [])
                 if next_allowed:
                     next_node_to_idx = {nid: idx for idx, nid in enumerate(next_state["nodes"].keys())}
                     next_active_idx = next_node_to_idx[next_state["trucks"][next_active_truck]["current_node"]]
-                    next_mask_idxs = [next_node_to_idx[nid] for nid in next_allowed]
+                    next_mask_idxs = (list(next_allowed) if menu
+                                      else [next_node_to_idx[nid] for nid in next_allowed])
+                    next_taken = ([float(next_state.get("routed_convoys", []).count(r)) for r in next_allowed]
+                                  if menu else None)
                     next_slot = len(next_data_list)
                     next_data_list.append(_cached_featurize(
                         trans, "next",
@@ -405,6 +445,12 @@ class ProtagonistSAC:
                 "next_slot": next_slot,
                 "next_active_idx": next_active_idx,
                 "next_mask_idxs": next_mask_idxs,
+                # optional per-decision entropy target carried on the state (multi-convoy
+                # role-dependent entropy). None for every historical transition -> the fallback below.
+                "target_entropy": state.get("target_entropy"),
+                # optional per-decision temperature group (0 = default/leader, 1 = follower).
+                "alpha_group": state.get("alpha_group", 0),
+                "taken": taken, "next_taken": next_taken,  # menu route-correlation (lever 2)
             })
 
         if not samples:
@@ -434,6 +480,7 @@ class ProtagonistSAC:
             active_idx = s["active_idx"]
             mask_idxs = s["mask_idxs"]
             action_idx = s["action_idx"]
+            tk = torch.tensor(s["taken"], device=self.device) if s["taken"] is not None else None
 
             # 1. Target value V(s')
             with torch.no_grad():
@@ -442,9 +489,10 @@ class ProtagonistSAC:
                 else:
                     j = s["next_slot"]
                     hn = slice(n_ptr[j], n_ptr[j + 1])
-                    next_probs, _ = self.actor.head(h_actor_next[hn], s["next_active_idx"], s["next_mask_idxs"])
-                    q1_target = self.target_q1.head(h_tq1[hn], s["next_active_idx"], s["next_mask_idxs"])
-                    q2_target = self.target_q2.head(h_tq2[hn], s["next_active_idx"], s["next_mask_idxs"])
+                    nt = torch.tensor(s["next_taken"], device=self.device) if s["next_taken"] is not None else None
+                    next_probs, _ = self.actor.head(h_actor_next[hn], s["next_active_idx"], s["next_mask_idxs"], nt)
+                    q1_target = self.target_q1.head(h_tq1[hn], s["next_active_idx"], s["next_mask_idxs"], nt)
+                    q2_target = self.target_q2.head(h_tq2[hn], s["next_active_idx"], s["next_mask_idxs"], nt)
                     min_q_target = torch.min(q1_target, q2_target)
                     log_next_probs = torch.log(next_probs + 1e-9)
                     v_next = torch.sum(next_probs * (min_q_target - self.alpha * log_next_probs))
@@ -453,39 +501,49 @@ class ProtagonistSAC:
             target_q = (s["reward"] * self.reward_scale) + (self.gamma ** s["dt"]) * (1.0 - float(s["done"])) * v_next
 
             # 2. Current Q estimation
-            q1_val = self.q1.head(h_q1[hs], active_idx, mask_idxs)[action_idx]
-            q2_val = self.q2.head(h_q2[hs], active_idx, mask_idxs)[action_idx]
+            q1_val = self.q1.head(h_q1[hs], active_idx, mask_idxs, tk)[action_idx]
+            q2_val = self.q2.head(h_q2[hs], active_idx, mask_idxs, tk)[action_idx]
             q_values_list.append(torch.min(q1_val, q2_val).item())
             critic_loss = F.mse_loss(q1_val, target_q.detach()) + F.mse_loss(q2_val, target_q.detach())
             critic_losses.append(critic_loss)
 
             # 3. Actor loss
-            probs, _ = self.actor.head(h_actor[hs], active_idx, mask_idxs)
+            probs, _ = self.actor.head(h_actor[hs], active_idx, mask_idxs, tk)
             log_probs = torch.log(probs + 1e-9)
-            curr_q1 = self.q1.head(h_q1[hs], active_idx, mask_idxs)
-            curr_q2 = self.q2.head(h_q2[hs], active_idx, mask_idxs)
+            curr_q1 = self.q1.head(h_q1[hs], active_idx, mask_idxs, tk)
+            curr_q2 = self.q2.head(h_q2[hs], active_idx, mask_idxs, tk)
             # CRITICAL: Detach critic predictions to block policy gradients from critic networks
             min_q = torch.min(curr_q1, curr_q2).detach()
             if min_q.numel() > 1:
                 # Q-spread across allowed destinations: ~0 means the critic can't tell good routes
                 # from bad ones (the protagonist's reward signal-to-noise failure mode).
                 q_spreads.append((min_q.max() - min_q.min()).item())
-            actor_loss = torch.sum(probs * (self.alpha * log_probs - min_q))
+            # role_alpha: followers (alpha_group==1) use the follower temperature in the actor loss.
+            use_foll = self.role_alpha and s.get("alpha_group", 0) == 1
+            a_val = self.alpha_foll if use_foll else self.alpha
+            actor_loss = torch.sum(probs * (a_val * log_probs - min_q))
             actor_losses.append(actor_loss)
             entropy = -torch.sum(probs * log_probs)
             entropies_list.append(entropy.item())
 
             # 4. Alpha entropy tuning loss
             if self.autotune_alpha:
-                if self.target_entropy is not None:
+                per_sample_te = s.get("target_entropy")
+                if per_sample_te is not None:
+                    # per-decision target (multi-convoy role-dependent entropy: leader high,
+                    # followers ~0). Absent for every historical transition -> falls back below.
+                    target_entropy = torch.tensor(float(per_sample_te), device=self.device)
+                elif self.target_entropy is not None:
                     target_entropy = torch.tensor(self.target_entropy, device=self.device)
                 else:
                     # Dynamic target entropy based on number of active valid actions (calibrated to 0.45)
                     target_entropy = -0.45 * torch.log(torch.tensor(1.0 / s["allowed_len"], device=self.device))
                 # Negative feedback: alpha decreases when entropy > target (standard SAC temperature loss).
                 # The previous `-log_alpha * (...)` had the sign inverted -> alpha runaway / critic divergence.
-                alpha_loss = self.log_alpha * (entropy - target_entropy).detach()
-                alpha_losses.append(alpha_loss)
+                if use_foll:
+                    alpha_foll_losses.append(self.log_alpha_foll * (entropy - target_entropy).detach())
+                else:
+                    alpha_losses.append(self.log_alpha * (entropy - target_entropy).detach())
 
         if not critic_losses:
             return None
@@ -520,6 +578,12 @@ class ProtagonistSAC:
             self.alpha = self.log_alpha.exp().item()
         else:
             total_alpha_loss = torch.tensor(0.0)
+        if self.autotune_alpha and self.role_alpha and alpha_foll_losses:
+            foll_loss = torch.stack(alpha_foll_losses).mean()
+            self.alpha_foll_optimizer.zero_grad()
+            foll_loss.backward()
+            self.alpha_foll_optimizer.step()
+            self.alpha_foll = self.log_alpha_foll.exp().item()
 
         # Soft update target critics
         self._soft_update(self.q1, self.target_q1)
@@ -530,6 +594,7 @@ class ProtagonistSAC:
             "protag_actor_loss": total_actor_loss.item(),
             "protag_alpha_loss": total_alpha_loss.item(),
             "protag_alpha": self.alpha,
+            "protag_alpha_foll": getattr(self, "alpha_foll", self.alpha),
             "protag_q_val": sum(q_values_list) / len(q_values_list) if q_values_list else 0.0,
             "protag_entropy": sum(entropies_list) / len(entropies_list) if entropies_list else 0.0,
             "protag_q_spread": sum(q_spreads) / len(q_spreads) if q_spreads else 0.0,

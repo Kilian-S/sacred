@@ -1,5 +1,61 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07)
 
+> **★★★★ MULTI-CONVOY PHASE M COMPLETE - FALLBACK BANKED AS HEADLINE (2026-07-09). READ THIS FIRST.**
+> Phase M (multi-convoy interdiction, Fork A) is DONE. The banked multi-convoy headline is the
+> **fleet-route result on 62-97 k_extra=8** (shared-edge, 12-route menu, N=3, K=1, soft, mission):
+> the adversarially-trained SAC LEADER learns a randomised route mixed strategy (smooth FP) and the
+> fleet stacks on it, giving **TAP 0.257 (1.19x the equilibrium 0.216) << ALNS 0.699 << vanilla
+> ~0.945** - Obj-5 met (beats the SOTA metaheuristic AND the non-adversarial control), stable, no
+> alpha runaway. Recorded in `experiments/gen08_interdiction.md` (Phase M section) and locked there.
+> Single-convoy B2-P3 (0.362) stays the OTHER banked headline. **CAVEAT (honest, in the ledger): the
+> fleet stacking is STRUCTURAL (followers copy the leader by construction), not learned.**
+>
+> **The learned-follower arc (6 attempts, the mechanistic SECONDARY result).** We tried to make the
+> followers LEARN to copy the leader (genuine emergent coordination). Blocker = a chicken-and-egg:
+> under independent exploration the convoys stack only at the ~2% random-coincidence rate, so the
+> CRITIC never experiences the reward for following and the followers collapse onto fixed routes. Fix
+> chain: (1) explicit route-correlation signal; (2) menu-select route-index action (shared-edge, NO
+> walk trie); (3) two role-alphas (leader high entropy / follower ~0); (4) forced-copy warmup with a
+> FROZEN mixing leader (demonstration bootstrapping / Obj-3 ERB); (5) LEVER 2 = a LEARNED, undiluted
+> per-route "taken" term at the policy head AND the critic Q head; (6) prioritised replay of stacks +
+> a steadier/softer smooth-FP attacker (switch_every 200, fp-tau 0.15). **THE BREAKTHROUGH: `follow_w`
+> (the learned critic-side correlation weight) CLIMBS monotonically (attempts 4-6, 1.0 -> 1.25) = proof
+> the critic CAN be made to value emergent coordination (the four-attempt blocker, fixed by the
+> critic-side lever 2); the learned-coordination TIME-AVERAGE 0.482 beats ALNS (+0.217) and vanilla
+> (+0.463).** BUT coordination SATURATED weak (tail stack ~0.18, follow_w plateaued 1.25) so 0.482 is
+> WORSE than the structural fallback's 0.257 (full stacking > partial). Per the pre-committed exit
+> criterion the FALLBACK is the headline; the learned bootstrap is a genuine-but-weaker Obj-3 result.
+> Coordination-dynamics work is CLOSED (diminishing returns; fp-tau was the last reserved lever).
+>
+> **STRUCTURAL FINDING (`scratch/multiconvoy_instance_screen.py`, oracle only, NO training): DISJOINT
+> route sets are ALWAYS near-uniform-leader (H/lnR >= 0.97 over 72 OD pairs) -> flat FP landscape ->
+> the 33->71 leader failure is STRUCTURAL, not instance-specific. A non-uniform leader (asymmetry = an
+> FP gradient) REQUIRES shared edges. 62-97 k8 was screened for asymmetry (leader H/lnR 0.63) + margin
+> (ALNS/eq 3.2x) + high stack mass (0.97).** New dogmas: on a joint/correlated objective the
+> coordination signal must be explicit AND reach the scoring head UNDILUTED, AND the CRITIC must value
+> coordination (follow_w climbing is the diagnostic) - the actor cannot follow what the critic won't
+> rank; disjoint routes give structurally uniform leader equilibria (asymmetry needs shared edges);
+> zero-sum FP cycles by construction, judge on the stationary-tail TIME-AVERAGE, not per-eval play.
+>
+> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, UNCOMMITTED - COMMIT FIRST):**
+> `scripts/train_multiconvoy.py` (all machinery: menu-select, two-alpha, route-correlation, lever-2
+> follow_w on actor+critic, forced-copy / frozen-leader bootstrap, prioritised replay `--stack-dup`,
+> `--fp-tau`); `src/agents/sac.py` + `networks.py` (menu head + follow_w + role-alpha + per-sample
+> target_entropy; featurize col 14 = route-correlation); `src/envs/multiconvoy_interdiction.py`
+> (menu_select + route-index routing + taken_node_frac + absolute_vuln_norm); `scratch/
+> multiconvoy_instance_screen.py`. All additive/flag-gated; the campaign path is byte-identical (14th
+> feature col sliced off by `_clip_x`; follow_w exists only in menu+adversarial mode; +4 tests updated
+> for the col-14 width bump). Nothing running. **NEXT INSTANCE: (1) COMMIT this work; (2) THESIS
+> WRITING on the two banked headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257 <<
+> ALNS 0.699) - thesis planner brief `../../thesis/THESIS_PLANNER_HANDOFF.md`; (3) OPTIONAL future
+> (each launch is Kilian's explicit go): 3-seed the fleet-route headline + tighten `--leader-ent-frac`
+> (the leader varied 0.26-0.52 across runs), and if wanted lift learned coordination past 0.257 (more
+> stacking experience to raise follow_w; a follower-alpha floor to stop the late fixed-route decay).**
+> Operating rules UNCHANGED (never launch training without Kilian's in-conversation go; no
+> multiple-choice prompts, prose + firm recommendation; plan-first; oracle/screen probes are free).
+> The M3 SMOKE banner below is SUPERSEDED by this; `REDESIGN_INTERDICTION.md` §10 and the gen08
+> ledger Phase M section carry the full detail; `SACRED_PROGRESS.md` entry 15 is the narrative.
+
 > **★★★ M3 SMOKE UPDATE (2026-07-08): the multi-convoy trainer WORKS but needs CORRELATION. READ
 > THIS FIRST.** Phase M: M0 (oracle proof), M1 (env+oracle, G-M1 gate), M2 (ALNS baseline reaching
 > loss_det) are DONE and committed (HEAD 596708f); M3 (`scripts/train_multiconvoy.py`) is BUILT and

@@ -28,7 +28,7 @@ _FEATURIZE_CACHE = {}
 # Checkpoints trained at a narrower width are still evaluable: the SAC agents slice features to
 # their own node_in_dim (new columns are appended LAST, so a [:, :11] slice reproduces the old
 # featurization exactly).
-NODE_FEATURE_DIM = 13
+NODE_FEATURE_DIM = 14
 _WAIT_NORM = 100.0  # rough scale for request age (ticks) -> O(1)
 _ETA_NORM = 50.0    # rough scale for congestion-aware ETA (graph diameter ~44) -> O(1)
 _GOAL_NORM = 50.0   # same scale for the distance-to-goal field
@@ -73,6 +73,8 @@ def featurize_state(
     active_etas = observation.get("truck_etas", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
     # Hybrid features: the active truck's assigned goal and the distance-to-goal field.
     goal_dists = observation.get("goal_dists", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
+    # Multi-convoy route-correlation: per-node fraction of earlier convoys routed through it (col 14).
+    taken_node_frac = observation.get("taken_node_frac", {})
     active_target = None
     if active_truck_id is not None and active_truck_id in trucks_dict:
         active_target = trucks_dict[active_truck_id].get("assigned_target")
@@ -174,6 +176,7 @@ def featurize_state(
             min(float(active_etas.get(node_id, 0.0)) / _ETA_NORM, _DIST_FEATURE_CAP),
             1.0 if (active_target is not None and node_id == active_target) else 0.0,
             min(float(goal_dists.get(node_id, 0.0)) / _GOAL_NORM, _DIST_FEATURE_CAP),
+            float(taken_node_frac.get(node_id, 0.0)),
         ]
         x_features.append(feat)
 
@@ -318,6 +321,7 @@ class ProtagonistPolicyValueNet(nn.Module):
         pyg_data: Data,
         active_node_idx: int,
         action_mask_indices: list[int],
+        taken: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Perform forward pass to get routing action probabilities and state value.
 
@@ -339,13 +343,14 @@ class ProtagonistPolicyValueNet(nn.Module):
         """
         # 1. Generate node embeddings: [num_nodes, hidden_dim]
         h = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
-        return self.head(h, active_node_idx, action_mask_indices)
+        return self.head(h, active_node_idx, action_mask_indices, taken)
 
     def head(
         self,
         h: torch.Tensor,
         active_node_idx: int,
         action_mask_indices: list[int],
+        taken: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Policy/value head on precomputed node embeddings ``h`` [num_nodes, hidden_dim].
 
@@ -357,17 +362,30 @@ class ProtagonistPolicyValueNet(nn.Module):
         h_active = h[active_node_idx].unsqueeze(0)
 
         # 3. If no actions are available, return dummy uniform prob and value
-        if not action_mask_indices:
+        if len(action_mask_indices) == 0:
             probs = torch.empty(0, device=h.device)
             h_graph = torch.mean(h, dim=0, keepdim=True)
             v = self.critic_val(F.relu(self.critic_fc1(h_graph))).squeeze(-1)
             return probs, v
 
-        # 4. Score valid destination nodes
-        h_candidates = h[action_mask_indices]  # [num_candidates, hidden_dim]
+        # 4. Score valid candidates. Default = per-NODE (destination/first-hop). ROUTE MENU-SELECT
+        # (multi-convoy shared-edge): if `menu_routes` is set, `action_mask_indices` are route ids
+        # and each route is scored by the MEAN-POOLED embedding of its nodes -- works for overlapping
+        # routes, parameter-free (reuses the bilinear head), one decision per convoy. Off by default.
+        menu = getattr(self, "menu_routes", None)
+        if menu is not None:
+            h_candidates = torch.stack([h[menu[int(r)]].mean(dim=0) for r in action_mask_indices])
+        else:
+            h_candidates = h[action_mask_indices]  # [num_candidates, hidden_dim]
         h_active_rep = h_active.expand(h_candidates.size(0), -1)  # [num_candidates, hidden_dim]
 
         logits = self.policy_bilinear(h_active_rep, h_candidates).squeeze(-1)  # [num_candidates]
+        fw = getattr(self, "follow_w", None)
+        if fw is not None and taken is not None:
+            # LEVER 2: undiluted LEARNED route-correlation. Each route's logit is shifted by its
+            # "earlier-convoys-committed" count times a LEARNED weight, delivered straight to the head
+            # (not via the GNN), so the follower can generalise "follow the signal" to non-modal routes.
+            logits = logits + fw * taken
         probs = F.softmax(logits, dim=-1)
 
         # 5. Critic value: Pool node embeddings to get graph state embedding

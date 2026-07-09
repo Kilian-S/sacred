@@ -134,7 +134,7 @@ def test_featurize_dynamic_columns_populated():
     assert any(w > 0 for w in obs["node_waits"].values())
 
     data = featurize_state(obs, active_truck_id=0)
-    assert data.x.shape[1] == NODE_FEATURE_DIM == 13
+    assert data.x.shape[1] == NODE_FEATURE_DIM == 14
     assert float(data.x[:, 9].max()) > 0.0   # some node has a positive wait (age)
     assert float(data.x[:, 10].max()) > 0.0  # active truck has positive ETAs to demand nodes
 
@@ -148,7 +148,7 @@ def test_featurize_static_has_zero_dynamic_columns():
     obs = env.observe()
     assert "node_waits" not in obs and "truck_etas" not in obs
     data = featurize_state(obs, active_truck_id=0)
-    assert data.x.shape[1] == 13
+    assert data.x.shape[1] == 14
     assert float(data.x[:, 9].abs().max()) == 0.0
     assert float(data.x[:, 10].abs().max()) == 0.0
     assert float(data.x[:, 11].abs().max()) == 0.0

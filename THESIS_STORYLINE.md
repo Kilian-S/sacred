@@ -175,6 +175,32 @@ Obj-4 gains fleet composition) and sits closer to the SDVRP. The single-convoy r
 banked proof; the multi-convoy game is the thesis's culminating Results act, pending the build and
 training.
 
+**Act IV, multi-convoy REALISED (2026-07-08/09; all numbers in the gen08 ledger Phase M sections).**
+The build delivered, and it deepened the act in a way pure oracle proof could not. First a structural
+lesson: an oracle screen of 72 disjoint OD pairs proved that DISJOINT route sets give a near-uniform
+leader equilibrium (a flat fictitious-play landscape), so the single-convoy leader destabilises there
+exactly as the killed F1 sweep warned; a stable, learnable leader REQUIRES an ASYMMETRIC instance,
+which needs SHARED edges (one covered edge hits several routes). Fork A selected 62-97 with k-shortest
+sharing (a 12-route menu), screened for asymmetry, margin and stack mass. There the adversarially
+trained SAC leader learns a stable, near-equilibrium randomised route strategy, and the fielded fleet
+(stacking on it) is far less mission-exploitable than the coordinating ALNS metaheuristic and than
+non-adversarial SAC: **shortest-path 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 (1.19x the
+computable equilibrium 0.216)**. That is the multi-convoy headline (Obj-5 against a computable optimum),
+banked, with an honest caveat reported as measured: the fleet stacking is STRUCTURAL (the followers copy
+the leader by construction), not learned. The attempt to make the followers LEARN the coordination is
+the act's mechanistic coda and a genuine Obj-3 contribution: it hit a diagnosed chicken-and-egg (the
+critic cannot value a joint behaviour it never experiences), which a six-step fix chain (demonstration
+bootstrapping against a frozen mixing leader, a learned undiluted route-correlation term on both actor
+and critic, prioritised replay of the rare stacked experience) resolved to the point where the learned
+critic-side weight `follow_w` climbs monotonically - direct evidence that the critic can be taught to
+value emergent coordination - and the learned policy's time-average beats both baselines; but the
+coordination strength saturated below the structural version, so the structural result stays the
+headline and the learned one is reported as the weaker, mechanistically-important secondary. The
+sceptical-examiner value is high: the thesis shows not only THAT adversarial randomised routing wins
+the multi-convoy security game, but precisely WHERE learned coordination is hard and why (signal
+dilution, critic experience starvation, zero-sum FP cycling) - a rare, honest account of an emergent
+multi-agent coordination limit.
+
 ## Objective-by-objective arc
 
 **Obj 1 (zero-sum game formulation).** Act I formulates it. Act II shows the naive instantiation

@@ -584,3 +584,96 @@ PYTHONPATH=. python scripts/train_sacred.py --problem interdiction --od 33-71 --
   whole evaluation discipline (held-out, paired, dual-level stats, gate-before-train).
 - Keep the SACRED invariants (SAC, protagonist/antagonist, RL). Single convoy, Kaliningrad, before
   any richness. Never train without pinning this ledger's SHA + finalised metric first.
+
+## Phase M (multi-convoy): BANKED INSURANCE RESULT -- leader-mix + structural stacking beats ALNS (2026-07-08)
+
+**Status: LOCKED fallback headline.** A complete multi-convoy interdiction result that clears Obj-5
+on its own; it lacks LEARNED follower coordination (that is the in-progress extension below), but the
+fleet DOES stack (structurally) and the LEADER learns the mixed strategy near the equilibrium.
+
+**Instance (Fork A, oracle-screened before training, `scratch/multiconvoy_instance_screen.py`):**
+62->97, k_extra=8 (SHARED-EDGE menu, 12 routes / 364 occupancies), N=3, K=1, soft band (0.15,0.95),
+ABSOLUTE length->prob normalisation, mission-failure objective. Chosen for asymmetry + margin:
+- non-uniform leader equilibrium (leader entropy 0.63*lnR -> fictitious play has a gradient),
+- wide ALNS/equilibrium ratio 3.23x (so a leader landing at B2-P3's ~2.2x equilibrium still clears
+  ALNS), and high stack mass 0.97 (near-pure stack-and-randomise coordination).
+- **Structural finding (screened 72 disjoint OD pairs x 3 bands): disjoint route sets are ALWAYS
+  near-uniform-leader (H/lnR >= 0.97) -> flat FP landscape (the 33->71 failure is structural, not
+  instance-specific). Asymmetry REQUIRES shared edges.** 33->71 even shared tops out at ratio 2.27x.
+
+**Oracle ladder:** shortest_path 0.973 > ALNS 0.699 (= loss_det, ALNS-verified) >> equilibrium
+(loss_mixed) 0.216.
+
+**Result (leader learns the mixed strategy via smooth FP; fleet stacks structurally = the
+fleet-route control, seed 0, menu-select route-index action, 400 sorties):**
+> **fleet-route TAP 0.257** (1.19x the equilibrium), stable: no alpha runaway (leader-alpha
+> 0.81->0.37, settling), H_lead near its target, TAP sitting deep in the ALNS-equilibrium gap.
+Ladder: shortest_path 0.973 > vanilla ~0.94 > ALNS 0.699 >> **SACRED 0.257** > equilibrium 0.216.
+
+**What it establishes:** on the multi-convoy contested-resupply mission-failure objective, an
+adversarially-trained SAC dispatcher that learns a RANDOMISED route mixed strategy (and fields the
+fleet as a stack) is far less mission-exploitable than the ALNS coordinating metaheuristic (0.257 vs
+0.699) AND than non-adversarial vanilla SAC (~0.94), approaching the computable minimax equilibrium
+(1.19x). This is Obj-5 (beats a SOTA adaptive metaheuristic AND the non-adversarial control under
+disruption), with a computable ground truth, on a shared-edge Kaliningrad instance. Fork A (pick an
+asymmetric instance so the leader's FP has a gradient) is validated: the leader is stable and
+near-equilibrium here, unlike the disjoint near-symmetric 33->71 (cycled / alpha runaway / ~ALNS).
+
+**Honest caveat (the open extension):** the fleet stacking is STRUCTURAL (followers copy the leader
+by construction), not learned. The learned-coordination extension (followers LEARN to follow via a
+two-alpha temperature split + a per-node route-correlation feature) FAILED its first seed-0 smoke
+(2026-07-08): under independent exploration the convoys stack only at the random-coincidence rate
+(~0.02), so the critic never experiences the reward for following and the followers collapse onto
+fixed wrong routes (the diagnosed chicken-and-egg). NEXT: forced-copy warmup = demonstration
+bootstrapping (Obj-3 / ERB deployed against a diagnosed pathology) with a FROZEN MIXING leader, so
+the only stable predictor of the low-failure stack is the correlation signal. Machinery built
+(menu-select route head, two-alpha, route-correlation col-14, smooth FP); suite 146 green.
+
+## Phase M: the LEARNED-FOLLOWER bootstrap arc (2026-07-09) - secondary Obj-3 result; FALLBACK stands
+
+**Question:** can the followers LEARN to copy the mixing leader (emergent coordination), rather than
+copy structurally? Instance 62-97 k8 (menu-select route-index action; NO walk trie), N=3, K=1, smooth
+FP. **Outcome: partially, and it loses to the structural fallback (0.257); the fallback is the
+headline.** Six attempts, each pre-diagnosed, each isolating the next blocker:
+
+- **The root blocker (chicken-and-egg):** under independent exploration the convoys share a route only
+  at the ~2% random-coincidence rate, so the critic never experiences the low-failure STACK reward,
+  never learns Q(follow) high, and the followers (once their temperature anneals) collapse onto FIXED
+  wrong routes. Verified: a per-node route-correlation feature (`taken_node_frac`, featurize col 14)
+  fed through the GNN was under-weighted; the followers memorised only the leader's MODAL route
+  (follow ~0.22), not the signal.
+- **The fix chain + the diagnostic that carried it (`follow_w`, the learned critic-side correlation
+  weight):**
+  | attempt | change | `follow_w` | tail stack | read |
+  |---|---|---|---|---|
+  | 1-2 | two-alpha (leader high / follower ~0) + role target-entropy | n/a | 0 | followers collapse to fixed routes |
+  | 3 | forced-copy warmup vs FROZEN mixing leader (ERB) + route-correlation feature | flat ~1.0 | ~0.22 modal | actor found NO Q-advantage -> critic doesn't value following |
+  | 4 | LEVER 2: learned undiluted `taken` term at policy head | 1.0->1.21 (climbs a little) | 0.15 | actor CAN represent following but critic still weak |
+  | 5 | + critic-side lever 2 (`taken` term on the Q head) + prioritised replay of stacks (x4) | **1.0->1.30 climbs** | 0.34 (still rising, cut off) | **critic now VALUES following (follow_w climbs) = the milestone; per-eval expl cycles** |
+  | 6 | + steadier attacker (switch_every 200), softer fp-tau 0.15, longer horizon (3200) | 1.0->1.25 then PLATEAUS | 0.18 (plateaued) | tau damped the mid-phase cycle; coordination SATURATED weak |
+
+- **THE MILESTONE (attempts 4-6): `follow_w` climbs monotonically.** That is the direct read that the
+  CRITIC has been made to value emergent coordination - the four-attempt blocker. It required the
+  Bellman-consistent, undiluted, LEARNED `taken` term on BOTH the actor logits and the critic Q
+  (a Q input, not a hard bonus), plus prioritised replay so the critic keeps seeing the rare stack.
+- **Attempt-6 tail-average (the trustworthy zero-sum-FP metric = exploitability of the mean occupancy
+  over the converged tail):** **0.482**, beats ALNS 0.699 by +0.217 and vanilla 0.945 by +0.463;
+  per-eval cycle amplitude 0.116 (the mid free-phase 1500-2400 was flat at expl ~0.75, so fp-tau DID
+  damp the stage cycle; the amplitude is inflated by a LATE follower-alpha over-collapse -> fixed-route
+  decay). **But `follow_w` plateaued at 1.25 -> coordination saturated at tail stack ~0.18 -> 0.482 is
+  WORSE than the STRUCTURAL fallback 0.257** (full stacking beats partial learned following).
+- **Decision (pre-committed exit criterion): BANK THE FALLBACK (fleet-route 0.257) as the multi-convoy
+  headline.** The learned-follower bootstrap is a genuine but weaker SECONDARY / Obj-3 result: it
+  proves the mechanism (learned emergent coordination that beats ALNS and vanilla on the time-average)
+  but does not exceed the structural version. Coordination-dynamics work CLOSED (diminishing returns;
+  fp-tau was the last reserved lever). Remaining optional future work (each ⛔K): 3-seed the fleet-route
+  headline; tighten the leader (it varied 0.26-0.52); a follower-alpha floor + more stacking experience
+  to try to lift learned coordination past 0.257.
+- **Machinery (suite 146 green; all additive/flag-gated, campaign byte-identical):** menu-select
+  route-index head (`menu_routes`, mean-pooled per-route embeddings), two role-alphas
+  (`role_alpha`/`log_alpha_foll`, per-sample `target_entropy`/`alpha_group`), lever-2 `follow_w` on
+  actor + critic (`taken` per-route input), forced-copy / frozen-leader bootstrap (`--leader-ckpt`,
+  `--forced-copy-warmup`, `--save-leader`), prioritised replay (`--stack-dup`), `--fp-tau`,
+  route-correlation featurize col 14 (`taken_node_frac`), `absolute_vuln_norm`. Fork-A instance screen:
+  `scratch/multiconvoy_instance_screen.py` (disjoint = structurally uniform leader; asymmetry needs
+  shared edges).

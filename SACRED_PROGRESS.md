@@ -461,3 +461,43 @@
   the equilibrium 0.328 because the policy routes convoys INDEPENDENTLY, not the correlated
   stack-and-randomise. Next: an explicit "convoys-so-far per route" observation feature to make
   correlation learnable, re-smoke, then the full 3-seed launch (~50 min at 3-parallel).
+
+## 15. Multi-convoy Phase M: Fork A instance + fleet-route headline + the learned-follower arc  (2026-07-08/09 · branch `gen08-interdiction` · `scripts/train_multiconvoy.py`, `scratch/multiconvoy_instance_screen.py`, `experiments/gen08_interdiction.md`)
+
+- **Goal (prospective):** realise the multi-convoy oracle finding as trained SACRED: an adversarially
+  trained dispatcher whose randomised joint routing (stack-and-randomise) beats a coordinating ALNS
+  metaheuristic under the loss-averse mission-failure objective, meeting all five objectives.
+- **Headline results:** (i) the disjoint N=3 instances DESTABILISE the leader (33->71 cycled / alpha
+  runaway, landed ~ALNS) - and an oracle SCREEN of 72 disjoint OD pairs proved this is STRUCTURAL:
+  disjoint routes give a near-uniform leader equilibrium (H/lnR >= 0.97) = flat fictitious-play
+  landscape. Asymmetry (a non-uniform leader, an FP gradient) REQUIRES shared edges. (ii) Fork A: the
+  screen picked **62-97 k_extra=8** (shared-edge, 12-route menu-select; asymmetry H/lnR 0.63, margin
+  ALNS/eq 3.2x, stack mass 0.97). There the LEADER is stable and near-equilibrium: **fleet-route
+  (leader-mix + structural fleet stacking) TAP 0.257 (1.19x eq 0.216) << ALNS 0.699 << vanilla ~0.945**
+  - BANKED as the multi-convoy headline. (iii) The learned-follower bootstrap (make followers LEARN to
+  copy, not copy structurally) hit a chicken-and-egg (the critic never experiences the rare stack
+  reward); a six-attempt fix chain made the critic-side learned correlation weight `follow_w` CLIMB
+  monotonically (the milestone: the critic can be made to value emergent coordination), tail-average
+  0.482 beats ALNS + vanilla, but coordination SATURATED weak (stack ~0.18) and 0.482 loses to the
+  structural 0.257. Fallback banked; learned coordination is the secondary Obj-3 result.
+- **What we learned:** (i) disjoint = structurally uniform leader (flat FP); pick shared-edge asymmetric
+  instances for a learnable leader. (ii) A joint/correlated objective needs the coordination signal
+  EXPLICIT and UNDILUTED at the scoring head, AND the CRITIC must value coordination - the actor cannot
+  follow what the critic won't rank (follow_w climbing is the diagnostic). (iii) To learn a rare joint
+  behaviour, the critic must EXPERIENCE it: demonstration bootstrapping (forced-copy warmup vs a FROZEN
+  mixing leader) + prioritised replay of the rare stacked transitions (ERB / Obj-3). (iv) Zero-sum FP
+  cycles by construction; judge on the stationary-tail time-average, not per-eval stage play.
+- **Thesis progression:** the multi-convoy env + oracle + ALNS baseline (Phase M1/M2), the route-index
+  menu-select head (scales to shared-edge, no walk trie), the two-role-alpha temperature split, the
+  learned undiluted route-correlation term on actor + critic, the Fork-A instance screen. Suite 146
+  green; all additive/flag-gated (campaign byte-identical).
+- **What it means for the thesis:** the multi-convoy headline is a positive Obj-5 result on a computable
+  equilibrium (SACRED's randomised routing beats the SOTA metaheuristic AND non-adversarial SAC), with
+  an honest caveat (structural stacking) and a mechanistically-rich secondary result (learned emergent
+  coordination proven possible, `follow_w` climbing, but saturating below the structural version). Two
+  banked headlines now: single-convoy B2-P3 (0.362) and multi-convoy fleet-route (0.257 << ALNS 0.699).
+- **Thesis fit:** Obj 1 (multi-convoy asymmetric zero-sum game + computable equilibrium + the FP
+  time-average framing), Obj 2 (multi-convoy env + menu-select), Obj 3 (SAC + ATLA-as-FP + ERB/demo
+  bootstrapping, now load-bearing in the learned-follower arc), Obj 4 (fleet composition, N a lever),
+  Obj 5 (the fleet-route ladder shortest 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 -> eq
+  0.216). The final multi-convoy Results act; single-convoy stays the proven core.
