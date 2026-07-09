@@ -46,7 +46,9 @@ ALNS 0.699 << vanilla ~0.945**, BANKED as the multi-convoy headline (structural 
 learned-follower bootstrap (6 attempts) made the critic value coordination (`follow_w` climbs = the
 milestone) and beats baselines on the time-average (0.482) but saturated below the structural 0.257,
 so it is the secondary Obj-3 result. Suite 146 green; all additive/flag-gated (campaign byte-identical);
-UNCOMMITTED - commit first. **New dogmas: (a) a joint/correlated objective needs the coordination
+COMMITTED `e7a2209` (2026-07-09), ledger `experiments/gen09_multiconvoy.md` locks both headlines. IN
+PROGRESS: leader stabilisation (leader-alpha FLOOR + higher leader-ent-frac + steadier/longer smooth FP)
+before the 3-seed lock, because the fleet-route leader varied 0.257/0.433/0.517/0.382 across seeds. **New dogmas: (a) a joint/correlated objective needs the coordination
 signal EXPLICIT and UNDILUTED at the scoring head, AND the CRITIC must value it (the actor cannot
 follow what the critic will not rank; `follow_w` climbing is the diagnostic); (b) disjoint route sets
 give structurally uniform leader equilibria - asymmetry needs shared edges; (c) to learn a RARE joint

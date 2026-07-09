@@ -7,8 +7,10 @@
 > **fleet-route 0.257 (1.19x eq 0.216) << ALNS 0.699 << vanilla ~0.945** = the banked multi-convoy
 > headline (structural stacking; Obj-5). The learned-follower bootstrap (6 attempts) made `follow_w`
 > climb (the critic values coordination = milestone) but saturated below 0.257 -> secondary Obj-3
-> result. Suite 146 green; UNCOMMITTED (commit first). NEXT: commit; thesis writing on the two banked
-> headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257). Everything below is HISTORICAL.
+> result. Suite 146 green; COMMITTED `e7a2209` (2026-07-09), ledger `experiments/gen09_multiconvoy.md`
+> locks both headlines. NEXT: (in progress) leader stabilisation (leader-alpha floor + higher
+> leader-ent-frac + steadier/longer smooth FP) before the 3-seed lock; then thesis writing on the two
+> banked headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257). Everything below is HISTORICAL.
 >
 > **⚠️ 2026-07-07: MULTI-CONVOY PIVOT.** The single-convoy interdiction headline is banked
 > (B2-P3, shared-edge), but (a) the symmetric-instance sweep destabilises SACRED (F1 killed) and

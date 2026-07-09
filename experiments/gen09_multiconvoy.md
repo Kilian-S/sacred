@@ -76,9 +76,17 @@ Fork A's 3.23x.
 
 **shortest_path 0.973 > ALNS 0.699 (= loss_det, ALNS-verified) >> equilibrium (loss_mixed) 0.216.**
 
-## PRIMARY RESULT (BANKED HEADLINE): fleet-route (leader-mix + structural fleet stacking)
+## PRIMARY RESULT (fleet-route: leader-mix + structural fleet stacking)
 
-Seed 0, menu-select route-index action, 400 sorties, smooth FP:
+> **NUMBER STATUS (2026-07-09): the 0.257 below is EARLIER-INDICATIVE, not yet the citable headline.**
+> It was produced by an ad-hoc seed-0 command whose exact config was NOT saved (no JSON/log/run dir
+> survives). Across seeds the fleet-route leader varied 0.257 / 0.433 / 0.517 / 0.382 (earlier,
+> unsaved) from leader-alpha collapsing to different depths. The **citable** fleet-route number is
+> being re-established by the PINNED, saved, 3-seed leader-stabilisation re-run pre-registered in
+> "gen09-STAB" below. The qualitative result (SACRED << ALNS << vanilla, all five objectives) is
+> unchanged and robust: even the worst earlier seed (0.517) beats ALNS (0.699) and vanilla (~0.945).
+
+Seed 0, menu-select route-index action, 400 sorties, smooth FP (earlier-indicative):
 
 > **fleet-route TAP exploitability 0.257 (1.19x the equilibrium 0.216), stable.** No alpha runaway
 > (leader-alpha 0.81 -> 0.37, settling); H_lead near its target; TAP sits deep in the ALNS-equilibrium
@@ -105,6 +113,62 @@ unlike the disjoint near-symmetric 33->71 (which cycled / alpha-ran-away / lande
 **Honest caveat (in the ledger, reported as measured):** the fleet stacking is STRUCTURAL (the
 followers copy the leader's route by construction), not learned. Making it LEARNED is the secondary
 result below.
+
+## gen09-STAB: leader-stabilisation re-run (PRE-REGISTERED 2026-07-09, binding at launch)
+
+**Why (Kilian 2026-07-09):** the fleet-route leader varied across seeds (0.257 / 0.433 / 0.517 /
+0.382, earlier-indicative, config unsaved) because leader-alpha collapses to DIFFERENT depths across
+seeds; in the bad seeds the leader over-concentrates and becomes exploitable. This re-run kills that
+variance and produces the FIRST saved, reproducible, citable fleet-route number. It is tightening,
+not rescuing: even the worst earlier seed (0.517) already beats ALNS (0.699) and vanilla (~0.945).
+
+**The three fixes (mirroring the follower late-decay lesson):**
+1. **Leader-alpha FLOOR** (new `--leader-alpha-floor`, `src/agents/sac.py`: after each auto-tune step,
+   `log_alpha.clamp_(min=log(floor))` on the PRIMARY temperature = the leader's in fleet-route mode).
+   The leader temperature can no longer collapse toward a deterministic, exploitable policy.
+2. **Higher `--leader-ent-frac`** (0.6, up a notch toward the non-uniform equilibrium leader entropy
+   H/lnR = 0.63), so the target keeps the leader spread near the equilibrium instead of over-committing.
+3. **Steadier / slightly longer smooth FP** (`--fp-tau 0.15 --switch-every 200`, from attempt 6;
+   `--sorties 1200` vs the earlier 400) for reliable convergence.
+
+**Instance and setup UNCHANGED:** 62->97, k_extra=8 (shared-edge menu), band 0.15-0.95, N=3, K=1,
+fleet-route (structural stacking), smooth FP, mission-failure objective, absolute vulnerability norm.
+
+**Config (pinned):** leader-ent-frac 0.6, leader-alpha-floor 0.3, fp-tau 0.15, switch-every 200,
+sorties 1200, eval-every 200, menu-select route-index action, attacker-mode smooth, seeds {0, 1, 2},
+threads 3 (3-parallel = 9 <= 10 cores). TAP_K=5 (TAP = mean occupancy over the last 5 evals);
+`follow_w` is present but inert in fleet-route mode (followers hard-copy the leader).
+
+**Command (pinned; the exact per-seed invocation, run for seeds 0/1/2 via
+`scratch/gen09_leader_stab.sh`, all outputs saved):**
+```bash
+PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
+  --od 62-97 --N 3 --K 1 --k-extra 8 --menu-select --band 0.15,0.95 \
+  --fleet-route --attacker-mode smooth --fp-tau 0.15 --switch-every 200 \
+  --leader-ent-frac 0.6 --leader-alpha-floor 0.3 --sorties 1200 --eval-every 200 \
+  --seed $S --threads 3 \
+  --json-out models/runs/gen09_multiconvoy/fleetroute_stab_seed$S.json \
+  2>&1 | tee models/runs/gen09_multiconvoy/fleetroute_stab_seed$S.log
+```
+
+**GATE (pre-committed):** the three seeds {0, 1, 2} land TIGHT near the good end (**leader TAP
+~0.25-0.30 with small std**). Clearing that is the bar to lock the config and go to the (separate)
+3-seed headline run. **No lock and no 3-seed headline run yet: this is only the stabilised-leader
+check.** Report: the three seeds' leader TAP (mean +/- std), the leader-alpha trajectories, and the
+pinned command. If the gate is missed (still loose), the floor / leader-ent-frac are raised and it is
+re-run (not patched post hoc).
+
+**Reproducibility policy (fixing the gap that lost the earlier config):** every run writes a
+`--json-out` (full per-eval history incl. leader-alpha) AND a tee'd `.log` under
+`models/runs/gen09_multiconvoy/`; the orchestrator `scratch/gen09_leader_stab.sh` is committed. No
+more ad-hoc unsaved commands.
+
+**SHA:** pinned by the commit that lands this pre-registration + the `--leader-alpha-floor` code
+(committed BEFORE the run, so the pre-registration is on record regardless of outcome).
+
+### gen09-STAB RESULT
+
+_(appended after the three seeds complete; leader TAP mean +/- std + alpha trajectories)_
 
 ## SECONDARY RESULT (Obj-3): the LEARNED-FOLLOWER bootstrap arc
 

@@ -203,7 +203,9 @@ banked headline; this is the extension that meets all five objectives and wins b
       coordination = the four-attempt blocker fixed); tail-avg 0.482 beats ALNS + vanilla. But
       coordination saturated weak (stack ~0.18) < the structural 0.257 -> FALLBACK is the headline.
       Coordination-dynamics work CLOSED (diminishing returns; fp-tau was the last reserved lever). All
-      machinery additive/flag-gated, suite 146 green. UNCOMMITTED - commit first.
+      machinery additive/flag-gated, suite 146 green. COMMITTED `e7a2209` (2026-07-09); ledger
+      `experiments/gen09_multiconvoy.md` locks both headlines. IN PROGRESS: leader stabilisation
+      (leader-alpha floor + higher leader-ent-frac + steadier/longer smooth FP) before the 3-seed lock.
 - [ ] **M5. Sweeps + remaining objectives (post-headline, ⛔K):** 3-seed the fleet-route headline +
       tighten `--leader-ent-frac` (leader varied 0.26-0.52); N / K / connectivity curves (Obj-5 varied
       disruption); learned-antagonist co-evolution; Obj-4 placement + fleet size; ZST; and (optional)

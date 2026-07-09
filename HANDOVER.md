@@ -37,7 +37,8 @@
 > rank; disjoint routes give structurally uniform leader equilibria (asymmetry needs shared edges);
 > zero-sum FP cycles by construction, judge on the stationary-tail TIME-AVERAGE, not per-eval play.
 >
-> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, UNCOMMITTED - COMMIT FIRST):**
+> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, COMMITTED at `e7a2209`;
+> gen09 ledger `experiments/gen09_multiconvoy.md` locks both headlines):**
 > `scripts/train_multiconvoy.py` (all machinery: menu-select, two-alpha, route-correlation, lever-2
 > follow_w on actor+critic, forced-copy / frozen-leader bootstrap, prioritised replay `--stack-dup`,
 > `--fp-tau`); `src/agents/sac.py` + `networks.py` (menu head + follow_w + role-alpha + per-sample
@@ -45,12 +46,17 @@
 > (menu_select + route-index routing + taken_node_frac + absolute_vuln_norm); `scratch/
 > multiconvoy_instance_screen.py`. All additive/flag-gated; the campaign path is byte-identical (14th
 > feature col sliced off by `_clip_x`; follow_w exists only in menu+adversarial mode; +4 tests updated
-> for the col-14 width bump). Nothing running. **NEXT INSTANCE: (1) COMMIT this work; (2) THESIS
+> for the col-14 width bump). COMMITTED `e7a2209` (2026-07-09). **NEXT: (1) IN PROGRESS = LEADER
+> STABILISATION before locking the 3-seed fleet-route headline: the leader varied across seeds
+> (0.257/0.433/0.517/0.382) from leader-alpha collapsing to different depths (bad seeds over-concentrate
+> -> exploitable); fix = a leader-alpha FLOOR + higher `--leader-ent-frac` + steadier/longer smooth FP
+> (Kilian 2026-07-09); gate = 3 seeds {0,1,2} land tight ~0.25-0.30 with small std; even the worst seed
+> (0.517) already beats ALNS 0.699 and vanilla 0.945, so this is tightening, not rescuing. (2) THESIS
 > WRITING on the two banked headlines (single-convoy B2-P3 0.362; multi-convoy fleet-route 0.257 <<
 > ALNS 0.699) - thesis planner brief `../../thesis/THESIS_PLANNER_HANDOFF.md`; (3) OPTIONAL future
-> (each launch is Kilian's explicit go): 3-seed the fleet-route headline + tighten `--leader-ent-frac`
-> (the leader varied 0.26-0.52 across runs), and if wanted lift learned coordination past 0.257 (more
-> stacking experience to raise follow_w; a follower-alpha floor to stop the late fixed-route decay).**
+> (each launch is Kilian's explicit go): 3-seed lock of the stabilised fleet-route headline, and if
+> wanted lift learned coordination past 0.257 (more stacking experience to raise follow_w; a
+> follower-alpha floor to stop the late fixed-route decay).**
 > Operating rules UNCHANGED (never launch training without Kilian's in-conversation go; no
 > multiple-choice prompts, prose + firm recommendation; plan-first; oracle/screen probes are free).
 > The M3 SMOKE banner below is SUPERSEDED by this; `REDESIGN_INTERDICTION.md` §10 and the gen08

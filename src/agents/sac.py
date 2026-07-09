@@ -205,6 +205,7 @@ class ProtagonistSAC:
         target_entropy: float | None = None,
         role_alpha: bool = False,
         lr_alpha: float | None = None,
+        alpha_floor: float | None = None,
     ) -> None:
         self.device = device or get_torch_device()
         self.gamma = gamma
@@ -216,6 +217,12 @@ class ProtagonistSAC:
         # to ~0, so a transition tagged state["alpha_group"]==1 uses this follower alpha in BOTH the
         # actor loss and its own auto-tuning. Default off -> single-alpha behaviour is byte-identical.
         self.role_alpha = role_alpha
+        # Optional FLOOR on the primary temperature: after each auto-tune step, clamp log_alpha so
+        # alpha cannot collapse below alpha_floor (toward a deterministic, exploitable policy). In
+        # multi-convoy fleet-route mode the primary alpha IS the leader's, so this is the leader-alpha
+        # floor that kills the across-seed variance from the leader over-concentrating in bad seeds
+        # (mirrors the follower-alpha late-decay lesson). Default None = no floor = byte-identical.
+        self.alpha_floor = alpha_floor
         # Feature widths this agent's networks consume. featurize_state may emit MORE columns
         # (new ones are appended last); _clip_x/_clip_ea slice down so checkpoints trained at a
         # narrower width keep seeing byte-identical inputs (see infer_node_in_dim/infer_edge_in_dim).
@@ -575,6 +582,9 @@ class ProtagonistSAC:
             self.alpha_optimizer.zero_grad()
             total_alpha_loss.backward()
             self.alpha_optimizer.step()
+            if self.alpha_floor is not None:
+                with torch.no_grad():
+                    self.log_alpha.clamp_(min=math.log(self.alpha_floor))
             self.alpha = self.log_alpha.exp().item()
         else:
             total_alpha_loss = torch.tensor(0.0)
