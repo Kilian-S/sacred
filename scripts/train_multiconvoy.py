@@ -129,7 +129,8 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    attacker_mode, sol, baselines, interception_loss, mean_cost, reward_scale, verbose,
                    leader_ent_frac=1.0, follower_ent_frac=0.05, alpha_lr=5e-3,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
-                   save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None):
+                   save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
+                   smooth_window=250):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
@@ -153,27 +154,41 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
     leader_te = leader_ent_frac * math.log(R)      # role-dependent target entropy (sacred only):
     follower_te = follower_ent_frac * math.log(R)  # leader explores routes; followers copy the leader
     n_occ = len(env.occupancies)
-    played = np.zeros(n_occ)
+    played = np.zeros(n_occ)               # all-history occupancy histogram (latest-BR + eval)
+    occ_seq: list[int] = []                # per-sortie occupancy-index log (smooth-FP trailing window)
+    smooth_probs = None                    # smooth-FP attacker distribution over interdiction sets
     committed = None
     pol_hist = []
     hist = []
     t_chunk = time.time()
     for k in range(sorties):
         if adversarial and (committed is None or k % switch_every == 0):
-            occ_dist = played / played.sum() if played.sum() > 0 else np.ones(n_occ) / n_occ
             if attacker_mode == "smooth":
+                # TRUE smooth fictitious play (mirrors single-convoy B2-P3, the stable recipe):
+                # softmax BR to a TRAILING-WINDOW of recent occupancy (fresh, not the stale
+                # all-history), recomputed each block; the iset is then SAMPLED FRESH EVERY sortie
+                # (below), not held for the block -- block-holding one iset is the CYCLING regime.
+                recent = np.zeros(n_occ)
+                for oi in occ_seq[-smooth_window:]:
+                    recent[oi] += 1.0
+                occ_dist = recent / recent.sum() if recent.sum() > 0 else np.ones(n_occ) / n_occ
                 e = occ_dist @ env.obj_matrix
-                z = np.exp((e - e.max()) / fp_tau); committed = int(rng.choice(len(z), p=z / z.sum()))
+                z = np.exp((e - e.max()) / fp_tau); smooth_probs = z / z.sum()
             else:
+                occ_dist = played / played.sum() if played.sum() > 0 else np.ones(n_occ) / n_occ
                 committed, _ = best_response_attacker_multi(env.obj_matrix, occ_dist)
         env.reset()
         if adversarial:
+            if attacker_mode == "smooth":  # sample a fresh committed iset EVERY sortie (smooth FP)
+                committed = int(rng.choice(len(smooth_probs), p=smooth_probs))
             env.commit(committed)
         copy_prob = (max(0.0, 1.0 - k / forced_copy_warmup)
                      if (frozen_leader is not None and forced_copy_warmup > 0) else 0.0)
         steps, occ, _ = route_one(prot, env, fleet_route=fleet_route, leader_policy=frozen_leader,
                                   copy_prob=copy_prob, rng=rng)
-        played[env._occ_index[tuple(occ)]] += 1.0
+        oi = env._occ_index[tuple(occ)]
+        played[oi] += 1.0
+        occ_seq.append(oi)
         if adversarial:
             # analytic (expected) mission-failure reward: dense, low-variance, unbiased replacement
             # for the sampled Bernoulli env.resolve() (verified). committed = the FP interdictor.
@@ -300,6 +315,9 @@ def main():
                    help="follower bootstrap: skip the vanilla control arm (it is reliably ~0.945)")
     p.add_argument("--fp-tau", type=float, default=0.05,
                    help="smooth-FP softmax temperature; higher = more diffuse (steadier) attacker")
+    p.add_argument("--smooth-window", type=int, default=250,
+                   help="smooth-FP trailing window (recent sorties) the softmax BR targets; the iset "
+                        "is sampled fresh EVERY sortie from it (true smooth FP, mirrors single-convoy B2-P3)")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -319,7 +337,8 @@ def main():
                   reward_scale=args.reward_scale, verbose=True,
                   leader_ent_frac=args.leader_ent_frac, follower_ent_frac=args.follower_ent_frac,
                   alpha_lr=args.alpha_lr, follower_warmup=args.follower_warmup, stack_dup=args.stack_dup,
-                  fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor)
+                  fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor,
+                  smooth_window=args.smooth_window)
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
