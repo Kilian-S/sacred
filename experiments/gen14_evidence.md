@@ -48,4 +48,14 @@ all agents here are built at `edge_in_dim=4`, so `_clip_ea` slices the new colum
 training inputs are byte-identical (the width-slicing back-compat mechanism, regression-tested;
 suite 155 green at the bump commit). Disclosed rather than silent, per house rule.
 
-## RESULT (to be appended)
+## RESULT (2026-07-10)
+
+### MC headline 35-159, n=10 (best-ckpt TAP): TIGHTER and consistent with the lock
+
+Per-seed: 0.238, 0.244, 0.248, 0.248, 0.251, 0.255, 0.260, 0.264, 0.267, 0.285.
+> **mean 0.256, sd 0.014, 95% t-CI [0.246, 0.266]** (all fresh at this SHA). The gen13 n=3 lock
+> (0.274 +/- 0.025) sits inside; n=10 is if anything slightly better and 1.8x tighter. Headline
+> ladder holds with a real CI: shortest 0.912 > ALNS 0.699 > **SACRED 0.256 [0.246, 0.266]** >
+> equilibrium 0.206 (1.24x eq, 2.7x below ALNS). The n=3 lock stands; this is the citable CI.
+
+(SC 10-seed + 35-159 vanilla/forced-stack/fleet-cost rows appended as they complete.)
