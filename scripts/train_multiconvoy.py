@@ -163,7 +163,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
                    save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
                    smooth_window=250, ckpt_dir=None, legacy_role_target=False,
-                   route_feats=False, route_bias=False, leader_only_push=False):
+                   route_feats=False, route_bias=False, leader_only_push=False, head_term_lr=None):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
@@ -200,17 +200,21 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                     net.route_feats = feats
                     net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
-                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w]})
+                # gen11b: the added head terms need their OWN lr scale; at the base lr they stayed
+                # ~0 over 1200 updates and silently no-op'd (the gen11 finding).
+                lr_kw = {"lr": head_term_lr} if head_term_lr is not None else {}
+                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w], **lr_kw})
                 prot.critic_optimizer.add_param_group(
-                    {"params": [prot.q1.route_feat_w, prot.q2.route_feat_w]})
+                    {"params": [prot.q1.route_feat_w, prot.q2.route_feat_w], **lr_kw})
             # gen11 arm E: LEARNED per-route scalar bias (init 0) = pure identity capacity,
             # reconstructing exactly what the pre-fix permutation accidentally provided.
             if route_bias:
                 for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                     net.route_bias = torch.nn.Parameter(torch.zeros(env.game.n_routes))
-                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_bias]})
+                lr_kw = {"lr": head_term_lr} if head_term_lr is not None else {}
+                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_bias], **lr_kw})
                 prot.critic_optimizer.add_param_group(
-                    {"params": [prot.q1.route_bias, prot.q2.route_bias]})
+                    {"params": [prot.q1.route_bias, prot.q2.route_bias], **lr_kw})
     R = env.game.n_routes
     leader_te = leader_ent_frac * math.log(R)      # role-dependent target entropy (sacred only):
     follower_te = follower_ent_frac * math.log(R)  # leader explores routes; followers copy the leader
@@ -437,6 +441,9 @@ def main():
                         "sortie reward); kills the follower-push entropy-target conflict")
     p.add_argument("--vanilla-only", action="store_true",
                    help="train ONLY the vanilla control arm (independent convoys, travel objective)")
+    p.add_argument("--head-term-lr", type=float, default=None,
+                   help="dedicated lr for the route_feats/route_bias param groups (gen11b: ~3e-2); "
+                        "None = inherit the base optimiser lr (the gen11 silent no-op)")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -459,7 +466,8 @@ def main():
                   fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor,
                   smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None),
                   legacy_role_target=args.legacy_role_target, route_feats=args.route_feats,
-                  route_bias=args.route_bias, leader_only_push=args.leader_only_push)
+                  route_bias=args.route_bias, leader_only_push=args.leader_only_push,
+                  head_term_lr=args.head_term_lr)
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,

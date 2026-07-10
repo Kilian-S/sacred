@@ -43,8 +43,12 @@ from src.utils.graph_utils import load_osm_graph_and_demands
 
 OD = ("62", "97")               # the headline OD (shared-edge, asymmetric)
 BAND = (0.15, 0.95)             # soft interception band (headline)
-TIME_WALL_S = 90.0              # stop RUNNING actual solves once one exceeds this (record the wall)
-ENTRIES_RUN_CAP = 12_000_000    # obj-matrix entries above which we DON'T attempt the solve (OOM/hang guard) -> project
+# 2026-07-10 UPDATE: objective_matrix's mission/linear closed forms are now VECTORISED (one matmul
+# instead of a per-entry Poisson-binomial convolution), which moves the naive-oracle wall from the
+# matrix BUILD to the LP SOLVE + RAM. Caps raised accordingly so the K=3/K=4 points are MEASURED,
+# not projected; the pre-vectorisation output is preserved in the gen09 ledger for the record.
+TIME_WALL_S = 300.0             # stop RUNNING actual solves once one exceeds this (record the wall)
+ENTRIES_RUN_CAP = 600_000_000   # obj-matrix entries above which we DON'T attempt the solve (RAM guard) -> project
 MEM_BUDGET_GB = 8.0             # the "infeasible" RAM bar for the crossover
 SORTIES = 1200                  # the headline sortie budget (for the SACRED projection)
 N_BASE = 3                      # the headline fleet size

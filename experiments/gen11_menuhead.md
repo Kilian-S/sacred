@@ -135,6 +135,20 @@ iteration tonight (Kilian's no-chasing bound); the decomposition below is the re
    for fleet-route mode (e.g. train on follower states but with the LEADER's entropy target =
    removing the conflicting-target half of §5.1 while keeping the diversity half; one flag).
 
+## gen11b (PRE-REGISTERED 2026-07-10 morning, Kilian's "Do steps 1-3" go): the lr-fixed head terms
+
+**One change vs gen11 arms B and E: `--head-term-lr 3e-2`** (a dedicated learning rate for the
+route_feats/route_bias param groups, 100x the actor base lr), fixing the silent no-op diagnosed in
+the gen11 result (the terms must reach O(1) within ~1200 updates to matter). Same config, seeds
+{0,1,2}, instance 62-97 (the plateau instance, deliberately: the question is whether head capacity
+can substitute for instance asymmetry there). Arms: **B' (features, lr-fixed)** and **E' (identity
+bias, lr-fixed)**. Bars unchanged: <= 0.295 passes (E' passing alone is a methods exhibit, never a
+headline); the B'-vs-E' contrast is the identity-vs-transferable-features question, now actually
+testable. Telemetry: the learned magnitudes (route_feat_w / route_bias spread) reported per seed.
+Runs via `scratch/gen13_morning.sh` stage 2; outputs `models/runs/gen11_menuhead/{Bp,Ep}_seed*`.
+
+### gen11b RESULT (to be appended)
+
 ## Launch/config record
 
 SHA `2addaee` (machinery + pre-registration); arms launched 01:26-02:20 via
