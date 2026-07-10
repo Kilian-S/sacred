@@ -163,7 +163,8 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
                    save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
                    smooth_window=250, ckpt_dir=None, legacy_role_target=False,
-                   route_feats=False, route_bias=False, leader_only_push=False, head_term_lr=None):
+                   route_feats=False, route_bias=False, leader_only_push=False, head_term_lr=None,
+                   fp_tau_final=None):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
@@ -179,11 +180,16 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             # LEVER 2: a LEARNED (not fixed) weight on the undiluted per-route 'taken' term, at BOTH
             # the policy head AND the critic Q head, so the critic can rank the leader's route and the
             # actor gets a gradient to grow follow_w (Bellman-consistent Q input, not a hard bonus).
+            # gen18/C2: when a dedicated head-term lr is given, follow_w uses it too (the gen11
+            # silent-no-op lesson applied to the coordination weight); default None = base lr,
+            # byte-identical to the banked follower-bootstrap path.
+            fw_lr = {"lr": head_term_lr} if head_term_lr is not None else {}
             prot.actor.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-            prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w]})
+            prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w], **fw_lr})
             for qn in (prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                 qn.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-            prot.critic_optimizer.add_param_group({"params": [prot.q1.follow_w, prot.q2.follow_w]})
+            prot.critic_optimizer.add_param_group(
+                {"params": [prot.q1.follow_w, prot.q2.follow_w], **fw_lr})
             # gen11 arm B: undiluted per-route COST + worst-case VULNERABILITY at both heads with
             # LEARNED weights (init 0 = byte-identical start). Restores the discriminability the
             # mean-pooled embeddings lost post-node-ordering-fix; also the ZST map-conditioning
@@ -232,7 +238,12 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 # TRUE smooth fictitious play via the shared B2-P3-proven discipline (fp_dynamics):
                 # softmax BR to the TRAILING-WINDOW occupancy play, recomputed per block; the iset is
                 # SAMPLED FRESH EVERY sortie below (block-holding one iset is the cycling regime).
-                smooth_probs = smooth_fp_probs(occ_seq, n_occ, env.obj_matrix, fp_tau, smooth_window)
+                # gen17/C4: optional ANNEALED SMOOTHING - tau anneals linearly fp_tau -> fp_tau_final
+                # (smoothed-game equilibria converge to Nash as smoothing -> 0; a sharpening attacker
+                # raises the penalty for post-hedge drift). None = constant tau (byte-identical).
+                cur_tau = (fp_tau if fp_tau_final is None
+                           else fp_tau + (fp_tau_final - fp_tau) * (k / max(sorties - 1, 1)))
+                smooth_probs = smooth_fp_probs(occ_seq, n_occ, env.obj_matrix, cur_tau, smooth_window)
             else:
                 occ_dist = played / played.sum() if played.sum() > 0 else np.ones(n_occ) / n_occ
                 committed, _ = best_response_attacker_multi(env.obj_matrix, occ_dist)
@@ -442,8 +453,11 @@ def main():
     p.add_argument("--vanilla-only", action="store_true",
                    help="train ONLY the vanilla control arm (independent convoys, travel objective)")
     p.add_argument("--head-term-lr", type=float, default=None,
-                   help="dedicated lr for the route_feats/route_bias param groups (gen11b: ~3e-2); "
-                        "None = inherit the base optimiser lr (the gen11 silent no-op)")
+                   help="dedicated lr for the route_feats/route_bias/follow_w param groups (gen11b: "
+                        "~3e-2); None = inherit the base optimiser lr (the gen11 silent no-op)")
+    p.add_argument("--fp-tau-final", type=float, default=None,
+                   help="gen17/C4 annealed smoothing: linearly anneal the smooth-FP tau from "
+                        "--fp-tau to this value across training; None = constant tau")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -467,7 +481,7 @@ def main():
                   smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None),
                   legacy_role_target=args.legacy_role_target, route_feats=args.route_feats,
                   route_bias=args.route_bias, leader_only_push=args.leader_only_push,
-                  head_term_lr=args.head_term_lr)
+                  head_term_lr=args.head_term_lr, fp_tau_final=args.fp_tau_final)
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
