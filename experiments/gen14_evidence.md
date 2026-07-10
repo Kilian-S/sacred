@@ -58,4 +58,27 @@ Per-seed: 0.238, 0.244, 0.248, 0.248, 0.251, 0.255, 0.260, 0.264, 0.267, 0.285.
 > ladder holds with a real CI: shortest 0.912 > ALNS 0.699 > **SACRED 0.256 [0.246, 0.266]** >
 > equilibrium 0.206 (1.24x eq, 2.7x below ALNS). The n=3 lock stands; this is the citable CI.
 
-(SC 10-seed + 35-159 vanilla/forced-stack/fleet-cost rows appended as they complete.)
+### Native 35-159 ladder rows (completing the headline instance; no more borrowing from 62-97)
+
+| arm | mission-failure exploitability | note |
+|---|---|---|
+| shortest_path | 0.912 | naive stack |
+| ALNS forced-to-STACK (fairness) | 0.841 | ALNS is free to stack but SPREADS by choice |
+| ALNS (spread, = loss_det) | 0.699 | the deterministic-class optimum |
+| vanilla (non-adversarial SAC, n=3) | best-ckpt **0.526** / final 0.628 +/- 0.006 | see note |
+| **SACRED (adversarial, n=10)** | **0.256 [0.246, 0.266]** | the headline |
+| equilibrium (loss_mixed) | 0.206 | computable bound |
+
+**Honest ordering note (instance-dependent, chapter-worthy):** on 35-159 the non-adversarial
+vanilla (0.526 best-ckpt) sits BELOW ALNS (0.699) - the reverse of 62-97 (vanilla 0.855 > ALNS).
+This is not an error: ALNS emits a DETERMINISTIC plan (one occupancy, fully exploitable to its
+worst-case interdiction -> 0.699), whereas even non-adversarial SAC emits a STOCHASTIC occupancy
+distribution, so its incidental mixing is a (poorly-calibrated) mixed strategy that on this
+asymmetric instance already beats the deterministic optimum. It is the milder version of the whole
+thesis: stochasticity buys unexploitability; ADVERSARIAL training buys the CALIBRATED mixing that
+gets to 0.256. **SACRED beats vanilla by 0.27 (best-ckpt) and beats a control that itself beats
+ALNS** - if anything a stronger Obj-5 result than the 62-97 ordering. The forced-stack fairness row
+(0.841 >> ALNS spread 0.699) reproduces natively: ALNS spreads by choice, so SACRED's win is the
+randomisation, not a denied stacking privilege.
+
+(SC 10-seed + fleet-cost column appended when they complete.)
