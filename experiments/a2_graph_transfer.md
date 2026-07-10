@@ -36,4 +36,35 @@ random-init net and (b) shortest-path, on the NEW graph.
 > seen this graph's geometry), reported as measured; a partial result still evidences graph-agnostic
 > structure in the mixed-strategy concept.
 
-## RESULT (to be appended by the post-A1 chain)
+## RESULT (2026-07-10): NEGATIVE, and the negative is the finding
+
+Transfer of the Kaliningrad-30m generalist to the UNSIMPLIFIED Kaliningrad-original graph (denser,
+different node set, different construction: NO arterial filter, NO 30m consolidation), 6 held-out
+ODs, single-checkpoint exact evaluation:
+
+| | mean ratio to eq | beats loss_det |
+|---|---|---|
+| generalist | 2.40x | 0/6 |
+| random-init reference | 2.41x | - |
+
+> **The generalist TIES a random-init network (2.40 vs 2.41) and beats no held-out OD.** Its
+> learned edge has VANISHED on the different graph.
+
+**Control (same-graph sanity, single-checkpoint):** on its OWN training graph's held-out ODs the
+generalist DOES keep a consistent edge over random-init (e.g. 72-42 2.29 vs 2.45; 103-27 1.68 vs
+1.87; 66-230 2.15 vs 2.40 - a ~0.15-0.2x margin per single checkpoint; the A1 headline 1.59x uses
+the TAP, which is better). So the collapse is specifically CROSS-GRAPH, not an evaluator artefact.
+
+**The finding (important, direction-changing):** a generalist trained on ONE source graph transfers
+across OD PAIRS (A1: 1.59x, passing) but NOT across GRAPHS (this: ~random). Its GNN has only ever
+seen one graph's structure, so a structurally different graph is out-of-distribution for the
+encoder; the transferable head features (cost/vulnerability) cannot compensate for an OOD GNN base.
+This directly predicts that Kaliningrad-ONLY -> Kyiv zero-shot would likely also fail, and it
+reframes the second-city plan: the honest route to a cross-CITY ZST claim is a **multi-graph
+generalist** (train on several cities, hold one out), not single-source transfer. Recorded for
+Kilian's second-city decision; the original graph is an EXTREME shift (also a construction-pipeline
+difference), so a same-pipeline Kyiv is a milder test, but the mechanism (single-source GNN = graph-
+overfit) is the operative risk.
+
+(Caveat: single-checkpoint eval understates vs TAP; but both arms are single-checkpoint, so the
+tie-with-random conclusion is footing-fair.)

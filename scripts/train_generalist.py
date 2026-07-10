@@ -109,7 +109,7 @@ def exact_ratio(prot: ProtagonistSAC, inst: Instance) -> tuple[float, np.ndarray
     pyg.x = _clip_x(pyg.x, prot.node_in_dim)
     pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
     n2i = node_index_map(obs)
-    R = inst.R
+    R = inst.env.game.n_routes   # robust to ad-hoc instance objects (A2/D3) that lack .R
     prot.actor.eval()
     with torch.no_grad():
         lead, _ = prot.actor(pyg, n2i[obs["trucks"][0]["current_node"]],
