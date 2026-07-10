@@ -181,6 +181,8 @@ class ProtagonistQNet(nn.Module):
             # take this route' as a LEARNED input (Bellman-consistent), so it can rank the leader's
             # route and the actor gets a gradient to grow follow_w. The missing half of the fix.
             q_values = q_values + fw * taken
+        from src.agents.networks import _route_head_terms
+        q_values = _route_head_terms(self, q_values, action_mask_indices)
         return q_values
 
 

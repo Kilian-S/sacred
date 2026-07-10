@@ -243,6 +243,29 @@ def featurize_state(
     return Batch.from_data_list([data])
 
 
+def _route_head_terms(net: nn.Module, logits: torch.Tensor, action_mask_indices) -> torch.Tensor:
+    """gen11 menu-head discriminability terms, delivered UNDILUTED at the head (the proven lever-2
+    pattern; see CRITIQUE_PREFREEZE.md §2/§8.2). Applied only when the corresponding attributes are
+    attached by the trainer (menu-select mode); absent attributes = byte-identical behaviour.
+
+    * ``route_feats`` [R, F] static per-route features (normalised COST, worst-case VULNERABILITY)
+      with LEARNED weight vector ``route_feat_w`` [F] (init 0): logit shift = feats @ w. The
+      transferable-feature arm (also the ZST map-conditioning mechanism).
+    * ``route_bias`` [R] LEARNED per-route scalar bias (init 0): pure identity capacity - exactly
+      what the pre-fix permutation accidentally provided (the identity-hash arm).
+    Both are Bellman-consistent when the same attributes are attached to the Q heads."""
+    feats = getattr(net, "route_feats", None)
+    fw = getattr(net, "route_feat_w", None)
+    if feats is not None and fw is not None:
+        idx = torch.as_tensor(list(action_mask_indices), dtype=torch.long, device=logits.device)
+        logits = logits + feats[idx] @ fw
+    bias = getattr(net, "route_bias", None)
+    if bias is not None:
+        idx = torch.as_tensor(list(action_mask_indices), dtype=torch.long, device=logits.device)
+        logits = logits + bias[idx]
+    return logits
+
+
 class GATv2Encoder(nn.Module):
     """Shared Graph Attention Backbone to learn node/edge spatial embeddings."""
 
@@ -397,6 +420,7 @@ class ProtagonistPolicyValueNet(nn.Module):
             # "earlier-convoys-committed" count times a LEARNED weight, delivered straight to the head
             # (not via the GNN), so the follower can generalise "follow the signal" to non-modal routes.
             logits = logits + fw * taken
+        logits = _route_head_terms(self, logits, action_mask_indices)
         probs = F.softmax(logits, dim=-1)
 
         # 5. Critic value: Pool node embeddings to get graph state embedding

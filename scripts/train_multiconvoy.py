@@ -162,7 +162,8 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                    leader_ent_frac=1.0, follower_ent_frac=0.05, alpha_lr=5e-3,
                    fleet_route=False, follower_warmup=0, frozen_leader=None, forced_copy_warmup=0,
                    save_actor=None, stack_dup=4, fp_tau=0.05, leader_alpha_floor=None,
-                   smooth_window=250, ckpt_dir=None, legacy_role_target=False):
+                   smooth_window=250, ckpt_dir=None, legacy_role_target=False,
+                   route_feats=False, route_bias=False, leader_only_push=False):
     torch.manual_seed(seed); np.random.seed(seed); rng = np.random.default_rng(seed)
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=reward_scale, lr_actor=3e-4, autotune_alpha=True,
@@ -183,6 +184,33 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             for qn in (prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                 qn.follow_w = torch.nn.Parameter(torch.tensor(1.0))
             prot.critic_optimizer.add_param_group({"params": [prot.q1.follow_w, prot.q2.follow_w]})
+            # gen11 arm B: undiluted per-route COST + worst-case VULNERABILITY at both heads with
+            # LEARNED weights (init 0 = byte-identical start). Restores the discriminability the
+            # mean-pooled embeddings lost post-node-ordering-fix; also the ZST map-conditioning
+            # mechanism. Registration ORDER matches across q and target nets (_soft_update zips).
+            if route_feats:
+                cost = np.asarray(env.game.travel_cost, dtype=float)
+                vuln = env.game.payoff.max(axis=1)
+
+                def _mm(x):
+                    rng_ = x.max() - x.min()
+                    return (x - x.min()) / rng_ if rng_ > 0 else np.zeros_like(x)
+
+                feats = torch.tensor(np.stack([_mm(cost), _mm(vuln)], axis=1), dtype=torch.float32)
+                for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
+                    net.route_feats = feats
+                    net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
+                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w]})
+                prot.critic_optimizer.add_param_group(
+                    {"params": [prot.q1.route_feat_w, prot.q2.route_feat_w]})
+            # gen11 arm E: LEARNED per-route scalar bias (init 0) = pure identity capacity,
+            # reconstructing exactly what the pre-fix permutation accidentally provided.
+            if route_bias:
+                for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
+                    net.route_bias = torch.nn.Parameter(torch.zeros(env.game.n_routes))
+                prot.actor_optimizer.add_param_group({"params": [prot.actor.route_bias]})
+                prot.critic_optimizer.add_param_group(
+                    {"params": [prot.q1.route_bias, prot.q2.route_bias]})
     R = env.game.n_routes
     leader_te = leader_ent_frac * math.log(R)      # role-dependent target entropy (sacred only):
     follower_te = follower_ent_frac * math.log(R)  # leader explores routes; followers copy the leader
@@ -242,7 +270,21 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 is_follower = (ci_j != 0) and (bootstrap or k >= follower_warmup)
                 obs_j["target_entropy"] = follower_te if is_follower else leader_te
                 obs_j["alpha_group"] = 1 if is_follower else 0
-        for i, (obs, ci, hop, mask) in enumerate(steps):
+        if leader_only_push and fleet_route:
+            # gen11 arm C (the follower-push diagnostic, CRITIQUE_PREFREEZE §5.1): in fleet-route
+            # mode the followers hard-copy the leader, so their transitions carry no decision
+            # content, yet post-warmup they train the SAME shared actor toward near-argmax on
+            # states differing from the leader's only in the correlation signal. Push ONLY the
+            # leader's decision, TERMINAL with the sortie reward. (One shared update per sortie
+            # below, same as every other arm.)
+            obs0, ci0, hop0, mask0 = steps[0]
+            t = _transition(obs0, ci0, hop0, mask0, reward, None, None, None, True)
+            for _ in range(n_push):
+                prot.replay_buffer.push(t)
+            steps_to_push = []
+        else:
+            steps_to_push = steps
+        for i, (obs, ci, hop, mask) in enumerate(steps_to_push):
             if bootstrap and ci == 0:
                 continue  # convoy 0 is the FROZEN mixing leader: not trained
             last = i == N - 1
@@ -277,8 +319,10 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                          stack_rate, follow_rate, H_lead, H_foll, t_train, t_eval))
             if verbose:
                 fw = float(prot.actor.follow_w) if hasattr(prot.actor, "follow_w") else 0.0
+                rw = ("rw[" + ",".join(f"{float(x):.2f}" for x in prot.actor.route_feat_w) + "] "
+                      if hasattr(prot.actor, "route_feat_w") else "")
                 print(f"    sortie {k+1:5d}: expl {expl:.3f} | TAP {expl_tap:.3f} | "
-                      f"alpha L{prot.alpha:.2f}/F{prot.alpha_foll:.2f} fw {fw:.2f} | "
+                      f"alpha L{prot.alpha:.2f}/F{prot.alpha_foll:.2f} fw {fw:.2f} {rw}| "
                       f"stack {stack_rate:.2f} follow {follow_rate:.2f} | H_lead {H_lead:.2f} H_foll {H_foll:.2f} | "
                       f"train {t_train:4.0f}s eval {t_eval:3.0f}s   "
                       f"(loss_mixed={sol.loss_mixed:.3f}, ALNS={baselines['alns']:.3f})", flush=True)
@@ -382,6 +426,15 @@ def main():
     p.add_argument("--legacy-role-target", action="store_true",
                    help="gen10-MC2 isolation: revert the role-alpha TARGET fix (V(s') entropy term "
                         "uses the primary alpha, pre-fix behaviour) while keeping the node-ordering fix")
+    p.add_argument("--route-feats", action="store_true",
+                   help="gen11 arm B: undiluted per-route cost+vulnerability features with learned "
+                        "weights at policy AND critic heads (menu mode, adversarial only)")
+    p.add_argument("--route-bias", action="store_true",
+                   help="gen11 arm E: learned per-route scalar bias at both heads (pure identity "
+                        "capacity; reconstructs what the pre-fix permutation accidentally provided)")
+    p.add_argument("--leader-only-push", action="store_true",
+                   help="gen11 arm C: fleet-route pushes ONLY the leader's decision (terminal, full "
+                        "sortie reward); kills the follower-push entropy-target conflict")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -403,7 +456,8 @@ def main():
                   alpha_lr=args.alpha_lr, follower_warmup=args.follower_warmup, stack_dup=args.stack_dup,
                   fp_tau=args.fp_tau, leader_alpha_floor=args.leader_alpha_floor,
                   smooth_window=args.smooth_window, ckpt_dir=(args.ckpt_dir or None),
-                  legacy_role_target=args.legacy_role_target)
+                  legacy_role_target=args.legacy_role_target, route_feats=args.route_feats,
+                  route_bias=args.route_bias, leader_only_push=args.leader_only_push)
 
     if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
