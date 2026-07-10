@@ -95,7 +95,11 @@ def featurize_state(
     num_nodes = len(node_ids)
 
     # 1. Normalize/Center coordinates
-    cache_key = tuple(node_ids)
+    # Cache key covers nodes AND the edge set's size/total length: two graphs sharing node ids but
+    # differing in edges/lengths must not share cached edge indices or normalisation constants
+    # (CRITIQUE_PREFREEZE §5.3: a multi-instance/ZST trap with the old node-ids-only key).
+    cache_key = (tuple(node_ids), len(edges_dict),
+                 round(sum(float(e["distance"]) for e in edges_dict.values()), 6))
     if cache_key not in _FEATURIZE_CACHE:
         xs = [nodes_dict[n]["x"] for n in node_ids]
         ys = [nodes_dict[n]["y"] for n in node_ids]

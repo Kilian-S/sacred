@@ -48,9 +48,12 @@ As the gen11 arms, with `--od {62-97, 35-159} --N {2,3,5} --K {1,2,3}` per the g
 gen11-selected arm flags (recorded at launch). Also in this batch (night item 3 completion):
 post-fix VANILLA seeds 1, 2 on 62-97 (`--vanilla-only`), completing the 3-seed post-fix vanilla row.
 
-## Launch record (filled at launch)
+## Launch record
 
-- gen11-selected arm flags: -
-- git SHA: -
+- **gen11-selected arm flags: NONE (plain post-fix baseline).** No gen11 arm improved on the
+  0.447 plateau (see `experiments/gen11_menuhead.md`), so the sweeps run on the unmodified
+  fleet-route config, comparable to the standing post-fix numbers.
+- git SHA: the commit landing this launch record; launched 2026-07-10 ~02:25 via
+  `scratch/gen12_sweeps.sh` (ARM_FLAGS empty).
 
 ## RESULT (to be appended)

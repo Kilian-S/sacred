@@ -479,7 +479,9 @@ def main():
         print("[sacred] follower bootstrap vs frozen leader...")
         sac = train_defender(env, adversarial=True, attacker_mode=args.attacker_mode,
                              frozen_leader=frozen, forced_copy_warmup=args.forced_copy_warmup, **common)
-        van = v['expl_tap'] if v['expl_tap'] == v['expl_tap'] else 0.945  # nan -> vanilla reference
+        # nan -> vanilla reference row. 0.859 = the POST-FIX gen10-VAN seed-0 TAP (SHA 97764b1 era);
+        # the old 0.945 was a PRE-FIX number (CRITIQUE_PREFREEZE §5.3). Reference only, not citable.
+        van = v['expl_tap'] if v['expl_tap'] == v['expl_tap'] else 0.859
         print(f"\n=== FOLLOWER-BOOTSTRAP ({s}->{t}, N={args.N}, K={args.K}) ===")
         print(f"  shortest {baselines['shortest_path']:.3f}  ALNS {baselines['alns']:.3f}  vanilla {van:.3f}  equilibrium {sol.loss_mixed:.3f}")
         print(f"  sacred TAIL-AVG exploitability {sac['tail_expl']:.3f}  (per-eval cycle amp {sac['tail_amp']:.3f}, tail stack {sac['tail_stack']:.2f})")

@@ -88,4 +88,57 @@ of the new parameters matched across q/target nets for `_soft_update`), 3 regres
 (`tests/test_route_head_terms.py`); suite **152 passed**; all additive/flag-gated (absent flags =
 byte-identical, incl. the banked paths).
 
-## RESULT (to be appended; nothing above this line changes after launch)
+## RESULT (2026-07-10 02:20, 12 runs, ~54 min at 3-parallel staged): NO ARM PASSES; the decomposition is the product
+
+| arm | best-ckpt TAP per seed | mean +/- std | final TAP mean | read |
+|---|---|---|---|---|
+| A (baseline, = gen10-MC) | 0.478 / 0.409 / 0.454 | 0.447 +/- 0.029 | 0.788 | the plateau |
+| B (cost+vuln features) | 0.410 / 0.441 / 0.479 | **0.443 +/- 0.028** | 0.708 | = plateau; `route_feat_w` ended at [0.001, 0.005]: NEVER TRAINED to relevance |
+| C (leader-only push) | 0.980 / 0.980 / 0.980 | 0.980 +/- 0.000 | 0.980 | CATASTROPHIC: H_lead 0.00 from eval 1, alpha -> 295 |
+| D (both) | 0.801 / 0.980 / 0.620 | 0.800 +/- 0.147 | 0.680 | dominated by C's pathology; two seeds partially escape late |
+| E (identity bias) | 0.468 / 0.486 / 0.475 | 0.476 +/- 0.007 | 0.706 | = plateau; `route_bias` ended ~ +/-0.1: also never trained to relevance |
+
+**PASS bar (<= 0.295): not met by any arm. Per the pre-registration: the pre-fix multi-convoy
+headline (exact 0.295 +/- 0.024 at `ad70a9c`) STANDS with its disclosed caveat; no further design
+iteration tonight (Kilian's no-chasing bound); the decomposition below is the reportable product.**
+
+**What the decomposition establishes (each pre-diagnosed hypothesis answered):**
+1. **The follower-push-conflict hypothesis (CRITIQUE_PREFREEZE §5.1) is FALSIFIED, dramatically.**
+   Removing the followers' pushes (arm C) does not relieve the leader; it destroys it: with only
+   the leader's decision state in the buffer, every replay sample is the SAME state (fleet-route
+   resets to an identical observation each sortie), the actor's softmax saturates onto one route
+   by the first eval and never escapes (H_lead 0.00, alpha 1.1 -> 295 across 1200 sorties, all
+   three seeds identically). The follower pushes were LOAD-BEARING as the only source of state
+   diversity regularising the shared actor. A single-state menu policy trained by SAC is a bandit
+   with a saturating softmax: a finding worth a methods paragraph.
+2. **The head-term arms (B, E) are INCONCLUSIVE on the concept and conclusive on the mechanics:**
+   both added parameter sets stayed 1-2 orders of magnitude below the logit scale (feat_w
+   [0.001, 0.005]; bias ~ +/-0.1) because the new param groups inherited the base optimiser
+   learning rates (actor 3e-4) while needing O(1) magnitudes within 1200 updates. The arms
+   therefore reproduced the baseline (0.443 / 0.476 ~ 0.447) rather than testing discriminability.
+   The identity-vs-features question (E vs B) remains OPEN pending properly-scaled head terms.
+3. The 0.447 plateau is now reproduced a FOURTH time (gen10-MC, gen10-MC2, gen11-B, gen11-E,
+   under three different target rules and two horizons): it is a hard property of the current
+   architecture-plus-optimisation on honest embeddings.
+
+**Recommended further design attempts (for Kilian's morning decision; NOT run tonight):**
+1. **gen11b (cheapest, highest confidence): re-run arms B and E with the head-term param groups at
+   a dedicated lr (~3e-2, i.e. 100x actor lr) and/or follow_w-style init 1.0** so the terms reach
+   O(1) within the horizon; 2 arms x 3 seeds ~ 30 min. This is the direct, still-unrun test of
+   both gen11 hypotheses.
+2. If gen11b's E passes but B does not: the architecture exploits identity, not semantics; report
+   as the honest boundary (and the multi-convoy story keeps the pre-fix number + this account).
+3. If B passes: the transferable-feature head becomes the headline mechanism AND the ZST step-1
+   enabler; run the 3-seed lock immediately.
+4. Independent of 1-3: a LEARNED per-route embedding replacing mean-pooling (a small nn.Embedding
+   at the head, lr-matched), the "identity capacity done properly" variant; and state-diversity
+   for fleet-route mode (e.g. train on follower states but with the LEADER's entropy target =
+   removing the conflicting-target half of §5.1 while keeping the diversity half; one flag).
+
+## Launch/config record
+
+SHA `2addaee` (machinery + pre-registration); arms launched 01:26-02:20 via
+`scratch/gen11_orchestrator.sh`; all JSONs/logs/per-eval ckpts under `models/runs/gen11_menuhead/`.
+**gen12 sweep config consequence:** with no arm improving on the baseline, the sweeps run on the
+PLAIN post-fix baseline config (no gen11 flags), keeping them comparable to the standing post-fix
+numbers (recorded in the gen12 ledger launch record).
