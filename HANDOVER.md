@@ -1,17 +1,19 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-10)
 
-> **★ EXPANSION PROGRAMME IN FLIGHT (2026-07-10 afternoon; `DIRECTION_EXPANSION.md` +
-> `NIGHT_REPORT_2026-07-10.md`).** Kilian: "disregard thesis writing"; working the amended
-> ordering with full launch authority. STATE: **C3** (gen14: 10-seed both headlines + missing
-> 35-159 rows) RUNNING; **A1** (gen15: the map-conditioned generalist, ZST step 1) chained behind
-> it; **D1** (SBO acquisition loop, oracle-only) RUNNING; **A3/A2** (amortisation + graph-transfer,
-> eval-only) chained behind A1; **B4** (correlated interception) DONE
-> (`experiments/b4_correlated_interception.md`: independence is the CONSERVATIVE assumption). Built
-> this session: edge-vulnerability observation column (EDGE_FEATURE_DIM 4->5) + per-transition
-> instance conditioning for A1 (`scripts/train_generalist.py`, +3 regression tests, suite 158).
-> Ledgers: gen14_evidence, gen15_generalist, d1_sbo_loop, a2_graph_transfer, b4_*. NEXT after these
-> land: D3 (surrogate over the trained generalist), C4 (one bounded last-iterate attempt on 35-159),
-> C2 (learned-follower redo). NB: no network this session (a true 2nd OSM city for A2 needs it).
+> **★ EXPANSION PROGRAMME: KEYSTONE ARC COMPLETE (2026-07-10 evening; `DIRECTION_EXPANSION.md`).**
+> Kilian: "disregard thesis writing"; full launch authority. **DONE:** C3 (gen14: both headlines
+> n=10 CIs - MC 0.256 [0.246,0.266], SC paired dD 0.175 [0.137,0.213] excl 0; the stats weak point
+> is closed); **A1 (gen15) PASSED** = first TRAINED zero-shot transfer (held-out mean ratio 1.59
+> +/- 0.10, beats loss_det 17/18 cells; `experiments/gen15_generalist.md`); D1 SBO loop PASS+STRONG
+> (Obj-4 proper); A3 amortisation (honest: wall-clock does not favour the policy; ZST+D3 carry the
+> scaling story); **D3 composite PASS** (surrogate over the TRAINED policy Spearman 0.959; policy-vs-
+> oracle design-target corr 0.768 = designing against the real policy differs from the equilibrium);
+> B4, B0, A4-core, D2 all DONE. **KEY FINDING (`experiments/a2_graph_transfer.md`): a single-source-
+> graph generalist transfers across OD PAIRS but NOT across GRAPHS (ties random on a different
+> graph)** -> cross-CITY ZST needs a MULTI-GRAPH generalist (train on N cities, hold one out), not
+> single-source transfer; the 2nd-city (Kyiv+) plan is reframed accordingly (Kilian sourcing
+> cities). Suite 161. NEXT: multi-city generalist once city graphs exist; C4 (bounded last-iterate
+> attempt on 35-159); C2 (learned-follower redo post-fix). All ledgers under `experiments/`.
 
 > **★★★★★★★ BOTH HEADLINES POST-FIX (2026-07-10 morning, gen13-lock PASSED). READ
 > `NIGHT_REPORT_2026-07-10.md` + `experiments/gen13_lock.md` FIRST; numbers live ONLY in ledgers.**
