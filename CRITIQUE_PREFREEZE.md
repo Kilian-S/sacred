@@ -1,5 +1,28 @@
 # CRITIQUE_PREFREEZE.md: fresh-eyes critique of the whole programme, post-gen10 (Fable, 2026-07-10)
 
+> **⚠️ STATUS UPDATE (2026-07-10 morning, after the overnight/morning programme executed §8):**
+> much of this critique has been ACTED ON; the ledgers supersede the numbers here.
+> - **§2 (two-headline asymmetry): RETIRED** by gen13-lock (`experiments/gen13_lock.md`): the
+>   multi-convoy headline is now POST-FIX 0.274 +/- 0.025 on held-out-screened 35-159; the
+>   pre-fix 62-97 number retires to the methods narrative.
+> - **§5.1 (follower-push conflict): FALSIFIED** by gen11 arm C (`experiments/gen11_menuhead.md`):
+>   leader-only pushes collapse the actor (single-state softmax-saturation bandit, alpha -> 295);
+>   follower pushes are load-bearing state diversity. The identity-vs-features question was then
+>   ANSWERED by gen11b (E' reproduces the pre-fix 0.295 on 2/3 seeds; B' 0.408 with correct hedge
+>   signs = the proven-trainable ZST-1 mechanism). gen12 showed the 0.447 plateau is
+>   INSTANCE-specific (35-159 reaches 1.27x eq post-fix, plain config).
+> - **§7/§6 scaling:** the vectorised matrix build re-measured the oracle (N3K3 = 23 s; wall =
+>   N5K3); the wall-clock claim is retired from the record (gen09 ledger supersession note),
+>   exactly as this critique warned; amortisation + ZST is the recorded position.
+> - **§8 programme:** items 1 (F3 SBO: met, rho 0.894 / regret 0.0), 2 (gen11/gen11b + gen13),
+>   3 (fleet-cost, vanilla best-ckpt + 3 seeds), 4 (gen12 sweeps, 10/10 cells + held-out OD),
+>   5 step 0 (ZST scoping negative, B2-S closed) and 7 (docs hygiene) are DONE; remaining open:
+>   ZST step 1 (Kilian's go/no-go vs the 30 Jul rail) and the optional F2 demo.
+> - **Still-open items from this critique:** §5.2 (campaign obs-staleness confound: limitations
+>   wording + post-freeze fix), §3.1 (keep pre-fix/post-fix ladders separate in thesis figures),
+>   §4.4 (switch_every knob in limitations), and the missing VANILLA + forced-stack fairness rows
+>   on the NEW headline instance 35-159 (noted 2026-07-10; cheap).
+
 > Requested by Kilian 2026-07-10: a holistic, examiner-grade critique of the thesis as it stands
 > after the gen10 post-fix arc, its fit against the five research objectives (read verbatim from
 > the assessed literature review), a fresh codebase audit (bugs missed by the 2026-07-09 audit,

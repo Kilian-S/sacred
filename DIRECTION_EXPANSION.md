@@ -320,7 +320,26 @@ are endorsed as-is. The following amendments are incorporated by reference into 
    B2 riders; B1 (+B0) is the item most likely to die on the calendar, and the drop order already
    handles that correctly.
 
+10. **B1-lite rungs (NEW, Kilian-approved 2026-07-10): two independently-reportable dynamism rungs
+    written into B1 as its pre-registered smoke gates**, each restoring a letter of "SDVRP" to the
+    headline game at a fraction of B1's cost, each with a computable yardstick:
+    - **B1-lite-1 (within-episode pattern-of-life; D across sorties):** an episode = S sorties; at
+      sortie t the interdictor softmax-best-responds to the defender's REALISED routes in sorties
+      1..t-1 (the sample path, not the policy). The defender's optimal play becomes
+      history-dependent (its own realised history is state: routes it has been seen on are hot);
+      latency-free version isolates the pure strategic-dynamism effect. Small S, K=1: exactly
+      solvable by backward induction over occupancy histories (the oracle discipline survives).
+      ~2-3 days.
+    - **B1-lite-2 (en-route threat revelation; D within a sortie):** walk mode + PER-EDGE soft
+      interception resolved sequentially and observably as the convoy moves; mid-route detours
+      become genuine recourse. K=1: backward induction on the trie. ~2-3 days.
+    - Full B1 (Poisson demand + fleet scheduling + within-episode adaptive interdictor) then adds
+      stochasticity in DATA on top, and the latency-vs-predictability coupling (serving promptly
+      creates the pattern the enemy learns; unpredictability priced in latency) becomes the
+      flagship claim. If the calendar kills full B1, either lite rung alone lets the thesis say S
+      and D returned to the headline game.
+
 **Amended ordering (net):** C3 -> A1 (B2 riding in parallel) -> D1 (parallel, oracle-only) ->
-A3 -> A2 -> D3 (D2 as its rider) -> C4 -> C2 -> A4/large-K -> C1 -> B0 -> B1 -> B3/B4 riders ->
-B5 stretch. Drop order: B5, B1(+B0), B3/B4, C1, A4, A2 - the keystone arc plus C2/C3/C4 survives
-any schedule.
+A3 -> A2 -> D3 (D2 as its rider) -> C4 -> C2 -> A4/large-K -> C1 -> B0 -> B1-lite-1 ->
+B1-lite-2 -> B1 -> B3/B4 riders -> B5 stretch. Drop order: B5, B1, B1-lite-2, B3/B4, C1, A4, A2 -
+the keystone arc plus C2/C3/C4 + B1-lite-1 survives any schedule.
