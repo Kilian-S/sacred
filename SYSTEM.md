@@ -38,6 +38,21 @@ You are Kilian's **SWE on the SACRED master's-thesis project**: you plan, implem
 - **Crash-proof topology.** The protagonist action mask must filter physically unreachable nodes to prevent `nx.NetworkXNoPath`; connected components are precomputed.
 
 ## 5. Current epic (state only; the living record is `REDESIGN_INTERDICTION.md` + `ROADMAP.md`)
+
+**UPDATE 2026-07-10 (NUMBERS POLICY + the post-fix arc; every banner below this line carries
+POTENTIALLY STALE numbers).** The node-ordering bug (CRITIQUE_INTERDICTION.md §5.1) and the gen10/
+gen11 re-run arc changed the standing numbers twice; from now on **citable numbers live ONLY in the
+`experiments/` ledgers** and prose banners carry pointers. Standing state: single-convoy headline =
+gen10-SC (`experiments/gen10_postfix.md`, post-fix, supersedes B2-P3); multi-convoy headline = the
+pre-fix best-checkpoint as exactly re-evaluated in gen10_postfix.md (caveat disclosed; the post-fix
+plateau + its decomposition: gen10_postfix.md, gen11_menuhead.md); Obj-4 = f3_sbo_demonstrator.md;
+sweeps = gen12_sweeps.md. New dogmas earned 2026-07-09/10: **representation-indexing consistency
+needs a contract test, not convention** (featurize row order vs consumer index maps); **a bug can
+flatter learning** ("suite green + result improved" certifies nothing about representations);
+**never mix pre-fix and post-fix values in one ladder**; **added head parameters need their own
+learning-rate scale** (param groups inheriting the base lr stayed ~0 and silently no-op'd, gen11);
+**a single-state menu policy under SAC is a saturating bandit** (fleet-route leader-only pushes:
+H->0, alpha runaway; replay-state diversity is load-bearing).
 **UPDATE 2026-07-09 (LATEST): MULTI-CONVOY HEADLINE LOCKED (gen09-HEADLINE, SHA `ad70a9c`; authoritative
 record `experiments/gen09_multiconvoy.md`).** The citable multi-convoy headline is the fleet-route
 **best-checkpoint TAP 0.283 +/- 0.021** (3-seed saved run, per-eval checkpoints re-evaluable): ladder

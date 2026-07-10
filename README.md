@@ -6,21 +6,23 @@ convoys base -> FOB while a hidden, committing interdictor places ambushes, and 
 anticipation + unpredictable (mixed-strategy) routing, validated against a computable minimax
 equilibrium.
 
-**Current direction (2026-07-09): multi-convoy interdiction REALISED** with soft (probabilistic)
-interception and a loss-averse (mission-failure) objective. On a shared-edge asymmetric instance the
-adversarially-trained fleet learns a stable near-equilibrium mixed strategy and stacks its convoys,
-beating both a non-adversarial SAC and a coordinating classical metaheuristic (ALNS): **LOCKED
-headline (gen09-HEADLINE, 3-seed saved run, SHA `ad70a9c`) fleet-route best-checkpoint mission-failure
-0.283 +/- 0.021 << ALNS 0.699 << vanilla ~0.945** (2.5x ALNS; ALNS-forced-to-stack 0.912 proves the
-win is randomisation, not stacking; the leader is best-checkpoint-selected because the last iterate
-over-trains toward uniform, drift disclosed; the earlier single-seed 0.257 was a transient). This is
-the banked multi-convoy headline (meeting Obj-5, the metaheuristic clause); the single-convoy
-shared-edge result (B2-P3) is the banked single-convoy headline. Together they meet all five objectives.
+**Numbers policy (2026-07-10): citable numbers live ONLY in the `experiments/` ledgers.** Prose
+documents (this file, HANDOVER, SYSTEM, ROADMAP, the storyline docs) carry pointers, not values;
+the standing headline numbers changed twice in 48 hours during the node-ordering-fix arc and any
+value quoted outside a ledger should be treated as potentially stale.
 
-Start here: `HANDOVER.md` (the new-agent read order is at the top), then
-`experiments/gen09_multiconvoy.md` (the AUTHORITATIVE multi-convoy record: locked headline +
-stabilisation arc + oracle-scaling probe), `REDESIGN_INTERDICTION.md` (design, §10 = multi-convoy),
-and `ROADMAP.md` (plan, Phase M). Single-convoy interdiction + the banked B2-P3 pass:
-`experiments/gen08_interdiction.md`. Full progression: `SACRED_PROGRESS.md` (chronicle, entries 1-16).
-Historical campaign record: `CONTEXT.md`, `experiments/gen0[1-7]*.md`.
+**Current standing results (pointers):**
+- Single-convoy headline: `experiments/gen10_postfix.md` (gen10-SC, post-fix, supersedes B2-P3 in
+  `experiments/gen08_interdiction.md`).
+- Multi-convoy headline: `experiments/gen09_multiconvoy.md` best-checkpoint as EXACTLY re-evaluated
+  in `experiments/gen10_postfix.md` (pre-fix, caveat disclosed there); post-fix reproduction and
+  the plateau decomposition: `experiments/gen10_postfix.md` + `experiments/gen11_menuhead.md`.
+- Obj-4 SBO demonstrator: `experiments/f3_sbo_demonstrator.md`.
+- Disruption sweeps (K / N / held-out OD): `experiments/gen12_sweeps.md`.
+- The three critiques that shaped the final arc: `CRITIQUE.md` (2026-07-02),
+  `CRITIQUE_INTERDICTION.md` (2026-07-09, the node-ordering bug), `CRITIQUE_PREFREEZE.md`
+  (2026-07-10, the two-headline asymmetry + ranked programme).
 
+Start here: `HANDOVER.md` (new-agent read order at the top). Full progression:
+`SACRED_PROGRESS.md` (chronicle). Historical campaign record: `CONTEXT.md`,
+`experiments/gen0[1-7]*.md`.
