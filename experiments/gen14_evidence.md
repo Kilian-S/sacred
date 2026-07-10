@@ -81,4 +81,19 @@ ALNS** - if anything a stronger Obj-5 result than the 62-97 ordering. The forced
 (0.841 >> ALNS spread 0.699) reproduces natively: ALNS spreads by choice, so SACRED's win is the
 randomisation, not a denied stacking privilege.
 
-(SC 10-seed + fleet-cost column appended when they complete.)
+### SC headline 33-71, n=10: the pre-registered primary now has a paired CI excluding zero
+
+Per-seed sacred TAP: 0.243, 0.260, 0.266, 0.296, 0.297, 0.304, 0.327, 0.329, 0.379, 0.394.
+> **sacred mean 0.310, 95% t-CI [0.275, 0.345]; vanilla mean 0.485; sacred < vanilla on 10/10
+> seeds; paired dD (vanilla - sacred) mean 0.175, 95% CI [0.137, 0.213] EXCLUDING ZERO.** The
+> gen10-SC n=3 reading (sacred 0.276, vanilla 0.480) sits inside; the n=10 sacred mean is a touch
+> higher (0.310) with wider spread (the FP-cycling tail: two seeds at 0.38-0.39), but the PAIRED
+> comparison - the pre-registered primary - is now significant at n=10, not merely 3/3 signs.
+> Ladder holds: shortest 1.000 > vanilla 0.485 > uniform 0.455 > **sacred 0.310** >> equilibrium
+> 0.167.
+
+## gen14 CLOSED (2026-07-10 17:20). Both headlines now carry n=10 CIs:
+- **multi-convoy 35-159: best-ckpt TAP 0.256, 95% CI [0.246, 0.266]** (2.7x below ALNS, 1.24x eq);
+- **single-convoy 33-71: sacred 0.310, paired dD vs vanilla 0.175 [0.137, 0.213] excl. 0, 10/10;**
+- 35-159 native vanilla + forced-stack rows recorded; the n=3 locks stand, these are the citable CIs.
+The statistical weak point flagged in CRITIQUE_PREFREEZE §4.3 is closed.
