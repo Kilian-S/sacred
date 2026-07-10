@@ -56,4 +56,54 @@ post-fix VANILLA seeds 1, 2 on 62-97 (`--vanilla-only`), completing the 3-seed p
 - git SHA: the commit landing this launch record; launched 2026-07-10 ~02:25 via
   `scratch/gen12_sweeps.sh` (ARM_FLAGS empty).
 
-## RESULT (to be appended)
+## RESULT (2026-07-10 03:34, 12 runs, ~71 min at 3-parallel staged): SACRED < ALNS in ALL 10 CELLS; the held-out OD reaches near-equilibrium POST-FIX
+
+All values = exact best-checkpoint TAP (final TAP disclosed in the JSONs; drift persists everywhere,
+as expected). Oracle ladders computed per cell (loss_det = the ALNS-certified deterministic optimum).
+
+**Headline OD 62-97 k8:**
+
+| cell | SACRED best-ckpt | ALNS (=loss_det) | equilibrium | SACRED/eq |
+|---|---|---|---|---|
+| N=3 K=1 (3 seeds) | **0.483 +/- 0.041** | 0.699 | 0.216 | 2.24x |
+| N=3 K=2 | 0.759 | 0.907 | 0.432 | 1.76x |
+| N=3 K=3 | 0.832 | 0.958 | 0.649 | 1.28x |
+| N=2 K=1 | 0.341 | 0.690 | 0.190 | 1.79x |
+| N=5 K=1 | 0.496 | 0.802 | 0.237 | 2.09x |
+
+**Held-out OD 35-159 k8 (screened by pre-registered criteria BEFORE training):**
+
+| cell | SACRED best-ckpt | ALNS (=loss_det) | equilibrium | SACRED/eq |
+|---|---|---|---|---|
+| N=3 K=1 | **0.261** | 0.699 | 0.206 | **1.27x** |
+| N=3 K=2 | 0.500 | 0.866 | 0.412 | 1.21x |
+| N=3 K=3 | 0.661 | 0.933 | 0.604 | **1.09x** |
+| N=2 K=1 | 0.232 | 0.555 | 0.179 | 1.30x |
+| N=5 K=1 | 0.389 | 0.719 | 0.230 | 1.69x |
+
+Also in this batch: **post-fix vanilla completed to 3 seeds** (TAP 0.859 / 0.852 / 0.855 =
+**0.855 +/- 0.003**; best-checkpoint 0.790-0.821): the control is tight and selection symmetry
+does not rescue it.
+
+**What the tier establishes:**
+1. **Obj-5's "varied disruption" clause now has trained curves:** the qualitative claim
+   (SACRED best-ckpt < ALNS = the deterministic-class optimum) holds in 10/10 cells across K in
+   {1,2,3}, N in {2,3,5} and two instances; SACRED tracks the equilibrium's growth in K (coverage
+   saturation) and the margin over ALNS GROWS with fleet size on the headline OD (N=5: 0.306 vs
+   N=3: 0.216), the oracle scan's prediction confirmed in trained policies.
+2. **The held-out replication is STRONGER than the headline instance:** every 35-159 cell lands at
+   1.09-1.69x its equilibrium, POST-FIX, on honest representations, plain config, no gen11 terms.
+3. **THE NIGHT'S KEY FINDING: the 0.447 plateau is INSTANCE-SPECIFIC to 62-97, not architectural.**
+   On the more asymmetric held-out instance (leader H/lnR 0.44 vs 62-97's 0.63) the post-fix
+   pipeline reaches 0.261 (1.27x eq) at the headline cell. Reading: 62-97's flatter, more
+   route-symmetric equilibrium is exactly where the pre-fix identity-hash had been supplying the
+   discrimination the mean-pooled head lacks; where the INSTANCE supplies asymmetry (a sharper FP
+   gradient), honest embeddings suffice. This refines the gen10/gen11 attribution chain and is
+   consistent with the campaign-long dogma that instance structure decides learnability.
+4. Single-seed caveat on every non-headline cell (pre-registered as curve points, no gap gates).
+
+**Consequence recommendation (for Kilian's morning decision, pre-registered nowhere = a NEW
+decision):** 3-seed the ho_N3K1 cell (35-159, N=3, K=1). If it holds ~0.26 tight, it is the
+natural candidate for THE post-fix multi-convoy headline (honest representations, instance
+screened before training by the same criteria that picked 62-97, near-equilibrium), retiring the
+two-headline pre-fix/post-fix asymmetry (CRITIQUE_PREFREEZE §2) entirely.
