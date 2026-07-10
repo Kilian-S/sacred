@@ -112,6 +112,25 @@ class MultiConvoyInterdictionEnv:
         self._committed_iset: int | None = None
         self._convoy_routes: list[int | None] = [None] * config.N
         self._cur = 0
+        # Menu-mode per-instance conditioning, attached to every observation so it travels WITH the
+        # transition into the replay buffer (the A1 generalist samples instances per sortie, and a
+        # replayed instance-i transition must be scored under instance i's menu/features, never the
+        # net's current attributes). Cached once; observations share the references (cheap).
+        self._menu_idx_cache: list | None = None
+        self._menu_feats_cache = None
+        if config.menu_select and graph_env is not None:
+            import torch as _torch
+            self._menu_idx_cache = [_torch.tensor(r, dtype=_torch.long)
+                                    for r in self.menu_route_node_idx()]
+            cost = np.asarray(self.game.travel_cost, dtype=float)
+            worst = self.game.payoff.max(axis=1)
+
+            def _mm(x):
+                rng_ = x.max() - x.min()
+                return (x - x.min()) / rng_ if rng_ > 0 else np.zeros_like(x)
+
+            self._menu_feats_cache = _torch.tensor(
+                np.stack([_mm(cost), _mm(worst)], axis=1), dtype=_torch.float32)
 
     # -- episode ---------------------------------------------------------------
     def reset(self) -> dict | None:
@@ -174,6 +193,9 @@ class MultiConvoyInterdictionEnv:
         obs["active_truck"] = self._cur
         if self.edge_vulnerability:
             obs["edge_vulnerability"] = self.edge_vulnerability
+        if self._menu_idx_cache is not None:
+            obs["menu_route_node_idx"] = self._menu_idx_cache      # per-instance, rides the transition
+            obs["menu_route_feats"] = self._menu_feats_cache       # [R, 2] = (cost, worst-vuln), [0,1]
         earlier = [r for r in self._convoy_routes[:self._cur] if r is not None]
         obs["routed_convoys"] = list(earlier)
         # route-correlation signal for the followers' menu head: per-node fraction of EARLIER convoys

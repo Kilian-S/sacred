@@ -294,10 +294,14 @@ are endorsed as-is. The following amendments are incorporated by reference into 
 3. **A1 pre-registration must fix two design decisions:** (a) the generalist uses TRANSFERABLE
    features only - `route_feats` yes, `route_bias` NO (gen11b: identity capacity works but is
    definitionally non-transferable; including it re-creates the memorisation crutch the
-   node-ordering bug used to provide); (b) the attacker regime under instance sampling - smooth-FP
-   windows are per-instance and fill slowly under sampling; RECOMMENDED = each instance's
-   equilibrium attacker (stationary, precomputed by the screen, cheap at K=1), with per-instance
-   FP as a disclosed alternative arm.
+   node-ordering bug used to provide); (b) the attacker regime under instance sampling:
+   **SELF-CORRECTION (2026-07-10, at build time): the originally recommended fixed
+   equilibrium-attacker is game-theoretically WRONG for producing unexploitable defenders** -
+   against a FIXED mixture every support route is payoff-indifferent, so the defender can collapse
+   onto a pure route with low training loss and high exploitability (the B2-P2 stale-mixture
+   parking failure in disguise). The generalist uses **per-instance smooth-FP** (each instance
+   keeps its own trailing play window; softmax BR recomputed per sortie - affordable at K=1, one
+   [occ x iset] matvec), i.e. the proven B2-P3 discipline, per instance.
 4. **A3 must be quality-adjusted:** report the (compute, exploitability) FRONTIER with the
    generalist's amortised training cost included, not compute alone - the LP is slower AND exact;
    the policy is fast AND ~1.3x eq; only the frontier framing survives an OR examiner.

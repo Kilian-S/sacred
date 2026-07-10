@@ -350,6 +350,14 @@ class ProtagonistSAC:
         node_to_idx = node_index_map(observation)  # MUST match featurize_state's row order
 
         active_idx = node_to_idx[observation["trucks"][active_truck]["current_node"]]
+        # A1 generalist: per-INSTANCE menu conditioning carried ON the observation overrides the
+        # net attributes (a replayed instance-i transition must be scored under instance i's menu
+        # and per-route features, never whatever instance the nets were last pointed at).
+        state_menu = observation.get("menu_route_node_idx")
+        if state_menu is not None:
+            self.actor.menu_routes = state_menu
+            if hasattr(self.actor, "route_feat_w"):
+                self.actor.route_feats = observation.get("menu_route_feats")
         # ROUTE menu-select (multi-convoy shared-edge): allowed_nodes are route ids, scored directly.
         mask_idxs = (list(allowed_nodes) if getattr(self.actor, "menu_routes", None) is not None
                      else [node_to_idx[nid] for nid in allowed_nodes])
@@ -420,7 +428,8 @@ class ProtagonistSAC:
 
             node_to_idx = node_index_map(state)  # MUST match featurize_state's row order
             active_idx = node_to_idx[state["trucks"][active_truck]["current_node"]]
-            menu = getattr(self.actor, "menu_routes", None) is not None
+            menu = (state.get("menu_route_node_idx") is not None
+                    or getattr(self.actor, "menu_routes", None) is not None)
             mask_idxs = (list(allowed_nodes) if menu
                          else [node_to_idx[nid] for nid in allowed_nodes])
             taken = [float(state.get("routed_convoys", []).count(r)) for r in allowed_nodes] if menu else None
@@ -469,6 +478,12 @@ class ProtagonistSAC:
                 # 2026-07-09 role-alpha target fix). 0 for every historical transition.
                 "next_alpha_group": next_state.get("alpha_group", 0),
                 "taken": taken, "next_taken": next_taken,  # menu route-correlation (lever 2)
+                # A1 generalist: per-sample instance menus/features (None on single-instance paths
+                # -> the net attributes stand and behaviour is unchanged).
+                "menu_state": state.get("menu_route_node_idx"),
+                "menu_feats": state.get("menu_route_feats"),
+                "next_menu": next_state.get("menu_route_node_idx"),
+                "next_menu_feats": next_state.get("menu_route_feats"),
             })
 
         if not samples:
@@ -505,6 +520,11 @@ class ProtagonistSAC:
                 if s["next_slot"] is None:
                     v_next = torch.tensor(0.0, device=self.device)
                 else:
+                    if s["next_menu"] is not None:  # per-sample instance menu (A1 generalist)
+                        for net in (self.actor, self.target_q1, self.target_q2):
+                            net.menu_routes = s["next_menu"]
+                            if hasattr(net, "route_feat_w"):
+                                net.route_feats = s["next_menu_feats"]
                     j = s["next_slot"]
                     hn = slice(n_ptr[j], n_ptr[j + 1])
                     nt = torch.tensor(s["next_taken"], device=self.device) if s["next_taken"] is not None else None
@@ -524,6 +544,12 @@ class ProtagonistSAC:
 
             # SMDP Bellman target: y = r + gamma^dt * (1 - done) * V(s')
             target_q = (s["reward"] * self.reward_scale) + (self.gamma ** s["dt"]) * (1.0 - float(s["done"])) * v_next
+
+            if s["menu_state"] is not None:  # per-sample instance menu for the CURRENT-state heads
+                for net in (self.actor, self.q1, self.q2):
+                    net.menu_routes = s["menu_state"]
+                    if hasattr(net, "route_feat_w"):
+                        net.route_feats = s["menu_feats"]
 
             # 2. Current Q estimation
             q1_val = self.q1.head(h_q1[hs], active_idx, mask_idxs, tk)[action_idx]
