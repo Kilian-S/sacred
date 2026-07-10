@@ -1,16 +1,18 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-10)
 
-> **★★★★★★ OVERNIGHT PROGRAMME COMPLETE (2026-07-10 ~04:15). READ `NIGHT_REPORT_2026-07-10.md`
-> FIRST, then the ledgers it cites; numbers live ONLY in ledgers (README numbers policy).**
-> One-line state: single-convoy headline = gen10-SC (confirmed); multi-convoy = pre-fix
-> best-checkpoint (exact re-eval, caveat disclosed) with a STRONG post-fix supersession candidate
-> awaiting Kilian's morning decision (3-seed ho_N3K1 on 35-159: single-seed 0.261 = 1.27x eq,
-> `experiments/gen12_sweeps.md`); Obj-4 MET in reduced form (`experiments/f3_sbo_demonstrator.md`);
-> Obj-5 disruption curves banked, SACRED < ALNS 10/10 cells incl. a held-out OD
-> (`experiments/gen12_sweeps.md`); gen11 decomposition = no pass, two mechanism findings
-> (`experiments/gen11_menuhead.md`); ZST step 0 = pre-registered scoping negative, B2-S closed
-> (`experiments/zst_step0.md`). Morning decisions for Kilian are listed at the end of the night
-> report. Chronicle: `SACRED_PROGRESS.md` entries 17-18.
+> **★★★★★★★ BOTH HEADLINES POST-FIX (2026-07-10 morning, gen13-lock PASSED). READ
+> `NIGHT_REPORT_2026-07-10.md` + `experiments/gen13_lock.md` FIRST; numbers live ONLY in ledgers.**
+> **Multi-convoy headline = gen13-lock (35-159, held-out-screened instance, honest
+> representations): the LOCKED ladder is in `experiments/gen13_lock.md`; the pre-fix 62-97 number
+> retires to the methods narrative.** Single-convoy headline = gen10-SC
+> (`experiments/gen10_postfix.md`, confirmed). The two-headline pre-fix/post-fix asymmetry is
+> RETIRED. Obj-4 MET in reduced form (`experiments/f3_sbo_demonstrator.md`); Obj-5 disruption
+> curves banked, SACRED < ALNS 10/10 cells (`experiments/gen12_sweeps.md`); gen11/gen11b menu-head
+> decomposition in `experiments/gen11_menuhead.md`; ZST step 0 = pre-registered scoping negative,
+> B2-S closed (`experiments/zst_step0.md`); oracle-scaling re-measured
+> (`scratch/oracle_scaling_output_v2.txt`, gen09 ledger update note). Chronicle:
+> `SACRED_PROGRESS.md` entries 17-19. NEXT: thesis writing on the two post-fix headlines; optional
+> remaining experiments (ZST step 1, F2 demo) per the night report's decision list.
 
 > **★★★★★ AUDIT + NODE-ORDERING FIX + gen10 RE-RUNS (2026-07-09 late, fix SHA `e9acb56`). READ
 > THIS FIRST; it amends the banners below.** An examiner-grade audit (`CRITIQUE_INTERDICTION.md`)

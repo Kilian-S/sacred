@@ -45,4 +45,35 @@ PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
   --ckpt-dir models/runs/gen13_lock/seed${S}_ckpts
 ```
 
-## RESULT (to be appended)
+## RESULT (2026-07-10 09:13, 3 seeds, ~15 min at 3-parallel): **LOCK PASSED. THE MULTI-CONVOY HEADLINE IS NOW POST-FIX.**
+
+| seed | best-ckpt TAP @ sortie | best single-ckpt | final TAP (drift, disclosed) |
+|---|---|---|---|
+| 0 | 0.308 @ 900 | 0.301 | 0.563 |
+| 1 | 0.254 @ 500 | 0.237 | 0.446 |
+| 2 | 0.258 @ 400 | 0.261 | 0.331 |
+
+> **gen13-lock exact best-checkpoint TAP mean 0.274 +/- 0.025 (3 seeds).** Both pre-registered
+> clauses met: all seeds < ALNS 0.699; mean 0.274 <= ~0.31 (consistent with the gen12 single-seed
+> 0.261). Per the pre-authorised consequence (Kilian, "Do steps 1-3"):
+
+**THE LOCKED MULTI-CONVOY HEADLINE LADDER (35-159 k8, N=3, K=1, fleet-route, post-node-ordering-fix):**
+
+| arm | mission-failure exploitability |
+|---|---|
+| shortest_path (naive stack) | 0.912 |
+| ALNS (= loss_det, the deterministic-class optimum) | 0.699 |
+| **SACRED (adversarial, exact best-checkpoint)** | **0.274 +/- 0.025** |
+| equilibrium (loss_mixed) | 0.206 |
+
+**What is established:** on an instance SCREENED BY PRE-REGISTERED CRITERIA BEFORE ANY TRAINING,
+with honest (post-fix) representations, plain config, the adversarially-trained fleet's randomised
+stack is 2.55x less mission-exploitable than the certified deterministic optimum and lands at
+1.33x the computable equilibrium, tight across 3 seeds, with the drift saved and disclosed and
+every checkpoint re-evaluable. **The pre-fix 62-97 number (exact 0.295 +/- 0.024 at `ad70a9c`)
+retires to the methods narrative** as part of the representation-bug arc (where it remains
+first-class methods material: a fixed bijective permutation improved measured performance while
+destroying the model's claimed semantics). **The pre-fix/post-fix two-headline asymmetry
+(CRITIQUE_PREFREEZE §2) is retired: BOTH headlines (single-convoy gen10-SC 0.276; multi-convoy
+gen13 0.274) now sit on corrected code.** The 62-97 plateau story (gen10/gen11/gen12) stays in the
+thesis as the measured account of instance structure vs head discriminability.
