@@ -147,6 +147,54 @@ def solve_multiconvoy(game: InterdictionGame, N: int, objective: str = "mission"
                                tuple(tuple(int(x) for x in o) for o in occs))
 
 
+def greedy_br_attacker(route_edges, edge_vuln: dict, occ_support, N: int, K: int,
+                       objective: str = "mission", m: int = 1, rho: float = 0.0):
+    """MATRIX-FREE best-response interdictor (A4): pick K edges greedily to maximise the defender's
+    expected loss, WITHOUT enumerating the C(E, K) interdiction sets or the [occ x iset] matrix -
+    the regime where the exact oracle is infeasible (K >= 4).
+
+    For the MISSION objective, expected mission-failure of a defender occupancy distribution is a
+    monotone SUBMODULAR function of the interdicted edge set (it is a weighted "at-least-one"
+    coverage over the convoys' edge-crossing events), so the greedy K-edge choice carries the
+    classic (1 - 1/e) approximation guarantee (verified against the exact BR at K <= 2 in
+    tests/test_greedy_br.py). Cost O(E * K * |support| * R).
+
+    Args: ``route_edges`` = tuple of per-route frozenset edge sets (game.route_edges);
+    ``edge_vuln`` = {frozenset_edge: p_e}; ``occ_support`` = list of (occ_tuple, weight) with
+    weights summing to 1 (the defender's play, e.g. a trailing-window occupancy histogram);
+    ``rho`` = within-route interception correlation (B4). Returns (chosen_edge_frozensets, value)."""
+    cand = sorted(set().union(*route_edges), key=repr)
+    vuln = np.array([edge_vuln.get(e, 1.0) for e in cand])   # hard interception -> p_e = 1
+    R = len(route_edges)
+    # route x candidate-edge incidence (route r crosses edge c?)
+    inc = np.array([[1.0 if cand[c] in route_edges[r] else 0.0 for c in range(len(cand))]
+                    for r in range(R)])
+    occ = np.array([o for o, _ in occ_support], dtype=float)          # [S, R]
+    w = np.array([wt for _, wt in occ_support], dtype=float)          # [S]
+
+    def value(chosen: list[int]) -> float:
+        if not chosen:
+            p_r = np.zeros(R)
+        else:
+            surv = np.prod([(1.0 - vuln[c]) ** inc[:, c] for c in chosen], axis=0)  # per route
+            p_r = 1.0 - surv
+        return float(sum(wt * objective_value(o, p_r, N, objective, m, rho=rho)
+                         for o, wt in zip(occ, w)))
+
+    chosen: list[int] = []
+    remaining = set(range(len(cand)))
+    for _ in range(min(K, len(cand))):
+        best_c, best_v = None, -1.0
+        for c in remaining:
+            v = value(chosen + [c])
+            if v > best_v + 1e-12:
+                best_v, best_c = v, c
+        if best_c is None:
+            break
+        chosen.append(best_c); remaining.discard(best_c)
+    return tuple(cand[c] for c in chosen), value(chosen)
+
+
 def best_response_attacker_multi(obj_matrix: np.ndarray, occupancy_dist: np.ndarray) -> tuple[int, float]:
     """The committing interdictor's best interdiction set against a defender OCCUPANCY distribution,
     and the loss it achieves = that defender's EXPLOITABILITY."""
