@@ -537,6 +537,21 @@ the Q head); forced-copy / frozen-leader bootstrap (`--leader-ckpt`, `--forced-c
   1.19x the equilibrium 0.216 (absolute distance 0.041) and is the closest trained quantity to the
   minimax value; the learned-follower tail-average 0.482 is well above it.
 
+> **⚠️ SUPERSEDED BY RE-MEASUREMENT (2026-07-10, `scratch/oracle_scaling_output_v2.txt`; probe caps
+> raised after the mission-objective matrix build was vectorised to a single matmul).** The measured
+> picture is FAR more favourable to the naive oracle than the projections below: **N=3 K=3 solves in
+> 23 s (was projected ~1,586 s), N=4 K=3 in 111 s; the measured wall is N=5 K=3 (530 s, 4.8 GB); and
+> at EVERY measured size solving the LP once is cheaper than training SACRED.** Consequence for the
+> thesis (stated plainly, per the critiques' anticipation that wall-clock would not carry the claim):
+> the "deep RL scales past the LP" wall-clock argument is DEAD at these instance sizes and must not
+> appear as a motivation. The defensible deployment argument is AMORTISATION and ADAPTIVITY: the
+> oracle yields one solution vector for one fixed (graph, OD, threat map, N, K) and must re-solve on
+> any change, while a trained policy is a per-sortie forward pass that can in principle condition on
+> the instance (the ZST step-1 programme; step 0 measured the current boundary,
+> `experiments/zst_step0.md`) - plus the scientific contribution proper: the measured account of WHEN
+> adversarial deep RL finds the equilibrium (instance asymmetry, FP discipline, transients,
+> representation effects). The table below is preserved as the historical pre-vectorisation record.
+
 ## ORACLE-SCALING PROBE: the "why not just solve the LP" figure (2026-07-09, oracle-only, no training)
 
 **Purpose (Kilian):** show the size at which the EXACT minimax equilibrium (the naive full-LP oracle
