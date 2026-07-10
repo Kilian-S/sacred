@@ -46,7 +46,9 @@ def main():
     if args.bbox:
         n, s, e, w = (float(x) for x in args.bbox.split(","))
         print(f"[extract_city] downloading drive network for bbox N{n} S{s} E{e} W{w} ...", flush=True)
-        G = ox.graph_from_bbox(bbox=(n, s, e, w), network_type="drive", simplify=True)
+        # osmnx 2.x expects bbox=(left, bottom, right, top) = (west, south, east, north);
+        # the CLI takes the intuitive north,south,east,west order and we reorder here.
+        G = ox.graph_from_bbox(bbox=(w, s, e, n), network_type="drive", simplify=True)
     elif args.place:
         print(f"[extract_city] downloading drive network for {args.place!r} (whole place; use "
               f"--bbox to crop) ...", flush=True)
@@ -70,8 +72,11 @@ def main():
     # 3. project + consolidate at tolerance m + back to lat/lon (Kaliningrad: tol 30, dead_ends False)
     Gp = ox.project_graph(G)
     Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=args.tolerance, dead_ends=False)
-    Gc = ox.distance.add_edge_lengths(Gc)
     Gll = ox.project_graph(Gc, to_latlong=True)
+    # lengths AFTER re-projecting to lat/long: add_edge_lengths assumes degree coordinates, and
+    # calling it on the projected (metre) graph produced ~1e7 m lengths (2026-07-10 bug, repaired
+    # post hoc by scratch/repair_map_lengths.py for the first three cities).
+    Gll = ox.distance.add_edge_lengths(Gll)
     nodes_gdf, edges_gdf = ox.graph_to_gdfs(Gll)
     print(f"  consolidated @ {args.tolerance}m: {len(nodes_gdf)} nodes / {len(edges_gdf)} edges "
           f"(Kaliningrad ref: 290 / 706)")

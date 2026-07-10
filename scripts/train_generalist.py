@@ -45,13 +45,29 @@ from src.envs.multiconvoy_interdiction import MultiConvoyInterdictionEnv, make_m
 
 TAP_K = 3
 
+# City registry (gen16 multi-city): name -> (nodes_path, edges_path). 'kaliningrad' = the training
+# graph every prior generation used; the others were extracted by scripts/extract_city.py (same
+# arterial-filter + 30m-consolidation pipeline) and length-repaired by scratch/repair_map_lengths.py.
+from src.envs.multiconvoy_interdiction import _DEFAULT_EDGES, _DEFAULT_NODES  # noqa: E402
+
+CITY_PATHS = {
+    "kaliningrad": (_DEFAULT_NODES, _DEFAULT_EDGES),
+    "gdansk": ("data/maps/gdansk/nodes.geojson", "data/maps/gdansk/edges.geojson"),
+    "east_london": ("data/maps/east_london/nodes.geojson", "data/maps/east_london/edges.geojson"),
+    "istanbul": ("data/maps/istanbul/nodes.geojson", "data/maps/istanbul/edges.geojson"),
+}
+
 
 class Instance:
-    def __init__(self, od: tuple[str, str], N: int, K: int, band, k_extra: int, seed: int):
+    def __init__(self, od: tuple[str, str], N: int, K: int, band, k_extra: int, seed: int,
+                 city: str = "kaliningrad"):
         self.od = od
+        self.city = city
+        nodes_path, edges_path = CITY_PATHS[city]
         self.env: MultiConvoyInterdictionEnv = make_multiconvoy_env(
             od=od, N=N, K=K, k_extra_routes=k_extra, menu_select=True,
-            edge_vuln_band=band, interception_loss=10.0, seed=seed)
+            edge_vuln_band=band, interception_loss=10.0, seed=seed,
+            nodes_path=nodes_path, edges_path=edges_path)
         sol = solve_multiconvoy(self.env.game, N, "mission")
         self.eq = float(sol.loss_mixed)
         self.loss_det = float(sol.loss_det)
@@ -64,15 +80,18 @@ class Instance:
 
 
 def sample_instances(n_total: int, N: int, K: int, band, k_extra: int, seed: int,
-                     r_range=(10, 14)) -> list[Instance]:
-    """High-connectivity OD pool (the F3/screen recipe), filtered to comparable menu sizes."""
-    from src.envs.multiconvoy_interdiction import _DEFAULT_EDGES, _DEFAULT_NODES, _DEFAULT_TASKS
+                     r_range=(10, 14), city: str = "kaliningrad") -> list[Instance]:
+    """High-connectivity OD pool (the F3/screen recipe), filtered to comparable menu sizes;
+    sampled within the city's largest connected component."""
     from src.utils.graph_utils import load_osm_graph_and_demands
+    from src.envs.multiconvoy_interdiction import _DEFAULT_TASKS
     from src.baselines.interdiction_oracle import build_route_set
-    nodes, edges = load_osm_graph_and_demands(_DEFAULT_NODES, _DEFAULT_EDGES, _DEFAULT_TASKS)
+    nodes_path, edges_path = CITY_PATHS[city]
+    nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, _DEFAULT_TASKS)
     G = nx.Graph()
     for u, v, d in edges:
         G.add_edge(str(u), str(v), w=float(d.get("distance", 1.0)))
+    G = G.subgraph(max(nx.connected_components(G), key=len)).copy()
     deg3 = [n for n, d in G.degree() if d >= 3]
     rng = random.Random(seed)
     out, seen = [], set()
@@ -86,7 +105,7 @@ def sample_instances(n_total: int, N: int, K: int, band, k_extra: int, seed: int
             base = build_route_set(G, s, t, 0, "w")
             if not 3 <= len(base) <= 6:
                 continue
-            inst = Instance((s, t), N, K, band, k_extra, seed)
+            inst = Instance((s, t), N, K, band, k_extra, seed, city=city)
             if not r_range[0] <= inst.R <= r_range[1] or inst.eq < 0.05:
                 continue
             out.append(inst)
@@ -127,6 +146,14 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--n-train", type=int, default=16)
     p.add_argument("--n-test", type=int, default=6)
+    p.add_argument("--cities", default="",
+                   help="gen16 multi-city mode: comma list of TRAIN cities (from CITY_PATHS); "
+                        "with --holdout-city, train instances are sampled per train city and ALL "
+                        "test instances come from the held-out city. Empty = single-city (gen15).")
+    p.add_argument("--holdout-city", default="",
+                   help="the city held out ENTIRELY for zero-shot evaluation (gen16)")
+    p.add_argument("--n-per-city", type=int, default=6,
+                   help="train instances sampled per train city (gen16)")
     p.add_argument("--N", type=int, default=3)
     p.add_argument("--K", type=int, default=1)
     p.add_argument("--k-extra", type=int, default=8)
@@ -156,14 +183,32 @@ def main():
     rng = np.random.default_rng(args.seed)
     band = tuple(float(x) for x in args.band.split(","))
 
-    print(f"[A1] sampling {args.n_train}+{args.n_test} instances (pool-seed {args.pool_seed})...", flush=True)
-    pool = sample_instances(args.n_train + args.n_test, args.N, args.K, band, args.k_extra,
-                            args.pool_seed)
-    if len(pool) < args.n_train + args.n_test:
-        raise RuntimeError(f"only {len(pool)} instances sampled")
-    test, train = pool[:args.n_test], pool[args.n_test:]
-    print(f"[A1] TRAIN: {[i.od for i in train]}")
-    print(f"[A1] TEST (zero-shot): {[(i.od, round(i.eq, 3)) for i in test]}", flush=True)
+    if args.cities and args.holdout_city:
+        train_cities = [c.strip() for c in args.cities.split(",") if c.strip()]
+        assert args.holdout_city not in train_cities, "held-out city must not be trained on"
+        print(f"[A1-multicity] TRAIN cities {train_cities} x {args.n_per_city} instances; "
+              f"HOLD-OUT city {args.holdout_city} x {args.n_test} (pool-seed {args.pool_seed})",
+              flush=True)
+        train = []
+        for c in train_cities:
+            got = sample_instances(args.n_per_city, args.N, args.K, band, args.k_extra,
+                                   args.pool_seed, city=c)
+            if len(got) < args.n_per_city:
+                raise RuntimeError(f"{c}: only {len(got)} instances")
+            train += got
+        test = sample_instances(args.n_test, args.N, args.K, band, args.k_extra,
+                                args.pool_seed, city=args.holdout_city)
+        if len(test) < args.n_test:
+            raise RuntimeError(f"{args.holdout_city}: only {len(test)} test instances")
+    else:
+        print(f"[A1] sampling {args.n_train}+{args.n_test} instances (pool-seed {args.pool_seed})...", flush=True)
+        pool = sample_instances(args.n_train + args.n_test, args.N, args.K, band, args.k_extra,
+                                args.pool_seed)
+        if len(pool) < args.n_train + args.n_test:
+            raise RuntimeError(f"only {len(pool)} instances sampled")
+        test, train = pool[:args.n_test], pool[args.n_test:]
+    print(f"[A1] TRAIN: {[(i.city, i.od) for i in train]}")
+    print(f"[A1] TEST (zero-shot): {[(i.city, i.od, round(i.eq, 3)) for i in test]}", flush=True)
 
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0,
@@ -251,8 +296,9 @@ def main():
     if args.json_out:
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json_out).write_text(json.dumps(
-            {"seed": args.seed, "train_ods": [i.od for i in train],
-             "test_ods": [i.od for i in test], "test_refs": alns_rows,
+            {"seed": args.seed, "train_ods": [(i.city, i.od) for i in train],
+             "test_ods": [(i.city, i.od) for i in test],
+             "holdout_city": args.holdout_city or None, "test_refs": alns_rows,
              "history": hist, "best_test_ratio": best_test, "best_at": best_at}, indent=2))
         print(f"  [written] {args.json_out}")
 
