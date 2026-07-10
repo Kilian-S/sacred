@@ -42,5 +42,7 @@ PYTHONPATH=. $PY scratch/amortisation_benchmark.py "$ACTOR" --train-cost-s "$TC"
 echo "[post-a1] A2 graph transfer  $(date)" >> "$OUT/post_a1.log"
 PYTHONPATH=. $PY scratch/a2_graph_transfer.py "$ACTOR" --tag original \
   > "$OUT/a2_graph_transfer.log" 2>&1
+echo "[post-a1] D3 composite exhibit  $(date)" >> "$OUT/post_a1.log"
+PYTHONPATH=. $PY scratch/d3_composite.py "$ACTOR" > "$OUT/d3_composite.log" 2>&1
 echo "[post-a1] DONE  $(date)" >> "$OUT/post_a1.log"
 touch "$OUT/post_a1_DONE"
