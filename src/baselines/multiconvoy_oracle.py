@@ -50,13 +50,35 @@ def caught_pmf(occ: np.ndarray, p: np.ndarray) -> np.ndarray:
     return pmf
 
 
-def objective_value(occ: np.ndarray, p: np.ndarray, N: int, objective: str = "mission", m: int = 1) -> float:
+def objective_value(occ: np.ndarray, p: np.ndarray, N: int, objective: str = "mission", m: int = 1,
+                    rho: float = 0.0) -> float:
     """Loss for occupancy ``occ`` vs interception probs ``p``: ``linear`` = E[fraction lost];
-    ``mission`` = P(>=1 lost); ``threshold`` = P(>= m lost)."""
+    ``mission`` = P(>=1 lost); ``threshold`` = P(>= m lost).
+
+    ``rho`` (B4, correlated interception): a within-route common-shock mix between INDEPENDENT
+    draws (rho=0, the default and the model everything else uses) and COMONOTONE draws (rho=1: the
+    convoys stacked on a route are caught all-or-nothing by ONE ambush team). The expectation
+    E[fraction lost] is INVARIANT to rho (linearity), so only the loss-averse objectives feel it.
+    Under the mission objective, rho > 0 makes STACKING less mission-exploitable (a stacked column
+    shares one shock instead of drawing one per convoy), i.e. independence is the CONSERVATIVE
+    assumption for the SACRED stack (the disclosed caveat, now a tunable curve)."""
     if objective == "linear":
-        return float(occ @ p) / N                      # linearity: expectation needs no pmf
+        return float(occ @ p) / N                      # linearity: rho-invariant
     thr = 1 if objective == "mission" else int(m)
-    pmf = caught_pmf(occ, p)
+    if rho <= 0.0:
+        pmf = caught_pmf(occ, p)
+    else:
+        # per-route caught-count is a rho-mix of Binomial(occ_r, p_r) (indep) and a two-point
+        # comonotone law (all occ_r caught w.p. p_r, else 0); routes remain independent of each
+        # other (distinct edges/teams). Convolve the per-route mixed pmfs.
+        pmf = np.array([1.0])
+        for r in range(len(occ)):
+            c = int(occ[r])
+            if c == 0:
+                continue
+            indep = binom.pmf(np.arange(c + 1), c, p[r])
+            como = np.zeros(c + 1); como[0] = 1.0 - p[r]; como[c] = p[r]
+            pmf = np.convolve(pmf, (1.0 - rho) * indep + rho * como)
     return float(pmf[thr:].sum()) if thr < len(pmf) else 0.0
 
 
