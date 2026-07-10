@@ -187,7 +187,7 @@ def test_edge_occupancy_features_encode_motion():
 
     obs = env.observe()
     data = featurize_state(obs, active_truck_id=None)  # the ANTAGONIST's view
-    assert data.edge_attr.shape[1] == EDGE_FEATURE_DIM == 4
+    assert data.edge_attr.shape[1] == EDGE_FEATURE_DIM == 5  # col 4 = vulnerability (A1 bump)
 
     node_ids = sorted(obs["nodes"].keys())
     idx = {n: i for i, n in enumerate(node_ids)}

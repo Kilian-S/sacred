@@ -50,9 +50,12 @@ _DIST_FEATURE_CAP = 10.0
 # Edge feature width. Bumped 2 -> 4 for the gen03/gen04 antagonist-observability fix: columns 2/3
 # are the DIRECTED truck occupancy (count, furthest progress fraction) of the edge — the motion
 # state the adversary needs to attack ahead of a moving truck (mid-edge trucks were previously
-# invisible to both agents). Same back-compat rule as node features: new columns are appended
-# LAST, and the SAC agents slice edge_attr down to their own edge_in_dim.
-EDGE_FEATURE_DIM = 4
+# invisible to both agents). Bumped 4 -> 5 for the A1 generalist (2026-07-10): column 4 is the
+# edge's interception VULNERABILITY p_e from the instance's threat map (obs["edge_vulnerability"]),
+# zero when absent — the map-conditioning signal without which zero-shot transfer has no mechanism
+# (the measured ZST-0 negative, experiments/zst_step0.md). Same back-compat rule as node features:
+# new columns are appended LAST, and the SAC agents slice edge_attr down to their own edge_in_dim.
+EDGE_FEATURE_DIM = 5
 
 def featurize_state(
     observation: dict[str, Any],
@@ -218,7 +221,9 @@ def featurize_state(
         rec[1] = max(rec[1], frac)   # furthest along (0 = just entered, ~1 = about to arrive)
 
     # 4b. Build dynamic edge features only (topology is cached)
-    # Columns: [norm_distance, congestion, occupancy_count(directed), max_progress_frac(directed)]
+    # Columns: [norm_distance, congestion, occupancy_count(directed), max_progress_frac(directed),
+    #           vulnerability]
+    edge_vuln = observation.get("edge_vulnerability", {})
     edge_features = []
     norm_idx = 0
     _no_occ = (0.0, 0.0)
@@ -229,11 +234,12 @@ def featurize_state(
         cong = edata["congestion_level"]
         fwd = edge_occ.get((node_to_idx[u], node_to_idx[v]), _no_occ)
         rev = edge_occ.get((node_to_idx[v], node_to_idx[u]), _no_occ)
+        vuln = float(edge_vuln.get((u, v), edge_vuln.get((v, u), 0.0)))
 
         # Forward edge (u -> v)
-        edge_features.append([norm_dists[norm_idx], cong, fwd[0], fwd[1]])
+        edge_features.append([norm_dists[norm_idx], cong, fwd[0], fwd[1], vuln])
         # Reverse edge (v -> u)
-        edge_features.append([norm_dists[norm_idx + 1], cong, rev[0], rev[1]])
+        edge_features.append([norm_dists[norm_idx + 1], cong, rev[0], rev[1], vuln])
 
         norm_idx += 2
 

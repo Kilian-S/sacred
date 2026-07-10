@@ -79,6 +79,7 @@ class MultiConvoyInterdictionEnv:
             raise ValueError(f"OD nodes {s!r},{t!r} not in graph")
         self.base, self.fob = s, t
         intercept_fn = None
+        self.edge_vulnerability: dict = {}   # (u, v) key -> p_e; the OBSERVABLE threat map (A1)
         if config.edge_vuln_band is not None:
             routes = build_route_set(graph, s, t, config.k_extra_routes, config.weight)
             cand = set().union(*(edges_of_route(r) for r in routes))
@@ -86,6 +87,13 @@ class MultiConvoyInterdictionEnv:
             vuln = length_band_vulnerability(graph, cand, band=tuple(config.edge_vuln_band),
                                              weight=config.weight, norm_edges=norm)
             intercept_fn = survival_intercept_fn(vuln)
+            # The FULL-GRAPH intrinsic map for the observation (featurise edge col 4): under the
+            # absolute norm a road's p_e is graph-intrinsic, so the policy sees the whole threat
+            # map, not just the candidate edges - the map-conditioning signal ZST step 1 requires.
+            full = length_band_vulnerability(
+                graph, (frozenset(e) for e in graph.edges() if e[0] != e[1]),  # skip self-loops
+                band=tuple(config.edge_vuln_band), weight=config.weight, norm_edges=norm)
+            self.edge_vulnerability = {tuple(sorted(e, key=repr)): p for e, p in full.items()}
         self.game = build_interdiction_game(graph, s, t, config.K, k_extra=config.k_extra_routes,
                                             weight=config.weight, intercept_fn=intercept_fn)
         if self.game.n_routes < 2:
@@ -164,6 +172,8 @@ class MultiConvoyInterdictionEnv:
             raise RuntimeError("no graph_env attached; use make_multiconvoy_env()")
         obs = dict(self.graph_env.observe())
         obs["active_truck"] = self._cur
+        if self.edge_vulnerability:
+            obs["edge_vulnerability"] = self.edge_vulnerability
         earlier = [r for r in self._convoy_routes[:self._cur] if r is not None]
         obs["routed_convoys"] = list(earlier)
         # route-correlation signal for the followers' menu head: per-node fraction of EARLIER convoys

@@ -41,4 +41,11 @@ n=10 with t-based 95% CIs and completes the 35-159 ladder natively.
 MC per seed: the gen13 command with `--seed $S`; SC per seed: the gen10-SC command with
 `--threads 3`; vanilla row: `--vanilla-only`. 3-parallel waves; ~6 h wall total (SC dominates).
 
+**Code-state disclosure (2026-07-10, before any results):** the A1 build landed the
+edge-vulnerability observation column (EDGE_FEATURE_DIM 4 -> 5) while gen14's waves were queued,
+so waves execute across `81d0dee` -> the bump commit. This is NON-BEHAVIOURAL for every gen14 arm:
+all agents here are built at `edge_in_dim=4`, so `_clip_ea` slices the new column off and the
+training inputs are byte-identical (the width-slicing back-compat mechanism, regression-tested;
+suite 155 green at the bump commit). Disclosed rather than silent, per house rule.
+
 ## RESULT (to be appended)
