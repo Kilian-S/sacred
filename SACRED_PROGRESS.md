@@ -507,6 +507,42 @@
   Obj 5 (the fleet-route ladder shortest 0.973 > vanilla 0.945 > ALNS 0.699 >> SACRED 0.257 -> eq
   0.216). The final multi-convoy Results act; single-convoy stays the proven core.
 
+## 18. The overnight programme: gen11 decomposition, F3 SBO, gen12 sweeps, ZST step 0  (2026-07-10 night · branch `gen08-interdiction` · ledgers gen11_menuhead, f3_sbo_demonstrator, gen12_sweeps, zst_step0; night report `NIGHT_REPORT_2026-07-10.md`)
+
+- **Goal (prospective):** execute CRITIQUE_PREFREEZE §8 autonomously overnight (Kilian's launch
+  authority + decision rules: gen11 pass = new headline; no design chasing beyond gen11), in his
+  modified order: gen11 first, then F3 SBO, eval rows, M5 sweeps, ZST step 0, docs hygiene.
+- **Headline results:** (i) **gen11 (4 arms x 3 seeds): NO PASS; the decomposition is the
+  product.** Features arm 0.443 / identity arm 0.476 = the plateau, and both arms' added head
+  parameters silently stayed ~0 (param groups inherited the base lr: an optimisation-scale no-op,
+  so the head-term CONCEPT is untested); leader-only-push arm 0.980 flat = the follower-push
+  hypothesis FALSIFIED spectacularly (single-state replay -> softmax saturation, alpha -> 295;
+  follower pushes are load-bearing state diversity). (ii) **F3 SBO demonstrator (Obj-4, reduced
+  form): MET** - 450-design placement x fleet space, SurrogateMLP on cheap features incl. the
+  closed-form harmonic-vulnerability aggregate: held-out Spearman 0.894, argmin regret 0.0000.
+  (iii) **gen12 sweeps (Obj-5 varied disruption): SACRED < ALNS in 10/10 cells** (K {1,2,3} x
+  N {2,3,5} x two ODs) with the margin GROWING with fleet size; **the held-out OD 35-159 reaches
+  1.09-1.69x its equilibrium POST-FIX (N3K1 best-ckpt 0.261 = 1.27x eq)** -> the 0.447 plateau is
+  INSTANCE-SPECIFIC to 62-97, not architectural. (iv) **ZST step 0: pre-registered scoping
+  negative** - the home-trained policy beats shortest/uniform on held-out 110-135 (0.699) but
+  loses to a random-init net (0.584): with no observable threat map there is no transfer
+  mechanism; ZST needs map-conditioned multi-instance training (step 1). Also: fleet-cost column
+  (SACRED's premium = the equilibrium's own), vanilla 3-seeded (0.855 +/- 0.003) + its
+  best-checkpoint row, docs number-hygiene (ledgers = sole number source).
+- **What we learned:** (i) instance asymmetry substitutes for head discriminability: where the
+  equilibrium has a sharp FP gradient (H/lnR 0.44), honest embeddings suffice; where it is
+  flatter (0.63), the pre-fix identity hash had been doing the work. (ii) Added head parameters
+  need their own lr scale or they are silent no-ops. (iii) Replay-state diversity is load-bearing
+  for a shared menu actor (single-state SAC = saturating bandit). (iv) The vectorised
+  mission-objective matrix (one matmul) moved the naive-oracle wall from K=3 to ~K=4-5 (RAM-bound):
+  the scaling figure needs restating.
+- **What it means for the thesis:** all five objectives now have at least a demonstrated form
+  (Obj-4 was the last); Obj-5 has its disruption curves + a held-out replication STRONGER than the
+  headline instance; the morning decision (recommended): 3-seed ho_N3K1 (35-159) as THE post-fix
+  multi-convoy headline candidate, which would retire the pre-fix/post-fix asymmetry entirely.
+- **Thesis fit:** Obj-4 (F3), Obj-5 (gen12 curves + held-out), Obj-1/3 (gen11's two mechanism
+  findings), ZST (honestly scoped with a measured boundary + the designed step 1).
+
 ## 17. The 2026-07-09 audit: the node-ordering bug, the fix, and the gen10 post-fix re-runs  (2026-07-09 · branch `gen08-interdiction`, fix SHA `e9acb56` · `CRITIQUE_INTERDICTION.md`, `experiments/gen10_postfix.md`)
 
 *(Chronologically AFTER entry 16; placed above it so the two locked-headline entries stay adjacent

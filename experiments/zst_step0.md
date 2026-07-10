@@ -40,4 +40,30 @@ instance-memorised lookup by construction.)
   vulnerability-observable multi-instance training, the gen11 feature mechanism), not a failure of
   the fix. Either way B2-S finally gets a measured row.
 
-## RESULT (to be appended)
+## RESULT (2026-07-10 04:00): NO TRANSFER (fails the random-init clause); the pre-registered scoping negative
+
+| row | OD | expl (exact route mixture) | cost |
+|---|---|---|---|
+| home sanity | 33-71 | 0.362 (final-iterate policy; the retrain's deployable TAP was 0.277) | 11.1 |
+| **transfer** | 110-135 | **0.699** | 51.4 |
+| random-init reference | 110-135 | 0.584 | 52.5 |
+| anchors (110-135) | | shortest 1.000, uniform 0.818, equilibrium 0.333 | |
+
+- **Minimal transfer claim: FAILED.** The transferred policy beats shortest-path (0.699 < 1.000)
+  and uniform (0.699 < 0.818) on the held-out game, but is WORSE than an untrained network
+  (0.699 > 0.584): the training specialised the walk policy to the home OD's branch geometry, and
+  that specialisation is negative transfer elsewhere. (The untrained reference's 0.584 < uniform
+  0.818 is itself interesting: near-uniform PER-BRANCH mixing on the trie is better-calibrated on
+  this instance than uniform-over-routes.)
+- **Read (exactly the pre-registered expectation):** with hard interception there is NO observable
+  threat/geometry signal for the policy to condition on, so zero-shot generalisation had no
+  mechanism to work through; the result cleanly scopes the aim's ZST promise: ZST requires
+  map-conditioned, multi-instance training (ZST step 1 = per-route/edge vulnerability features +
+  training across sampled ODs, the gen11-B mechanism at proper learning-rate scale). Reported as
+  the honest boundary, not a failure of the node-ordering fix (the fix made this test MEANINGFUL;
+  pre-fix it would have been vacuously negative).
+- **B2-S closure (bonus):** the never-run gen08 secondary instance now has measured rows: the
+  home-trained policy 0.699, random-init 0.584, vs its pre-registered anchors.
+- Minor disclosed delta: the home row (0.362) is the final-iterate reading recomputed from the
+  saved actor; the retrain's in-run final-policy reading was 0.415 and its TAP 0.277 (FP cycling
+  makes per-iterate readings wobble; the transfer conclusion is unaffected: 0.699 vs 0.584).
