@@ -1,64 +1,96 @@
 #!/usr/bin/env python3
-"""Extract an OSM drive network for a city into the geojson format
-`src/utils/graph_utils.load_osm_graph_and_demands` consumes (nodes: osmid + [lon,lat]; edges:
-u, v, length[m]), using the SAME 30m intersection consolidation as
-`data/maps/kaliningrad_simplified_30m` so a second-city ZST test (A2) is comparable to the
-training graph.
+"""Extract an OSM drive network into the geojson format
+`src/utils/graph_utils.load_osm_graph_and_demands` consumes, replicating the EXACT Kaliningrad
+pipeline (`scratch/mapgen/export_geojson.py` + the `plot_filter.py` arterial filter) so a
+second-city ZST test (A2) is built the same way as the training graph:
 
-Needs network (osmnx / Overpass). Run on a machine with network access, e.g.:
-    ! .venv/bin/python scripts/extract_city.py "Klaipeda, Lithuania" data/maps/klaipeda
+  1. download the drive network for a BBOX (osmnx / Overpass; needs network) with simplify=True;
+  2. FILTER to arterial highways only (primary/secondary/tertiary/trunk/motorway + links) and drop
+     isolated nodes -- the main node-count reducer (residential/service streets removed);
+  3. CONSOLIDATE intersections at `--tolerance` metres (default 30, as Kaliningrad; dead_ends=False);
+  4. export nodes (osmid + [lon,lat]) and edges (u, v, length[m]) geojson.
 
-Then the A2 harness runs unchanged:
+Kaliningrad reference: after these steps, 290 nodes / 706 edges. Tune --bbox and --tolerance so the
+printed node count lands in a comparable, processable range (~250-450).
+
+Run on a machine with network (e.g. via the `!` prefix in Claude Code):
+    ! .venv/bin/python scripts/extract_city.py --place "Kyiv, Ukraine" \
+        --bbox 50.52,50.38,30.66,30.40 --tolerance 30 --out data/maps/kyiv
+Then A2 consumes it unchanged:
     PYTHONPATH=. .venv/bin/python scratch/a2_graph_transfer.py <generalist_actor.pt> \
-        --nodes data/maps/klaipeda/nodes.geojson --edges data/maps/klaipeda/edges.geojson --tag klaipeda
+        --nodes data/maps/kyiv/nodes.geojson --edges data/maps/kyiv/edges.geojson --tag kyiv
 """
 from __future__ import annotations
 
+import argparse
 import json
-import sys
 from pathlib import Path
+
+ARTERIAL = {"primary", "secondary", "tertiary", "trunk", "motorway",
+            "primary_link", "secondary_link", "tertiary_link", "trunk_link", "motorway_link"}
 
 
 def main():
-    if len(sys.argv) < 3:
-        print(__doc__)
-        sys.exit(1)
-    place, out_dir = sys.argv[1], Path(sys.argv[2])
-    out_dir.mkdir(parents=True, exist_ok=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--place", default=None, help="place name (used only if --bbox omitted)")
+    ap.add_argument("--bbox", default=None, help="north,south,east,west (decimal degrees) -- STRONGLY "
+                    "recommended for big cities; Kaliningrad's region was pre-cropped")
+    ap.add_argument("--tolerance", type=float, default=30.0, help="intersection-consolidation metres")
+    ap.add_argument("--no-filter", action="store_true", help="skip the arterial-highway filter")
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    import networkx as nx
     import osmnx as ox
 
-    print(f"[extract_city] downloading drive network for {place!r} ...", flush=True)
-    G = ox.graph_from_place(place, network_type="drive")
-    # match the kaliningrad_simplified_30m pipeline: project, consolidate intersections at 30 m,
-    # back to lat/lon. add_edge_lengths ensures 'length' (metres) exists post-consolidation.
+    out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
+    if args.bbox:
+        n, s, e, w = (float(x) for x in args.bbox.split(","))
+        print(f"[extract_city] downloading drive network for bbox N{n} S{s} E{e} W{w} ...", flush=True)
+        G = ox.graph_from_bbox(bbox=(n, s, e, w), network_type="drive", simplify=True)
+    elif args.place:
+        print(f"[extract_city] downloading drive network for {args.place!r} (whole place; use "
+              f"--bbox to crop) ...", flush=True)
+        G = ox.graph_from_place(args.place, network_type="drive")
+    else:
+        ap.error("give --bbox or --place")
+    print(f"  raw: {G.number_of_nodes()} nodes / {G.number_of_edges()} edges")
+
+    # 2. arterial-highway filter (drop residential/service; remove isolated nodes)
+    if not args.no_filter:
+        keep = []
+        for u, v, k, d in G.edges(keys=True, data=True):
+            hw = d.get("highway", "")
+            hw = hw if isinstance(hw, list) else [hw]
+            if any(h in ARTERIAL for h in hw):
+                keep.append((u, v, k))
+        G = G.edge_subgraph(keep).copy()
+        G.remove_nodes_from(list(nx.isolates(G)))
+        print(f"  arterial-filtered: {G.number_of_nodes()} nodes / {G.number_of_edges()} edges")
+
+    # 3. project + consolidate at tolerance m + back to lat/lon (Kaliningrad: tol 30, dead_ends False)
     Gp = ox.project_graph(G)
-    Gc = ox.consolidate_intersections(Gp, tolerance=30, rebuild_graph=True, dead_ends=True)
+    Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=args.tolerance, dead_ends=False)
     Gc = ox.distance.add_edge_lengths(Gc)
     Gll = ox.project_graph(Gc, to_latlong=True)
     nodes_gdf, edges_gdf = ox.graph_to_gdfs(Gll)
+    print(f"  consolidated @ {args.tolerance}m: {len(nodes_gdf)} nodes / {len(edges_gdf)} edges "
+          f"(Kaliningrad ref: 290 / 706)")
 
-    # nodes: reindex 0..n-1 so ids are compact strings (as the kaliningrad export)
     id_map = {osmid: i for i, osmid in enumerate(nodes_gdf.index)}
-    n_feats = []
-    for osmid, row in nodes_gdf.iterrows():
-        pt = row.geometry
-        n_feats.append({"type": "Feature",
-                        "properties": {"osmid": id_map[osmid]},
-                        "geometry": {"type": "Point", "coordinates": [float(pt.x), float(pt.y)]}})
-    e_feats = []
-    for (u, v, k), row in edges_gdf.iterrows():
-        length = float(row.get("length", 100.0))
-        e_feats.append({"type": "Feature",
-                        "properties": {"u": id_map[u], "v": id_map[v], "key": int(k),
-                                       "length": length},
-                        "geometry": {"type": "LineString",
-                                     "coordinates": list(row.geometry.coords)}})
-    (out_dir / "nodes.geojson").write_text(json.dumps(
-        {"type": "FeatureCollection", "features": n_feats}))
-    (out_dir / "edges.geojson").write_text(json.dumps(
-        {"type": "FeatureCollection", "features": e_feats}))
-    print(f"[extract_city] wrote {len(n_feats)} nodes, {len(e_feats)} edges to {out_dir}", flush=True)
-    print(f"[extract_city] (Kaliningrad reference: 290 nodes / 706 edges after 30m consolidation)")
+    n_feats = [{"type": "Feature", "properties": {"osmid": id_map[osmid]},
+                "geometry": {"type": "Point", "coordinates": [float(r.geometry.x), float(r.geometry.y)]}}
+               for osmid, r in nodes_gdf.iterrows()]
+    e_feats = [{"type": "Feature",
+                "properties": {"u": id_map[u], "v": id_map[v], "key": int(k),
+                               "length": float(r.get("length", 100.0))},
+                "geometry": {"type": "LineString", "coordinates": list(r.geometry.coords)}}
+               for (u, v, k), r in edges_gdf.iterrows()]
+    (out / "nodes.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": n_feats}))
+    (out / "edges.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": e_feats}))
+    print(f"[extract_city] wrote {len(n_feats)} nodes / {len(e_feats)} edges to {out}")
+    if not 200 <= len(n_feats) <= 500:
+        print(f"  NOTE: {len(n_feats)} nodes is outside the comparable ~250-450 band; adjust "
+              f"--bbox (smaller = fewer) or --tolerance (larger = fewer) and re-run.")
 
 
 if __name__ == "__main__":
