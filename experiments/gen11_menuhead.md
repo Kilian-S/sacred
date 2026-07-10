@@ -147,7 +147,27 @@ headline); the B'-vs-E' contrast is the identity-vs-transferable-features questi
 testable. Telemetry: the learned magnitudes (route_feat_w / route_bias spread) reported per seed.
 Runs via `scratch/gen13_morning.sh` stage 2; outputs `models/runs/gen11_menuhead/{Bp,Ep}_seed*`.
 
-### gen11b RESULT (to be appended)
+### gen11b RESULT (2026-07-10 09:45, 6 runs, ~31 min): the identity-vs-features question ANSWERED; no pass, none needed (gen13 moved the headline)
+
+| arm | best-ckpt TAP per seed | mean +/- std | learned magnitudes (seed 0, final) |
+|---|---|---|---|
+| B' (features, lr 3e-2) | 0.372 / 0.398 / 0.454 | **0.408 +/- 0.034** | feat_w = [-2.14, -1.26] (correct hedge signs: mass away from costly/vulnerable routes) |
+| E' (identity, lr 3e-2) | **0.295 / 0.295** / 0.482 | 0.357 +/- 0.088 | bias spread [-1.38, 3.57], std 1.36 |
+
+- **The lr fix worked mechanically** (weights at O(1), vs ~0 in gen11) and both arms now BEAT the
+  0.447 plateau: the gen11 nulls were indeed the optimisation-scale artefact.
+- **Identity capacity CONFIRMED: E' reproduces the PRE-FIX number (0.295) on 2/3 seeds** - a
+  learned per-route free parameter recovers on 62-97 exactly what the bug's accidental identity
+  hash had been contributing. Features recover less (B' 0.408): on this instance's FLAT
+  equilibrium (leader H/lnR 0.63), memorisable route identity beats transferable route semantics.
+- **Joint picture with gen13:** where the instance supplies asymmetry (35-159, H/lnR 0.44), the
+  plain head reaches 1.33x eq (the new headline, 0.274); where it does not (62-97), identity
+  capacity substitutes (E' -> 0.295 = pre-fix) and semantics only partially (B' 0.408). That is a
+  complete, measured account of the plateau: instance structure first, head capacity second,
+  semantics third. Thesis: a methods/discussion exhibit; 62-97 is no longer a headline instance.
+- Neither arm passes <= 0.295 on the mean (E' seed 2 at 0.482); irrelevant to the headline
+  (gen13 locked on 35-159) and reported as measured. B' remains the ZST-step-1 mechanism
+  (map-conditioned features with correct signs, now proven trainable).
 
 ## Launch/config record
 
