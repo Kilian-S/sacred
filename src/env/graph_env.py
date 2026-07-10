@@ -363,11 +363,21 @@ class GraphEnv:
         return StepResult(self.observe(), reward, done, info)
 
     def observe(self) -> dict[str, Any]:
-        """Return a Python-dict observation suitable for wrappers to transform."""
+        """Return a Python-dict observation suitable for wrappers to transform.
+
+        The node/edge sub-dicts are SNAPSHOT (fresh dicts with copied scalar fields) so a buffered
+        observation reflects the environment at DECISION time, not whenever its features are lazily
+        built (the B0 fix, CRITIQUE_PREFREEZE §5.2: `_obs_nodes`/`_obs_edges` mutate in place under
+        demand arrivals / `set_congestion`, and `SMDPTransition.feature_cache` is built lazily at
+        first sample, so shared references let later mutation rewrite a stored state's demand /
+        congestion columns). Static problems (interdiction / multi-convoy: demand set once, no
+        congestion) are semantically unchanged - the snapshot holds identical values - so the
+        banked headlines reproduce; the cost is one dict-comprehension per observe (observe is not
+        the hot path; `update()` dominates)."""
         obs = {
             "time": self.time,
-            "nodes": self._obs_nodes,
-            "edges": self._obs_edges,
+            "nodes": {n: dict(d) for n, d in self._obs_nodes.items()},
+            "edges": {e: dict(d) for e, d in self._obs_edges.items()},
             "trucks": {
                 truck_id: {
                     "current_node": truck.current_node,
