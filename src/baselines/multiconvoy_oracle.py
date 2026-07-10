@@ -61,8 +61,23 @@ def objective_value(occ: np.ndarray, p: np.ndarray, N: int, objective: str = "mi
 
 
 def objective_matrix(game: InterdictionGame, N: int, objective: str = "mission", m: int = 1):
-    """(occupancies, loss matrix) with M[occ, iset] = the chosen objective's loss."""
+    """(occupancies, loss matrix) with M[occ, iset] = the chosen objective's loss.
+
+    ``mission`` and ``linear`` have closed forms and are computed as single matrix products
+    (mission: M = 1 - exp(O @ log(1 - payoff)), the survival product; linear: M = O @ payoff / N),
+    which is what makes the K >= 3 sweep instances buildable (the generic per-entry
+    Poisson-binomial convolution at 28.8M entries costs ~half an hour; the matmul is sub-second).
+    ``threshold`` with m > 1 keeps the exact convolution path. Equivalence is regression-tested
+    against the loop implementation (tests/test_multiconvoy_oracle_vectorised.py)."""
     occs = occupancies(game.n_routes, N)
+    O = np.asarray(occs, dtype=float)                    # [n_occ, R]
+    if objective == "linear":
+        return occs, (O @ game.payoff) / N
+    if objective == "mission" or (objective == "threshold" and int(m) <= 1):
+        # P(>=1 caught) = 1 - prod_r (1 - p[r, j])^occ[r]; p == 1 -> log(0) clamped so the
+        # survival product is exactly 0 (interception certain), matching the loop semantics.
+        log_surv = np.log(np.clip(1.0 - game.payoff, 1e-300, 1.0))   # [R, n_isets]
+        return occs, 1.0 - np.exp(O @ log_surv)
     n_isets = game.payoff.shape[1]
     M = np.zeros((len(occs), n_isets))
     for oi, occ in enumerate(occs):

@@ -227,6 +227,10 @@ def main():
     p.add_argument("--window", type=int, default=500, help="trailing-window size for empirical play")
     p.add_argument("--json-out", type=str, default="", help="write the result record here (matrix aggregation)")
     p.add_argument("--threads", type=int, default=4, help="torch CPU threads (use 3 for 3-parallel)")
+    p.add_argument("--save-actor", type=str, default="",
+                   help="save the trained SACRED actor state_dict here (ZST transfer source)")
+    p.add_argument("--skip-vanilla", action="store_true",
+                   help="train only the sacred arm (e.g. the ZST-source retrain)")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-")
@@ -251,14 +255,20 @@ def main():
     print(f"[shortest_path] exploitability = {expl_sp:.3f} (deterministic; the operational default)")
     print(f"[uniform]       exploitability = {expl_uni:.3f} (uncalibrated mixing reference)\n")
 
-    print("[vanilla] training defender with NO adversary (nominal travel-cost objective)...")
-    vprot, vhist, vseq, vpol = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
-                                              batch_size=args.batch_size, seed=args.seed, adversarial=False,
-                                              eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
-                                              lr_actor=args.lr_actor, window=args.window, mode=args.route_mode)
-    vfin = final_metrics(vprot, env, vseq, args.window, args.route_mode, vpol)
-    print(f"[vanilla] final expl: TAP {vfin['expl_tap']:.3f} | policy {vfin['expl_policy']:.3f} | "
-          f"window {vfin['expl_window']:.3f} | avg {vfin['expl_avg']:.3f}\n")
+    if args.skip_vanilla:
+        vfin, vhist = {"expl_tap": float("nan"), "expl_policy": float("nan"),
+                       "expl_window": float("nan"), "expl_avg": float("nan"),
+                       "clean_cost_tap": float("nan")}, []
+        print("[vanilla] SKIPPED (--skip-vanilla)\n")
+    else:
+        print("[vanilla] training defender with NO adversary (nominal travel-cost objective)...")
+        vprot, vhist, vseq, vpol = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
+                                                  batch_size=args.batch_size, seed=args.seed, adversarial=False,
+                                                  eval_every=args.eval_every, sol=sol, reward_scale=args.reward_scale,
+                                                  lr_actor=args.lr_actor, window=args.window, mode=args.route_mode)
+        vfin = final_metrics(vprot, env, vseq, args.window, args.route_mode, vpol)
+        print(f"[vanilla] final expl: TAP {vfin['expl_tap']:.3f} | policy {vfin['expl_policy']:.3f} | "
+              f"window {vfin['expl_window']:.3f} | avg {vfin['expl_avg']:.3f}\n")
 
     print("[sacred] training defender vs the ORACLE best-response interdictor (fictitious play)...")
     sprot, hist, sseq, spol = train_defender(env, sorties=args.sorties, switch_every=args.switch_every,
@@ -268,6 +278,10 @@ def main():
                                              attacker_mode=args.attacker_mode,
                                              smooth_tau=args.smooth_tau, smooth_window=args.smooth_window)
     sfin = final_metrics(sprot, env, sseq, args.window, args.route_mode, spol)
+    if args.save_actor:
+        Path(args.save_actor).parent.mkdir(parents=True, exist_ok=True)
+        torch.save(sprot.actor.state_dict(), args.save_actor)
+        print(f"  [saved sacred actor] {args.save_actor}")
     eq_cost = float(sol.defender_strategy @ env.game.travel_cost)
     print(f"\n=== RESULT (Kaliningrad {s}->{t}, K={args.K}, band={band}, mode={args.route_mode}, "
           f"attacker={args.attacker_mode}, seed={args.seed}) ===")

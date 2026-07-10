@@ -142,9 +142,12 @@ pre-committed exit criterion.
       (edge-selection; env mask exposed; transition enrichment per `sacred_atla.py` ~L229-252)
       replacing the oracle interdictor on B2-P; evaluate with the ORACLE BR regardless
       (portfolio-max). One instance x 3 seeds as a demonstration, not a matrix.
-- [ ] **F3. Obj-4 demonstrator (oracle-driven, eval-only):** interdiction-aware base/FOB
-      placement: equilibrium interception per candidate OD/placement over a grid + small
-      surrogate + argmax validation. An afternoon; zero training.
+- [x] **F3. Obj-4 demonstrator: DONE 2026-07-10 (night programme).** 450-design space (150
+      placements x N in {2,3,4}), oracle loss_mixed target, SurrogateMLP on cheap structural
+      features incl. the closed-form harmonic-vulnerability aggregate; held-out-by-placement
+      validation: **RMSE 0.022, Spearman 0.894, argmin regret 0.0000.** Ledger:
+      `experiments/f3_sbo_demonstrator.md`; script `scratch/sbo_placement_demo.py`. Obj-4 met in
+      reduced form (surrogate of the ORACLE evaluator; full SBO loop = future work).
 - [ ] **F4. ZST (aim-level):** transfer the trained B2-P3 policy to a held-out OD pair; score
       vs that pair's oracle. Eval-only afternoon.
 - [ ] **F5 (drop first if the calendar bites): ERB ablation** (seed from shortest-path or the

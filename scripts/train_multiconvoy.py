@@ -435,6 +435,8 @@ def main():
     p.add_argument("--leader-only-push", action="store_true",
                    help="gen11 arm C: fleet-route pushes ONLY the leader's decision (terminal, full "
                         "sortie reward); kills the follower-push entropy-target conflict")
+    p.add_argument("--vanilla-only", action="store_true",
+                   help="train ONLY the vanilla control arm (independent convoys, travel objective)")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
@@ -489,6 +491,19 @@ def main():
                  "vanilla": v, "sacred": sac}, indent=2))
         return
 
+    if args.vanilla_only:
+        print("[vanilla-only] training the control (nominal travel objective, no adversary)...")
+        v = train_defender(env, adversarial=False, attacker_mode=args.attacker_mode, **common)
+        vt = [h[2] for h in v["history"]]
+        print(f"\n=== VANILLA-ONLY ({s}->{t}, N={args.N}, K={args.K}, seed={args.seed}) ===")
+        print(f"  vanilla TAP {v['expl_tap']:.3f} (policy {v['expl']:.3f}) | best-ckpt TAP "
+              f"{min(vt) if vt else float('nan'):.3f}   [ALNS {baselines['alns']:.3f}, eq {sol.loss_mixed:.3f}]")
+        if args.json_out:
+            Path(args.json_out).write_text(json.dumps(
+                {"od": args.od, "N": args.N, "K": args.K, "seed": args.seed, "arm": "vanilla_only",
+                 "loss_mixed": sol.loss_mixed, "baselines": {k: baselines[k] for k in ("shortest_path", "alns")},
+                 "vanilla": v}, indent=2))
+        return
     if args.fleet_route:
         print("[fleet-route CONTROL] followers hard-copy convoy 0; can the leader learn -> loss_mixed?\n")
         fc = train_defender(env, adversarial=True, attacker_mode=args.attacker_mode, fleet_route=True,

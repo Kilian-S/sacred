@@ -209,6 +209,26 @@ PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
 ```
 SHA pinned by the commit landing this pre-registration + the flag. RESULT appended below.
 
+### FLEET-COST column + vanilla best-checkpoint row (2026-07-10 night, EVAL-ONLY; closes CRITIQUE_PREFREEZE §3.4-3.5)
+
+`scratch/fleet_cost_probe.py` (validated: reproduces the gen09 exact re-eval TAPs 0.281/0.274/0.329
+exactly, with each checkpoint era evaluated under ITS OWN indexing convention). Expected fleet
+travel cost per sortie (62-97 k8, N=3; route costs 26.3-52.2):
+
+| arm | mission-failure expl | fleet cost / sortie |
+|---|---|---|
+| shortest-path stack | 0.973 | 78.9 |
+| ALNS plan (spread) | 0.699 | 96.1 |
+| SACRED pre-fix best-ckpt (gen09, exact) | 0.295 +/- 0.024 | **123.1 +/- 1.0** |
+| SACRED post-fix best-ckpt (gen10-MC) | 0.447 +/- 0.029 | 115.3 +/- 2.7 |
+| equilibrium mixture | 0.216 | 120.8 |
+
+**Read:** SACRED's security is bought at a ~28% fleet-cost premium over ALNS's spread plan, and
+its premium is essentially THE EQUILIBRIUM'S OWN (123.1 vs 120.8): the randomised stack pays what
+optimal play pays, not an RL-inefficiency surcharge. **Vanilla selection symmetry:** gen10-VAN's
+best-checkpoint TAP is 0.806 (vs final 0.855): best-checkpoint selection does not rescue the
+non-adversarial control. (Post-fix vanilla is extended to 3 seeds in the gen12 sweep batch.)
+
 ### gen10-MC2 RESULT (2026-07-10, 3 seeds, ~32 min at 3-parallel): NO RECOVERY; attribution resolved
 
 | seed | best-ckpt TAP @ sortie | final TAP | telemetry signature |
