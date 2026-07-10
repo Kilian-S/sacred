@@ -1,5 +1,18 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-10)
 
+> **★ EXPANSION PROGRAMME IN FLIGHT (2026-07-10 afternoon; `DIRECTION_EXPANSION.md` +
+> `NIGHT_REPORT_2026-07-10.md`).** Kilian: "disregard thesis writing"; working the amended
+> ordering with full launch authority. STATE: **C3** (gen14: 10-seed both headlines + missing
+> 35-159 rows) RUNNING; **A1** (gen15: the map-conditioned generalist, ZST step 1) chained behind
+> it; **D1** (SBO acquisition loop, oracle-only) RUNNING; **A3/A2** (amortisation + graph-transfer,
+> eval-only) chained behind A1; **B4** (correlated interception) DONE
+> (`experiments/b4_correlated_interception.md`: independence is the CONSERVATIVE assumption). Built
+> this session: edge-vulnerability observation column (EDGE_FEATURE_DIM 4->5) + per-transition
+> instance conditioning for A1 (`scripts/train_generalist.py`, +3 regression tests, suite 158).
+> Ledgers: gen14_evidence, gen15_generalist, d1_sbo_loop, a2_graph_transfer, b4_*. NEXT after these
+> land: D3 (surrogate over the trained generalist), C4 (one bounded last-iterate attempt on 35-159),
+> C2 (learned-follower redo). NB: no network this session (a true 2nd OSM city for A2 needs it).
+
 > **★★★★★★★ BOTH HEADLINES POST-FIX (2026-07-10 morning, gen13-lock PASSED). READ
 > `NIGHT_REPORT_2026-07-10.md` + `experiments/gen13_lock.md` FIRST; numbers live ONLY in ledgers.**
 > **Multi-convoy headline = gen13-lock (35-159, held-out-screened instance, honest
