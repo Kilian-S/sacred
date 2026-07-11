@@ -101,3 +101,20 @@ sortie); the demand-side S (Poisson arrivals) is full B1, not this rung.
 
 **LADDER (gen19, per-sortie mission-failure):** static_det 0.613 > iid_eq/no-window 0.148 >
 **SACRED 0.050** ~ history_opt 0.049 (worst-case non-adaptive: SACRED marginal 0.219 ~ eq 0.206).
+
+### (w, tau) SENSITIVITY (the full oracle screen grid, 35-159; CRITIQUE_EXPANSION §4.3 ask)
+
+| w | tau | static_det | iid_eq | history_opt | note |
+|---|---|---|---|---|---|
+| 1 | 0.05 | 0.831 | 0.189 | 0.000 | sharp tau -> adversary trivially dodgeable (degenerate) |
+| 2 | 0.05 | 0.831 | 0.188 | 0.000 | " |
+| 3 | 0.05 | 0.831 | 0.184 | 0.001 | " |
+| 1 | 0.15 | 0.613 | 0.167 | 0.005 | short window: little history to exploit |
+| 2 | 0.15 | 0.613 | 0.151 | 0.029 | |
+| **3** | **0.15** | **0.613** | **0.147** | **0.049** | **operating point (non-degenerate, chosen pre-training)** |
+
+**Reading:** the operating point tau=0.15 was chosen because tau=0.05 makes the pattern-of-life
+adversary trivially dodgeable (history_opt ~ 0, a degenerate "too easy" regime); at tau=0.15 the
+history-optimal value GROWS with window (0.005 -> 0.029 -> 0.049 for w=1,2,3) as there is more
+recent pattern to exploit, giving a real, non-degenerate game. The w=3, tau=0.15 choice is the
+disclosed, defensible operating point; the grid shows the effect is monotone and not knife-edge.
