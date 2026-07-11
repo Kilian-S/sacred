@@ -1,5 +1,27 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-10)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-11)
 
+> **★★★ EXPANSION PROGRAMME COMPLETE (2026-07-11; NEXT_STEPS list all done bar the deferred A4).**
+> The 2026-07-11 experiment list is banked. **gen20/F2 PASSED = Obj-1's antagonist AGENT closed
+> POSITIVE:** a LEARNED interdictor co-evolves to **0.81x the oracle's strength** and its defender
+> lands at 0.330 (within 0.074 of the oracle-trained 0.256, beats ALNS) - and the campaign REVERSAL
+> (the learned adversary that could not learn congestion CAN learn to interdict) validates the
+> Act-III pivot (`experiments/gen20_f2_learned.md`). **gen21 vanilla control: transfers 2.34x =
+> WORSE than random-init 1.99x** -> adversarial training is CAUSAL for ZST (Obj-5 transfer control,
+> measured not inferred). **gen22 Istanbul rotation PASSED (1.880 < random 2.30):** two rotation
+> points now (Gdansk 1.68, Istanbul 1.88) = transfer holds to whichever city is held out.
+> **Zero-shot K/N rows:** the hedge SURVIVES budget shift (K=2 1.29x) and fleet shift (N=5 1.79x).
+> **Whole-Kyiv (6083n):** 1.88x, beats random - the scale axis. **D3-on-Gdansk (poster exhibit):**
+> the composite on a never-trained city (policy-vs-oracle design corr 0.109 vs 0.768 in-dist = the
+> ZST-vs-LP backbone). **gen23/C1: ERB-from-ALNS HURTS** (deterministic metaheuristic demos bias a
+> mixed-strategy learner toward exploitable determinism - Obj-3 closed with a mechanism). Doc
+> hygiene done (chronicle entries 19-21, dual-selection folded in, select-on-train default). **A4
+> K=5 cell DEFERRED** (drop-first, hedged scaling claim, trainer-refactor risk; verified core
+> stands). Suite 161. **All five objectives now have trained evidence in demonstrated-or-better
+> form; ZST realised at OD/city/scale with rotation + K/N robustness; SBO is a full stack; the two
+> failed gates (gen17/18) and one negative (C1) are measured boundaries.** NEXT (Kilian's call):
+> the storyline compression + self-critique (NEXT_STEPS item 7); writing was kept off the table.
+> The banner below is the prior state.
+>
 > **★★ EXPANSION PROGRAMME: ZST + C-CHAIN COMPLETE (2026-07-11 morning).** **gen16 PASSED = the
 > first cross-CITY zero-shot transfer** (train Kaliningrad+East London+Istanbul, held-out GDANSK
 > 1.677 +/- 0.072x its equilibria, beats loss_det 17/18; A2-RESCUE confirmed: 1.90 vs random 2.43
