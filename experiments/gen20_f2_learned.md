@@ -50,4 +50,34 @@ PYTHONPATH=. .venv/bin/python scripts/train_f2.py --od 35-159 --N 3 --K 1 --k-ex
   --json-out models/runs/gen20_f2/seed$S.json --ckpt-dir models/runs/gen20_f2/seed${S}_ckpts
 ```
 
-## RESULT (to be appended)
+## RESULT (2026-07-11, 3 seeds, ~40 min): **PASS - the learned antagonist works, post-fix**
+
+| seed | defender best-ckpt expl (oracle BR) @ sortie | learned-antag strength (x oracle) |
+|---|---|---|
+| 0 | 0.355 @ 400 | 0.81 |
+| 1 | 0.320 @ 200 | 0.82 |
+| 2 | 0.316 @ 400 | 0.80 |
+
+> **Defender best-ckpt mean 0.330 +/- 0.018 (3 seeds); all <= 0.356 and < ALNS 0.699.** PRIMARY
+> PASS 3/3. STRONG (<= 0.306): narrowly missed (0.316-0.355). **Learned antagonist strength 0.81x
+> the oracle BR** (mean over seeds).
+
+**What is established (Obj-1's antagonist AGENT, closed with a POSITIVE):** a LEARNED interdictor
+(a menu-select SAC policy over interdiction sets, co-evolving with the fleet-route defender)
+reaches **0.81x the oracle best-response's exploitation strength** and the defender it trains lands
+at 0.330 under the oracle BR - within 0.074 of the oracle-trained headline (0.256) and comfortably
+below the deterministic-class optimum (ALNS 0.699). So Obj-1's "environment-altering antagonist
+agent" is no longer an oracle-only claim: co-evolution with a genuine learned agent produces a
+defender nearly as robust as the oracle-trained one, on the post-fix interdiction game.
+
+**The reversal (a headline finding for the discussion):** the campaign (gen03/04) found learned
+congestion adversaries WEAKER THAN RANDOM (entropy pinning, flat landscape). **Post-fix, on the
+interdiction game, the learned antagonist reaches 0.81x the oracle** - the interdiction game's
+sharp, differentiated attack surface (unlike the flat congestion landscape) is learnable by the
+adversary, exactly as the flat-landscape diagnosis predicted the congestion game was not. This
+retroactively validates the whole Act-III pivot: change the adversary's game structure and the
+learned adversary that could not learn to attack congestion CAN learn to interdict.
+
+**Discipline:** evaluation stayed ORACLE-BR PORTFOLIO-MAX throughout (the defender's reported
+exploitability is always under the oracle interdictor, never the learned one), so the learned
+antagonist's 0.81x could not have flattered the defender. HARD GATE honoured: one attempt, banked.

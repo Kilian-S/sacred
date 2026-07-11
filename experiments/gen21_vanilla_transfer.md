@@ -32,4 +32,17 @@ Anchor: the adversarial gen16 held-out-Gdansk best-checkpoint mean **1.677** (se
 > result (transfer is about map-conditioning, not adversarial training) - reported as measured.
 > Smoke (20 sorties) read ~2.27x, supporting the expected direction.
 
-## RESULT (to be appended)
+## RESULT (2026-07-11, 1 seed): the control CONFIRMS adversarial training is causal for transfer
+
+> **Vanilla (travel-objective) generalist held-out-Gdansk best-checkpoint ratio 2.338 (final
+> 2.575).** vs the ADVERSARIAL gen16 generalist 1.677/1.733, AND vs random-init ~1.99.
+
+**What is established (Obj-5 at the transfer level, measured not inferred):** the vanilla
+generalist - same multi-city training, same map-conditioning, only the objective changed to travel
+cost - transfers WORSE than the adversarial generalist (2.34 vs 1.68) and, strikingly, **worse than
+a random-init network (2.34 vs 1.99).** A cost-trained policy concentrates its fleet on the cheapest
+routes, which are exactly the predictable, exploitable ones, so under the oracle interdictor it is
+more exploitable than random routing. So "adversarial training is what makes transfer work" is now
+a MEASUREMENT: it is not merely one ingredient of transfer - without it, map-conditioning alone
+transfers below random. This is the named Obj-5 non-adversarial control, at the transfer level the
+programme previously lacked.
