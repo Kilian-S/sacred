@@ -40,3 +40,18 @@ into `train_multiconvoy.py`'s attacker refresh + the exploitability eval in plac
 `env.obj_matrix` (CRITIQUE_INTERDICTION §5.4), then train/evaluate a K=4 and K=5 cell on 35-159.
 The BR function + its guarantee are the load-bearing, verified piece; the training cell is an
 ordinary run once wired. Not launched tonight (position 9; the keystone arc has the machine).
+
+## DECISION (2026-07-11): the K=5 training cell is DEFERRED as scoped future work
+
+After the expansion programme completed (F2 positive, ZST at city scale + rotation + K/N shift, the
+SBO stack, D3-on-Gdansk), the A4 K=5 training cell is deliberately NOT built, for four reasons: (1)
+it is the pre-committed drop-first item (CRITIQUE_EXPANSION §9 drop order); (2) its scaling claim is
+HEDGED regardless - against column generation / double oracle the exact frontier extends far past
+naive enumeration, so the thesis concedes wall-clock scaling in one sentence either way (the honest
+scaling story now runs through ZST + D3, both strongly evidenced); (3) wiring the greedy BR into
+the trainer + gating the eager objective matrix is a non-trivial refactor of the code every
+generation depends on, and the regression risk outweighs one hedged datapoint given how complete
+the rest is; (4) the A4-CORE (the matrix-free submodular greedy BR, VERIFIED against exact at K<=2,
+reaching K=5 matrix-free in 8 s) already exists and is citable: "the mechanism that scales past the
+naive oracle wall exists and is verified; the trained K=5 cell is scoped future work." This is the
+defensible, honest position and it matches the critique's own drop-order. Recorded, not launched.
