@@ -176,6 +176,9 @@ def main():
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--json-out", default="")
     p.add_argument("--ckpt-dir", default="")
+    p.add_argument("--vanilla", action="store_true",
+                   help="Obj-5 transfer control: travel objective, NO adversary (reward = -normalised "
+                        "route cost); still map-conditioned, still evaluated zero-shot under the oracle BR")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     torch.manual_seed(args.seed)
@@ -231,17 +234,25 @@ def main():
     for k in range(args.sorties):
         inst = train[int(rng.integers(len(train)))]
         env = inst.env
-        # per-instance smooth FP: softmax BR to THIS instance's trailing play, sampled fresh
-        probs = smooth_fp_probs(inst.occ_seq, len(env.occupancies), env.obj_matrix,
-                                args.fp_tau, args.smooth_window)
-        j = sample_smooth_iset(probs, rng)
-        env.reset()
-        env.commit(j)
-        steps, occ, _ = route_one(prot, env, fleet_route=True)
-        inst.occ_seq.append(env._occ_index[tuple(occ)])
-        pay = env.game.payoff[:, j]
-        reward = -args.interception_loss * objective_value(
-            np.asarray(occ), pay, env.config.N, env.config.objective, env.config.threshold_m)
+        if args.vanilla:
+            # Obj-5 transfer control: NO adversary; reward = -normalised fleet travel cost.
+            env.reset()
+            steps, occ, _ = route_one(prot, env, fleet_route=True)
+            mean_cost = float(env.game.travel_cost.mean())
+            fleet_cost = float(sum(occ[r] * env.game.travel_cost[r] for r in range(env.game.n_routes)))
+            reward = -args.interception_loss * (fleet_cost / (env.config.N * mean_cost))
+        else:
+            # per-instance smooth FP: softmax BR to THIS instance's trailing play, sampled fresh
+            probs = smooth_fp_probs(inst.occ_seq, len(env.occupancies), env.obj_matrix,
+                                    args.fp_tau, args.smooth_window)
+            j = sample_smooth_iset(probs, rng)
+            env.reset()
+            env.commit(j)
+            steps, occ, _ = route_one(prot, env, fleet_route=True)
+            inst.occ_seq.append(env._occ_index[tuple(occ)])
+            pay = env.game.payoff[:, j]
+            reward = -args.interception_loss * objective_value(
+                np.asarray(occ), pay, env.config.N, env.config.objective, env.config.threshold_m)
         leader_te = args.leader_ent_frac * math.log(inst.R)
         follower_te = args.follower_ent_frac * math.log(inst.R)
         for obs_j, ci_j, _, _ in steps:
