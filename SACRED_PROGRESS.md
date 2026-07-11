@@ -621,3 +621,70 @@ to their supersession notes.)*
   characterisation), Obj 3 (SAC-entropy-as-mixed-strategy under adversarial pressure; best-checkpoint
   discipline). `experiments/gen09_multiconvoy.md` is the authoritative locked record. The learned-follower
   bootstrap (entry 15) stays the banked Obj-3 SECONDARY.
+
+## 19. The node-ordering fix, gen10-13 re-runs, and the morning steps  (2026-07-09/10 · fix SHA `e9acb56` · `experiments/gen10_postfix.md`, `gen13_lock.md`, `CRITIQUE_INTERDICTION.md`)
+- **Goal (prospective):** an examiner-grade audit of the interdiction programme found a project-wide
+  representation bug (`featurize_state` sorts node ids; every consumer indexed by dict insertion order),
+  so every trained net had read a fixed permutation of the wrong nodes' embeddings. Fix it and re-run.
+- **Headline results:** fix landed (`node_index_map` single source of truth + regression tests, suite
+  149->161 over the arc) with a role-alpha Bellman-target fix and exact fleet-route evaluation. **gen10-SC
+  (single-convoy re-run): PASSED, pooled sacred TAP 0.276 vs vanilla 0.480** (banked 0.362/0.477; ~44% of
+  the residual equilibrium gap was the bug). **gen10-MC / gen10-MC2 (multi-convoy): REGRESSED to a
+  reproducible 0.447 plateau** (the pre-fix identity-hash had been supplying route discrimination the
+  mean-pooled menu head lacks on the flat 62-97 equilibrium). **gen13-lock: the multi-convoy headline
+  moved POST-FIX to 35-159 (best-ckpt TAP 0.274 +/- 0.025)** - a held-out-screened instance whose
+  asymmetry the honest embeddings suffice for; the two-headline pre-fix/post-fix asymmetry retired.
+  gen11b: the head-term learning-rate fix works - identity capacity confirmed (E' 0.295 = pre-fix) but
+  transferable features recover less (B' 0.408) where the equilibrium is flat. Scaling re-measured with
+  the vectorised objective matrix: N3K3 solves in 23 s, so the wall-clock scaling claim was retired.
+- **What we learned:** representation-indexing consistency needs a contract test not convention; a bug
+  can flatter learning ("suite green + result improved" certifies nothing about representations); never
+  mix pre-/post-fix ladders; added head params need their own lr scale; instance asymmetry substitutes
+  for head discriminability.
+- **Thesis fit:** both headlines now on corrected code (Obj-5); the bug arc is a first-class methods
+  contribution; Obj-1 gains the FP-transient characterisation.
+
+## 20. The expansion programme: evidence completion + the SBO stack + ZST step 1  (2026-07-10/11 · `DIRECTION_EXPANSION.md` · ledgers gen14_evidence, gen15_generalist, d1/a3/d3/a2/a4/b4/d2, f3)
+- **Goal (prospective):** Kilian "disregard thesis writing"; expand computationally so all five
+  objectives have trained evidence, ZST is realised at scale, and SBO becomes a holistic stack.
+- **Headline results:** **C3 (gen14):** both headlines n=10 CIs (MC 35-159 0.256 [0.246,0.266]; SC
+  paired dD 0.175 [0.137,0.213] excl 0, 10/10 - the statistical weak point closed) + native 35-159
+  vanilla/forced-stack/fleet-cost rows. **A1 (gen15): the first TRAINED zero-shot transfer** - a
+  map-conditioned generalist (edge-vulnerability observation + transferable per-route cost/vuln head
+  features) routes held-out ODs at **1.59x their own equilibria** (beats loss_det 17/18). **The SBO
+  stack (Obj-4, now the most complete objective):** F3 regression (Spearman 0.894, argmin regret 0),
+  D1 acquisition loop (median 33 evals to the optimum vs random never), D2 hardening tier (equilibrium
+  L1-shift 0.29 = tier coupling), **D3 composite** (surrogate over the TRAINED policy Spearman 0.959;
+  policy-vs-oracle design-target corr 0.768 = designing against the deployed policy differs from the
+  equilibrium). A3 amortisation (honest: LP faster+exact at K=1, so the ZST case is deployment
+  structure + D3, not wall-clock). A4-core (matrix-free submodular greedy BR, verified, reaches K=5).
+  B4 (correlated interception: independence is conservative). B0 (obs-staleness fix). **A2 = the
+  direction finding: a single-source-graph generalist transfers across OD PAIRS but NOT across GRAPHS
+  (ties random on a different graph)** -> multi-graph training is the route to cross-city ZST.
+- **What we learned:** the generalist conditions on the map (not memorises); the GNN overfits to one
+  graph without variety; the SBO loop prices the deployed policy where no LP can.
+- **Thesis fit:** all five objectives now have trained/demonstrated evidence; ZST + the SBO stack are
+  the payoff act; the ZST-vs-LP framing (deployment/scale/D3, never wall-clock) is the sharpest defence.
+
+## 21. ZST at CITY scale + the boundary gates (gen16-19)  (2026-07-10/11 · ledgers gen16_multicity, gen17_lastiterate, gen18_learnedfollower, gen19_b1lite1)
+- **Goal (prospective):** realise cross-CITY zero-shot transfer (the A2-predicted multi-graph fix),
+  and spend the pre-committed boundary gates (last-iterate convergence; learned coordination; restore
+  the D).
+- **Headline results:** **gen16: the first CROSS-CITY zero-shot transfer** - one policy trained on
+  Kaliningrad + East London + Istanbul routes fleets in never-seen **Gdansk at 1.677 +/- 0.072x its
+  equilibria** (beats loss_det 17/18), and the A2-rescue row confirms the mechanism (1.90 vs random 2.43
+  on the graph where single-source tied random). Transfer ladder: same-graph OD 1.59 -> held-out city
+  1.68 -> single-source cross-graph ~random. **gen17/C4 FAILED** the hold-the-tail bar (annealed
+  smoothing delays but does not prevent the drift; four failed attempts across two instances/eras make
+  the equilibrium-transient finding INHERENT, best-checkpoint discipline final). **gen18/C2 FAILED**
+  (follow_w trained to 2.93 - the lr fix worked - yet followers still collapse to fixed routes: the
+  structural-stacking caveat is a real boundary, future work is exploration-side). **gen19/B1-lite-1
+  PASSED = the D restored + solved:** the first SACRED game with within-episode dynamism (pattern-of-life
+  interdictor); SACRED history-aware **0.050 ~ history_opt 0.049** (3/3), no-window causal control 0.148
+  = iid_eq, worst-case row 0.219 ~ equilibrium 0.206 (no fragility).
+- **What we learned:** graph variety is what makes cross-graph transfer work; the equilibrium transient
+  and structural stacking are inherent boundaries (measured, not artefacts); against a pattern-of-life
+  adversary a history-aware defender reaches the dynamic optimum, causally attributed to the window.
+- **Thesis fit:** ZST becomes a boundary-mapped result (OD -> city -> construction-family); gen17/18 are
+  measured boundaries (Obj-1 dynamics, Obj-3 coordination); gen19 returns the D of SDVRP in the
+  security-game register (Obj-1/2). Next: F2 (Obj-1 learned agent), the ZST hardening rows, C1.

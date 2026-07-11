@@ -80,6 +80,15 @@ multi-city actor scores **1.90 vs random 2.43** zero-shot, on a graph it never t
 Multi-graph training is what fixes cross-graph transfer, exactly as the A2 finding predicted: the
 GNN needed graph variety, and three cities suffice for a measurable, general effect.
 
+**Selection disclosure (CRITIQUE_EXPANSION §4.2; dual-report from the saved JSONs):** best
+checkpoint selected by the held-out-city mean (test-as-validation). Under select-on-TRAIN (the
+honest alternative, held-out reported at the train-selected checkpoint): **select-on-test 1.677 +/-
+0.072 vs select-on-train 1.733 +/- 0.149** (seed 1 moves 1.773 -> 1.941); final iterate 2.20. BOTH
+pass the bar (1.733 <= 2.0, below the ~1.99 random-init reference); the loss_det clause is a
+checkpoint-level property. The thesis dual-reports: lead with select-on-train 1.733 (deployable),
+keep select-on-test 1.677 as the optimistic bound, and cite the final-iterate drift. Select-on-train
+is the default for all subsequent generations.
+
 **What is established (the aim-level ZST promise, at the CITY level):** one policy trained on
 Kaliningrad + East London + Istanbul routes fleets in never-seen Gdansk at 1.68x its equilibria
 zero-shot, beating the deterministic-class optimum on 17/18 cells, and generalises to a second

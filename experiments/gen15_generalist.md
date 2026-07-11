@@ -102,3 +102,10 @@ recorded, not hidden.
 
 **LOCKED: the generalist is banked.** Best actor per seed saved under `seed{S}_ckpts/`; A2/A3/D3
 consume it via the post-A1 chain.
+
+**Selection disclosure (CRITIQUE_EXPANSION §4.2; dual-report, computed from the saved JSONs):** the
+best checkpoint is selected by the HELD-OUT mean ratio itself, which strictly makes the test set a
+validation set. Re-computed under the honest alternative (select on the TRAIN-set mean, report
+held-out there): **select-on-test 1.592 +/- 0.096 = select-on-train 1.592 +/- 0.096 (IDENTICAL: the
+same checkpoints are chosen)**; final iterate 1.99. gen15 is therefore unaffected by the subtlety;
+select-on-train is adopted as the default for all subsequent generations.

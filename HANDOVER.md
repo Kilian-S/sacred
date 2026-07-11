@@ -50,7 +50,8 @@
 > decomposition in `experiments/gen11_menuhead.md`; ZST step 0 = pre-registered scoping negative,
 > B2-S closed (`experiments/zst_step0.md`); oracle-scaling re-measured
 > (`scratch/oracle_scaling_output_v2.txt`, gen09 ledger update note). Chronicle:
-> `SACRED_PROGRESS.md` entries 17-19. NEXT: thesis writing on the two post-fix headlines; optional
+> `SACRED_PROGRESS.md` entries 16-21 (the chronicle now spans the audit, the expansion programme,
+> the ZST city-scale arc and the boundary gates). NEXT: thesis writing on the two post-fix headlines; optional
 > remaining experiments (ZST step 1, F2 demo) per the night report's decision list.
 
 > **★★★★★ AUDIT + NODE-ORDERING FIX + gen10 RE-RUNS (2026-07-09 late, fix SHA `e9acb56`). READ
