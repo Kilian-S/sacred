@@ -45,4 +45,26 @@ Anchors: eq 0.206, ALNS 0.699; the best-checkpoint reference band from gen14 n=1
 Secondaries: the full TAP trajectory (does drift onset move later as tau tightens?); alpha/H_lead
 tails; best-checkpoint TAP (should match the gen14 band regardless).
 
-## RESULT (to be appended)
+## RESULT (2026-07-11, 3 seeds, 2400 sorties): **FAIL on the hold-the-tail bar; the gate closes the question**
+
+| seed | best TAP @ sortie | final-third per-eval TAP mean (bar <= 0.27) | final TAP (bar <= 0.31) |
+|---|---|---|---|
+| 0 | 0.288 @ 800 | 0.422 | 0.660 |
+| 1 | 0.300 @ 400 | 0.522 | 0.833 |
+| 2 | 0.264 @ 400 | 0.592 | 0.659 |
+
+- **FAIL:** no seed holds the tail (final-third means 0.42-0.59 vs the 0.27 bar; final TAPs
+  0.66-0.83). The annealed smoothing DELAYED the drift in places (seed 0 held ~0.30-0.40 through
+  mid-training, longer than the constant-tau runs typically manage) but did not prevent it: as tau
+  tightened, the sharper attacker eventually re-created the pure-BR cycling pressure and the tail
+  left the band. Best-checkpoint values (0.264-0.300) sit in the gen14 band as pre-registered -
+  the headline number is unaffected.
+- **Consequence (per the hard gate): the question is CLOSED.** Four independent hold-the-tail
+  attempts have now failed across two instances and two eras (STAB-1 diffuse-tau, STAB-2 sharp-tau,
+  STAB-3 ported-discipline, gen17 annealed-tau post-fix on the favourable instance). The
+  equilibrium-as-reproducible-transient finding is therefore NOT an artefact of any single
+  configuration: it is inherent to last-iterate fictitious-play dynamics in this game class, and
+  **best-checkpoint selection with disclosed drift stands as the honest, final resolution** in
+  every headline. The thesis gains a stronger sentence, not a weaker one: the caveat is now backed
+  by a systematic, pre-registered attempt ladder, and true last-iterate convergence (optimistic /
+  extragradient / magnetic dynamics) is precisely-scoped future work.
