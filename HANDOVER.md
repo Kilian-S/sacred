@@ -1,5 +1,19 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-10)
 
+> **★★ EXPANSION PROGRAMME: ZST + C-CHAIN COMPLETE (2026-07-11 morning).** **gen16 PASSED = the
+> first cross-CITY zero-shot transfer** (train Kaliningrad+East London+Istanbul, held-out GDANSK
+> 1.677 +/- 0.072x its equilibria, beats loss_det 17/18; A2-RESCUE confirmed: 1.90 vs random 2.43
+> on the graph where single-source tied random; `experiments/gen16_multicity.md`). Transfer ladder:
+> in-graph OD 1.59 (gen15) -> held-out city 1.68 (gen16) -> single-source cross-graph ~random (A2).
+> **gen17/C4 FAILED the hold-the-tail bar** (annealed smoothing delays, does not prevent, the
+> drift; 4 failed attempts across 2 instances/eras -> the transient finding is INHERENT;
+> best-checkpoint discipline is FINAL; hard gate closed). **gen18/C2 FAILED** (follow_w trained to
+> 2.93 - the lr fix worked - yet followers still collapse to fixed routes, stack 0.08: the
+> structural-stacking caveat is a REAL boundary, cleanly measured post-fix; future work is
+> exploration-side). Maps: gdansk/east_london/istanbul in `data/maps/` (length-repaired;
+> `scripts/extract_city.py` fixed). Remaining optional list items: A4 large-K training cells,
+> B1-lite rungs, B1, B3, C1, B5. The banner below is the prior (keystone-arc) state.
+>
 > **★ EXPANSION PROGRAMME: KEYSTONE ARC COMPLETE (2026-07-10 evening; `DIRECTION_EXPANSION.md`).**
 > Kilian: "disregard thesis writing"; full launch authority. **DONE:** C3 (gen14: both headlines
 > n=10 CIs - MC 0.256 [0.246,0.266], SC paired dD 0.175 [0.137,0.213] excl 0; the stats weak point

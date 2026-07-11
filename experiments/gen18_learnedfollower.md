@@ -37,4 +37,29 @@ learned-follower reference: tail stack ~0.18, tail-avg 0.482.
 Secondaries: `follow_w` trajectory (the diagnostic; pre-fix it plateaued at 1.25 - with lr 3e-2 it
 can actually move); stack/follow rates over training; H_lead/H_foll.
 
-## RESULT (to be appended)
+## RESULT (2026-07-11, 3 seeds, 3200 sorties): **FAIL - the structural caveat stands, now post-fix on the favourable instance, and the diagnosis sharpens**
+
+| seed | tail-avg expl | tail stack (pre-fix ref 0.18) | follow rate | final TAP |
+|---|---|---|---|---|
+| 0 | 0.709 | 0.08 | 0.09 | 0.925 |
+| 1 | 0.732 | 0.08 | 0.07 | 0.926 |
+| 2 | 0.468 | 0.08 | 0.12 | 0.643 |
+
+- **FAIL on every clause** (PASS needed stack >= 0.8; PARTIAL needed stack materially above 0.18 -
+  it is BELOW, at 0.08). Seed 2's tail-average (0.468 < ALNS 0.699) reproduces the pre-fix partial
+  exploitability result, but coordination itself did not emerge.
+- **The informative part: all three original handicaps were removed and it STILL fails.**
+  `follow_w` trained hard (1.0 -> 2.93, vs the pre-fix plateau at 1.25 - the lr fix worked); the
+  embeddings are honest; the instance is the favourable one. Telemetry shows the sharper failure
+  mode: the followers commit DETERMINISTICALLY to fixed wrong routes (H_foll ~ 0 with follow ~0.1),
+  and the follower temperature controller fights the collapse late (alpha_foll 0.27 -> 0.92). A
+  +2.93 logit shift on the leader's taken route is not enough to overcome a policy that has already
+  collapsed elsewhere before the correlation signal became valuable.
+- **Consequence:** the "fleet stacking is structural, not learned" caveat is CONFIRMED as a real
+  boundary, not an artefact of the bug/instance/lr - measured cleanly post-fix. The honest thesis
+  statement strengthens: emergent leader-follower coordination under independent exploration
+  remains an open problem in this game class even when the critic demonstrably values coordination
+  (follow_w 2.93); candidate future work is EXPLORATION-side (e.g. correlated exploration noise /
+  follower policies initialised from the leader), not more signal-side levers (three signal-side
+  fix generations are now on record). The structural fleet-route headline and its disclosed caveat
+  stand as-is.
