@@ -53,6 +53,25 @@ Secondaries: per-train-city ratios (does the policy stay good everywhere it trai
 the single-source actor tied random): does multi-graph training rescue THAT transfer too?;
 `route_feat_w` trajectory; the generalisation gap (train vs held-out).
 
+## ZERO-SHOT K/N ROWS (2026-07-11, item 2.4, EVAL-ONLY): the hedge survives budget/fleet shift
+
+The frozen gen16 seed-0 best-checkpoint actor (trained at N=3, K=1) evaluated WITHOUT retraining on
+held-out Gdansk ODs at shifted adversary budget and fleet size (best-checkpoint-centred TAP, the
+gen16-fair estimator), scored against each (OD, K, N) cell's own oracle equilibrium:
+
+| cell | gen (TAP) | random-init | beats loss_det |
+|---|---|---|---|
+| N=3 K=1 (train regime, sanity) | 1.71x | 1.99x | 6/6 |
+| N=3 K=2 (zero-shot budget shift) | **1.29x** | 1.34x | 5/6 |
+| N=5 K=1 (zero-shot fleet shift) | **1.79x** | 2.10x | 6/6 |
+
+**The hedge survives both shifts:** the policy conditions on the MAP (edge vulnerability +
+per-route features), not on K or N, so at an UNSEEN adversary budget (K=2) it tightens to 1.29x
+(beats random, 5/6 beat loss_det) and at an UNSEEN fleet size (N=5) it holds at 1.79x (beats
+random 2.10, 6/6 beat loss_det). The sanity row (N3K1 1.71x) matches the gen16 headline, confirming
+the estimator. Zero-shot generalisation therefore extends beyond OD/city to the disruption axes
+(K, N) the policy never trained on - the map-conditioning is the invariant.
+
 ## SCALE-AXIS EXTENSION: whole-Kyiv zero-shot row (2026-07-11, EVAL-ONLY, Kilian provided the map)
 
 The frozen gen16 seed-0 best-checkpoint actor (selected by gen16's own held-out Gdansk, i.e.
