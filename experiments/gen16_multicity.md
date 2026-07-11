@@ -53,4 +53,37 @@ Secondaries: per-train-city ratios (does the policy stay good everywhere it trai
 the single-source actor tied random): does multi-graph training rescue THAT transfer too?;
 `route_feat_w` trajectory; the generalisation gap (train vs held-out).
 
-## RESULT (to be appended)
+## RESULT (2026-07-11 ~02:00, 3 seeds, ~4 h): **PASS - the first cross-CITY zero-shot transfer**
+
+| seed | best-ckpt held-out-CITY mean ratio @ sortie | per-Gdansk-OD | train ratio there |
+|---|---|---|---|
+| 0 | **1.599** @ 1000 | 1.56 / 1.89 / 1.36 / 1.60 / 1.58 / 1.60 | 1.54 |
+| 1 | 1.773 @ 500 | 1.28 / 1.99 / 2.42 / 1.38 / 1.59 / 1.98 | 1.69 |
+| 2 | 1.660 @ 500 | 1.39 / 2.30 / 1.49 / 1.32 / 2.03 / 1.42 | 1.75 |
+
+> **Held-out-CITY (Gdansk) best-checkpoint mean ratio 1.677 +/- 0.072 (3 seeds).** Gdansk was
+> never trained on; every OD is scored against its own oracle equilibrium.
+
+**Against the pre-registered bars: PASS on every clause.**
+- pooled mean 1.677 <= 2.0 ✓;
+- **< the random-init reference** (1.68 vs random ~1.99 on the same ODs) ✓ - footing note: the
+  primary is the TAP (checkpoint-ensemble) read, the project's standing deployable object; the
+  single final iterate wobbles to ~2.2 (FP cycling, as every SACRED result), disclosed;
+- **beats each OD's loss_det on 17/18 (OD, seed) cells** (seed 1's OD 193-278 misses by 0.01:
+  1.98x vs the OD's loss_det at 1.97x) - >= 4/6 required per seed, achieved 6/6, 5/6, 6/6 ✓.
+- STRONG (<= 1.7 AND 6/6): the pooled mean meets 1.7 (1.677) but the one 0.01-miss cell denies the
+  6/6 clause - narrowly missed, reported as measured.
+
+**THE A2-RESCUE ROW (the mechanism test): CONFIRMED.** On kaliningrad_original - the graph where
+the SINGLE-source actor TIED random (2.40 vs 2.41, `experiments/a2_graph_transfer.md`) - the
+multi-city actor scores **1.90 vs random 2.43** zero-shot, on a graph it never trained on either.
+Multi-graph training is what fixes cross-graph transfer, exactly as the A2 finding predicted: the
+GNN needed graph variety, and three cities suffice for a measurable, general effect.
+
+**What is established (the aim-level ZST promise, at the CITY level):** one policy trained on
+Kaliningrad + East London + Istanbul routes fleets in never-seen Gdansk at 1.68x its equilibria
+zero-shot, beating the deterministic-class optimum on 17/18 cells, and generalises to a second
+unseen graph (1.90 vs random 2.43). The transfer-difficulty ladder now reads: same-graph held-out
+OD 1.59 (gen15) -> held-out CITY 1.68 (this) -> single-source cross-graph ~random (A2, the honest
+boundary multi-city training removes). Caveats: 6 ODs per held-out graph, N=3 K=1, the FP-drift/
+best-checkpoint discipline unchanged.
