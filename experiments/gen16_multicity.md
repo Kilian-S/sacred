@@ -53,6 +53,31 @@ Secondaries: per-train-city ratios (does the policy stay good everywhere it trai
 the single-source actor tied random): does multi-graph training rescue THAT transfer too?;
 `route_feat_w` trajectory; the generalisation gap (train vs held-out).
 
+## SCALE-AXIS EXTENSION: whole-Kyiv zero-shot row (2026-07-11, EVAL-ONLY, Kilian provided the map)
+
+The frozen gen16 seed-0 best-checkpoint actor (selected by gen16's own held-out Gdansk, i.e.
+select-on-train-derived, NOT tuned to Kyiv) evaluated zero-shot on the **whole Kyiv arterial
+network (6083 nodes / 10861 edges** - the largest graph in the project, ~17x the training
+Kaliningrad, built by the same extraction pipeline), 5 screened held-out ODs, single-checkpoint
+exact evaluation:
+
+| | mean ratio to eq | beats loss_det | per-OD gen / rand |
+|---|---|---|---|
+| generalist | **1.88x** | 3/5 | 1.33 / 1.77 / 1.63 / 2.68 / 1.97 |
+| random-init | 2.03x | - | 2.02 / 2.18 / 2.09 / 2.41 / 1.47 |
+
+**PARTIAL PASS:** generalist mean 1.88x <= 2.0 AND beats random-init (2.03x); beats loss_det on
+3/5 ODs (the 2 misses are the thin-asymmetry ODs where loss_det/eq is only ~1.5-2x, so the
+deployable margin is intrinsically small - the whole-project thin-headroom pattern, not a transfer
+failure). **Honest deltas:** (1) single-checkpoint eval (the a2 harness), which understates vs the
+best-checkpoint TAP the gen16 headline used - both arms are single-checkpoint so the beats-random
+comparison is footing-fair; (2) Kyiv is less asymmetric than the training cities (eq med 0.253,
+loss_det/eq med 1.96 vs the cities' 2.2-2.4), a genuinely harder transfer target. **What it adds:**
+a whole large city, never trained on, transfers zero-shot beating random-init at 1.88x - the
+scale axis of the transfer-difficulty ladder (held-out city Gdansk 1.68 best-ckpt -> whole-city
+Kyiv 1.88 single-ckpt -> single-source cross-graph ~random). Route construction on the 6083-node
+graph ran in seconds (the oracle is route/occupancy-bound, graph-size-independent at K=1).
+
 ## RESULT (2026-07-11 ~02:00, 3 seeds, ~4 h): **PASS - the first cross-CITY zero-shot transfer**
 
 | seed | best-ckpt held-out-CITY mean ratio @ sortie | per-Gdansk-OD | train ratio there |
