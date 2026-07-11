@@ -69,10 +69,16 @@ def main():
         G.remove_nodes_from(list(nx.isolates(G)))
         print(f"  arterial-filtered: {G.number_of_nodes()} nodes / {G.number_of_edges()} edges")
 
-    # 3. project + consolidate at tolerance m + back to lat/lon (Kaliningrad: tol 30, dead_ends False)
-    Gp = ox.project_graph(G)
-    Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=args.tolerance, dead_ends=False)
-    Gll = ox.project_graph(Gc, to_latlong=True)
+    # 3. project + consolidate at tolerance m + back to lat/lon (Kaliningrad: tol 30, dead_ends False).
+    # tolerance <= 0 means NO consolidation (keep the raw arterial nodes): osmnx's
+    # consolidate_intersections rebuilds to an empty-edge graph at tolerance 0, and the graph is
+    # already lat/lon out of graph_from_bbox, so we just skip straight to length + export.
+    if args.tolerance > 0:
+        Gp = ox.project_graph(G)
+        Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=args.tolerance, dead_ends=False)
+        Gll = ox.project_graph(Gc, to_latlong=True)
+    else:
+        Gll = G
     # lengths AFTER re-projecting to lat/long: add_edge_lengths assumes degree coordinates, and
     # calling it on the projected (metre) graph produced ~1e7 m lengths (2026-07-10 bug, repaired
     # post hoc by scratch/repair_map_lengths.py for the first three cities).
