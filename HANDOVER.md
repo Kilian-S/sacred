@@ -12,7 +12,17 @@
 > structural-stacking caveat is a REAL boundary, cleanly measured post-fix; future work is
 > exploration-side). Maps: gdansk/east_london/istanbul in `data/maps/` (length-repaired;
 > `scripts/extract_city.py` fixed). Remaining optional list items: A4 large-K training cells,
-> B1-lite rungs, B1, B3, C1, B5. The banner below is the prior (keystone-arc) state.
+> B1-lite-2, B1(full, adds demand-S), B3, C1, F2, B5. The banner below is the prior state.
+>
+> **★★ B1-lite-1 (gen19) PASSED = the D restored + solved (2026-07-11).** First SACRED game with
+> WITHIN-EPISODE dynamism (pattern-of-life interdictor softmax-BRs to the defender's realised
+> routes over a 3-sortie window). Oracle screen: static_det 0.613 >> iid_eq 0.147 > history_opt
+> 0.049 (dynamism pays, exact optimum). SACRED history-aware **0.050 +/- 0.001 ~ history_opt
+> 0.049** (PRIMARY/STRONG 3/3); NO-WINDOW causal control 0.148 = iid_eq (gain IS the window
+> conditioning); worst-case row: policy marginal 0.219 ~ eq 0.206 (no fragility vs a non-adaptive
+> attacker). `experiments/gen19_b1lite1.md`. On S vs D: the headline has stochastic OUTCOMES
+> (Bernoulli interception + risk objective) + strategic uncertainty, and now within-episode D
+> (gen19); it does NOT have demand-side S (Poisson arrivals) - that is full B1, scoped.
 >
 > **★ EXPANSION PROGRAMME: KEYSTONE ARC COMPLETE (2026-07-10 evening; `DIRECTION_EXPANSION.md`).**
 > Kilian: "disregard thesis writing"; full launch authority. **DONE:** C3 (gen14: both headlines

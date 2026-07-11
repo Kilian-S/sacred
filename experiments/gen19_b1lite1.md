@@ -61,4 +61,43 @@ Screened numbers pin the instance/operating point BEFORE training (house rule); 
 iid_eq 0.147 with the window-feature weight strongly negative (rw[2] -> -4.35 = the policy avoids
 recently-frequent routes, the history-aware dodging the oracle predicts).
 
-## RESULT (to be appended)
+## RESULT (2026-07-11, 3 seeds + control, ~1.5 h): **PASS on every clause, STRONG, with a clean causal control and a robust worst-case row**
+
+| arm | per-sortie mission-failure vs the pattern-of-life adversary |
+|---|---|
+| static_det (deterministic) | 0.613 (oracle) |
+| iid_eq / **NO-WINDOW control** (history-blind) | 0.147 (oracle) / **0.148 (measured control)** |
+| **SACRED history-aware** | **0.050 +/- 0.001** (best-ckpt, 3 seeds) |
+| history_opt (dynamic optimum) | 0.049 (oracle) |
+
+> **SACRED reaches the dynamic optimum: 0.050 +/- 0.001 vs history_opt 0.049**, PRIMARY 3/3
+> (< iid_eq 0.147), STRONG 3/3 (within 0.03 of history_opt). Per-seed best 0.049-0.050.
+
+**The causal control is textbook:** the SAME policy with the window feature ZEROED (`--no-window`)
+lands at **0.148 = iid_eq exactly** - history-blind, it can only play the static-mixed strategy;
+given the window, it learns the history-optimal dynamic policy. The gain (0.148 -> 0.050) is
+CAUSALLY the window conditioning, not the architecture. The window-feature weight trains strongly
+negative (rw[2] ~ -4 to -5) = the policy learns to AVOID recently-frequent routes (anti-repeat),
+exactly the anticipatory dodging the oracle predicts.
+
+**WORST-CASE robustness row (addressing the expansion-critique flag that the softmax adversary is a
+QUANTAL-RESPONSE, not worst-case, opponent):** the history-aware policy's MARGINAL route
+distribution is a genuine spread mixed strategy (0.22/0.22/0.20/0.16/0.06/0.04), and its single-shot
+exploitability under a NON-ADAPTIVE oracle best-response is **0.219 ~ the single-shot equilibrium
+V_eq 0.206** (only +6%). So the policy is NOT fragile: it gives up essentially nothing against a
+worst-case non-adaptive attacker while exploiting the realistic pattern-of-life adversary to 0.050.
+The claim is therefore honest and bounded: *against a pattern-of-life (bounded-rationality,
+window-adaptive) interdictor, a history-aware defender reaches the dynamic optimum, and its routing
+remains a sound equilibrium mixed strategy against a non-adaptive worst-case interdictor.*
+
+**What is established (the D restored, and SACRED essentially solves it):** the first SACRED game
+with WITHIN-EPISODE dynamism. A history-aware RL policy, given its own recent pattern-of-life,
+learns a history-dependent routing that reaches the computable dynamic optimum (0.050 vs 0.049),
+beating the history-blind static-mixed strategy 2.9x, with the gain causally attributed to the
+window feature and no worst-case fragility. This reconnects the anticipation-vs-reactive tension
+(Ritzinger) inside a game where anticipation about one's OWN observable pattern provably pays, on a
+computable optimum. Caveats: latency-free, single instance (35-159), fleet-route stack (one route/
+sortie); the demand-side S (Poisson arrivals) is full B1, not this rung.
+
+**LADDER (gen19, per-sortie mission-failure):** static_det 0.613 > iid_eq/no-window 0.148 >
+**SACRED 0.050** ~ history_opt 0.049 (worst-case non-adaptive: SACRED marginal 0.219 ~ eq 0.206).
