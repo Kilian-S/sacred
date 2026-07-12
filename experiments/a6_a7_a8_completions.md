@@ -107,4 +107,21 @@ headroom over naive randomisation), N=3 K=1 mission. Plot both distributions
 (`assets/prevalence.png`), mark 35-159 and 62-97 on them, and report quartiles here. No bars:
 descriptive.
 
-### A8 RESULT (appended after the run)
+### A8 RESULT (2026-07-12): headroom is PREVALENT (69% of ODs at det/eq >= 2); the headlines sit in the top decile BY SCREEN DESIGN
+
+160 ODs (40 per city, standing screen), N=3 K=1 mission (artefacts
+`models/runs/a8_prevalence.json`, `assets/prevalence.png`):
+
+| quantity | 10% | 25% | median | 75% | 90% | headline 35-159 | headline 62-97 |
+|---|---|---|---|---|---|---|---|
+| loss_det / equilibrium | 1.74 | 1.92 | 2.35 | 2.64 | 2.85 | **3.39** | **3.23** |
+| uniform-stack / equilibrium | 1.55 | 1.80 | 2.05 | 2.28 | 2.43 | 2.14 | 3.00 |
+
+- **69% of high-connectivity ODs have det/eq >= 2** (material calibration headroom); **93% have
+  uniform-stack >= 1.5x eq** (naive randomisation clearly suboptimal almost everywhere).
+- The headline instances sit at the ~top decile of det/eq: exactly what their PRE-REGISTERED
+  screening criterion (ratio >= 3) selected for. The honest thesis sentence writes itself: *the
+  headline instances were screened to be favourable (top decile), from a population in which
+  material headroom is the norm (69% at >= 2x), so the phenomenon is prevalent and the screen
+  bought margin, not existence.* One figure answers the cherry-picking question for the whole
+  thesis.
