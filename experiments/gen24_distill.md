@@ -71,4 +71,63 @@ PYTHONPATH=. .venv/bin/python scripts/train_distill.py \
   --ckpt-dir models/runs/gen24_distill/seed${S}_ckpts
 ```
 
-## RESULT (appended after the run; nothing above this line changes after launch)
+## RESULT (2026-07-12, 3 seeds, ~9 min training total): the PRE-REGISTERED branch fires for adversarial training, but the symmetric validation row REVERSES it; the honest claim is sharper than either
+
+**Per-seed (distillation):**
+
+| seed | select-on-TRAIN (primary): held-out @ step (train ratio) | select-on-test (optimistic) | final |
+|---|---|---|---|
+| 0 | **2.020** @ 1500 (train 1.125) | 1.485 | 2.020 |
+| 1 | **2.027** @ 1400 (train 1.143) | 1.472 | 2.040 |
+| 2 | **2.157** @ 1200 (train 1.154) | 1.504 | 2.018 |
+
+> **PRIMARY (select-on-train): distill mean 2.068 +/- 0.063 > 1.88** => the pre-registered
+> "adversarial interaction contributes beyond label-fitting" branch fires (gen16 adversarial
+> select-on-train = 1.733). Mechanism, visible in every seed's curve: distillation fits its 18
+> training targets nearly perfectly (train ratio -> 1.12-1.15) while the held-out ratio DEGRADES
+> monotonically past ~step 100-300 (textbook supervised overfitting on 18 instances); with no
+> external signal, train-side selection picks the overfit endpoint. The adversarial generalist
+> never shows this shape (its train and held-out ratios track; select-on-train 1.733 ~ its
+> val-stopped 1.761 below): **adversarial self-play is self-stopping; supervised distillation is
+> not.**
+
+**The symmetric fairness row (added before looking at its outcome; `scratch/gen24_valstop.py`):
+early stopping on a PROPER validation set (9 fresh train-city instances, pool-seed 1), applied to
+BOTH arms, held-out Gdansk TAP at the val-selected checkpoint:**
+
+| arm | per-seed | held-out mean |
+|---|---|---|
+| distillation + val early stop | 1.527 / 1.526 / 1.613 (all select step 100) | **1.555** |
+| adversarial (gen16) + val early stop | 1.599 / 1.941 / 1.745 (all select step 500) | **1.761** |
+
+> Under the standard supervised recipe, **distillation transfers BETTER than the adversarial
+> generalist (1.555 vs 1.761)** on this pool. (Granularity caveat: checkpoints exist every 100
+> steps; the distill val-optimum sits at the first saved checkpoint, so the true optimum may be
+> earlier/better. Artefact: `models/runs/gen24_distill/valstop.json`.)
+
+**THE HONEST SYNTHESIS (binding for the storyline; supersedes any "adversarial training is
+necessary for transfer" wording):**
+1. **Where equilibrium labels exist (K=1, milliseconds per LP), supervised distillation with
+   validation early stopping is the strongest transfer recipe measured (1.56x)**: the ZST act
+   must not claim adversarial training is necessary for zero-shot transfer at label-available
+   instance sizes.
+2. **Adversarial self-play reaches comparable transfer WITHOUT labels and WITHOUT any validation
+   signal** (1.73 select-on-train, 1.76 val-stopped: the two agree because it does not overfit).
+   Its unique value is exactly the regime the thesis's scaling story names: past the enumeration
+   wall (K >= 4, A4's regime) labels do not exist and validation-by-oracle is unavailable, so
+   self-play is the only trainer on the board; at label-available sizes its advantage is
+   label-freeness + self-stopping, not final transfer quality.
+3. The regularisation contrast itself (distillation overfits 18 instances catastrophically;
+   adversarial FP pressure never lets the policy commit to any instance) is a citable finding
+   connecting to the fictitious-self-play literature (the survey's Heinrich & Silver thread).
+4. Ceiling disclosure: the stacked-minimax target EQUALS the full equilibrium on all 18 training
+   instances (ratio 1.000 everywhere), so the distillation target was not handicapped; fleet-route
+   restriction is also fair on the held-out pool (gen16's own policy class).
+
+**Consequence for the thesis's flagship act:** the ZST claim re-scopes to the two-regime form:
+*"zero-shot transfer of calibrated hedging is achievable by amortisation in general; below the
+enumeration wall, supervised distillation (labels available) is the better recipe; past it, only
+adversarial self-play can train, and it carries its transfer quality there label-free and
+self-stopped."* Combined with zst_map_robustness (the hedge is geometry-informed and
+threat-robust), the act's honest centre of gravity moves from "the map-conditioned adversarial
+generalist" to "label-free, self-stopping, threat-robust amortisation of security-game hedging".
