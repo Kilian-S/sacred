@@ -58,4 +58,14 @@ PYTHONPATH=. .venv/bin/python scripts/train_generalist.py \
   --ckpt-dir models/runs/gen25_dr/dr_seed0_ckpts
 ```
 
+## Launch record (2026-07-12): attempt 1 REAPED at ~sortie 4500; relaunched DETACHED
+
+The first launch ran as a harness-managed background task and was reaped with its children at
+~sortie 4500/12000 (~2.8 h in): the exact gen05-era failure mode SYSTEM.md documents ("long jobs:
+nohup + disown in their own session"). Truncated artefacts preserved as `*_attempt1.{log,_ckpts}`
+under `models/runs/gen25_dr/` (never compared with the fresh run; indicative only: at 4500 the
+vanilla seeds sat at TEST 2.56-2.59 and DR at 2.38, all drifting worse with training). Relaunched
+2026-07-12 from scratch, same pinned commands, via `nohup bash scratch/gen25_dr.sh & disown`
+(detached; three processes verified alive). Lesson re-learned and recorded.
+
 ## RESULT (appended after the runs; nothing above this line changes after launch)
