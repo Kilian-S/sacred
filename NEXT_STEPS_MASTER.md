@@ -11,6 +11,37 @@
 > Items tagged [eval-only] or [oracle-only] need no training and may run CONCURRENTLY with a
 > training item; the working agent decides what to parallelise. Tick items off here (append a
 > one-line result pointer per item) as they complete.
+>
+> **PROGRESS (2026-07-12, autonomous session under Kilian's standing launch authority):**
+> - [x] **A0** DONE: rows folded into gen13/gen14 ledgers.
+> - [x] **A1** DONE (`experiments/gen24_distill.md`): select-on-train primary fires for
+>   adversarial (distill overfits to 2.07 without an external signal), but the symmetric
+>   val-early-stop row REVERSES it (distill 1.555 < adversarial 1.761). ZST act re-scoped:
+>   adversarial training's value = label-free + self-stopping, NOT superior transfer.
+> - [x] **A2+A3** DONE (`experiments/zst_map_robustness.md`): shuffled-reality bar PASSED
+>   (1.80x vs random 2.19x); intel-error curve flat (full obs shuffle +0.03); constant-map
+>   diagnostic shows per-edge map-reading is NOT the mechanism (info-free map +0.09). Wording
+>   rule recorded ("geometry-informed, threat-robust hedge").
+> - [~] **A4** RUNNING (`experiments/gen25_dr_control.md`): vanilla seeds 1-2 + DR seed 0,
+>   12000 sorties each, in flight.
+> - [x] **A5** DONE (`experiments/d3_gdansk.md` appendix): the 0.109 was seed-0-specific
+>   (seeds 1/2: 0.443/0.433); cross-seed reliability 0.32-0.54; poster claim DOWNGRADED.
+> - [x] **A6** DONE (`experiments/a6_a7_a8_completions.md`): retrieval MATCHES the generalist
+>   (1.676 vs 1.677/1.733); transfer ladder fully bounded.
+> - [x] **A7** DONE (same ledger + `assets/transfer_gap_closure.png`): gap-closure ladder
+>   0.90 -> 0.54 -> 0.45 -> 0.20 (Istanbul) -> 0.04 (Kyiv); far-end wording rule recorded.
+> - [x] **A8** DONE (same ledger + `assets/prevalence.png`): 69% of 160 ODs have det/eq >= 2;
+>   headlines sit in the top decile BY SCREEN DESIGN.
+> - [~] **B1** RUNNING (`experiments/b1_integration_gap.md`): joint-vs-sequential design gap,
+>   two actors, in flight.
+> - [!] **B2** HARNESS READY (`experiments/b2_llm_benchmark.md`, dry-run validated): live runs
+>   BLOCKED on API keys + spend cap from Kilian.
+> - [x] **B3** DONE (`experiments/b3_b4_oracle.md`): three-regime risk-aversion law (mission =
+>   the unique objective determinism cannot escape by spreading).
+> - [x] **B4** DONE (same ledger): multi-OD correlation gap median 14.4% (bar met; Tier-3
+>   multi-OD game justified).
+> - Block C: NOT STARTED (paused per Kilian's instruction; the FAR's 30 July external deadline
+>   stands regardless).
 
 ---
 
