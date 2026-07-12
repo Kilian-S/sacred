@@ -32,7 +32,7 @@
 >   0.90 -> 0.54 -> 0.45 -> 0.20 (Istanbul) -> 0.04 (Kyiv); far-end wording rule recorded.
 > - [x] **A8** DONE (same ledger + `assets/prevalence.png`): 69% of 160 ODs have det/eq >= 2;
 >   headlines sit in the top decile BY SCREEN DESIGN.
-> - [~] **B1** RUNNING (`experiments/b1_integration_gap.md`): joint-vs-sequential design gap,
+> - [x] **B1** DONE (gap 0% actor0 / +19.3% actor1; joint = safe default; strict bar not met) (`experiments/b1_integration_gap.md`): joint-vs-sequential design gap,
 >   two actors, in flight.
 > - [!] **B2** HARNESS READY (`experiments/b2_llm_benchmark.md`, dry-run validated): live runs
 >   BLOCKED on API keys + spend cap from Kilian.
