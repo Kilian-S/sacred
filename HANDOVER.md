@@ -1,5 +1,14 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-11)
 
+> **★★★★ ACTIVE PLAN AS OF 2026-07-12 = `NEXT_STEPS_MASTER.md` (read it FIRST, then this banner
+> stack).** Agreed Kilian + the outgoing Fable instance on Fable's last day: an ordered checklist
+> merging the two 2026-07-12 critiques (`CRITIQUE_12-07-26.md`, `CRITIQUE_EXAMINER.md`), with
+> Kilian's ordering decision: computational claims-defence and differentiator experiments FIRST;
+> the FAR (hard external deadline 30 July), the interactive exhibit and the THESIS_STORYLINE
+> rewrite at the BACK. House rules unchanged (no training without Kilian's explicit go;
+> pre-registered ledger per item; numbers only in ledgers). The banners below are the project
+> state that plan operates on.
+>
 > **★★★ EXPANSION PROGRAMME COMPLETE (2026-07-11; NEXT_STEPS list all done bar the deferred A4).**
 > The 2026-07-11 experiment list is banked. **gen20/F2 PASSED = Obj-1's antagonist AGENT closed
 > POSITIVE:** a LEARNED interdictor co-evolves to **0.81x the oracle's strength** and its defender
