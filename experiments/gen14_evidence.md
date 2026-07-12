@@ -65,9 +65,18 @@ Per-seed: 0.238, 0.244, 0.248, 0.248, 0.251, 0.255, 0.260, 0.264, 0.267, 0.285.
 | shortest_path | 0.912 | naive stack |
 | ALNS forced-to-STACK (fairness) | 0.841 | ALNS is free to stack but SPREADS by choice |
 | ALNS (spread, = loss_det) | 0.699 | the deterministic-class optimum |
+| uniform-INDEPENDENT | 0.546 | oracle row (2026-07-12, `scratch/uniform_stack_probe.py`) |
 | vanilla (non-adversarial SAC, n=3) | best-ckpt **0.526** / final 0.628 +/- 0.006 | see note |
+| uniform-STACK (one uniformly-random route) | 0.442 | the strongest NAIVE-randomisation heuristic (oracle row, 2026-07-12) |
 | **SACRED (adversarial, n=10)** | **0.256 [0.246, 0.266]** | the headline |
 | equilibrium (loss_mixed) | 0.206 | computable bound |
+
+**Naive-randomisation rows (added 2026-07-12; CRITIQUE_EXAMINER.md §5.1):** the ladder now bounds
+SACRED against every uncalibrated strategy class: deterministic (ALNS 0.699), independent mixing
+(0.546), incidental learned mixing (vanilla 0.526), and stack-and-randomise-uniform (0.442).
+SACRED's margin over the best of them is 0.186 (42% relative): the claim is calibrated
+randomisation, not randomness. The 62-97 (retired pre-fix instance) analogues for the historical
+record: uniform-independent 0.848, uniform-stack 0.649.
 
 **Honest ordering note (instance-dependent, chapter-worthy):** on 35-159 the non-adversarial
 vanilla (0.526 best-ckpt) sits BELOW ALNS (0.699) - the reverse of 62-97 (vanilla 0.855 > ALNS).

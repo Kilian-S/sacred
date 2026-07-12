@@ -63,8 +63,21 @@ PYTHONPATH=. .venv/bin/python scripts/train_multiconvoy.py \
 |---|---|
 | shortest_path (naive stack) | 0.912 |
 | ALNS (= loss_det, the deterministic-class optimum) | 0.699 |
+| uniform-INDEPENDENT (each convoy uniform over the menu; oracle row) | 0.546 |
+| uniform-STACK (all convoys on ONE uniformly-random route; oracle row) | 0.442 |
 | **SACRED (adversarial, exact best-checkpoint)** | **0.274 +/- 0.025** |
 | equilibrium (loss_mixed) | 0.206 |
+
+**Naive-randomisation rows (added 2026-07-12, oracle-only; `scratch/uniform_stack_probe.py`,
+measured in CRITIQUE_EXAMINER.md §5.1):** under a best-response metric any deterministic plan is
+maximally exploited, so "beats ALNS" alone is structurally cheap. The rows above close that
+attack: SACRED's calibrated mixture also beats the strongest naive-randomisation heuristic
+(uniform-stack 0.442) by 0.17 absolute (~40% relative), i.e. the win is CALIBRATION, not mere
+randomness. **Menu-sufficiency (same probe):** the equilibrium value is stable from R=8
+(0.2061 at k_extra in {4, 8, 12, 16}; only the k_extra=0 / R=4 menu differs at 0.2411), so the
+k8 menu-relative equilibrium is not an artefact of menu truncation; meanwhile uniform-stack
+DEGRADES with menu size (0.25 at R=4 -> 0.53 at R=20): the value of calibration GROWS with the
+route set.
 
 **What is established:** on an instance SCREENED BY PRE-REGISTERED CRITERIA BEFORE ANY TRAINING,
 with honest (post-fix) representations, plain config, the adversarially-trained fleet's randomised
