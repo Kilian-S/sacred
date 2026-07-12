@@ -55,4 +55,31 @@ PYTHONPATH=. .venv/bin/python scratch/b1_integration_gap.py --threads 2 \
   --json-out models/runs/b1_integration_gap.json
 ```
 
-## RESULT (appended after the run; nothing above this line changes after launch)
+## RESULT (2026-07-12, 420 joint designs, 12 repeats/arm/actor): the strict bar is NOT met; the measured statement is "joint is the safe default, sequential lock-in is actor-contingent (0-19%)"
+
+(artefacts `models/runs/b1_integration_gap.json`, `.log`)
+
+| actor | sequential median | joint median | integration gap | true joint opt | placement rank corr h0 vs best-hardened |
+|---|---|---|---|---|---|
+| gen16 seed 0 | 0.2242 | 0.2242 | **+0.0%** | 0.2242 | 0.872 |
+| gen16 seed 1 | 0.2811 | 0.2356 | **+19.3%** | 0.2356 | 0.859 |
+
+**Against the pre-registered bar (>= 5% under BOTH actors): NOT MET** (0% under actor 0). Reported
+as measured, per-actor, per the A5 rule. The honest findings:
+1. **The joint loop attained the TRUE optimum under both actors at budget 60; the classical
+   tier-by-tier decomposition matched it under one actor and left 19.3% on the table under the
+   other.** So joint optimisation never did worse and is the SAFE DEFAULT; the cost of the
+   classical decomposition is real but actor-contingent, echoing A5's finding that the
+   operational design landscape is policy-instance-specific.
+2. **The mechanism row bounds the tier coupling:** placements' VALUE rankings are largely
+   hardening-stable (Spearman ~0.86 under both actors), so strong lock-in is not the norm on
+   this design family; D2's strategy-level coupling (equilibrium mass shift L1 = 0.29) coexists
+   with value-level ranking stability. Where the sequential arm lost (actor 1), it lost through
+   search dynamics on a rougher landscape, not through dramatic re-ranking.
+3. **Obj-4 wording (binding):** "holistic, simultaneous" is supported in the weaker, honest form:
+   *a single surrogate-guided loop over the joint strategic-tactical-operational space finds the
+   optimum at the same budget where the classical decomposition is only sometimes adequate (and
+   19% worse when not); the joint loop is the safe default because which regime you are in
+   depends on the deployed policy instance and cannot be known in advance.* Scope caveats: a
+   4-option doctrine hardening menu (a richer allocation space could widen the gap); 420 designs;
+   never-trained city.
