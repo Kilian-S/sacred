@@ -179,6 +179,10 @@ def main():
     p.add_argument("--vanilla", action="store_true",
                    help="Obj-5 transfer control: travel objective, NO adversary (reward = -normalised "
                         "route cost); still map-conditioned, still evaluated zero-shot under the oracle BR")
+    p.add_argument("--dr", action="store_true",
+                   help="A4 domain-randomisation control: mission objective, interdictor sampled "
+                        "UNIFORMLY at random each sortie (threat exposure WITHOUT best-response "
+                        "pressure); separates 'any threat exposure' from 'best-response pressure'")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     torch.manual_seed(args.seed)
@@ -242,10 +246,14 @@ def main():
             fleet_cost = float(sum(occ[r] * env.game.travel_cost[r] for r in range(env.game.n_routes)))
             reward = -args.interception_loss * (fleet_cost / (env.config.N * mean_cost))
         else:
-            # per-instance smooth FP: softmax BR to THIS instance's trailing play, sampled fresh
-            probs = smooth_fp_probs(inst.occ_seq, len(env.occupancies), env.obj_matrix,
-                                    args.fp_tau, args.smooth_window)
-            j = sample_smooth_iset(probs, rng)
+            if args.dr:
+                # A4 DR control: uniform-random interdiction set (no best-response pressure)
+                j = int(rng.integers(env.obj_matrix.shape[1]))
+            else:
+                # per-instance smooth FP: softmax BR to THIS instance's trailing play, sampled fresh
+                probs = smooth_fp_probs(inst.occ_seq, len(env.occupancies), env.obj_matrix,
+                                        args.fp_tau, args.smooth_window)
+                j = sample_smooth_iset(probs, rng)
             env.reset()
             env.commit(j)
             steps, occ, _ = route_one(prot, env, fleet_route=True)
