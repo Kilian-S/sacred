@@ -23,6 +23,28 @@ policy NEVER trained on, priced entirely by zero-shot transfer, in a loop no LP 
   RL + surrogate loop can: the LP would re-solve the equilibrium and hand you a design that is
   near-irrelevant to how the zero-shot policy actually performs there.
 
+## A5 RELIABILITY CHECK (2026-07-12, EVAL-ONLY; `scratch/d3_gdansk_reliability.py`): the 0.109 is NOT seed-stable; the poster claim is DOWNGRADED per the pre-committed gate
+
+The design-target evaluator is exact, so the reliability axis is CROSS-SEED: the same 165-design
+sweep re-priced under all three independently-trained gen16 actors (each at its selected best
+checkpoint). Artefact: `models/runs/d3_gdansk_reliability.json`.
+
+| quantity | value |
+|---|---|
+| cross-seed design-ranking Spearman (0-1 / 0-2 / 1-2) | 0.491 / 0.321 / 0.543 (mean **0.451**, gate >= 0.5: MISSED) |
+| policy-vs-oracle target Spearman per seed | **0.109 (seed 0) / 0.443 (seed 1) / 0.433 (seed 2)** |
+
+**Consequences (binding for poster + storyline):** (1) the headline 0.109 was substantially a
+SEED-0 artefact; the honest cross-seed statement is "policy-vs-oracle design-target correlation
+0.11-0.44 on the unseen city, vs 0.768 in-distribution": still a real gap, no longer a dramatic
+near-zero. (2) Cross-seed reliability 0.32-0.54 means the operational design landscape is
+POLICY-INSTANCE-specific: two equally-good adversarially-trained policies induce materially
+different design rankings on an unseen theatre. Stated carefully this remains an argument FOR the
+composite loop (you must price THE policy you will deploy, not a class-average and not the
+equilibrium abstraction), but the exhibit's specific numbers must be presented per-seed with the
+reliability disclosed, and the "almost uncorrelated" wording is retired. (3) The in-distribution
+D3 result (0.768, Spearman 0.959 surrogate) is unaffected.
+
 **What it establishes (the culminating composite, on unseen ground):** the three pillars compose on
 a city the policy never trained on - ZST makes each design's operational evaluation one forward
 pass, SBO makes the search efficient, and the interdiction game supplies the objective; strategic
