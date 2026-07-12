@@ -68,7 +68,32 @@ whole-Kyiv row, plus the two headline instances (gen14 numbers). Produce
 `assets/transfer_gap_closure.png` (gap closure vs transfer distance) and per-act tables here. No
 bars: this is a metric restatement, reported as measured.
 
-### A7 RESULT (appended after the run)
+### A7 RESULT (2026-07-12): the gap-closure ladder decays 0.90 -> 0.04 across transfer distance; Istanbul/Kyiv close little to no gap
+
+Exact per-OD recomputation from the saved JSONs at the select-on-train read
+(artefacts `models/runs/a7_gap_closure.json`, `a7_aggregate_closure.json`; figure
+`assets/transfer_gap_closure.png`):
+
+| act | per-cell mean | median | cells <= 0 | **headroom-weighted aggregate** |
+|---|---|---|---|---|
+| trained MC 35-159 (gen14, n=10) | 0.899 | - | 0/1 | **0.899** |
+| trained SC 33-71 (gen14, n=10) | 0.828 | - | 0/1 | **0.828** |
+| held-out ODs, same graph (gen15, 18 cells) | 0.541 | 0.625 | 1 | **0.539** |
+| held-out CITY Gdansk (gen16, 18 cells) | 0.427 | 0.380 | 1 | **0.450** |
+| rotation Istanbul (gen22, 18 cells) | -0.140 | -0.089 | **11** | **0.199** |
+| whole-Kyiv scale row (5 cells) | -0.494 | -1.029 | 3 | **0.036** |
+
+Reading rules: the unweighted per-cell mean explodes on thin-headroom cells (denominator det-eq
+tiny), so the fair single number per act is the HEADROOM-WEIGHTED aggregate
+(sum(det - policy)/sum(det - eq)); both are reported. **What changes (binding for the storyline):**
+(1) the transfer-difficulty ladder restated in calibration content: **0.90 (trained) -> 0.83 ->
+0.54 (held-out OD) -> 0.45 (held-out city) -> 0.20 (Istanbul) -> 0.04 (Kyiv)**: an honest, clean,
+figure-worthy decay. (2) gen22's "PASS" and the Kyiv "partial pass" must be worded as
+"beats random-init; closes little (0.20) to essentially none (0.04) of the
+deterministic-to-equilibrium gap": on the majority of Istanbul cells (11/18) the deployed policy
+does not beat the deterministic optimum. (3) The near-end claims (gen15/gen16, ~0.5 closure)
+survive restatement comfortably; the far-end claims are randomisation-level protection, not
+calibrated hedging. No banked number changes; the METRIC changes what may be said.
 
 ## A8: the prevalence figure (`scratch/a8_prevalence.py`)
 
