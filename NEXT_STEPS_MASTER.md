@@ -22,8 +22,10 @@
 >   (1.80x vs random 2.19x); intel-error curve flat (full obs shuffle +0.03); constant-map
 >   diagnostic shows per-edge map-reading is NOT the mechanism (info-free map +0.09). Wording
 >   rule recorded ("geometry-informed, threat-robust hedge").
-> - [~] **A4** RUNNING (`experiments/gen25_dr_control.md`): vanilla seeds 1-2 + DR seed 0,
->   12000 sorties each, in flight.
+> - [x] **A4** DONE (`experiments/gen25_dr_control.md`): vanilla n=3 = 2.354 +/- 0.014 (tight;
+>   worse than random-init); DR control 2.056 ~ random-init => BEST-RESPONSE pressure is the
+>   causal ingredient (pre-registered branch fired). Note: first launch was reaped (gen05 lesson);
+>   relaunched detached. **BLOCK A COMPLETE.**
 > - [x] **A5** DONE (`experiments/d3_gdansk.md` appendix): the 0.109 was seed-0-specific
 >   (seeds 1/2: 0.443/0.433); cross-seed reliability 0.32-0.54; poster claim DOWNGRADED.
 > - [x] **A6** DONE (`experiments/a6_a7_a8_completions.md`): retrieval MATCHES the generalist

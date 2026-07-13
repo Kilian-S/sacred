@@ -9,6 +9,20 @@
 > pre-registered ledger per item; numbers only in ledgers). The banners below are the project
 > state that plan operates on.
 >
+> **UPDATE 2026-07-13 (the autonomous claims-defence run, Kilian's launch authority): BLOCKS A
+> AND B ARE COMPLETE** (sole exception: B2's live LLM runs await API keys; the harness is built
+> and dry-run-validated). The progress ticks + one-line results live at the top of
+> `NEXT_STEPS_MASTER.md`; the four claim-changing findings (distillation/retrieval match the
+> generalist where labels exist; per-edge map-reading is not the transfer mechanism; the
+> gap-closure ladder decays 0.90 -> 0.04; d3-Gdansk's 0.109 was seed-specific) carry BINDING
+> wording rules recorded in their ledgers (`gen24_distill`, `zst_map_robustness`,
+> `a6_a7_a8_completions`, `d3_gdansk`) and in memory (`zst-act-rescope-2026-07-12`). The
+> completed positives: prevalence figure, risk-aversion three-regime law, multi-OD gap 14.4%,
+> integration gap (joint = safe default), vanilla n=3 + DR causal control (best-response
+> pressure is the causal transfer ingredient, `gen25_dr_control`). Block C (chronicle, FAR,
+> exhibit, storyline rewrite) is NOT started, paused on Kilian's instruction; the FAR's 30 July
+> deadline binds regardless.
+>
 > **★★★ EXPANSION PROGRAMME COMPLETE (2026-07-11; NEXT_STEPS list all done bar the deferred A4).**
 > The 2026-07-11 experiment list is banked. **gen20/F2 PASSED = Obj-1's antagonist AGENT closed
 > POSITIVE:** a LEARNED interdictor co-evolves to **0.81x the oracle's strength** and its defender

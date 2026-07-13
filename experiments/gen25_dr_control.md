@@ -68,4 +68,35 @@ vanilla seeds sat at TEST 2.56-2.59 and DR at 2.38, all drifting worse with trai
 2026-07-12 from scratch, same pinned commands, via `nohup bash scratch/gen25_dr.sh & disown`
 (detached; three processes verified alive). Lesson re-learned and recorded.
 
-## RESULT (appended after the runs; nothing above this line changes after launch)
+## RESULT (2026-07-13, detached relaunch, 12000 sorties/arm): BOTH pre-registered readings land clean
+
+(select-on-train = the standing deployable selection; held-out Gdansk mean TAP ratio; artefacts
+`models/runs/gen25_dr/*.json`)
+
+| arm | select-on-train | select-on-test (optimistic bound) | final iterate |
+|---|---|---|---|
+| vanilla seed 1 | 2.351 @ 500 | 2.351 | 2.573 |
+| vanilla seed 2 | 2.372 @ 500 | 2.372 | 2.549 |
+| **vanilla n=3 (with the banked gen21 seed 0 = 2.338)** | **2.354 +/- 0.014** | - | - |
+| **DR seed 0** (threat exposure, no best-response pressure) | **2.056 @ 500** | 1.776 | 2.298 |
+
+Anchors: adversarial gen16 1.733 +/- 0.149 (select-on-train); random-init ~1.99; distillation +
+val stop 1.555; retrieval 1.676.
+
+**Reading 1 (gen21 to n=3): the causal control is now tight.** Cost-trained generalists transfer
+at 2.354 +/- 0.014 (n=3, spread 0.014: essentially deterministic), WORSE than an untrained
+network (~1.99). "Cost training actively destroys transfer" is no longer an n=1 sentence.
+
+**Reading 2 (DR, the pre-committed branch that fired): BEST-RESPONSE pressure, not mere threat
+exposure, is causal for the adversarial arm's transfer.** DR (mission objective, uniform-random
+interdictor: exposure without pressure) lands at 2.056 select-on-train, above the 1.88 band edge
+and at random-init level, vs adversarial 1.733. Disclosed caveats: n=1; DR's select-on-test
+optimistic bound (1.776) approaches the adversarial number, so the sentence is about the
+DEPLOYABLE (train-selected) object; checkpoint granularity 500.
+
+**The complete transfer ladder after Block A (held-out Gdansk, select-on-train where applicable):**
+distill+val 1.555 < retrieval 1.676 < adversarial 1.733 < DR 2.056 ~ uniform-stack 1.989 ~
+random-init 1.99 < vanilla 2.354. **The coherent story:** among LABEL-FREE trainers, best-response
+adversarial self-play is the only one that beats doing nothing at all; the methods that match or
+beat it (distillation, retrieval) both consume train-side equilibrium labels, which stop existing
+past the enumeration wall. That is the honest, defensible centre of the ZST act.

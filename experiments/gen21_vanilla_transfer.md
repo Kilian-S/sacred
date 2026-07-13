@@ -37,6 +37,12 @@ Anchor: the adversarial gen16 held-out-Gdansk best-checkpoint mean **1.677** (se
 > **Vanilla (travel-objective) generalist held-out-Gdansk best-checkpoint ratio 2.338 (final
 > 2.575).** vs the ADVERSARIAL gen16 generalist 1.677/1.733, AND vs random-init ~1.99.
 
+> **UPGRADED TO n=3 (2026-07-13, gen25):** seeds 1 and 2 (config verbatim, select-on-train)
+> land at 2.351 / 2.372, giving **vanilla-generalist transfer 2.354 +/- 0.014 (n=3)**: the causal
+> control is tight, no longer n=1. The DR companion control (threat exposure without best-response
+> pressure) lands at 2.056 ~ random-init, so the causal ingredient is BEST-RESPONSE pressure
+> specifically. Full record: `experiments/gen25_dr_control.md`.
+
 **What is established (Obj-5 at the transfer level, measured not inferred):** the vanilla
 generalist - same multi-city training, same map-conditioning, only the objective changed to travel
 cost - transfers WORSE than the adversarial generalist (2.34 vs 1.68) and, strikingly, **worse than
