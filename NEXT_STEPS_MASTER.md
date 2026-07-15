@@ -304,11 +304,13 @@ BEFORE drafting any abstract, because A1/A2 decide which ZST story any paper can
 
 ---
 
-## Repo state at handover (2026-07-12)
+## Repo state at handover (2026-07-12; refreshed 2026-07-15)
 
-Branch `gen08-interdiction`, suite 161 green, nothing running. Untracked at the time of writing
-(commit them so future agents see them): `CRITIQUE_EXAMINER.md`, `CRITIQUE_12-07-26.md`,
-`scratch/uniform_stack_probe.py`, `scratch/threatmap_geometry_probe.py`, and this file.
+Branch `gen08-interdiction`, suite green, nothing running. **As of 2026-07-15 the working tree is
+CLEAN at `5cd1e02`** (the previously-untracked `CRITIQUE_EXAMINER.md`, `CRITIQUE_12-07-26.md`,
+`scratch/uniform_stack_probe.py`, `scratch/threatmap_geometry_probe.py`, and this file were all
+committed during the 2026-07-13 run; there is nothing outstanding to commit). Blocks A + B are
+complete bar B2-live (API keys); Block C is not started, paused on Kilian's instruction.
 Persistent agent memory lives at
 `~/.claude/projects/-Users-kilian-Kilian-ICL-Thesis-code-sacred/memory/` (read `MEMORY.md` at
 session start; keep it and the chronicle current as items complete).

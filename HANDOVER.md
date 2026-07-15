@@ -1,5 +1,23 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-11)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-15)
 
+> **★★★★★ HANDOVER 2026-07-15 (fresh agent: START HERE).** State is STABLE and fully committed
+> (working tree clean at `5cd1e02`; test suite green; branch `gen08-interdiction`). NOTHING is
+> mid-flight and nothing should be launched. **Reading order:** this banner stack top-down, then
+> `NEXT_STEPS_MASTER.md` (the active checklist), then its §0 onboarding order
+> (`CRITIQUE_12-07-26.md` -> `CRITIQUE_EXAMINER.md` -> `NEXT_STEPS_11-07-26.md` -> the `experiments/`
+> ledgers). **Where things stand:** Blocks A + B of `NEXT_STEPS_MASTER.md` (the entire 2026-07-12/13
+> claims-defence + differentiator programme) are COMPLETE; the SOLE open computational item is
+> **B2's live-LLM benchmark, blocked on API keys + Kilian's spend decision** (harness built and
+> dry-run-validated, `experiments/b2_llm_benchmark.md`). **Block C (chronicle/doc-hygiene, the FAR,
+> the interactive exhibit, and the THESIS_STORYLINE four-act rewrite = NEXT_STEPS item 7) is NOT
+> started, deliberately paused on Kilian's standing instruction that writing stays off the table.**
+> The one EXTERNAL deadline that binds regardless is the **Final Activities Report, hard-due 30 July**
+> (content freeze 3 Aug). **So a new agent's correct default is:** do not launch training; await
+> Kilian's explicit go before opening Block C (FAR / storyline) or unblocking B2; do not re-open the
+> settled gates (gen17/C4, gen18/C2, gen23/C1) or the pre-deferred A4 K=5 cell. Everything a claim
+> rests on lives in an `experiments/` ledger; cite numbers only from there. The dated banners below
+> are the full state this rests on, newest first.
+>
 > **★★★★ ACTIVE PLAN AS OF 2026-07-12 = `NEXT_STEPS_MASTER.md` (read it FIRST, then this banner
 > stack).** Agreed Kilian + the outgoing Fable instance on Fable's last day: an ordered checklist
 > merging the two 2026-07-12 critiques (`CRITIQUE_12-07-26.md`, `CRITIQUE_EXAMINER.md`), with
