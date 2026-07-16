@@ -41,7 +41,7 @@ def prep_instance(it, tau, w):
     it.L = stacked_L(it.env.game, it.env.config.N)
     it.refs = oracle_refs(it.L, tau, w)
     it.menu_idx = [torch.tensor(r, dtype=torch.long) for r in it.env.menu_route_node_idx()]
-    it.R = it.env.game.n_routes
+    it.nR = it.env.game.n_routes
     return it
 
 
@@ -66,9 +66,9 @@ def eval_instance(prot, it, tau, w, n=1000, no_window=False):
     window = deque(maxlen=w)
     tot = 0.0
     for _ in range(n):
-        counts = np.bincount(list(window), minlength=it.R).astype(float)
+        counts = np.bincount(list(window), minlength=it.nR).astype(float)
         obs = build_obs(it, counts, w, no_window=no_window)
-        r = pick_route(prot, obs, it.R)
+        r = pick_route(prot, obs, it.nR)
         tot += float(it.L[r] @ softmax_br(counts, it.L, tau))
         window.append(r)
     loss = tot / n
@@ -128,9 +128,9 @@ def main():
         window = deque(maxlen=w)
         steps = []
         for _ in range(args.episode_len):
-            counts = np.bincount(list(window), minlength=it.R).astype(float)
+            counts = np.bincount(list(window), minlength=it.nR).astype(float)
             obs = build_obs(it, counts, w, no_window=args.no_window)
-            r = pick_route(prot, obs, it.R)
+            r = pick_route(prot, obs, it.nR)
             reward = -args.interception_loss * float(it.L[r] @ softmax_br(counts, it.L, tau))
             steps.append((obs, r, reward)); window.append(r); k += 1
         for i, (obs, r, reward) in enumerate(steps):
@@ -138,10 +138,10 @@ def main():
             nstate = {}
             if not last:
                 nstate = dict(steps[i + 1][0]); nstate["active_truck"] = 0
-                nstate["allowed_destinations"] = {"protagonist": {0: list(range(it.R))}}
+                nstate["allowed_destinations"] = {"protagonist": {0: list(range(it.nR))}}
             prot.replay_buffer.push(SMDPTransition(
                 agent="protagonist", state=obs, action={0: r}, reward=reward, next_state=nstate,
-                done=last, elapsed_ticks=1, action_mask={"protagonist": {0: list(range(it.R))}},
+                done=last, elapsed_ticks=1, action_mask={"protagonist": {0: list(range(it.nR))}},
                 info={}))
         for _ in range(args.episode_len):
             prot.update(args.batch_size)

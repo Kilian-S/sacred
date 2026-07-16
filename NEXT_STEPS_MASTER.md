@@ -84,6 +84,20 @@
 > and under joint coordination, both the heuristic and the exact solvers fail, and adversarial
 > self-play is the only method that delivers, demonstrated against computable yardsticks.*
 
+> **PROGRESS (2026-07-16, autonomous session, Kilian's full launch authority):**
+> - [x] **R0a/R0b/R0c** DONE (commit `0251dda`): rows + fleet-cost columns folded into all seven
+>   ledgers with the binding wording rule; structure-discovery row (policy disjoint-core mass
+>   0.62 vs eq 0.703 vs uniform 0.333; zero-shot tracks per-instance eq); boundary screen
+>   (35-159 saturates at K>=4; shortlist -> 71-33 m=6; population 5% of ODs >= 1.5x at K=1).
+> - [x] **gen26 step 1** PASSED + STRONG (`c9c474a`, ledger): K=3 n=3 = 0.664 +/- 0.018 < both
+>   heuristic variants (0.738 uniform / 0.737 inv-vuln); eq 0.604.
+> - [x] **gen26 step 2** DONE (`77fe57f`): greedy-BR mode, suite 167, fidelity <= 1.8% at K<=3.
+> - [x] **gen26 step 3** K=5 headline cell: PRIMARY PASS (0.667 +/- 0.016, 3/3 < uniform-disjoint
+>   0.705; STRONG < 0.638 not met, reported); K=6 boundary point + ledger fold in flight.
+> - [~] **gen27** pre-registered (`2f4ffd5`), smoke gate PASSED (rw[2] -> -3.4 anti-repeat
+>   signature; held-out ratio 1.10 and falling at 240 sorties); 3-seed batch + no-window control
+>   RUNNING.
+
 ### R0. Repair + aim (oracle/eval-only, FREE, no go needed; ~1 day; do first, in this order)
 
 - [ ] **R0a. Fold the disjoint rows into every ladder** [eval/oracle, ~half day].
