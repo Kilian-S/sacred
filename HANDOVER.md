@@ -1,5 +1,38 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-15)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-16)
 
+> **★★★★★ UPDATE 2026-07-16: B2 IS UNBLOCKED — a local LLM workbench exists (Prof. Angeloudis's
+> box), no API keys or spend needed.** The one open computational item (B2, the agentic-LLM
+> exploitability benchmark) was blocked on commercial API keys; it no longer is. Prof. Angeloudis
+> provided an SSH-reachable GPU server hosting an OpenAI-compatible LLM stack. Full connection +
+> inventory details below; the essentials:
+> - **Host `cv-iits-w05`**, reached over Tailscale. **SSH: `ssh killian@100.88.32.88`** (NOTE: the
+>   username is `killian`, DOUBLE-L, not `kilian`; password `tsl2026`). Instructions file:
+>   `../../Connecting to local LLM workbench.txt`.
+> - **The gateway on port 8080 is NOT directly reachable from Kilian's Mac** (the box is a *shared*
+>   Tailscale node from the prof's tailnet; its own IP is `100.73.116.67`, the Mac sees it as
+>   `100.88.32.88`, and the tailnet ACL allows SSH but not 8080). **Workaround (verified working):**
+>   an SSH tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88`, then hit
+>   `http://localhost:18080/v1`. (Alternative: ask the prof to open 8080 in the ACL / `tailscale serve`.)
+> - **OpenAI-compatible gateway**, API key `iits-local-key` (`Authorization: Bearer iits-local-key`).
+>   Every request+response is auto-logged to `/home/llm/vllm-server/audit/YYYY-MM-DD.jsonl` (the B2
+>   transcript record, for free; note the log is shared/readable by the `llm` group = pan, leo).
+> - **Live model: `llama-3.3-70b`** (AWQ-INT4, 32K ctx) — tested end-to-end, generates. Three more
+>   defined-but-disabled: `qwen3-27b` (27B, 64K ctx; fits alongside the 70B per the VRAM budget,
+>   one `./start.sh start qwen3-27b`), `qwen3-coder-30b`, `qwen3-coder-next` (80B MoE). 2x RTX A6000
+>   (96 GB VRAM), 251 GB RAM, Ubuntu 24.04. Config is `models.json` (single source of truth);
+>   operate via `/home/llm/vllm-server/start.sh {start|stop|status}`. Full README at
+>   `/home/llm/README.md`. Kilian's account is in groups `sudo, docker, llm` (can start/stop/edit).
+> - **Why it matters:** this is arguably BETTER than the pre-registered commercial-API design: pinned
+>   open-weight models (reproducible), no tools available (exactly the informative no-tools register
+>   the B2 pre-registration argues for), free, and on the supervisor's own hardware. **B2 is ready to
+>   run** the moment Kilian says go: point `scratch/b2_llm_benchmark.py` at the tunnelled endpoint
+>   (`--base http://localhost:18080/v1 --key iits-local-key --model llama-3.3-70b`), then enable and
+>   run Qwen3-27B as the second model. NOTE: the harness currently supports `--provider anthropic|
+>   openai|dry`; add a generic OpenAI-compatible base-url path (trivial: the OpenAI branch already
+>   posts to `/v1/chat/completions`, just parameterise the URL) before the live run.
+> - **Operational rule respected:** no benchmark was fired at the shared GPU box without Kilian's go;
+>   only read-only survey + three tiny test generations (~60 tokens total) were run.
+>
 > **★★★★★ HANDOVER 2026-07-15 (fresh agent: START HERE).** State is STABLE and fully committed
 > (working tree clean at `5cd1e02`; test suite green; branch `gen08-interdiction`). NOTHING is
 > mid-flight and nothing should be launched. **Reading order:** this banner stack top-down, then

@@ -36,8 +36,14 @@
 >   headlines sit in the top decile BY SCREEN DESIGN.
 > - [x] **B1** DONE (gap 0% actor0 / +19.3% actor1; joint = safe default; strict bar not met) (`experiments/b1_integration_gap.md`): joint-vs-sequential design gap,
 >   two actors, in flight.
-> - [!] **B2** HARNESS READY (`experiments/b2_llm_benchmark.md`, dry-run validated): live runs
->   BLOCKED on API keys + spend cap from Kilian.
+> - [!] **B2** HARNESS READY (`experiments/b2_llm_benchmark.md`, dry-run validated). **UNBLOCKED
+>   2026-07-16: a LOCAL LLM workbench exists** (Prof. Angeloudis's box `cv-iits-w05`, no API keys /
+>   no spend). SSH `killian@100.88.32.88` (double-L username), gateway on :8080 reached via SSH
+>   tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88` -> `http://localhost:18080/v1`, key
+>   `iits-local-key`; live model `llama-3.3-70b` (+ `qwen3-27b` one command away). Full details in
+>   the HANDOVER top banner. TODO before the live run: (a) Kilian's go (it hits the shared GPU box);
+>   (b) add a generic OpenAI-compatible base-url path to `scratch/b2_llm_benchmark.py` (the openai
+>   branch already posts to /v1/chat/completions, just parameterise the host).
 > - [x] **B3** DONE (`experiments/b3_b4_oracle.md`): three-regime risk-aversion law (mission =
 >   the unique objective determinism cannot escape by spreading).
 > - [x] **B4** DONE (same ledger): multi-OD correlation gap median 14.4% (bar met; Tier-3

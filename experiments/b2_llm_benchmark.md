@@ -1,9 +1,23 @@
 # B2: the agentic-LLM exploitability benchmark (harness READY; live runs await API credentials)
 
 - **status: PRE-REGISTERED 2026-07-12 (NEXT_STEPS_MASTER Block B item B2). Harness built and
-  dry-run-validated (`scratch/b2_llm_benchmark.py`); LIVE runs are BLOCKED on Kilian providing
-  API keys + a model list + a spend cap (external API spend is his resource decision; the
-  standing launch authority covers local CPU only). One command per model once keys exist.**
+  dry-run-validated (`scratch/b2_llm_benchmark.py`). UNBLOCKED 2026-07-16: a LOCAL LLM workbench
+  is available (no commercial API keys / no spend needed) — Prof. Angeloudis's GPU box.**
+  - **Endpoint:** OpenAI-compatible gateway on the box's port 8080, key `iits-local-key`. NOT
+    directly reachable from Kilian's Mac (shared Tailscale node, ACL blocks 8080); reach it via SSH
+    tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88` (username DOUBLE-L `killian`, pw
+    `tsl2026`), then `http://localhost:18080/v1`. Verified working end-to-end 2026-07-16.
+  - **Models:** live = `llama-3.3-70b` (AWQ-INT4, 32K ctx); `qwen3-27b` (27B, 64K ctx) one
+    `./start.sh start qwen3-27b` away (fits the VRAM budget alongside the 70B). Pinned open-weight
+    models = more reproducible than a moving API; NO tools available = the informative no-tools
+    register this pre-registration wants; the gateway auto-logs every call to
+    `/home/llm/vllm-server/audit/YYYY-MM-DD.jsonl` = the transcript record for free.
+  - **Two TODOs before the live run:** (1) Kilian's explicit go (it uses the shared GPU box);
+    (2) add a generic OpenAI-compatible `--base`/`--key` path to `scratch/b2_llm_benchmark.py`
+    (the `openai` provider branch already POSTs to `/v1/chat/completions`; just parameterise the
+    host instead of hardcoding api.openai.com). Then: run llama-3.3-70b, enable + run qwen3-27b.
+  - Full box inventory: HANDOVER top banner (2026-07-16); instructions
+    `../../Connecting to local LLM workbench.txt`.
 - **git SHA:** the commit landing this ledger + the harness.
 
 ## Why (Kilian's named idea; CRITIQUE_EXAMINER §6 item 7; CRITIQUE_12-07-26 §6 item 5)
