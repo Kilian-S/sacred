@@ -66,3 +66,21 @@ PYTHONPATH=. .venv/bin/python scripts/train_dyn_generalist.py \
 ```
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+### AMENDMENT (2026-07-16, DURING the batch, BEFORE any result was read; disclosed)
+
+Two integrity additions, both decided before looking at any training outcome:
+1. **Per-seed yardsticks + the LP-degeneracy wobble.** The three seeds' pool-prep logs show
+   iid_eq differing by ~1-2% across processes on identical games (e.g. OD 193-278: 0.187 vs
+   0.184): the equilibrium LP has degenerate optima and the solver's vertex choice is not
+   process-stable. static_det and history_opt are identical (they do not depend on the vertex).
+   Handling: each seed's ratios are scored against ITS OWN stored refs (as built); the wobble is
+   disclosed and immaterial at the expected effect size (gen19: 66% below the cap).
+2. **The "every static method" claim gets MEASURED rows, not by-construction wording.** iid_eq
+   is the static EQUILIBRIUM mixture's value against this adversary — not the best static value.
+   The pre-registered primary (beat iid_eq) therefore only certifies beating the LP mixture. At
+   results time the following oracle-exact rows are added per held-out instance (eval-only,
+   `scratch/gen27_static_rows.py`): the UNIFORM-DISJOINT heuristic's static value, the INV-VULN
+   heuristic's static value, and a multi-start local-search STATIC OPTIMUM (disclosed as local).
+   The act's claim is worded against whichever of these rows the results actually clear; the
+   primary bar itself is unchanged (iid_eq).
