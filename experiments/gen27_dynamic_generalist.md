@@ -84,3 +84,41 @@ Two integrity additions, both decided before looking at any training outcome:
    heuristic's static value, and a multi-start local-search STATIC OPTIMUM (disclosed as local).
    The act's claim is worded against whichever of these rows the results actually clear; the
    primary bar itself is unchanged (iid_eq).
+
+### SECOND AMENDMENT (2026-07-16, second critic pass, DURING the batch, BEFORE any result was
+### read; disclosed): the naive-DYNAMIC baseline rows
+
+The first amendment's static rows do not close the sharpest hole: a naive DYNAMIC heuristic
+exists, and it is the dynamic analogue of the disjoint-stack finding. Measured this session
+(oracle-exact, `scratch/critique_followup_probes.py`, artefact
+`models/runs/critique_followup_probes.json`), on the SAME 6 held-out Gdansk instances against
+the SAME adversary (w=3, tau=0.15), with history_opt recomputed by RVI on the same L
+(same-convention anchor):
+
+| OD | iid_eq | history_opt | rotation (round-robin over disjoint) | **anti-repeat (uniform over disjoint routes not in the last-w window)** | anti/iid_eq |
+|---|---|---|---|---|---|
+| 249-95 | 0.223 | 0.057 | 0.207 | **0.118** | 0.53 |
+| 106-173 | 0.213 | 0.072 | 0.203 | **0.119** | 0.56 |
+| 351-210 | 0.232 | 0.078 | 0.206 | **0.117** | 0.50 |
+| 146-296 | 0.189 | 0.064 | 0.196 | **0.115** | 0.61 |
+| 275-72 | 0.218 | 0.051 | 0.203 | **0.115** | 0.53 |
+| 193-278 | 0.187 | 0.075 | 0.186 | **0.112** | 0.60 |
+
+**Binding wording rule (analogous to the R0a rule for the static acts):** beating iid_eq does
+NOT certify beating every standard method. The two-line anti-repeat heuristic (needs only the
+route list, zero training, transfers trivially) beats iid_eq by ~2x on every held-out OD
+(ratio 0.50-0.61). All six ODs have m=3 disjoint routes, so deterministic rotation fails (the
+w=3 window covers the whole disjoint set) but stochastic anti-repeat does not. The PRE-REGISTERED
+PRIMARY BAR IS UNCHANGED (bars are never moved mid-run); the anti-repeat row is a REPORTED ROW
+beside it, and the act's comparative wording must clear whichever rows the results actually
+clear: the honest ladder per OD is iid_eq > anti-repeat (~0.55x) > history_opt (~0.25-0.35x).
+A result near history_opt beats the heuristic decisively; a result near ~0.55x iid_eq matches
+it and the claim re-scopes to label-free amortisation (the gen24/A6 pattern).
+
+**Companion note for the gen19 ledger (measured in the same probe):** on 35-159 (m=4), plain
+rotation over the 4 disjoint routes lands at 0.0413 = 1.07x the same-convention dynamic optimum
+(RVI on the same L: 0.0388; the ledgered 0.049 is the same quantity under the screen's original
+game build). gen19's "reaches the dynamic optimum" result is real, but on that instance the
+optimum itself is nearly attained by a two-line rotation; the unique learning content is (a)
+discovering anti-repeat behaviour without being told its form, and (b) the m=3 regime (all of
+gen27's held-out pool) where rotation fails and calibrated stochastic anti-repeat is required.

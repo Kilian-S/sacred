@@ -118,3 +118,14 @@ adversary trivially dodgeable (history_opt ~ 0, a degenerate "too easy" regime);
 history-optimal value GROWS with window (0.005 -> 0.029 -> 0.049 for w=1,2,3) as there is more
 recent pattern to exploit, giving a real, non-degenerate game. The w=3, tau=0.15 choice is the
 disclosed, defensible operating point; the grid shows the effect is monotone and not knife-edge.
+
+### NAIVE-DYNAMIC BASELINE APPENDIX (2026-07-16, second critic pass; oracle-exact,
+### `scratch/critique_followup_probes.py`)
+
+On this instance (m=4 disjoint routes), plain deterministic ROTATION over the disjoint routes
+achieves stationary loss **0.0413 = 1.07x the dynamic optimum** (RVI recomputed on the same L:
+0.0388; the 0.049 above is the same quantity under the screen's original game build). Binding
+wording rule: "SACRED reaches the dynamic optimum" stands, but the optimum on this instance is
+nearly attained by a two-line heuristic, so the act's unique content is (a) DISCOVERING the
+anti-repeat form without being told it (the rw[2] telemetry), and (b) regimes where rotation
+fails (m <= w: the entire gen27 held-out pool) — see the gen27 ledger's second amendment.

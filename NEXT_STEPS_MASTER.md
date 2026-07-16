@@ -97,6 +97,16 @@
 > - [~] **gen27** pre-registered (`2f4ffd5`), smoke gate PASSED (rw[2] -> -3.4 anti-repeat
 >   signature; held-out ratio 1.10 and falling at 240 sorties); 3-seed batch + no-window control
 >   RUNNING.
+> - [!] **SECOND CRITIC PASS (2026-07-16, `scratch/critique_followup_probes.py`; ledger
+>   amendments in gen26/gen27, the gen27 one landed BEFORE its results were read):** (i) gen27
+>   gains the naive-DYNAMIC row — a two-line anti-repeat heuristic beats iid_eq by ~2x
+>   (0.50-0.61x) on all 6 held-out ODs, so the act's wording must clear that row, not iid_eq;
+>   (ii) gen26's K=5/6 cells gain FULL-MENU heuristic rows (uniform-full 0.666 TIES SACRED at
+>   K=5; at K=6 the best naive is 0.730 vs SACRED 0.718, 1 seed) and a TABULAR-FP-with-greedy-BR
+>   row that BEATS SACRED at both cells (0.621/0.690) => the "only self-play can train there"
+>   wording is retired; the K=6 "sole survivor" point needs n=3 + the full-menu rows before any
+>   thesis sentence. Rescued-claim centre of gravity: boundary map + label-free amortisation
+>   (gen27), not single-instance superiority.
 
 ### R0. Repair + aim (oracle/eval-only, FREE, no go needed; ~1 day; do first, in this order)
 

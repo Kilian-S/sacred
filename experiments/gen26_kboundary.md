@@ -168,3 +168,40 @@ the min-cut — exactly the regime where the exact LP is infeasible (no labels: 
 K=6 14 GB) and naive disjoint randomisation saturates — adversarially self-played SACRED beats
 the strongest naive heuristics, with the certified-interval greedy yardstick and <= 1.8%
 measured fidelity below the wall.* At K << m the heuristics suffice and the thesis says so.
+
+### FULL-MENU + TABULAR-FP APPENDIX (2026-07-16, second critic pass; oracle/eval-only;
+### probe `scratch/critique_followup_probes.py`, artefact `models/runs/critique_followup_probes.json`)
+
+Two comparison-set completions, both measured under the SAME greedy yardstick on 71-33; the
+pre-registered bars above stand as written (bars are never moved after results), but the
+boundary map and the act's wording must carry these rows.
+
+1. **Full-menu naive stacks (the recursive R0a lesson: at K ~ m the escape mass lives on the
+   SHARED-edge menu routes, so the strongest naive stack is no longer the disjoint one):**
+
+   | arm (same greedy yardstick) | K=5 | K=6 |
+   |---|---|---|
+   | uniform-disjoint (ledger row) | 0.705 | 0.800 |
+   | inv-vuln-disjoint (ledger row) | 0.638 | 0.766 |
+   | **uniform-FULL-menu** | **0.666** | **0.739** |
+   | **inv-vuln-FULL-menu** | **0.667** | **0.730** |
+   | SACRED best-ckpt | 0.667 +/- 0.016 | 0.718 (1 seed) |
+
+   At K=5 SACRED TIES the naive full-menu stacks (0.667 vs 0.666/0.667) and remains behind
+   inv-vuln-disjoint (0.638). At K=6 SACRED beats all four naive stacks, but the margin over the
+   strongest (inv-vuln-full 0.730) is 0.012 on a single seed — inside the K=5 seed spread. The
+   "SACRED alone survives saturation" sentence is therefore NOT citable until the K=6 cell is
+   n=3 AND scored against the full-menu rows.
+
+2. **Tabular smooth fictitious play with the SAME greedy-BR oracle (no network, ~20 lines,
+   uniform-full init, multiplicative weights, average strategy; drift-free by construction):**
+   K=5 average-strategy value **0.621**; K=6 **0.690** — BELOW SACRED's best-checkpoint at both
+   cells (and below every naive stack at K=5). **Binding wording rule:** "past the wall only
+   self-play can train" must be worded as "only best-response-oracle methods can train" — the
+   same greedy oracle that sparred SACRED trains a trivial tabular defender to a better
+   single-instance mixture, without checkpoint selection (its average converges monotonically).
+   What survives for the deep-RL act: the boundary map itself (where naive heuristics fail is
+   real and measured), and amortisation/generalisation across instances (the gen27 register) —
+   NOT single-instance superiority past the wall. The tabular-FP row also sharpens the
+   drift finding: the average-strategy object has no last-iterate drift, so the drift is a
+   property of last-iterate deep-RL training, not of the game.
