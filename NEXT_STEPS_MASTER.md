@@ -1,5 +1,14 @@
 # NEXT_STEPS_MASTER.md: the agreed work programme after 2026-07-12 (checklist for incoming agents)
 
+> **⚠️ UPDATE 2026-07-16: BLOCK R (below, before §0) IS NOW THE ACTIVE FRONT.** The
+> disjoint-route baseline finding (`CRITIQUE_16-07-26.md`, verified oracle-exact by
+> `scratch/disjoint_baseline_probe.py`) showed the static K=1 ladders' comparative claims are
+> refutable by a two-line max-flow heuristic; Kilian's decision 2026-07-16 is to REPAIR the
+> record and RELOCATE the positive claims via the Block R rescue programme. **The overarching
+> goal (Kilian, verbatim standing mandate): SACRED must end with a positive, scientifically
+> valid and interesting claim.** Blocks A/B below remain complete-and-banked history; Block C
+> (FAR/writing) rails still bind.
+>
 > **Provenance.** Agreed between Kilian and the outgoing Fable instance on 2026-07-12 (Fable's
 > last session). This file merges the tiered programmes of `CRITIQUE_EXAMINER.md` §6 and
 > `CRITIQUE_12-07-26.md` §6-7, with Kilian's explicit ordering decision: **computational testing
@@ -50,6 +59,154 @@
 >   multi-OD game justified).
 > - Block C: NOT STARTED (paused per Kilian's instruction; the FAR's 30 July external deadline
 >   stands regardless).
+
+---
+
+## Block R (2026-07-16, ACTIVE): the claims-repair + rescue programme
+
+> **Provenance.** Planned by the critic instance at Kilian's request 2026-07-16, after the
+> disjoint-baseline finding (`CRITIQUE_16-07-26.md` §1; probe `scratch/disjoint_baseline_probe.py`,
+> commit `e00cb37`). Design logic: the two-line max-flow heuristic (uniform/inverse-vuln stack over
+> the edge-disjoint routes) matches or beats every trained static K=1 number, so every rescue
+> experiment targets one of its three provable blind spots: (R1) BUDGET SATURATION (K approaching
+> the min-cut m, where the heuristic degrades AND exact solvers become infeasible), (R2)
+> ADAPTATION (a pattern-of-life adversary, against which every static mixture is capped at
+> iid_eq), (R3) COORDINATION (multi-OD corridor sharing, where the heuristic is an independent
+> product and provably leaves the B4-measured 14.4% on the table). House rules unchanged and
+> HARD: each item opens its own pre-registered `experiments/<gen>.md` (question, bars, pinned
+> SHA) BEFORE any CPU; oracle/eval probes are free; NO training launch without Kilian's explicit
+> in-conversation go; suite green after any `src/`/`scripts/` change; failures reported plainly
+> (every fail branch below is a writable, measured boundary).
+>
+> **The target claim if R1 and R2 land (the thesis's new positive spine):** *below a measurable
+> boundary, contested routing needs no learning (we prove it: the two-line heuristic is
+> near-optimal); at the interdiction budget's saturation point, against adaptive adversaries,
+> and under joint coordination, both the heuristic and the exact solvers fail, and adversarial
+> self-play is the only method that delivers, demonstrated against computable yardsticks.*
+
+### R0. Repair + aim (oracle/eval-only, FREE, no go needed; ~1 day; do first, in this order)
+
+- [ ] **R0a. Fold the disjoint rows into every ladder** [eval/oracle, ~half day].
+  Extend `scratch/disjoint_baseline_probe.py` to emit, for BOTH headline instances, the gen12
+  sweep grid, the gen16/gen22 held-out pools and the A8 population: (i) uniform-disjoint-stack,
+  (ii) inverse-vulnerability-disjoint-stack, (iii) each variant's expected fleet cost (the
+  fairness column: disjoint routes include long detours; SACRED's 123.1 vs eq 120.8 vs ALNS 96.1
+  are the anchors). Fold as dated appendices into gen13/gen14/gen12/gen16/gen22/a6_a7_a8
+  ledgers + amend the B2 anchor table (register (b) must carry the heuristic row BEFORE any live
+  LLM call). Add the binding wording rule to each: no "beats every uncalibrated strategy class" /
+  "standard algorithms cannot achieve" sentence survives unqualified. GAIN: the ambush becomes a
+  disclosed row; all later experiments score against the right baseline.
+- [ ] **R0b. The structure-discovery row** [eval-only, ~2-3 h]. Load the banked best-checkpoint
+  actors (gen14 MC n=10, gen14 SC n=10, gen16 generalist n=3) and measure the policy mass placed
+  on the disjoint core vs the padded duplicates, per act (descriptive, no bar). GAIN: the
+  measured basis for the surviving positive sentence: *self-play discovers the independent-route
+  structure without being told it, without labels and without a solver* (the heuristic cannot
+  cheapen this: it is TOLD the structure).
+- [ ] **R0c. The boundary screen (the aiming step)** [oracle-only, ~half day]. Over the A8
+  population (160 ODs, 4 cities) compute heuristic/eq as a function of K in {1, 2, 3} (exact)
+  and, at K in {4, 5}, the heuristic's and det's values under the verified greedy BR (exact eq
+  does not exist there: that is the point). Deliverables: (i) the boundary-map figure
+  (heuristic suboptimality vs K/m: thesis material in itself); (ii) the gen26 step-3 instance
+  shortlist, screened by the NEW criterion (heuristic-gap at high K, not det/eq: the old
+  screens measured where determinism fails, not where naive randomisation fails); prefer
+  m = 5-6 instances (e.g. 33-71-class) so K = 4-5 sits at-but-not-past saturation. (iii) ~40
+  multi-OD triples for R3's shortlist (B4 machinery). GAIN: the new headline is staked where
+  the gap provably exists BEFORE any training.
+
+### R1. gen26: the K-to-min-cut act [TRAINING, ⛔K per step; the static-headline rescue]
+
+- [ ] **Step 1 (fund first; ~15-20 min wall at 3-parallel + ledger).** n=3 the K=3 cell on
+  35-159 (the gen12 cell config VERBATIM: k8 menu, band 0.15-0.95, N=3, fleet-route, smooth FP
+  tau 0.05, 1200 sorties, exact estimator, per-eval ckpts).
+  > **PRE-REGISTERED BAR:** mean exact best-checkpoint TAP < the heuristic's 0.738 on >= 2/3
+  > seeds AND pooled (current single-seed evidence: 0.661). Report beside eq 0.604 and det
+  > 0.933. PASS = the crossover is real at n=3; FAIL = the crossover was seed noise, R1 step 3
+  > is re-aimed by R0c or dropped (a measured boundary either way).
+- [ ] **Step 2 (build, ~1-1.5 days incl. tests; no CPU risk).** Wire the VERIFIED
+  `greedy_br_attacker` (A4-core, exact at K <= 2, matrix-free to K = 5 in ~8 s) into
+  `train_multiconvoy.py`'s attacker refresh + the exploitability eval; gate the eager
+  `obj_matrix` build behind K <= 3; regression tests: (i) greedy-vs-exact agreement in-trainer
+  at K <= 2, (ii) byte-identical behaviour with the flag off; suite green, raw output pasted.
+  This is A4's deliberately-deferred step, now justified by necessity (it is the ONLY route to
+  any K >= 4 cell).
+- [ ] **Step 3 (the headline cells; ~1 evening at 3-parallel).** Train K=4 and K=5 on 35-159
+  AND one R0c-screened second OD (3 seeds on the headline cell, 1 elsewhere). Yardstick: ALL
+  arms (det/ALNS plan, heuristic variants, SACRED) scored under the SAME greedy BR; the
+  certified interval [v_greedy, v_greedy/(1-1/e)] reported for absolute statements.
+  > **PRE-REGISTERED BAR (primary):** SACRED best-ckpt < uniform-disjoint-stack under the
+  > common greedy yardstick, >= 2/3 seeds + pooled, on the headline cell. **STRONG:** also
+  > < the inverse-vuln variant. **FAIL branch (writable):** "past saturation the learner no
+  > longer beats naive disjointness" = the boundary map's upper edge, measured.
+  GAIN if it lands: the rescued static headline: **"trained where neither exact solvers (RAM
+  wall, no labels) nor naive heuristics (coverage saturation) can follow"**: a claim unique to
+  self-play by construction.
+
+### R2. gen27: the dynamic generalist (gen19 x gen16) [TRAINING, ⛔K; the ZST rescue]
+
+- [ ] **Build (~1 day).** Extend `train_generalist.py` with the gen19 mechanism per instance:
+  adversary = analytic softmax-BR (w=3, tau=0.15, the gen19 operating point, sensitivity grid
+  already banked) to each instance's OWN realised-route window; observation = per-route recent
+  window frequency as the third route-feature column (head-term lr 3e-2), riding per-transition
+  as the menus already do. Episodes = S=40 sortie chains, gamma 0.95 (gen19 values). Oracle
+  yardsticks per pool/test instance at build time: iid_eq + history_opt by RVI (the
+  `within_episode_screen` machinery; the gen19 numbers reproduce as the sanity row). Pools =
+  the gen16 recipe VERBATIM (kaliningrad + east_london + istanbul train, GDANSK held out,
+  pool-seed 0). Timing probe + 240-sortie smoke gate BEFORE the batch (the gen19 smoke passed
+  its primary at 240 sorties; expect the same signature: window-feature weight strongly
+  negative = anti-repeat).
+- [ ] **Run (3 seeds + 1 no-window control seed; ~half-1 day of machine).** Budget ~12,000
+  sorties/seed (the gen16 budget; refine from the timing probe), select-on-train, per-eval ckpts.
+  > **PRE-REGISTERED BARS. PRIMARY (the unique claim):** held-out-GDANSK stationary-tail
+  > per-sortie mission failure < that OD's iid_eq on >= 4/6 ODs AND pooled, on >= 2/3 seeds.
+  > Beating iid_eq means beating EVERY static object: the disjoint heuristic, the LP mixture
+  > and any distilled/retrieved policy are ALL capped at iid_eq by construction: no wording
+  > escape needed. **STRONG:** pooled within 2x of history_opt. **CAUSAL CONTROL:** the
+  > no-window arm must land ~iid_eq (the gen19 control landed 0.148 vs 0.147). **REPORTED ROW
+  > (not gated):** worst-case = each OD's marginal route mixture under its oracle BR vs V_eq
+  > (gen19's was 1.06x; zero-shot will be looser; report honestly).
+  > **Branches:** PASS = the crown jewel: *zero-shot transferable DYNAMIC hedging: one policy
+  > outfoxes an adaptive adversary in a never-seen city, provably beyond any static method*
+  > (the aim's ZST sentence becomes literally true). PARTIAL (train cities yes, held-out no) =
+  > dynamic hedging learned, transfer boundary measured. FAIL = gen19 stays the single-instance
+  > positive; the boundary is the result.
+- **Deliberately out of scope** (recorded): the K/N-shift rows and Istanbul rotation for the
+  dynamic policy (post-freeze register), full B1 Poisson demand.
+
+### R3. gen28: the multi-OD game [TRAINING, ⛔K; gated on R0c + calendar; ~3-4 days]
+
+Two-destination corridor-sharing game (N=2, one convoy per destination, K=1 over the union):
+env = sequential per-convoy routing with the earlier route observed (the existing multiconvoy
+pattern); oracle = B4's joint LP over R1 x R2 (exists). Ladder per instance: det pair / best
+INDEPENDENT product (the heuristic's class, upper-bounded by B4's local search, disclosed) /
+SACRED / joint equilibrium. Primary: SACRED < best independent product, >= 2/3 seeds, on an
+R0c-screened triple (Jaccard >= 0.15, where B4's gap concentrates). Known risk: the gen18
+exploration boundary; mitigation: coordination lives inside ONE policy's sequential joint
+action (not independent followers); gate on a smoke. GAIN: a second heuristic-proof claim +
+material movement toward the VRP of the title. **Drop first if the calendar bites.**
+
+### R4. Riders (cheap, in the gaps)
+
+- [ ] **R4a. Cost-security frontier row** [eval-only, hours]: the heuristic's fleet cost beside
+  SACRED's 123.1 / eq 120.8 / ALNS 96.1 on both headlines (if the heuristic pays a material
+  detour premium, "equal security at lower cost" is a surviving K=1 sentence; either way honest).
+- [ ] **R4b. B2-live on the workbench** [eval-only, ~1 day; ⛔K: shared GPU box]: with R0a's
+  amended anchors + the new scored question ("does the model discover independent-route
+  reasoning?"); the two standing TODOs (generic base-url path; Kilian's go) unchanged.
+- [ ] **R4c. The C4 re-spine** absorbs Block R's outcomes (Act I negative campaign; Act II
+  dynamics account + bug arc; Act III the dynamic register, gen19 + gen27; Act IV the boundary
+  map with gen26; the disjoint concession stated FIRST, on our terms).
+
+### Block R ordering, calendar and drop order
+
+R0a-c today/tomorrow (free) -> gen26 step 1 (first funded run; result within ~1 h of go) ->
+gen26 step 2 build while step-1 verdict settles -> gen27 build in parallel with gen26 step-3
+runs -> gen27 run -> R3 only if both land early -> R4b in the gaps. **Autonomous elapsed
+estimates (single M4, timing probes refine after smokes): gen26 complete ~2-2.5 days from go;
+gen27 complete ~2-3 days from ITS go; overlapped total ~4 days => both banked ~20-21 July**,
+leaving the FAR (hard 30 July) and freeze (3 Aug) rails comfortable. Drop order if the
+calendar bites: R3, then R4b, then gen26 step 3's second OD (keep the 35-159 cells), then the
+STRONG bars. **Never drop:** R0a-c, gen26 step 1, gen27's primary, R4c. Those decide whether
+the thesis's positive claim exists and survives review.
 
 ---
 
