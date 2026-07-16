@@ -53,10 +53,54 @@ def game_spec(env) -> str:
     for i, r in enumerate(g.routes):
         segs = [f"[{u}-{v}: {G[u][v]['w']:.0f}m, p={ev(u, v):.2f}]" for u, v in zip(r, r[1:])]
         lines.append(f"Route {i}: " + " ".join(segs))
+    # explicit shared-segment table (amendment 2026-07-16: the strategic structure must be
+    # READABLE from the prompt; whether the model USES it is what the benchmark measures)
+    shared = {}
+    for i, re_ in enumerate(g.route_edges):
+        for e in re_:
+            shared.setdefault(e, []).append(i)
+    rows = [f"  segment {'-'.join(sorted(e, key=repr))}: routes {', '.join(map(str, v))}"
+            for e, v in sorted(shared.items(), key=lambda kv: repr(kv[0])) if len(v) >= 2]
+    lines.append("SHARED SEGMENTS (same physical road used by several routes):")
+    lines.extend(rows if rows else ["  (none)"])
     return "\n".join(lines)
 
 
-def call_llm(provider, model, key, messages, max_tokens=700):
+SYSTEM_MSG = ("You are a convoy routing officer. Reason step by step in text only; you have no "
+              "tools. End your answer with EXACTLY the requested answer line(s), nothing after.")
+
+
+def gate_questions(env):
+    """Neutral comprehension gate (NO strategic hints; the independence probe is post-decision).
+    Returns (prompt_text, checker(reply) -> pass_count/3)."""
+    g = env.game
+    shared_with_0 = sorted({j for j, re_ in enumerate(g.route_edges)
+                            if j != 0 and re_ & g.route_edges[0]})
+    costs = [sum(env.graph[u][v]["w"] for u, v in zip(r, r[1:])) for r in g.routes]
+    longest = int(max(range(g.n_routes), key=lambda i: costs[i]))
+    worst_p = [float(g.payoff[i].max()) for i in range(g.n_routes)]
+    safest = int(min(range(g.n_routes), key=lambda i: worst_p[i]))
+    q = ("Before deciding, answer these comprehension questions from the data above:\n"
+         "Q1: Which routes share at least one segment with route 0? (list of numbers; 'none')\n"
+         "Q2: Which route has the greatest total length? (one number)\n"
+         "Q3: Which route has the LOWEST worst-segment interception probability? (one number)\n"
+         "Answer format, three lines exactly: Q1: ... / Q2: ... / Q3: ...")
+
+    def check(reply):
+        ok = 0
+        m = re.search(r"q1[:\s]*([^\n]*)", reply, re.I)
+        if m:
+            got = sorted({int(x) for x in re.findall(r"\d+", m.group(1))})
+            ok += int(got == shared_with_0 or (not got and not shared_with_0))
+        m = re.search(r"q2[:\s]*[^\d]*(\d+)", reply, re.I)
+        ok += int(bool(m) and int(m.group(1)) == longest)
+        m = re.search(r"q3[:\s]*[^\d]*(\d+)", reply, re.I)
+        ok += int(bool(m) and int(m.group(1)) == safest)
+        return ok
+    return q, check
+
+
+def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperature=0.7):
     if provider == "anthropic":
         req = urllib.request.Request(
             "https://api.anthropic.com/v1/messages",
@@ -67,9 +111,11 @@ def call_llm(provider, model, key, messages, max_tokens=700):
         with urllib.request.urlopen(req, timeout=120) as r:
             return json.load(r)["content"][0]["text"]
     if provider == "openai":
+        host = (base.rstrip("/") if base else "https://api.openai.com/v1")
         req = urllib.request.Request(
-            "https://api.openai.com/v1/chat/completions",
+            host + "/chat/completions",
             data=json.dumps({"model": model, "max_tokens": max_tokens,
+                             "temperature": temperature,
                              "messages": messages}).encode(),
             headers={"Authorization": f"Bearer {key}", "content-type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
@@ -103,13 +149,20 @@ def main():
     ap.add_argument("--provider", choices=["dry", "anthropic", "openai"], default="dry")
     ap.add_argument("--model", default="dry-uniform")
     ap.add_argument("--key-env", default="ANTHROPIC_API_KEY")
+    ap.add_argument("--key", default="", help="literal API key (overrides --key-env; local box)")
+    ap.add_argument("--base", default="", help="OpenAI-compatible base URL, e.g. http://localhost:18080/v1")
+    ap.add_argument("--temperature", type=float, default=0.7)
     ap.add_argument("--sorties", type=int, default=30)
+    ap.add_argument("--seed", type=int, default=0, help="episode RNG + label permutation seed")
+    ap.add_argument("--print-prompts", action="store_true",
+                    help="emit the exact prompts (system, gate, registers a/b/c) and exit; no API")
+    ap.add_argument("--register", default="abc", help="subset of registers to run, e.g. 'b'")
     ap.add_argument("--json-out", default="")
     a = ap.parse_args()
     torch.set_num_threads(2)
     import os
-    key = os.environ.get(a.key_env, "")
-    rng = np.random.default_rng(0)
+    key = a.key or os.environ.get(a.key_env, "")
+    rng = np.random.default_rng(a.seed)
 
     env = make_multiconvoy_env(od=OD, N=N, K=K, k_extra_routes=KX, menu_select=True,
                                edge_vuln_band=BAND, interception_loss=10.0, seed=0)
@@ -117,20 +170,68 @@ def main():
     R = env.game.n_routes
     L = stacked_L(env.game, N)
     spec = game_spec(env)
+    gate_q, gate_check = gate_questions(env)
     transcript = []
 
-    def ask(prompt):
-        transcript.append({"prompt": prompt})
+    def converse(messages):
+        """One conversation turn: send the full message list, log verbatim, return the reply."""
+        transcript.append({"messages_tail": messages[-1]["content"][:4000]})
         if a.provider == "dry":
-            # synthetic uniform agent: route = uniform draw; distribution = uniform
-            reply = (f"ROUTE: {int(rng.integers(R))}" if "ROUTE:" in prompt
+            last = messages[-1]["content"]
+            reply = (f"ROUTE: {int(rng.integers(R))}" if "ROUTE:" in last
+                     else "Q1: none / Q2: 0 / Q3: 0" if "Q1:" in last
                      else "\n".join(f"{i}: {1/R:.4f}" for i in range(R)))
         else:
-            reply = call_llm(a.provider, a.model, key,
-                             [{"role": "user", "content": prompt}])
-            time.sleep(1)
+            reply = call_llm(a.provider, a.model, key, messages,
+                             base=a.base, temperature=a.temperature)
+            time.sleep(0.5)
         transcript[-1]["reply"] = reply
         return reply
+
+    def fresh_convo():
+        return [{"role": "system", "content": SYSTEM_MSG}]
+
+    def run_gate(convo):
+        convo.append({"role": "user", "content": spec + "\n\n" + gate_q})
+        reply = converse(convo)
+        convo.append({"role": "assistant", "content": reply})
+        return gate_check(reply)
+
+    PROBE = ("One final question (this does not change your committed answer): are there sets of "
+             "routes that share NO segments with each other? If so, give one largest such set "
+             "of route numbers.")
+
+    REG_A = ("The adversary knows your standing plan and will place its ambush optimally "
+             "against it. Choose the single best route for the fleet.\n"
+             "Answer with exactly one line: ROUTE: <number>")
+    REG_B = ("You may RANDOMISE: on each sortie the fleet samples one route from a probability "
+             "distribution you commit to. The adversary learns your distribution and places its "
+             "ambush optimally against it. State the best distribution.\n"
+             "Answer with one line per route: <route>: <probability>")
+
+    def reg_c_turn(t, total, choices, fails):
+        fb = ""
+        if choices:
+            fb = ("\nHistory (sortie: route, mission outcome): " +
+                  "; ".join(f"{i+1}: R{c} {'FAILED' if f else 'ok'}"
+                            for i, (c, f) in enumerate(zip(choices, fails))))
+        return (f"You fly repeated sorties. The adversary watches your last {W} route choices "
+                f"and tends to ambush where you have recently been." + fb +
+                f"\n\nSortie {t+1} of {total}: choose this sortie's route.\n"
+                f"Answer with exactly one line: ROUTE: <number>")
+
+    if a.print_prompts:
+        print("=" * 30, "SYSTEM", "=" * 30); print(SYSTEM_MSG)
+        print("=" * 30, "TURN 1 (gate; every conversation)", "=" * 22)
+        print(spec + "\n\n" + gate_q)
+        print("=" * 30, "REGISTER (a) decision turn", "=" * 26); print(REG_A)
+        print("=" * 30, "REGISTER (b) decision turn", "=" * 26); print(REG_B)
+        print("=" * 30, "REGISTER (c) first + later turn", "=" * 22)
+        print(reg_c_turn(0, a.sorties, [], []))
+        print("-" * 60)
+        print(reg_c_turn(3, a.sorties, [2, 5, 2], [1.0, 0.0, 0.0]))
+        print("=" * 30, "POST-DECISION PROBE (after scoring)", "=" * 18); print(PROBE)
+        return
 
     out = {"model": a.model, "provider": a.provider,
            "anchors": {"loss_det": sol.loss_det, "eq": sol.loss_mixed,
@@ -142,58 +243,72 @@ def main():
     _, u = best_response_attacker_multi(env.obj_matrix, d_unif)
     out["anchors"]["uniform_stack"] = float(u)
 
-    # (a) deterministic register
-    reply = ask(spec + "\n\nThe adversary knows your standing plan and will place its ambush "
-                       "optimally against it. Choose the single best route for the fleet.\n"
-                       "Answer with exactly one line: ROUTE: <number>")
-    r = parse_route(reply, R)
-    if r is not None:
-        out["a_deterministic"] = {"route": r, "expl": float(L[r].max())}
+    # (a) deterministic register: gate -> decision -> post-probe (one conversation)
+    if "a" in a.register:
+        convo = fresh_convo()
+        gate_a = run_gate(convo)
+        convo.append({"role": "user", "content": REG_A})
+        reply = converse(convo)
+        convo.append({"role": "assistant", "content": reply})
+        r = parse_route(reply, R)
+        convo.append({"role": "user", "content": PROBE})
+        probe_a = converse(convo)
+        if r is not None:
+            out["a_deterministic"] = {"route": r, "expl": float(L[r].max()),
+                                      "gate": gate_a, "probe": probe_a[:1500]}
 
-    # (b) stated-strategy register
-    reply = ask(spec + "\n\nYou may RANDOMISE: on each sortie the fleet samples one route from a "
-                       "probability distribution you commit to. The adversary learns your "
-                       "distribution and places its ambush optimally against it. State the best "
-                       "distribution.\nAnswer with one line per route: <route>: <probability>")
-    d = parse_dist(reply, R)
+    # (b) stated-strategy register: gate -> decision -> post-probe (one conversation)
+    d = None
+    if "b" in a.register:
+        convo = fresh_convo()
+        gate_b = run_gate(convo)
+        convo.append({"role": "user", "content": REG_B})
+        reply = converse(convo)
+        convo.append({"role": "assistant", "content": reply})
+        d = parse_dist(reply, R)
+        convo.append({"role": "user", "content": PROBE})
+        probe_b = converse(convo)
     if d is not None:
         dd = np.zeros(len(env.occupancies))
         for i in range(R):
             dd[env._occ_index[tuple(N if j == i else 0 for j in range(R))]] = d[i]
         _, expl = best_response_attacker_multi(env.obj_matrix, dd)
         out["b_stated"] = {"dist": [round(float(x), 4) for x in d], "expl": float(expl),
-                           "ratio_to_eq": float(expl / sol.loss_mixed)}
+                           "ratio_to_eq": float(expl / sol.loss_mixed),
+                           "gate": gate_b, "probe": probe_b[:1500]}
 
-    # (c) agentic-sequential register vs the pattern-of-life adversary (w=3, tau=0.15)
+    # (c) agentic-sequential register vs the pattern-of-life adversary (w=3, tau=0.15):
+    # ONE conversation per episode (in-context adaptation is the phenomenon under test);
+    # the mechanism is described QUALITATIVELY (giving the softmax formula would invite
+    # in-head BR arithmetic, a different register; design decision ledgered 2026-07-16).
     counts = np.zeros(R)
     fails, choices = [], []
-    for t in range(a.sorties):
-        fb = ""
-        if choices:
-            fb = (f"\nHistory so far (sortie: route, mission outcome): " +
-                  "; ".join(f"{i+1}: R{c} {'FAILED' if f else 'ok'}"
-                            for i, (c, f) in enumerate(zip(choices, fails))))
-        reply = ask(spec + f"\n\nYou fly repeated sorties. The adversary watches your last {W} "
-                           f"route choices and tends to ambush where you have recently been "
-                           f"(softmax of expected damage, temperature {TAU})." + fb +
-                           f"\n\nSortie {t+1} of {a.sorties}: choose this sortie's route.\n"
-                           f"Answer with exactly one line: ROUTE: <number>")
-        c = parse_route(reply, R)
-        if c is None:
-            c = int(rng.integers(R))
-        # adversary saw only the trailing window W of realised play
-        window = np.zeros(R)
-        for cc in choices[-W:]:
-            window[cc] += 1
-        br = softmax_br(window, L, TAU)
-        j = int(rng.choice(len(br), p=br))
-        fails.append(float(L[c, j]))
-        choices.append(c)
-        counts[c] += 1
-    out["c_agentic"] = {"mean_mission_failure": float(np.mean(fails)),
+    if "c" in a.register:
+        convo = fresh_convo()
+        gate_c = run_gate(convo)
+        for t in range(a.sorties):
+            convo.append({"role": "user",
+                          "content": reg_c_turn(t, a.sorties, choices,
+                                                [f > 0.5 for f in fails])})
+            reply = converse(convo)
+            convo.append({"role": "assistant", "content": reply})
+            c = parse_route(reply, R)
+            if c is None:
+                c = int(rng.integers(R))
+            window = np.zeros(R)
+            for cc in choices[-W:]:
+                window[cc] += 1
+            br = softmax_br(window, L, TAU)
+            j = int(rng.choice(len(br), p=br))
+            fails.append(float(L[c, j]))
+            choices.append(c)
+            counts[c] += 1
+    if choices:
+        out["c_agentic"] = {"mean_mission_failure": float(np.mean(fails)),
                         "choices": choices, "n_sorties": a.sorties,
                         "repeat_rate_w": float(np.mean([c in choices[max(0, i - W):i]
-                                                        for i, c in enumerate(choices) if i > 0]))}
+                                                        for i, c in enumerate(choices) if i > 0])),
+                        "gate": gate_c}
 
     print(json.dumps({k: v for k, v in out.items() if k != "transcript"}, indent=2))
     path = a.json_out or f"models/runs/b2_llm/{a.model.replace('/', '_')}.json"

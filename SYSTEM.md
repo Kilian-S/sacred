@@ -163,3 +163,15 @@ planner brief in `../../../thesis/THESIS_PLANNER_HANDOFF.md`). Dogma additions e
 campaign: gate expensive training on cheap pre-registered probes; competence is a precondition
 for robustness claims; selection on a validation attacker never on test attacks; stochastic eval
 of max-entropy policies. CPU spend and design changes still need Kilian.
+
+**DOGMAS EARNED 2026-07-16 (the Block R day; details in CRITIQUE_16-07-26.md + the gen26/gen27
+ledgers):** (a) **BASELINE COMPLETENESS is pre-registered like metrics** — every ladder carries
+the strongest naive baseline a domain practitioner could write in an afternoon (max-flow/disjoint
+stack variants statically; composed independence+anti-repeat rules in dynamic games; full-menu
+variants at high K), and screens select instances by the HEURISTIC-gap, not det/eq. (b)
+**Multi-process launches cap ALL thread pools** (`OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1` +
+torch's cap): uncapped BLAS/interop pools across 3 processes showed up as 36% SYSTEM time on the
+M4. (c) **Commit critique artefacts in the session that produces them** — the 2026-07-15
+disjoint-baseline finding survived only as a dangling memory line and had to be re-derived. (d)
+**An LP's degenerate optima are not process-stable** (HiGHS vertex choice wobbles iid_eq ~1-2%):
+score each seed against its own stored refs and disclose.

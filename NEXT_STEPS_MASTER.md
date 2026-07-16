@@ -92,11 +92,21 @@
 > - [x] **gen26 step 1** PASSED + STRONG (`c9c474a`, ledger): K=3 n=3 = 0.664 +/- 0.018 < both
 >   heuristic variants (0.738 uniform / 0.737 inv-vuln); eq 0.604.
 > - [x] **gen26 step 2** DONE (`77fe57f`): greedy-BR mode, suite 167, fidelity <= 1.8% at K<=3.
-> - [x] **gen26 step 3** K=5 headline cell: PRIMARY PASS (0.667 +/- 0.016, 3/3 < uniform-disjoint
->   0.705; STRONG < 0.638 not met, reported); K=6 boundary point + ledger fold in flight.
-> - [~] **gen27** pre-registered (`2f4ffd5`), smoke gate PASSED (rw[2] -> -3.4 anti-repeat
->   signature; held-out ratio 1.10 and falling at 240 sorties); 3-seed batch + no-window control
->   RUNNING.
+> - [x] **gen26 COMPLETE** (`505c466` + second-pass amendments in the ledger): K=5 PRIMARY PASS
+>   (0.667 +/- 0.016, 3/3 < uniform-disjoint 0.705; STRONG < inv-vuln 0.638 not met); K=6 single
+>   seed 0.718 beats both variants; boundary map `assets/k_boundary_map.png`. TEMPERED by the
+>   second pass: full-menu uniform TIES at K=5 (0.666); tabular-FP+greedy-BR BEATS (0.621/0.690);
+>   surviving claim = the boundary map. OPEN: K=6 to n=3 + full-menu rows before thesis sentences.
+> - [x] **gen27 seeds PASSED, PRIMARY + STRONG 3/3** (ledger): pooled held-out 0.639 +/- 0.025 vs
+>   the static cap; beats the MEASURED local static optimum everywhere; full-menu anti-repeat
+>   fails (1.37x); composed disjoint+anti-repeat (0.50-0.61) bounds below (binding wording in the
+>   ledger); worst-case premium 1.57x (regime-conditional scope sentence). OPEN: the no-window
+>   causal control (training overnight) + its ledger fold.
+> - [~] **B2 LIVE** in the original conversation: design finalised (llama+qwen, unhinted, 3
+>   instances, on-box tmux runner); first llama transcript reviewed-able at
+>   `scratch/b2_livetest_llama_transcript.txt`; gateway direct at http://100.88.32.88:8080/v1.
+> - [>] **R3-air HANDED OFF** to a fresh instance: `AERIAL_BRANCH_HANDOFF.md` (trained aerial =
+>   MUST-HAVE, Kilian 2026-07-16).
 > - [!] **SECOND CRITIC PASS (2026-07-16, `scratch/critique_followup_probes.py`; ledger
 >   amendments in gen26/gen27, the gen27 one landed BEFORE its results were read):** (i) gen27
 >   gains the naive-DYNAMIC row — a two-line anti-repeat heuristic beats iid_eq by ~2x

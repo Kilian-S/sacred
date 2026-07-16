@@ -1,4 +1,47 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-16)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-16 NIGHT)
+
+> **★★★★★★ 2026-07-16 NIGHT (fresh agent: START HERE; this banner supersedes the stack below).**
+> Today's session (the Block R rescue programme, Kilian's full autonomous launch authority)
+> changed what the thesis claims and where its positive results live. Read in this order:
+> 1. **`CRITIQUE_16-07-26.md`** — the disjoint-baseline finding (a 2-line max-flow heuristic
+>    matches/beats every trained static K=1 number; the old ladders' "uniform" anchors were
+>    padded-menu strawmen). VERIFIED, folded into all seven affected ledgers with binding
+>    wording rules (R0a appendices). Never cite an Obj-5/ZST comparative claim without them.
+> 2. **`NEXT_STEPS_MASTER.md` Block R** — the active programme + its PROGRESS ticks.
+> 3. **`experiments/gen26_kboundary.md`** — the K-to-min-cut act, COMPLETE: at K = m-1 SACRED
+>    beats both max-flow heuristic variants on the exact yardstick (K=3 n=3: 0.664 +/- 0.018 vs
+>    0.737/0.738, eq 0.604); past the exact wall (71-33 m=6, certified greedy yardstick,
+>    fidelity <= 1.8%): K=5 = 0.667 +/- 0.016 < uniform-disjoint 0.705 (STRONG < 0.638 not met);
+>    K=6 single seed 0.718 beats both variants. SECOND-PASS TEMPERING (in the ledger): at K=5 a
+>    FULL-MENU uniform ties SACRED (0.666) and a TABULAR-FP-with-greedy-BR learner beats it
+>    (0.621/0.690), so the surviving static claim is the BOUNDARY MAP
+>    (`assets/k_boundary_map.png`), not deep-RL superiority; K=6 needs n=3 before any sentence.
+> 4. **`experiments/gen27_dynamic_generalist.md`** — the rescued ZST act, PRIMARY + STRONG
+>    PASSED 3/3 seeds: one history-aware policy, trained on 3 cities, ZERO-SHOT on Gdansk beats
+>    the static cap at **0.639 +/- 0.025** (every static object beaten by MEASUREMENT incl. the
+>    local static optimum; full-menu anti-repeat fails at 1.37x; the composed
+>    disjoint+anti-repeat rule 0.50-0.61 bounds below; worst-case premium 1.57x = the
+>    regime-conditional scope sentence). NO-WINDOW causal control TRAINING OVERNIGHT
+>    (`models/runs/gen27_dyn_generalist/seed0_nowin.*`): fold its result + tick the ledger when
+>    it lands (expected ~iid_eq, as gen19's control).
+> 5. **`AERIAL_BRANCH_HANDOFF.md`** — if you are the AERIAL instance: the complete build brief
+>    for the free-flight act (Kilian 2026-07-16: TRAINED aerial result = MUST-HAVE). Work on a
+>    new branch per the brief; do not disturb this branch's running jobs.
+> 6. **B2 (the LLM benchmark) is LIVE and stays in the ORIGINAL conversation** (design
+>    finalised: llama-3.3-70b + qwen3-27b, unhinted, 3 instances; first live transcript
+>    `scratch/b2_livetest_llama_transcript.txt`; gateway now DIRECTLY reachable at
+>    http://100.88.32.88:8080/v1, key iits-local-key; qwen start needs Kilian's ssh). Do not
+>    re-run B2 from a fresh session while that conversation is active.
+> **New operating dogmas earned today (also in SYSTEM.md):** (a) BASELINE COMPLETENESS is
+> pre-registered like metrics — every ladder carries the strongest naive baseline a
+> practitioner could write (max-flow/disjoint variants; composed rules in dynamic games);
+> (b) multi-process launches cap ALL thread pools (OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 +
+> torch threads), not just torch's — uncapped pools showed up as 36% system time; (c) commit
+> critique artefacts IN the session that produces them (the lost-15-07-file lesson); (d) screens
+> select instances by the HEURISTIC-gap, not det/eq. House rules otherwise unchanged (ledgers
+> before CPU; prose docs carry pointers, numbers live in ledgers; never compare across SHAs;
+> no multiple-choice prompts to Kilian). Suite 167 green. FAR hard-due 30 July; freeze 3 Aug;
+> thesis 28 Aug. The banner stack below is the historical state.
 
 > **★★★★★ UPDATE 2026-07-16: B2 IS UNBLOCKED — a local LLM workbench exists (Prof. Angeloudis's
 > box), no API keys or spend needed.** The one open computational item (B2, the agentic-LLM
