@@ -167,3 +167,15 @@ dynamic rule are NOT licensed; sentences claiming no static or naive-dynamic sin
 touches it are.
 
 **Worst-case row + no-window causal control: appended when their runs complete (in flight).**
+
+### Worst-case row (2026-07-16 night, eval-only, `worstcase.json`; the pre-registered reported row)
+
+Seed-0 select-on-train checkpoint, marginal route mixture per held-out OD under that OD's ORACLE
+best response, vs its single-shot stacked V_eq: premiums **1.43 / 1.91 / 1.56 / 1.60 / 1.49 /
+1.44x (mean ~1.57x)**. gen19's in-distribution premium was 1.06x; zero-shot the dynamic policy
+pays a REAL worst-case premium — it is specialised to exploit the adaptive adversary. Honest
+scope sentence (binding): *the dynamic policy's advantage is regime-conditional: against a
+pattern-of-life adversary it reaches 0.64x the static cap; against a worst-case committing
+adversary its marginal is ~1.5x the equilibrium, so the static hedge remains the right play
+when the adversary best-responds to the strategy rather than the pattern.* Both policies exist;
+choosing between them is an intelligence question, not a modelling one.
