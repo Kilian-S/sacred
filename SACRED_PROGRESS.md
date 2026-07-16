@@ -730,3 +730,41 @@ to their supersession notes.)*
 - **Thesis fit:** Obj-5 (the rescued comparative act + the K-curve as "varied disruption" done
   right); Obj-1/3 (the drift-vanishes-at-high-K dynamics observation); Methods (baseline
   completeness as a named discipline beside pre-registration).
+
+## 23. gen27: the dynamic generalist — zero-shot dynamic hedging on a never-seen city  (2026-07-16 evening · `experiments/gen27_dynamic_generalist.md` · `scripts/train_dyn_generalist.py`)
+
+- **Goal (prospective):** compose gen19 (pattern-of-life exploitation, single instance) with gen16
+  (multi-city transfer) into the rescued ZST act: ONE history-aware policy, trained on three
+  cities, evaluated zero-shot on held-out Gdansk against each instance's computable dynamic
+  yardsticks — the register where every static method is provably capped.
+- **Headline results:** **PRIMARY + STRONG PASS, 3/3 seeds: pooled held-out ratio-to-cap 0.639
+  +/- 0.025** (per-seed 0.605/0.644/0.666, beats the cap on 6/6, 5/6, 5/6 ODs; 1.74x the exact
+  dynamic optimum). Two integrity amendments were ledgered BEFORE results: per-seed refs (an
+  LP-degeneracy wobble of ~1-2% in the cap across processes, discovered in the pool logs) and
+  MEASURED static baselines (the local-search static optimum improves the cap by only 2-5%, so
+  the pass beats every static object as measurement, not construction). Naive-dynamic
+  reconciliation: full-menu anti-repeat FAILS (1.37x: shared segments defeat naive avoidance);
+  the composed disjoint+anti-repeat rule (0.50-0.61x) bounds the act from below; binding wording
+  recorded in the ledger. Causal no-window control + worst-case row in flight.
+- **What we learned:** (i) dynamic hedging TRANSFERS: the anti-repeat weight trains to -20
+  (route-frequency avoidance) and works on maps never seen; (ii) the composed heuristic needs
+  BOTH insights told to it — the policy discovered both, label-free; (iii) the mild-drift
+  pattern persists (seed 1 final 0.816) and select-on-train handles it; (iv) my own experiment
+  needed the same baseline-completeness treatment the static acts got — applied pre-results this
+  time.
+- **Thesis fit:** the aim's ZST sentence ("policies that standard algorithms cannot achieve") is
+  now LITERALLY true in the dynamic register with trained, multi-seed, zero-shot evidence
+  (Obj-1's D + aim-level ZST); the flagship positive act of the storyline.
+
+## 24. B2 goes live: the LLM benchmark's first real conversation  (2026-07-16 night · `experiments/b2_llm_benchmark.md` · in progress)
+
+- Prof. Angeloudis's green light + direct gateway access (port 8080 now reachable; no tunnel).
+  Design finalised with Kilian in-conversation: llama-3.3-70b + qwen3-27b, UNHINTED only, three
+  instances, ~75 conversations/model, on-box tmux runner (the prof's robustness tip), fine-tuning
+  suggestion recorded as spin-out future work. **First live conversation (llama, register (b),
+  35-159): the model committed uniform-0.125 over routes 4-11 — the MOST-overlapping cluster —
+  scoring 0.663 (3.2x eq; worse than uniform-menu-stack 0.442), while the post-probe shows it can
+  NAME a near-correct independent set when asked. Knowledge present, strategic application
+  absent: the dissociation the benchmark exists to measure.** Transcript:
+  `scratch/b2_livetest_llama_transcript.txt`; comprehension gate 1/3 (reported). Qwen live test +
+  the overnight batch follow Kilian's review.
