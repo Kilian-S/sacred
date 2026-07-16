@@ -106,3 +106,23 @@ Per-seed sacred TAP: 0.243, 0.260, 0.266, 0.296, 0.297, 0.304, 0.327, 0.329, 0.3
 - **single-convoy 33-71: sacred 0.310, paired dD vs vanilla 0.175 [0.137, 0.213] excl. 0, 10/10;**
 - 35-159 native vanilla + forced-stack rows recorded; the n=3 locks stand, these are the citable CIs.
 The statistical weak point flagged in CRITIQUE_PREFREEZE §4.3 is closed.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+Rows for BOTH n=10 ladders:
+- **35-159 (MC):** uniform-disjoint-stack **0.250** (cost 99.5), inv-vuln **0.241** — inside /
+  below SACRED's CI [0.246, 0.266]. SACRED's surviving edges: fleet cost 90.4 vs 99.5 (eq 91.0)
+  and near-equilibrium structural allocation (R0b: mass 0.62 vs eq 0.70 vs uniform 0.33).
+- **33-71 (SC, hard K=1):** uniform over the 6 disjoint routes = **0.167 = the exact
+  equilibrium** (m=6; the menu-uniform 0.455 anchor is a padded-menu row). Every trained SC
+  number (0.310 [0.275, 0.345] here; 0.276 gen10-SC; 0.362 B2-P3) sits above it. The SC act's
+  citable content is the sacred-vs-vanilla PAIRED contrast (dD 0.175 [0.137, 0.213]) and the
+  learning-dynamics account, NOT proximity to the equilibrium.

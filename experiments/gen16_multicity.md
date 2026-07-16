@@ -140,3 +140,24 @@ unseen graph (1.90 vs random 2.43). The transfer-difficulty ladder now reads: sa
 OD 1.59 (gen15) -> held-out CITY 1.68 (this) -> single-source cross-graph ~random (A2, the honest
 boundary multi-city training removes). Caveats: 6 ODs per held-out graph, N=3 K=1, the FP-drift/
 best-checkpoint discipline unchanged.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+Zero-shot rows on the SAME 6 held-out Gdansk ODs: **uniform-disjoint-stack 1.134x eq
+(beats loss_det 6/6); inverse-vuln variant 1.024x eq** — with no training, no labels, no graph
+exposure, no threat map. The gen16 generalist (1.677/1.733) does NOT beat this baseline; the
+binding transfer wording is therefore: the generalist's zero-shot value is NOT superiority over
+naive methods at K=1; it is (a) label-free learned amortisation bounded by the ladder
+distill 1.555 < retrieval 1.676 < adversarial 1.733 < random ~1.99 < vanilla 2.354 with the
+heuristic at 1.134 below all of them, and (b) the R0b structure row: zero-shot, the policy
+concentrates 0.54-0.89 mass on each instance's disjoint core (eq allocates 0.53-0.97; uniform
+~0.28) — it discovers the structure the heuristic must be told. The rescued transfer claims
+live in gen27 (dynamic register) and gen26 (K >= m-1).

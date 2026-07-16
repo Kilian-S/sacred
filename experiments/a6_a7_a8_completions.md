@@ -125,3 +125,25 @@ descriptive.
   material headroom is the norm (69% at >= 2x), so the phenomenon is prevalent and the screen
   bought margin, not existence.* One figure answers the cherry-picking question for the whole
   thesis.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+- **A6 ladder amendment:** the retrieval/distillation/generalist ladder gains its floor:
+  **uniform-disjoint-stack 1.134 < distill+val 1.555 < retrieval 1.676 < adversarial
+  1.733 < uniform-menu-stack 1.989 ~ random ~1.99 < DR 2.056 < vanilla 2.354.** Every amortiser
+  sits ABOVE the 2-line heuristic at K=1; the act's honest content is the label-free/
+  self-stopping taxonomy plus where each method's regime ENDS (labels at the wall; the
+  heuristic at K >= m-1 and under adaptation).
+- **A8 companion row (population, same 160-OD sample):** disjoint-stack/eq quantiles
+  (10/25/50/75/90) = **1.011 / 1.057 / 1.117 / 1.260 / 1.376; only 5% of ODs >= 1.5x** (vs
+  uniform-menu-stack's 93% >= 1.5x). The prevalence figure's honest caption: at K=1, calibrated
+  mixing beyond naive disjointness buys 6-26% on the interquartile population — the material
+  headroom lives at K >= m-1 (gen26), under adaptation (gen19/gen27), and multi-OD (B4).

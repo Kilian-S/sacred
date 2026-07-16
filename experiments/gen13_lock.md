@@ -90,3 +90,23 @@ destroying the model's claimed semantics). **The pre-fix/post-fix two-headline a
 (CRITIQUE_PREFREEZE §2) is retired: BOTH headlines (single-convoy gen10-SC 0.276; multi-convoy
 gen13 0.274) now sit on corrected code.** The 62-97 plateau story (gen10/gen11/gen12) stays in the
 thesis as the measured account of instance structure vs head discriminability.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+Rows for THIS ladder (35-159, N=3, K=1; mission exploitability | fleet cost per sortie):
+**uniform-disjoint-stack 0.250 | 99.5** and **inverse-vuln-disjoint-stack 0.241 | 99.5**, vs
+SACRED 0.256 [0.246, 0.266] | ~90.4 (gen14 ckpts, `models/runs/r0b_structure_discovery.json`),
+equilibrium 0.206 | 91.0, det/ALNS 0.699 | 82.7. **Honest reading:** at K=1 the heuristic
+MATCHES SACRED's security (inside its CI); SACRED's surviving K=1 edges are (a) fleet cost ~10%
+below the heuristic's, tracking the equilibrium's own (90 vs 99.5, eq 91), and (b) the
+structure-discovery result (R0b): the policy allocates 0.60-0.65 convoy-mass to the disjoint
+core (equilibrium allocates 0.703; uniform 0.333) WITHOUT being given the max-flow structure.
+The comparative headline claim moves to K >= m-1 (gen26).

@@ -56,3 +56,23 @@ Uniform synthetic agent: register (c) mean mission-failure 0.356 over 20 sorties
 0.147 and static_det 0.613, as it must be), repeat-rate 0.32; registers (a)/(b) parse and score.
 
 ## LIVE RESULTS (appended per model once credentials exist)
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+**Anchor amendment (BEFORE any live run):** register (b) gains the heuristic anchor
+**uniform-disjoint-stack 0.250** (35-159; inv-vuln 0.241) between uniform-stack 0.442 and
+SACRED 0.256; and a new PRE-REGISTERED scored question: **does the model discover
+independent-route (max-flow) reasoning?** — scored (i) behaviourally (stated mixture's mass on
+the disjoint core; distance to the heuristic vs to uniform) and (ii) by transcript annotation
+(does the rationale mention route independence/shared edges?). A model that reasons its way to
+~0.25 has matched the trained headline with language alone — a headline finding for the
+benchmark EITHER way, and exactly why the anchor must be pre-registered rather than discovered
+in review.

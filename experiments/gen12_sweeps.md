@@ -107,3 +107,22 @@ decision):** 3-seed the ho_N3K1 cell (35-159, N=3, K=1). If it holds ~0.26 tight
 natural candidate for THE post-fix multi-convoy headline (honest representations, instance
 screened before training by the same criteria that picked 62-97, near-equilibrium), retiring the
 two-headline pre-fix/post-fix asymmetry (CRITIQUE_PREFREEZE §2) entirely.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+Heuristic (uniform-disjoint-stack) rows for the 35-159 sweep cells, exact yardstick:
+K=1 **0.250** (SACRED 0.261) | K=2 **0.494** (0.500) | **K=3 0.738 (SACRED 0.661: the FIRST
+cell where trained calibration beats the strongest naive baseline; confirmed n=3 in gen26 step
+1: 0.664 +/- 0.018)** | N=2 0.249 (0.232) | N=5 **0.250 (SACRED 0.389: the heuristic WINS the
+fleet-shift cell)**. At K=4/5 the m=4 instance SATURATES for every defender (heuristic 0.966 /
+0.985 ~ det 0.964 / 0.980, greedy yardstick) = the boundary's upper edge. **The honest curve:
+learning pays in the band K = m-1 (measured) up to saturation; below it the heuristic suffices;
+above it nobody wins.** gen26 carries the K >= m claim on an m=6 instance.

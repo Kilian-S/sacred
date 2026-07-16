@@ -41,3 +41,17 @@ structurally most distant one (Istanbul, mega-city grid vs the Baltic/London org
 and beats random-init. So the cross-city ZST claim is "transfers to whichever city is held out"
 (two rotation points now: Gdansk 1.68, Istanbul 1.88), not "transfers to the one easy city we
 picked" - the §5.2 insurance the critique asked for, delivered.
+
+### DISJOINT-BASELINE APPENDIX (2026-07-16, Block R0; oracle/eval-only)
+
+> **Context (binding wording rule; CRITIQUE_16-07-26.md §1; probes
+> `scratch/disjoint_baseline_probe.py`, `scratch/r0_screen.py`, artefacts
+> `models/runs/r0_screen.json`):** the candidate menus' first routes ARE the max-flow
+> decomposition, and "uniform-stack over the edge-disjoint routes" (2 lines) is the strongest
+> NAIVE baseline. No comparative sentence in this ledger may claim SACRED beats "every
+> uncalibrated strategy class" or that its transfer is something "standard algorithms cannot
+> achieve" without the rows below beside it.
+
+Zero-shot rows on the SAME 6 held-out Istanbul ODs: **uniform-disjoint-stack 1.145x eq (beats
+loss_det 6/6); inverse-vuln 1.048x eq.** The gen22 generalist (1.880) does not beat either; the
+gen22 PASS wording is bounded accordingly (see the gen16 appendix for the full rule).
