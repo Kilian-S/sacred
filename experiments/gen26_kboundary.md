@@ -127,3 +127,44 @@ either. **BARS UNCHANGED IN FORM: PRIMARY = SACRED best-ckpt TAP (greedy yardsti
 **Step 3 launch record:** config = the step-1 config with `--od 71-33 --K 5 --greedy-br`
 (then K=6 seed 0); sorties 1200, eval-every 100, per-eval ckpts, seeds {0,1,2} 3-parallel via
 `scratch/gen26_step3.sh`; SHA = the commit landing this amendment.
+
+### Step 3 RESULT (2026-07-16, 71-33 m=6, greedy yardstick, SHA `152f880`): **PRIMARY PASSED at K=5; K=6 beats BOTH heuristic variants (prediction exceeded)**
+
+**K=5 (= m-1, the headline cell, 3 seeds):**
+
+| seed | best-ckpt TAP @ sortie | best single-ckpt @ sortie | final TAP |
+|---|---|---|---|
+| 0 | 0.690 @ 600 | 0.655 @ 600 | 0.708 |
+| 1 | 0.656 @ 1200 | 0.653 @ 500 | 0.656 |
+| 2 | 0.654 @ 900 | 0.662 @ 1200 | 0.659 |
+
+> **Mean best-checkpoint TAP 0.667 +/- 0.016: < uniform-disjoint-stack 0.705 on 3/3 seeds AND
+> pooled (PRIMARY PASS).** STRONG (< inv-vuln 0.638): NOT met, reported plainly — at K = m-1 the
+> vulnerability-weighted heuristic remains ahead of the trained policy on this instance.
+
+**K=6 (= m, the saturation boundary point, 1 seed):** best-ckpt TAP **0.718** @ 800 (final
+0.769) vs inv-vuln-disjoint 0.766 < uniform-disjoint 0.800 < shortest-stack 0.833. **The
+pre-registered expectation ("at K = m nobody wins") was WRONG in SACRED's favour: once the
+interdiction budget covers the whole disjoint set, BOTH naive variants die and the trained
+policy still finds shared-edge escapes** (single seed; a boundary point, not a headline).
+
+**Side observation (chapter-worthy):** the last-iterate drift that plagues every K=1 result
+nearly VANISHES at high K (K=5 finals 0.656-0.708 ~ bests; seed 1's final IS its best; K=1
+finals were 0.80-0.95 off 0.25-0.28 bests). Plausible mechanism: at high K the attacker's
+coverage pressure is strong everywhere on the simplex, so the uniform attractor that pulls the
+last iterate off the K=1 hedge is much weaker. Best-checkpoint discipline retained regardless.
+
+**The gen26 boundary map (the act's product; all same-yardstick, fidelity <= 1.8% at K <= 3):**
+
+| K vs m | cell | uniform-disjoint | inv-vuln-disjoint | SACRED | read |
+|---|---|---|---|---|---|
+| K << m | 35-159 K=1 (m=4, exact) | 0.250 | 0.241 | 0.256 [0.246, 0.266] | heuristics suffice |
+| K = m-1 | 35-159 K=3 (exact) | 0.738 | 0.737 | **0.664 +/- 0.018** | SACRED beats BOTH |
+| K = m-1 | 71-33 K=5 (m=6, greedy, past the exact wall) | 0.705 | 0.638 | **0.667 +/- 0.016** | beats uniform; inv-vuln ahead |
+| K = m | 71-33 K=6 (greedy, past the wall) | 0.800 | 0.766 | **0.718** (1 seed) | SACRED alone survives saturation |
+
+**The claim gen26 banks (Obj-5, rescued):** *when the interdiction budget approaches and crosses
+the min-cut — exactly the regime where the exact LP is infeasible (no labels: K=5 matrix 2.2 GB,
+K=6 14 GB) and naive disjoint randomisation saturates — adversarially self-played SACRED beats
+the strongest naive heuristics, with the certified-interval greedy yardstick and <= 1.8%
+measured fidelity below the wall.* At K << m the heuristics suffice and the thesis says so.
