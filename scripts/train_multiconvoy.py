@@ -25,12 +25,15 @@ import torch
 from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
-from src.baselines.multiconvoy_oracle import best_response_attacker_multi, objective_value, solve_multiconvoy
+from src.baselines.multiconvoy_oracle import (best_response_attacker_multi, greedy_br_attacker,
+                                              objective_value, solve_multiconvoy)
 from src.baselines.multiconvoy_planners import classical_baselines
 from src.env.smdp_wrapper import SMDPTransition
 from src.envs.multiconvoy_interdiction import make_multiconvoy_env
 
 TAP_K = 5
+GREEDY_BR_EPS = 0.15   # gen26 greedy-BR mode: per-sortie prob of a one-edge-perturbed committed set
+                       # (fixed BEFORE the first run, never tuned on outcomes; the ledger records it)
 
 
 def hop_probs(prot, obs, ci, allowed):
@@ -229,12 +232,48 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
     occ_seq: list[int] = []                # per-sortie occupancy-index log (smooth-FP trailing window)
     smooth_probs = None                    # smooth-FP attacker distribution over interdiction sets
     committed = None
+    # gen26 greedy-BR mode (env built with greedy_br=True; obj_matrix is None): the attacker is the
+    # verified submodular greedy BR to the trailing-window occupancy support; smoothing = with prob
+    # GREEDY_BR_EPS the committed set has ONE member edge swapped for a random candidate (the
+    # sharp-pressure + residual-unpredictability role the tau=0.05 softmax plays below the wall).
+    greedy_mode = env.obj_matrix is None
+    greedy_set = None
+
+    def _window_support(seq, window):
+        win = seq[-window:]
+        if not win:  # initial attacker belief = uniform-DISJOINT-stack (the R0 heuristic prior;
+            # design decision, gen26 ledger: a sensible prior that needs no matrix)
+            dis, used = [], set()
+            for i, re_ in enumerate(env.game.route_edges):
+                if not (re_ & used):
+                    dis.append(i); used |= re_
+            R_ = env.game.n_routes
+            return [(tuple(env.config.N if i == r else 0 for i in range(R_)), 1.0 / len(dis))
+                    for r in dis]
+        from collections import Counter
+        cnt = Counter(win)
+        tot = float(sum(cnt.values()))
+        return [(tuple(int(x) for x in env.occupancies[i]), c / tot) for i, c in cnt.items()]
+
+    def _perturb_set(edge_set, rng_):
+        pool = [e for e in env._cand_edges if frozenset(e) not in set(edge_set)]
+        if not pool or not edge_set:
+            return edge_set
+        out = list(edge_set)
+        out[rng_.integers(len(out))] = frozenset(pool[rng_.integers(len(pool))])
+        return tuple(out)
     pol_hist = []
     hist = []
     t_chunk = time.time()
     for k in range(sorties):
         if adversarial and (committed is None or k % switch_every == 0):
-            if attacker_mode == "smooth":
+            if greedy_mode:
+                greedy_set, _ = greedy_br_attacker(env.game.route_edges, env.vuln_by_edge,
+                                                   _window_support(occ_seq, smooth_window),
+                                                   env.config.N, env.config.K,
+                                                   env.config.objective, env.config.threshold_m)
+                committed = -1  # sentinel; committed EDGES are chosen per sortie below
+            elif attacker_mode == "smooth":
                 # TRUE smooth fictitious play via the shared B2-P3-proven discipline (fp_dynamics):
                 # softmax BR to the TRAILING-WINDOW occupancy play, recomputed per block; the iset is
                 # SAMPLED FRESH EVERY sortie below (block-holding one iset is the cycling regime).
@@ -248,10 +287,17 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 occ_dist = played / played.sum() if played.sum() > 0 else np.ones(n_occ) / n_occ
                 committed, _ = best_response_attacker_multi(env.obj_matrix, occ_dist)
         env.reset()
+        p_committed = None
         if adversarial:
-            if attacker_mode == "smooth":  # fresh committed iset every sortie (smooth FP)
-                committed = sample_smooth_iset(smooth_probs, rng)
-            env.commit(committed)
+            if greedy_mode:
+                edges = (_perturb_set(greedy_set, rng) if rng.random() < GREEDY_BR_EPS
+                         else greedy_set)
+                env.commit_set(edges)
+                p_committed = env.route_interception(edges)
+            else:
+                if attacker_mode == "smooth":  # fresh committed iset every sortie (smooth FP)
+                    committed = sample_smooth_iset(smooth_probs, rng)
+                env.commit(committed)
         copy_prob = (max(0.0, 1.0 - k / forced_copy_warmup)
                      if (frozen_leader is not None and forced_copy_warmup > 0) else 0.0)
         steps, occ, _ = route_one(prot, env, fleet_route=fleet_route, leader_policy=frozen_leader,
@@ -262,7 +308,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         if adversarial:
             # analytic (expected) mission-failure reward: dense, low-variance, unbiased replacement
             # for the sampled Bernoulli env.resolve() (verified). committed = the FP interdictor.
-            p = env.game.payoff[:, committed]
+            p = p_committed if p_committed is not None else env.game.payoff[:, committed]
             reward = -interception_loss * objective_value(np.asarray(occ), p, env.config.N,
                                                           env.config.objective, env.config.threshold_m)
         else:
@@ -323,8 +369,8 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 H_lead, H_foll = role_entropies(routes, env.game.n_routes)
                 stack_rate, follow_rate = coordination_stats(routes)
             pol_hist.append(d)
-            _, expl = best_response_attacker_multi(env.obj_matrix, d)
-            _, expl_tap = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-TAP_K:], axis=0))
+            expl = env.exploitability_of_occupancy_dist(d)
+            expl_tap = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-TAP_K:], axis=0))
             if ckpt_dir is not None:  # per-eval checkpoint: best-checkpoint becomes a re-evaluable artefact
                 Path(ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(Path(ckpt_dir) / f"actor_ep{k + 1}.pt"))
@@ -340,7 +386,9 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                       f"alpha L{prot.alpha:.2f}/F{prot.alpha_foll:.2f} fw {fw:.2f} {rw}| "
                       f"stack {stack_rate:.2f} follow {follow_rate:.2f} | H_lead {H_lead:.2f} H_foll {H_foll:.2f} | "
                       f"train {t_train:4.0f}s eval {t_eval:3.0f}s   "
-                      f"(loss_mixed={sol.loss_mixed:.3f}, ALNS={baselines['alns']:.3f})", flush=True)
+                      + (f"(loss_mixed={sol.loss_mixed:.3f}, ALNS={baselines['alns']:.3f})"
+                         if sol is not None else
+                         f"(GREEDY yardstick; heuristic={baselines['heuristic']:.3f})"), flush=True)
             t_chunk = time.time()
     if fleet_route and env.config.menu_select:  # EXACT final reading (see the eval block above)
         d, lead = exact_fleet_occ_dist(prot, env)
@@ -353,13 +401,13 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         H_lead, H_foll = role_entropies(routes, env.game.n_routes)
         stack_rate, follow_rate = coordination_stats(routes)
     pol_hist.append(d)
-    _, expl_tap = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-TAP_K:], axis=0))
-    _, expl = best_response_attacker_multi(env.obj_matrix, d)
+    expl_tap = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-TAP_K:], axis=0))
+    expl = env.exploitability_of_occupancy_dist(d)
     # STATIONARY-TAIL time-average (zero-sum FP: the equilibrium is the time-average, not per-eval
     # play): exploitability of the MEAN occupancy over the last TAIL evals, its per-eval expl
     # amplitude (std), and mean stack there -- the trustworthy read once coordination has plateaued.
     tail_k = min(len(pol_hist), 12)
-    _, tail_expl = best_response_attacker_multi(env.obj_matrix, np.mean(pol_hist[-tail_k:], axis=0))
+    tail_expl = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-tail_k:], axis=0))
     tail_amp = float(np.std([h[1] for h in hist[-tail_k:]])) if len(hist) >= 2 else 0.0
     tail_stack = float(np.mean([h[5] for h in hist[-tail_k:]])) if hist else stack_rate
     if save_actor:
@@ -455,6 +503,11 @@ def main():
     p.add_argument("--head-term-lr", type=float, default=None,
                    help="dedicated lr for the route_feats/route_bias/follow_w param groups (gen11b: "
                         "~3e-2); None = inherit the base optimiser lr (the gen11 silent no-op)")
+    p.add_argument("--greedy-br", action="store_true",
+                   help="gen26: MATRIX-FREE mode for K past the exact wall (K>=4): the game is built "
+                        "at K=1, obj_matrix is never enumerated, and the attacker + exploitability "
+                        "eval use the verified submodular greedy BR (A4-core, (1-1/e) guarantee, "
+                        "disclosed). Anchors are computed under the SAME greedy yardstick.")
     p.add_argument("--fp-tau-final", type=float, default=None,
                    help="gen17/C4 annealed smoothing: linearly anneal the smooth-FP tau from "
                         "--fp-tau to this value across training; None = constant tau")
@@ -463,13 +516,51 @@ def main():
     s, t = args.od.split("-"); band = tuple(float(x) for x in args.band.split(","))
     env = make_multiconvoy_env(od=(s, t), N=args.N, K=args.K, edge_vuln_band=band,
                                k_extra_routes=args.k_extra, menu_select=(args.menu_select or args.k_extra > 0),
-                               interception_loss=args.interception_loss, objective="mission", seed=args.seed)
-    sol = solve_multiconvoy(env.game, args.N, "mission")
-    baselines = classical_baselines(env.game, args.N, "mission")
+                               interception_loss=args.interception_loss, objective="mission", seed=args.seed,
+                               greedy_br=args.greedy_br)
     mean_cost = float(env.game.travel_cost.mean())
-    print(f"Multi-convoy {s}->{t} N={args.N} K={args.K}: {env.game.n_routes} routes, "
-          f"{len(env.occupancies)} occupancies. Ladder: shortest_path {baselines['shortest_path']:.3f} > "
-          f"ALNS {baselines['alns']:.3f} (= loss_det {sol.loss_det:.3f}) >> loss_mixed {sol.loss_mixed:.3f}\n")
+    if args.greedy_br:
+        # PAST THE EXACT WALL: no LP, no ALNS worst-case, no equilibrium exists computably.
+        # Anchors under the SAME greedy yardstick: shortest-stack, uniform-disjoint-stack (the R0
+        # heuristic), inverse-vuln-disjoint-stack. All arms in this mode are compared same-yardstick;
+        # absolute statements carry the certified interval [v, v/(1-1/e)].
+        sol = None
+        R_ = env.game.n_routes
+        dis, used = [], set()
+        for i, re_ in enumerate(env.game.route_edges):
+            if not (re_ & used):
+                dis.append(i); used |= re_
+        def _stack_support(routes_idx, weights):
+            w = np.asarray(weights, float); w = w / w.sum()
+            return [(tuple(env.config.N if i == r else 0 for i in range(R_)), float(wt))
+                    for wt, r in zip(w, routes_idx)]
+        def _greedy_val(support):
+            _, v = greedy_br_attacker(env.game.route_edges, env.vuln_by_edge, support,
+                                      env.config.N, env.config.K,
+                                      env.config.objective, env.config.threshold_m)
+            return float(v)
+        qs = []
+        for r in dis:
+            worst = max(env.vuln_by_edge.get(e, 1.0) for e in env.game.route_edges[r])
+            qs.append(1.0 - (1.0 - worst) ** env.config.N)
+        cheapest = int(np.argmin(env.game.travel_cost))
+        baselines = {
+            "shortest_path": _greedy_val(_stack_support([cheapest], [1.0])),
+            "heuristic": _greedy_val(_stack_support(dis, [1.0] * len(dis))),
+            "heuristic_invvuln": _greedy_val(_stack_support(dis, [1.0 / max(q, 1e-9) for q in qs])),
+        }
+        print(f"Multi-convoy {s}->{t} N={args.N} K={args.K} [GREEDY-BR MODE, no exact oracle]: "
+              f"{env.game.n_routes} routes, {len(env.occupancies)} occupancies, "
+              f"{len(env._cand_edges)} candidate edges (C(E,K) never enumerated).\n"
+              f"  Greedy-yardstick anchors: shortest-stack {baselines['shortest_path']:.3f} | "
+              f"uniform-disjoint-stack {baselines['heuristic']:.3f} | "
+              f"inv-vuln-disjoint-stack {baselines['heuristic_invvuln']:.3f}\n")
+    else:
+        sol = solve_multiconvoy(env.game, args.N, "mission")
+        baselines = classical_baselines(env.game, args.N, "mission")
+        print(f"Multi-convoy {s}->{t} N={args.N} K={args.K}: {env.game.n_routes} routes, "
+              f"{len(env.occupancies)} occupancies. Ladder: shortest_path {baselines['shortest_path']:.3f} > "
+              f"ALNS {baselines['alns']:.3f} (= loss_det {sol.loss_det:.3f}) >> loss_mixed {sol.loss_mixed:.3f}\n")
 
     common = dict(sorties=args.sorties, seed=args.seed, switch_every=args.switch_every,
                   batch_size=args.batch_size, eval_every=args.eval_every, sol=sol, baselines=baselines,
@@ -533,16 +624,29 @@ def main():
         fc = train_defender(env, adversarial=True, attacker_mode=args.attacker_mode, fleet_route=True,
                             save_actor=(args.save_leader or None), **common)
         print(f"\n=== FLEET-ROUTE CONTROL ({s}->{t}, N={args.N}) ===")
-        print(f"  loss_mixed {sol.loss_mixed:.3f}   fleet-route FINAL: {fc['expl_tap']:.3f} (TAP) / "
-              f"{fc['expl']:.3f} (policy)   stack {fc['stack_rate']:.2f} (1.00 by construction)")
-        print(f"  BEST-CHECKPOINT (lowest exploitability; final is misleading under minimax): "
-              f"TAP {fc['best_tap']:.3f} @ sortie {fc['best_tap_sortie']} | "
-              f"single-ckpt {fc['best_expl']:.3f} @ sortie {fc['best_expl_sortie']}")
-        print(f"  ladder: shortest {baselines['shortest_path']:.3f} > ALNS {baselines['alns']:.3f} "
-              f">> SACRED(best-ckpt) {fc['best_tap']:.3f} > equilibrium {sol.loss_mixed:.3f}")
+        if sol is None:  # greedy-BR mode: same-yardstick ladder, certified interval for absolutes
+            print(f"  [GREEDY yardstick; certified interval = [v, v/(1-1/e)] = [v, {1/(1-1/np.e):.3f}v]]")
+            print(f"  fleet-route FINAL: {fc['expl_tap']:.3f} (TAP) / {fc['expl']:.3f} (policy)")
+            print(f"  BEST-CHECKPOINT: TAP {fc['best_tap']:.3f} @ sortie {fc['best_tap_sortie']} | "
+                  f"single-ckpt {fc['best_expl']:.3f} @ sortie {fc['best_expl_sortie']}")
+            print(f"  ladder (same greedy yardstick): shortest-stack {baselines['shortest_path']:.3f} > "
+                  f"uniform-disjoint {baselines['heuristic']:.3f} > "
+                  f"inv-vuln-disjoint {baselines['heuristic_invvuln']:.3f} vs "
+                  f"SACRED(best-ckpt) {fc['best_tap']:.3f}")
+        else:
+            print(f"  loss_mixed {sol.loss_mixed:.3f}   fleet-route FINAL: {fc['expl_tap']:.3f} (TAP) / "
+                  f"{fc['expl']:.3f} (policy)   stack {fc['stack_rate']:.2f} (1.00 by construction)")
+            print(f"  BEST-CHECKPOINT (lowest exploitability; final is misleading under minimax): "
+                  f"TAP {fc['best_tap']:.3f} @ sortie {fc['best_tap_sortie']} | "
+                  f"single-ckpt {fc['best_expl']:.3f} @ sortie {fc['best_expl_sortie']}")
+            print(f"  ladder: shortest {baselines['shortest_path']:.3f} > ALNS {baselines['alns']:.3f} "
+                  f">> SACRED(best-ckpt) {fc['best_tap']:.3f} > equilibrium {sol.loss_mixed:.3f}")
         if args.json_out:
             Path(args.json_out).write_text(json.dumps(
-                {"control": "fleet_route", "loss_mixed": sol.loss_mixed, "fleet_route": fc}, indent=2))
+                {"control": "fleet_route", "greedy_br": bool(args.greedy_br),
+                 "loss_mixed": (sol.loss_mixed if sol is not None else None),
+                 "anchors": {k: float(v) for k, v in baselines.items()},
+                 "fleet_route": fc}, indent=2))
         return
     print("[vanilla] training (nominal travel objective, no adversary)...")
     v = train_defender(env, adversarial=False, attacker_mode=args.attacker_mode, **common)

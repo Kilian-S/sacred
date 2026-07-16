@@ -55,6 +55,12 @@ class MultiConvoyConfig:
     objective: str = "mission"             # mission (P>=1) | linear (E[frac]) | threshold (P>=m)
     threshold_m: int = 1
     seed: int = 0                          # interception-sampling RNG seed
+    greedy_br: bool = False                # gen26: MATRIX-FREE mode for K past the exact wall (K>=4).
+                                           # The game object is built at K=1 (routes/costs/per-edge
+                                           # vulnerabilities only); obj_matrix is NOT built; the
+                                           # attacker/eval use the verified submodular greedy BR
+                                           # (A4-core, (1-1/e) guarantee). Default False = the exact
+                                           # path, byte-identical.
 
 
 @dataclass
@@ -94,7 +100,10 @@ class MultiConvoyInterdictionEnv:
                 graph, (frozenset(e) for e in graph.edges() if e[0] != e[1]),  # skip self-loops
                 band=tuple(config.edge_vuln_band), weight=config.weight, norm_edges=norm)
             self.edge_vulnerability = {tuple(sorted(e, key=repr)): p for e, p in full.items()}
-        self.game = build_interdiction_game(graph, s, t, config.K, k_extra=config.k_extra_routes,
+        # gen26 greedy-BR mode: build the game at K=1 (routes, costs, per-edge vulnerabilities);
+        # the TRUE K lives in config.K and is honoured by the greedy attacker/eval paths below.
+        game_K = 1 if config.greedy_br else config.K
+        self.game = build_interdiction_game(graph, s, t, game_K, k_extra=config.k_extra_routes,
                                             weight=config.weight, intercept_fn=intercept_fn)
         if self.game.n_routes < 2:
             raise ValueError("interdiction game needs >= 2 candidate routes (higher-connectivity OD)")
@@ -106,10 +115,24 @@ class MultiConvoyInterdictionEnv:
         self.first_hops: list[NodeId] = sorted(self.routes_by_first_hop, key=repr)
         self._cand_edges = sorted(set().union(*self.game.route_edges), key=repr)
         # oracle objective matrix (occupancies x interdiction sets): the exploitability yardstick.
-        self.occupancies, self.obj_matrix = objective_matrix(
-            self.game, config.N, config.objective, config.threshold_m)
+        # greedy_br mode (K >= 4, past the exact wall): NO matrix; the yardstick is the verified
+        # submodular greedy BR (A4-core) via exploitability_of_occupancy_dist below.
+        if config.greedy_br:
+            from src.baselines.multiconvoy_oracle import occupancies as _occupancies
+            self.occupancies = _occupancies(self.game.n_routes, config.N)
+            self.obj_matrix = None
+            # per-edge vulnerability from the K=1 game itself (payoff[:, j] = p_e on routes
+            # crossing single-edge iset j, else 0), so hard AND soft interception both work and
+            # the greedy attacker sees exactly the exact game's edge model.
+            self.vuln_by_edge = {iset[0]: float(self.game.payoff[:, j].max())
+                                 for j, iset in enumerate(self.game.interdiction_sets)}
+        else:
+            self.occupancies, self.obj_matrix = objective_matrix(
+                self.game, config.N, config.objective, config.threshold_m)
+            self.vuln_by_edge = {}
         self._occ_index = {tuple(int(x) for x in o): i for i, o in enumerate(self.occupancies)}
         self._committed_iset: int | None = None
+        self._committed_edges: tuple | None = None   # greedy_br mode: explicit K-edge commitment
         self._convoy_routes: list[int | None] = [None] * config.N
         self._cur = 0
         # Menu-mode per-instance conditioning, attached to every observation so it travels WITH the
@@ -135,6 +158,7 @@ class MultiConvoyInterdictionEnv:
     # -- episode ---------------------------------------------------------------
     def reset(self) -> dict | None:
         self._committed_iset = None
+        self._committed_edges = None
         self._convoy_routes = [None] * self.config.N
         self._cur = 0
         if self.graph_env is not None:
@@ -151,6 +175,24 @@ class MultiConvoyInterdictionEnv:
         if not 0 <= iset_index < len(self.game.interdiction_sets):
             raise IndexError("iset_index out of range")
         self._committed_iset = int(iset_index)
+
+    def commit_set(self, edges) -> None:
+        """greedy_br mode: commit an explicit set of K edges (frozensets), no iset enumeration."""
+        self._committed_edges = tuple(frozenset(e) for e in edges)
+
+    def route_interception(self, edges) -> "np.ndarray":
+        """Per-route interception probability under an explicit committed edge set (greedy_br
+        mode's analytic-reward companion to game.payoff[:, iset]): p_r = 1 - prod(1 - p_e) over
+        the committed edges the route crosses."""
+        p = np.zeros(self.game.n_routes)
+        edges = [frozenset(e) for e in edges]
+        for r, re_ in enumerate(self.game.route_edges):
+            surv = 1.0
+            for e in edges:
+                if e in re_:
+                    surv *= 1.0 - self.vuln_by_edge.get(e, 1.0)
+            p[r] = 1.0 - surv
+        return p
 
     def commit_edge(self, edge) -> None:
         """K=1: commit by edge (frozenset or (u,v) key)."""
@@ -242,12 +284,17 @@ class MultiConvoyInterdictionEnv:
 
     # -- resolution ------------------------------------------------------------
     def resolve(self) -> MultiConvoyOutcome:
-        if self._committed_iset is None:
+        if self._committed_iset is None and self._committed_edges is None:
             raise RuntimeError("attacker has not committed this sortie")
         if any(r is None for r in self._convoy_routes):
             raise RuntimeError("not all convoys have been routed")
-        j = self._committed_iset
-        p = self.game.payoff[:, j]                       # per-route interception probability
+        if self._committed_edges is not None:            # greedy_br mode: explicit K-edge set
+            j = -1
+            p = self.route_interception(self._committed_edges)
+            self._committed_edges = None
+        else:
+            j = self._committed_iset
+            p = self.game.payoff[:, j]                   # per-route interception probability
         caught = tuple(bool(self._rng.random() < float(p[r])) for r in self._convoy_routes)
         n_caught = int(sum(caught))
         obj = self._objective_value(n_caught)
@@ -278,7 +325,19 @@ class MultiConvoyInterdictionEnv:
         return dist / dist.sum() if dist.sum() > 0 else dist
 
     def exploitability_of_occupancy_dist(self, occupancy_dist: np.ndarray) -> float:
-        """Loss of a defender occupancy distribution under the oracle best-response interdictor."""
+        """Loss of a defender occupancy distribution under the best-response interdictor.
+        Exact (obj_matrix) below the wall; the verified submodular greedy BR (A4-core,
+        (1 - 1/e) guarantee, disclosed wherever cited) in greedy_br mode."""
+        if self.obj_matrix is None:
+            from src.baselines.multiconvoy_oracle import greedy_br_attacker
+            support = [(tuple(int(x) for x in o), float(w))
+                       for o, w in zip(self.occupancies, occupancy_dist) if w > 1e-12]
+            total = sum(w for _, w in support)
+            support = [(o, w / total) for o, w in support]
+            _, loss = greedy_br_attacker(self.game.route_edges, self.vuln_by_edge, support,
+                                         self.config.N, self.config.K,
+                                         self.config.objective, self.config.threshold_m)
+            return float(loss)
         _, loss = best_response_attacker_multi(self.obj_matrix, occupancy_dist)
         return loss
 
@@ -309,6 +368,7 @@ def make_multiconvoy_env(
     objective: str = "mission",
     threshold_m: int = 1,
     seed: int = 0,
+    greedy_br: bool = False,
     nodes_path: str = _DEFAULT_NODES,
     edges_path: str = _DEFAULT_EDGES,
     tasks_path: str = _DEFAULT_TASKS,
@@ -332,5 +392,6 @@ def make_multiconvoy_env(
                             travel_cost_weight=travel_cost_weight, k_extra_routes=k_extra_routes,
                             weight="w", edge_vuln_band=edge_vuln_band,
                             absolute_vuln_norm=absolute_vuln_norm, menu_select=menu_select,
-                            objective=objective, threshold_m=threshold_m, seed=seed)
+                            objective=objective, threshold_m=threshold_m, seed=seed,
+                            greedy_br=greedy_br)
     return MultiConvoyInterdictionEnv(G, cfg, graph_env=graph_env)
