@@ -122,3 +122,48 @@ game build). gen19's "reaches the dynamic optimum" result is real, but on that i
 optimum itself is nearly attained by a two-line rotation; the unique learning content is (a)
 discovering anti-repeat behaviour without being told its form, and (b) the m=3 regime (all of
 gen27's held-out pool) where rotation fails and calibrated stochastic anti-repeat is required.
+
+### RESULT: the three history-aware seeds (2026-07-16 evening, 12,000 sorties each, SHA `2f4ffd5`-era + amendments): **PRIMARY PASSED on 3/3 seeds; STRONG PASSED**
+
+(select-on-train = the standing deployable selection; per-seed refs per the amendment;
+artefacts `models/runs/gen27_dyn_generalist/seed{0,1,2}.json`)
+
+| seed | sel-on-train @ sortie | held-out mean ratio-to-cap | beats cap | vs history_opt | sel-on-test | final iterate |
+|---|---|---|---|---|---|---|
+| 0 | 11,000 | **0.605** | 6/6 | 1.66x | 0.602 | 0.647 |
+| 1 | 9,520 | **0.644** | 5/6 | 1.76x | 0.615 | 0.816 |
+| 2 | 11,000 | **0.666** | 5/6 | 1.81x | 0.630 | 0.631 |
+
+> **Pooled held-out ratio-to-iid_eq 0.639 +/- 0.025 (3 seeds). PRIMARY (mean < 1.0 AND < 1.0 on
+> >= 4/6 ODs, >= 2/3 seeds): PASS on every clause, 3/3 seeds. STRONG (<= 2x history_opt): PASS
+> (mean 1.74x).** Select-on-test agrees with select-on-train (0.602-0.630 vs 0.605-0.666: no
+> test-selection flattery); final-iterate drift mild (seed 1 to 0.816), disclosed as standing.
+> The one hard OD (index 1, 106-173) sits at 0.90-1.07 across seeds: reported per-OD, no
+> averaging-away.
+
+**The static-baseline rows (oracle-exact, `static_rows.json`, pre-registered by the amendment):**
+on every held-out OD the LOCAL-SEARCH STATIC OPTIMUM improves on the equilibrium-mixture cap by
+only 2-5% (0.179-0.227 vs iid_eq 0.187-0.236), and both max-flow heuristics' static values sit
+within +/-5% of the cap. **So beating the cap at 0.639 beats EVERY static object by a wide
+measured margin — the LP mixture, both disjoint heuristics, and the locally-optimal static
+mixture — as measurement, not construction.**
+
+**The naive-DYNAMIC rows (the second pass's bar, reconciled 2026-07-16 late):** two variants,
+both two-line rules:
+- *anti-repeat over the FULL menu* (uniform over routes not in the last-3 window): **mean 1.368x
+  the cap (WORSE than static play on 5/6 ODs)** — on shared-edge menus, avoiding your recent
+  ROUTES still lands you on their shared SEGMENTS; naive anti-repeat fails structurally.
+- *anti-repeat over the DISJOINT routes* (the COMPOSITION of both known insights: independence +
+  anti-repeat; the second pass's exact power-iteration row): **0.50-0.61x the cap** — better
+  than the trained policy's 0.639 pooled.
+
+**The honest claim this act banks (binding wording):** *zero-shot on a never-seen city, one
+history-aware policy beats every static method — including the locally-optimal static mixture —
+by ~36%, reaches 1.74x the exact dynamic optimum, and matches (from slightly above) the band of
+the composed independence+anti-repeat rule, having DISCOVERED both of that rule's insights from
+adversarial experience alone: label-free, structure-untold.* The composed rule itself needs both
+insights handed to it; the policy found them. Sentences claiming the policy BEATS every simple
+dynamic rule are NOT licensed; sentences claiming no static or naive-dynamic single-insight rule
+touches it are.
+
+**Worst-case row + no-window causal control: appended when their runs complete (in flight).**
