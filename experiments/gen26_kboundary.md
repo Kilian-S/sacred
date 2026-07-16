@@ -83,3 +83,47 @@ comparisons carry the claims.
 > naive disjointness" = the measured upper edge of the boundary map.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+### Step 1 RESULT (2026-07-16, 3 seeds, ~35 min at 3-parallel, SHA `c9c474a`): **PASSED every clause, STRONG met**
+
+| seed | best-ckpt TAP @ sortie | best single-ckpt @ sortie | final TAP (drift, disclosed) |
+|---|---|---|---|
+| 0 | 0.656 @ 700 | 0.686 @ 600 | 0.795 |
+| 1 | 0.647 @ 300 | 0.649 @ 500 | 0.954 |
+| 2 | 0.690 @ 500 | 0.700 @ 200 | 0.833 |
+
+> **Mean exact best-checkpoint TAP 0.664 +/- 0.018 (3 seeds): < the heuristic 0.738 on 3/3 seeds
+> AND pooled (PRIMARY PASS); pooled 0.664 <= 0.68 (STRONG PASS).** Anchors: equilibrium 0.604,
+> det/ALNS 0.933. Consistent with the gen12 single-seed 0.661 (different SHA, context only).
+> The K=3 crossover is REAL at n=3: at K = m-1 (m=4 disjoint routes) trained calibration beats
+> the strongest naive heuristic, closing 55% of the heuristic-to-equilibrium gap. Last-iterate
+> drift persists as always (final TAP 0.80-0.95), best-checkpoint discipline standing.
+
+### Step 2 RECORD (2026-07-16, SHA `77fe57f`): greedy-BR mode built, tested, smoked
+
+Suite **167 passed** (161 + 6 new in `tests/test_greedy_trainer.py`: greedy == exact at K=1;
+(1 - 1/e) bound at K=2; payoff-column agreement; flag-off path untouched). 60-sortie K=5 smoke
+on 71-33 runs end-to-end matrix-free; its anchors reproduce the R0c screen exactly (uniform-
+disjoint 0.705). **Fidelity on the step-3 instance (71-33, oracle-side, 5 random distributions
+per K): greedy within 0.0% / 1.4% / 1.8% of the exact yardstick at K = 1 / 2 / 3** — far inside
+the certified (1 - 1/e) worst case; reported wherever the greedy yardstick is cited.
+
+### Step 3 AMENDMENT (2026-07-16, BEFORE launch, disclosed): the K=4 cell moves off 35-159
+
+The step-3 cells above named 35-159 K=4 as the headline cell; the R0c boundary screen (run AFTER
+this ledger was committed; artefact `models/runs/r0_screen.json`) shows 35-159 (m=4) SATURATES at
+K=4/5: heuristic 0.966/0.985 ~ det 0.964/0.980 under the greedy yardstick — no defender has
+meaningful room, so training there would spend CPU on a dead cell. Per the pre-registered
+re-aim clause ("instances from R0c; prefer m=5-6"), the headline cell moves to the R0c-screened
+**71-33 (m=6, R=11, E=43): K=5 (= m-1, 3 seeds)** with **K=6 (= m, 1 seed)** as the saturation
+boundary point. Anchors under the common greedy yardstick (computed pre-launch): shortest-stack
+0.833 > **uniform-disjoint-stack 0.705** > inv-vuln-disjoint-stack 0.638. The 35-159 K=4/5
+saturation rows are reported as oracle-side boundary rows (no training). Wall statement
+(honest): at K=5 the exact matrix on 71-33 is 286 x 962,598 (~2.2 GB, RAM-hostile at
+3-parallel); at K=6 it is 286 x 6.1M (~14 GB, infeasible outright); labels do not exist at
+either. **BARS UNCHANGED IN FORM: PRIMARY = SACRED best-ckpt TAP (greedy yardstick) < 0.705 on
+>= 2/3 seeds AND pooled, on the 71-33 K=5 cell. STRONG: pooled < 0.638 (the inv-vuln variant).**
+
+**Step 3 launch record:** config = the step-1 config with `--od 71-33 --K 5 --greedy-br`
+(then K=6 seed 0); sorties 1200, eval-every 100, per-eval ckpts, seeds {0,1,2} 3-parallel via
+`scratch/gen26_step3.sh`; SHA = the commit landing this amendment.
