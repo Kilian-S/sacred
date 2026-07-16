@@ -688,3 +688,45 @@ to their supersession notes.)*
 - **Thesis fit:** ZST becomes a boundary-mapped result (OD -> city -> construction-family); gen17/18 are
   measured boundaries (Obj-1 dynamics, Obj-3 coordination); gen19 returns the D of SDVRP in the
   security-game register (Obj-1/2). Next: F2 (Obj-1 learned agent), the ZST hardening rows, C1.
+
+## 22. The disjoint-baseline finding, Block R repair, and gen26: the K-to-min-cut act  (2026-07-16 · branch `gen08-interdiction` · `CRITIQUE_16-07-26.md`, ledgers gen26_kboundary + seven R0a appendices)
+
+- **Goal (prospective):** re-establish and verify the lost 2026-07-15 finding (a memory index
+  entry pointed at critique/memory files that were never committed); repair what it invalidates;
+  and relocate the thesis's positive static claim to a regime that survives it (Kilian's Block R
+  decision, full autonomous launch authority, overarching goal = a positive, scientifically
+  valid claim).
+- **Headline results:** (i) **The finding is real (oracle-exact, `scratch/disjoint_baseline_probe.py`):
+  uniform-stack over the edge-disjoint routes (the menu's own max-flow prefix) achieves the exact
+  SC equilibrium (0.167 vs trained 0.276-0.362), matches the MC headline (0.250 vs 0.256
+  [0.246, 0.266]), and transfers zero-shot at 1.13x eq (vs generalist 1.73) with no training —
+  the ladders' "uniform" anchors were padded-menu strawmen.** Rows + fleet-cost columns + binding
+  wording rules folded into all seven affected ledgers (R0a). (ii) **Surviving K=1 edges:** the
+  policy's fleet cost tracks the equilibrium's (90.4 vs 91.0; heuristic 99.5) and it allocates
+  near-equilibrium mass to the disjoint core without being told the structure (0.62 vs eq 0.703
+  vs uniform 0.333; zero-shot 0.54-0.89 tracking per-instance eq) — R0b. (iii) **gen26 (the
+  rescued static act): at K = m-1 SACRED beats BOTH max-flow heuristic variants on the exact
+  yardstick (K=3 n=3: 0.664 +/- 0.018 vs 0.737/0.738; eq 0.604; STRONG bar met), and past the
+  exact-LP wall (71-33, m=6, greedy yardstick, fidelity <= 1.8% at K <= 3) it beats
+  uniform-disjoint at K=5 (0.667 +/- 0.016 vs 0.705, 3/3) and BOTH variants at K=6 (0.718 vs
+  0.766/0.800, single seed)** — the pre-registered saturation expectation was wrong in SACRED's
+  favour. Boundary-map figure: `assets/k_boundary_map.png`.
+- **What we learned:** (i) baseline-completeness must be pre-registered like metrics (the
+  strongest practitioner heuristic was never in any comparison set for 25 generations); (ii) the
+  screens' det/eq criterion measured where DETERMINISM fails, not where naive randomisation
+  fails; (iii) learning pays in a measurable band: nothing below K = m-1, both-variant wins at
+  K = m-1 (exact), uniform-variant wins at K = m-1 past the wall, sole survivor at K = m;
+  (iv) the last-iterate drift that plagues every K=1 result nearly vanishes at high K (finals ~
+  bests) — plausibly the uniform attractor weakens when coverage pressure is high everywhere;
+  (v) a claim of record-loss magnitude must be committed in the session that produces it.
+- **Thesis progression:** the greedy-BR (matrix-free) trainer mode (flag-gated, +6 regression
+  tests, suite 167; K=5 exact matrix would be 2.2 GB, K=6 14 GB — labels genuinely absent); the
+  R0 probes as reproducible artefacts; the boundary map as the Act-IV product.
+- **What it means for the thesis:** the static headline claim moves from "beats naive
+  randomisation at K=1" (false) to **"trained where neither exact solvers nor naive heuristics
+  can follow"** (measured, pre-registered, same-yardstick), with the K << m regime conceded to
+  the heuristic in one honest sentence and the concession itself made a contribution (the
+  boundary map).
+- **Thesis fit:** Obj-5 (the rescued comparative act + the K-curve as "varied disruption" done
+  right); Obj-1/3 (the drift-vanishes-at-high-K dynamics observation); Methods (baseline
+  completeness as a named discipline beside pre-registration).
