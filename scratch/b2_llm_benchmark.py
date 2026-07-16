@@ -87,15 +87,17 @@ def gate_questions(env):
          "Answer format, three lines exactly: Q1: ... / Q2: ... / Q3: ...")
 
     def check(reply):
+        # LAST occurrence of each answer line (reasoning models restate the questions early;
+        # the first-match version misgraded correct answers — live-test fix, 2026-07-16)
         ok = 0
-        m = re.search(r"q1[:\s]*([^\n]*)", reply, re.I)
+        m = re.findall(r"q1[:\s]*([^\n]*)", reply, re.I)
         if m:
-            got = sorted({int(x) for x in re.findall(r"\d+", m.group(1))})
+            got = sorted({int(x) for x in re.findall(r"\d+", m[-1])})
             ok += int(got == shared_with_0 or (not got and not shared_with_0))
-        m = re.search(r"q2[:\s]*[^\d]*(\d+)", reply, re.I)
-        ok += int(bool(m) and int(m.group(1)) == longest)
-        m = re.search(r"q3[:\s]*[^\d]*(\d+)", reply, re.I)
-        ok += int(bool(m) and int(m.group(1)) == safest)
+        m = re.findall(r"q2[:\s]*[^\d]*(\d+)", reply, re.I)
+        ok += int(bool(m) and int(m[-1]) == longest)
+        m = re.findall(r"q3[:\s]*[^\d]*(\d+)", reply, re.I)
+        ok += int(bool(m) and int(m[-1]) == safest)
         return ok
     return q, check
 
@@ -118,7 +120,8 @@ def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperatu
                              "temperature": temperature,
                              "messages": messages}).encode(),
             headers={"Authorization": f"Bearer {key}", "content-type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as r:
+        # long-reasoning models at 12k-token budgets need minutes, not 120 s (live test 2026-07-16)
+        with urllib.request.urlopen(req, timeout=900) as r:
             return json.load(r)["choices"][0]["message"]["content"]
     raise ValueError(provider)
 
@@ -152,6 +155,9 @@ def main():
     ap.add_argument("--key", default="", help="literal API key (overrides --key-env; local box)")
     ap.add_argument("--base", default="", help="OpenAI-compatible base URL, e.g. http://localhost:18080/v1")
     ap.add_argument("--temperature", type=float, default=0.7)
+    ap.add_argument("--max-tokens", type=int, default=3000,
+                    help="reply token budget (live test 2026-07-16: 1000 truncated qwen3-27b's "
+                         "reasoning mid-decision; 3000 fits; same for all models, disclosed)")
     ap.add_argument("--sorties", type=int, default=30)
     ap.add_argument("--seed", type=int, default=0, help="episode RNG + label permutation seed")
     ap.add_argument("--print-prompts", action="store_true",
@@ -182,7 +188,7 @@ def main():
                      else "Q1: none / Q2: 0 / Q3: 0" if "Q1:" in last
                      else "\n".join(f"{i}: {1/R:.4f}" for i in range(R)))
         else:
-            reply = call_llm(a.provider, a.model, key, messages,
+            reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
                              base=a.base, temperature=a.temperature)
             time.sleep(0.5)
         transcript[-1]["reply"] = reply

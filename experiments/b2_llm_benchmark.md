@@ -76,3 +76,26 @@ the disjoint core; distance to the heuristic vs to uniform) and (ii) by transcri
 ~0.25 has matched the trained headline with language alone — a headline finding for the
 benchmark EITHER way, and exactly why the anchor must be pre-registered rather than discovered
 in review.
+
+## LAUNCH RECORD: the 35-159 overnight cell (2026-07-16 ~23:50, Kilian's explicit go)
+
+**Live-test calibration (both transcripts committed as the validation record,
+`scratch/b2_livetest_{llama,qwen}_transcript.txt`):** three harness defects found and fixed
+BEFORE any batch data: reply token budget 1000 -> 12000 (qwen3-27b reasons at length; its
+decision turn truncated mid-derivation), HTTP timeout 120 s -> 900 s, and the comprehension-gate
+checker moved to LAST-match regex (first-match misgraded a reasoning model's correct final
+answers: qwen's true gate is 3/3, llama's 1/3 stands). Live-test scores (n=1 each, NOT batch
+data): both models committed the SAME distribution — uniform over routes 4-11, the
+lowest-per-route-risk but maximally-shared cluster — scoring 0.663 (3.2x eq, worse than
+uniform-menu-stack 0.442), while the post-probe shows the independence concept is available on
+demand (qwen named {0,1,2,3} exactly). Design decisions finalised with Kilian in-conversation:
+UNHINTED only; llama-3.3-70b + qwen3-27b; three instances (35-159 tonight; Gdansk OD + 71-33
+K=5 after a harness extension tomorrow); direct gateway (no tunnel; Tailscale stays up);
+sequential per model, both models concurrent (one in-flight request each); one retry per
+conversation on transport failure; per-model wording rule ("strong open-weight models").
+
+**Tonight's cell:** per model: register (a) x 10 seeds, (b) x 10 seeds, (c) x 5 episodes
+(T=30, gen19 adversary w=3 tau=0.15); llama additionally the temperature-sensitivity row
+((b) x 5 at T=0.3 and T=0.8). Seeds drive the pre-registered label permutation. Outputs
+`models/runs/b2_llm/batch_35159/` (full transcripts in every JSON); runner
+`scratch/b2_batch_35159.sh`; SHA = the commit landing this record.
