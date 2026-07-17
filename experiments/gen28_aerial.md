@@ -470,3 +470,37 @@ baselines/eq stay as reference rows (the policy class strictly contains the menu
 disclosed). Exit criterion, pre-committed: if the walker re-aim also fails its bars (one
 attempt, same bars re-derived for the walker class), the aerial act closes as
 screen + boundary product and the trained-positive burden stays on the road acts.
+
+---
+
+## V2.3 WALKER RE-AIM (2026-07-17 evening; Kilian's go: "build and then launch")
+
+**Built (suite green; `src/envs/aerial_walker.py`, `scripts/train_aerial_walker.py`,
+`tests/test_aerial_walker.py` incl. exact-DP-vs-brute-force):** node-mode walker on the
+legal DAG (crash-proof pruning to target-reaching nodes funnels the final columns home);
+GEOMETRY CLASS v2.3 = every arm scored as waypoint-leg polylines under the line integral
+(dead-centre leg calibration exact; disclosed: spline rendering is cosmetic; the menu class is
+a strict subset of the walker class, so menu-eq is a reference anchor, not the walker's
+optimum). Reference menu = native DAG paths (lane paths per spacing where they exist - none on
+the double pinch, correctly - + seeded diverse legal walks, R=40); complete naive family as
+standing. Smooth-FP interdictor over trailing realised-survival windows (tau 0.05, window
+250); exact walker exploitability by backward DP (K=2 via chunked pairs); expected path
+length = the cost column.
+
+**V2.3 anchors (refs probe `--sorties 0`, deterministic pool; geometry-class shift moves the
+numbers vs v2.2, disclosed):** headline `dblpinch_banded_K1_r1.2` eq **0.468**, best-naive
+**0.741** (naive/eq 1.58), det 0.792. Held-out best-naive/eq: B 1.37 / 1.03 / 1.24,
+D 1.59 / 1.47 / 1.60 (mean 1.383). **Untrained context row: train 1.72, held-out 1.80,
+beats-best-naive 0/6, headline 0.752 (WORSE than the naive row: no initialisation freebie in
+walker mode).**
+
+> **PRE-REGISTERED BARS (v2.3; structure identical to v2.2, anchors re-derived same-geometry):**
+> - **A1 (headline cell):** best-checkpoint exact exploitability closes >= 50% of the
+>   naive -> eq gap: **<= 0.605** on >= 2/3 seeds AND pooled. **STRONG:** >= 75% (**<= 0.536**).
+> - **A3 (primary):** select-on-train, held-out layouts beat their best_naive on **>= 4/6 AND
+>   pooled vs-naive < 1, on >= 2/3 seeds** (untrained: 0/6). **STRONG:** pooled ratio-to-eq
+>   **<= 1.19** (halfway from the 1.383 best-naive mean).
+> - Estimator: EXACT per-checkpoint exploitability (no TAP averaging needed: the walker policy
+>   IS the mixed strategy; no Monte Carlo anywhere); best-checkpoint/select-on-train discipline
+>   and disclosed drift as standing. Exit criterion (pre-committed above) unchanged: this is
+>   the one bounded attempt.
