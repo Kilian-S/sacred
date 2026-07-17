@@ -147,3 +147,13 @@ Gdansk + 71-33 K=5 follow the harness extension (register the extension before r
 **Harness note (disclosed):** the `--print-prompts` / scoring keys are `a_deterministic`,
 `b_stated`, `c_agentic`; the c-register carries `mean_mission_failure`, `choices`, `repeat_rate_w`,
 `gate`. Live-test calibration fixes (max-tokens, timeout, gate last-match) are in the launch record.
+
+## LAUNCH: the held-out Gdansk cell (2026-07-17, OD 249-95, the ZERO-SHOT comparability instance)
+
+Harness parameterised (`--od --K --city`; per-instance gen19 dynamic anchors via `oracle_refs`;
+reg-(b) scored via `env.exploitability_of_occupancy_dist`, robust to the greedy mode). OD 249-95 is
+one of gen27's SIX held-out Gdansk test ODs (R=10, eq 0.302, det/eq 2.45), so the LLM sits in the
+IDENTICAL zero-shot position as the gen16 amortiser and the gen27 dynamic policy — the direct
+"can a language agent do what the trained transfer policy does, on a city it was never given
+before?" comparison. Same footprint as the headline cell: reg (a)/(b) x10 seeds, reg (c) x5
+episodes, both models, concurrent, one retry/turn. Runner `scratch/b2_batch_gdansk.sh`.

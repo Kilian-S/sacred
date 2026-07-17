@@ -32,6 +32,7 @@ import torch
 from scripts.train_b1lite1 import softmax_br, stacked_L
 from src.baselines.multiconvoy_oracle import best_response_attacker_multi, solve_multiconvoy
 from src.envs.multiconvoy_interdiction import make_multiconvoy_env
+from scripts.train_b1lite1 import oracle_refs
 
 N, K, KX, BAND, OD = 3, 1, 8, (0.15, 0.95), ("35", "159")
 W, TAU = 3, 0.15
@@ -163,6 +164,9 @@ def main():
     ap.add_argument("--print-prompts", action="store_true",
                     help="emit the exact prompts (system, gate, registers a/b/c) and exit; no API")
     ap.add_argument("--register", default="abc", help="subset of registers to run, e.g. 'b'")
+    ap.add_argument("--od", default="35-159", help="OD pair, e.g. 249-95 (Gdansk held-out)")
+    ap.add_argument("--K", type=int, default=1, help="interdiction budget (K>=4 uses the greedy yardstick)")
+    ap.add_argument("--city", default="kaliningrad", help="graph the OD lives on (kaliningrad|gdansk|...)")
     ap.add_argument("--json-out", default="")
     a = ap.parse_args()
     torch.set_num_threads(2)
@@ -170,11 +174,20 @@ def main():
     key = a.key or os.environ.get(a.key_env, "")
     rng = np.random.default_rng(a.seed)
 
-    env = make_multiconvoy_env(od=OD, N=N, K=K, k_extra_routes=KX, menu_select=True,
-                               edge_vuln_band=BAND, interception_loss=10.0, seed=0)
-    sol = solve_multiconvoy(env.game, N, "mission")
+    from scripts.train_generalist import CITY_PATHS
+    od_s, od_t = a.od.split("-")
+    nodes_path, edges_path = CITY_PATHS[a.city]
+    greedy = a.K >= 4
+    env = make_multiconvoy_env(od=(od_s, od_t), N=N, K=a.K, k_extra_routes=KX, menu_select=True,
+                               edge_vuln_band=BAND, interception_loss=10.0, seed=0,
+                               greedy_br=greedy, nodes_path=nodes_path, edges_path=edges_path)
+    sol = None if greedy else solve_multiconvoy(env.game, N, "mission")
+    eq_val = sol.loss_mixed if sol is not None else float("nan")  # no exact eq past the wall
     R = env.game.n_routes
     L = stacked_L(env.game, N)
+    # per-instance register-(c) dynamic anchors (gen19 oracle: static_det, iid_eq cap, history_opt)
+    crefs = oracle_refs(L, TAU, W) if "c" in a.register else {"static_det": float("nan"),
+                                                              "iid_eq": float("nan"), "history_opt": float("nan")}
     spec = game_spec(env)
     gate_q, gate_check = gate_questions(env)
     transcript = []
@@ -239,15 +252,15 @@ def main():
         print("=" * 30, "POST-DECISION PROBE (after scoring)", "=" * 18); print(PROBE)
         return
 
-    out = {"model": a.model, "provider": a.provider,
-           "anchors": {"loss_det": sol.loss_det, "eq": sol.loss_mixed,
-                       "uniform_stack": None, "static_det_c": 0.613, "iid_eq_c": 0.147,
-                       "sacred_c": 0.050, "history_opt_c": 0.049}}
+    out = {"model": a.model, "provider": a.provider, "od": a.od, "K": a.K, "city": a.city,
+           "anchors": {"loss_det": (sol.loss_det if sol is not None else None), "eq": eq_val,
+                       "uniform_stack": None,
+                       "static_det_c": crefs["static_det"], "iid_eq_c": crefs["iid_eq"],
+                       "history_opt_c": crefs["history_opt"]}}
     d_unif = np.zeros(len(env.occupancies))
     for r in range(R):
         d_unif[env._occ_index[tuple(N if i == r else 0 for i in range(R))]] = 1.0 / R
-    _, u = best_response_attacker_multi(env.obj_matrix, d_unif)
-    out["anchors"]["uniform_stack"] = float(u)
+    out["anchors"]["uniform_stack"] = float(env.exploitability_of_occupancy_dist(d_unif))
 
     # (a) deterministic register: gate -> decision -> post-probe (one conversation)
     if "a" in a.register:
@@ -278,9 +291,9 @@ def main():
         dd = np.zeros(len(env.occupancies))
         for i in range(R):
             dd[env._occ_index[tuple(N if j == i else 0 for j in range(R))]] = d[i]
-        _, expl = best_response_attacker_multi(env.obj_matrix, dd)
+        expl = env.exploitability_of_occupancy_dist(dd)
         out["b_stated"] = {"dist": [round(float(x), 4) for x in d], "expl": float(expl),
-                           "ratio_to_eq": float(expl / sol.loss_mixed),
+                           "ratio_to_eq": (float(expl / eq_val) if eq_val == eq_val else None),
                            "gate": gate_b, "probe": probe_b[:1500]}
 
     # (c) agentic-sequential register vs the pattern-of-life adversary (w=3, tau=0.15):
