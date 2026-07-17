@@ -633,3 +633,31 @@ checkpoint because the train mean stays noisy-flat here, unlike the descending r
 everything else v3.1-identical. In parallel, the DYNAMIC aerial act (the gen19/gen27
 mechanism on the fleet game) is being built as the register where the zero-shot claim is
 provable; its own pre-registration follows below when its yardsticks are computed.
+
+---
+
+## V4.0-DYN PRE-REGISTRATION (2026-07-18; the adaptive-enemy register on the aerial fleet
+## game - the proven gen19/gen27 mechanism; screen `scratch/aerial_dyn_screen.py`)
+
+**Game per layout:** fleet-route stacked (N=3, mission damage 1-(1-p)^3); enemy = softmax-BR
+(tau=0.15) to the trailing **w=2** window of realised fleet routes; per-sortie ANALYTIC
+expected damage; episodes = 40-sortie chains, gamma 0.95, window cleared per episode; window
+route-frequency as a second head column beside exposure (head lr 3e-2, the gen19 value).
+
+**Screen (held-out structured layouts 2100-2102, oracle/analytic):** iid_eq (static-equilibrium
+play vs the adaptive enemy) 0.41-0.44; **best naive-DYNAMIC rule (rotation/anti-repeat over
+every lane spacing + full menu) 0.47-0.56 = WORSE than static play at w=2** (naive avoidance
+concentrates predictably); history_opt (exact RVI over the window MDP) **0.071-0.080**.
+Operating point w=2 tau=0.15 (at tau=0.10 hist_opt degenerates toward 0.02; at w=3 rotation
+partially works, 0.32-0.43, reported as the scope boundary). The winnable corridor below
+EVERYTHING simple is ~0.33 wide - vs the static game's 2-4%.
+
+> **PRE-REGISTERED BARS (v4.0-dyn; pinned before the trainer exists):** per gated held-out
+> layout (2100-2105), rows computed at build: iid_eq; a MULTI-START LOCAL-SEARCH STATIC
+> OPTIMUM (the gen27 amendment, up front this time); the full naive-dynamic family;
+> history_opt (exact, w=2). **PRIMARY: the policy's EXACT stationary damage (window-chain
+> power iteration, no Monte Carlo) < min(iid_eq, static local-opt, best naive-dynamic rule)
+> on >= 4/6 gated layouts AND pooled, on >= 2/3 seeds, at the validation-selected
+> checkpoint.** **STRONG: pooled <= 2.5x history_opt.** Open-sector context rows ungated.
+> Estimator/selection/discipline as v3.1; worst-case-vs-committing-enemy row reported
+> (the gen27 regime-conditionality sentence carries over verbatim).
