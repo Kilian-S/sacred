@@ -157,6 +157,10 @@ def main():
     p.add_argument("--ckpt-dir", default="")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
+    try:  # cap the INTER-op pool too (the 2026-07-16 system-time lesson: cap ALL pools)
+        torch.set_num_interop_threads(1)
+    except RuntimeError:
+        pass
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     rng = np.random.default_rng(args.seed)

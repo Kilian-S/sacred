@@ -415,3 +415,18 @@ evidence of learning there; the headline bar is GAP CLOSURE.
 >   BOTH an open sector and a structured corridor, beats the strongest naive rule family
 >   (given every spacing) where fixed rules are 1.3-1.7x off optimal; on featureless ground
 >   with secured terminals, simple lanes suffice and we say so.*
+
+### LAUNCH RECORD (2026-07-17; Kilian's explicit go, with the system-load constraint)
+
+- **Smoke (240 sorties, gate = plumbing + mechanism signature, NOT performance): PASSED** —
+  end-to-end sound; route_feat_w trains to [-4.20, -3.13] (cost + exposure avoidance), alpha
+  1.0 -> 0.41; ratios drift UP early (TRAIN 1.68 -> 1.93), the expected early-FP transient
+  (24 instances share 240 sorties: near-empty attacker windows), disclosed here so the batch
+  curves are read against it.
+- **Batch:** 3 seeds x 12,000 sorties via `scratch/gen28_batch.sh` at SHA `65096a3`+launch
+  commit; **thread discipline per Kilian's constraint** (past runs spiked ~40% system time):
+  OMP/VECLIB/OPENBLAS/MKL = 1, torch intra-op = 2/seed, inter-op = 1, `nice -n 10`.
+  **Measured at launch: 1.4% system time** (33% user, 65% idle during pool build).
+  Outputs `models/runs/gen28_aerial/seed{0,1,2}.{json,log}` + per-eval checkpoints.
+- Bars: the v2.2 block above, pinned pre-launch; select-on-train; TAP over last 3 evals;
+  results appended below when the seeds land.
