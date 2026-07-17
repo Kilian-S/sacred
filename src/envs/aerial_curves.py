@@ -187,16 +187,24 @@ def curve_survival_matrix(menu: list[CurveRoute], centres: np.ndarray, r: float,
     return S
 
 
-def dense_hazard_grid(lat: SectorLattice, step: float = 0.5) -> np.ndarray:
-    """Candidate hazard centres on a dense grid over the interior (x in [2, nx-3]), excluding
-    points inside obstacles. step=0.5 is the v2 default; the convergence row sweeps step."""
-    xs = np.arange(2.0, lat.nx - 2 + 1e-9, step)
+def dense_hazard_grid(lat: SectorLattice, step: float = 0.5, safe_r: float = 3.0) -> np.ndarray:
+    """Candidate hazard centres on a dense grid over the sector, excluding points inside
+    obstacles and inside the STANDOFF ZONES: no enemy emplacement within ``safe_r`` of the base
+    or the target (v2.1, Kilian 2026-07-17: friendly-controlled terminal airspace; also the
+    structural fix for the terminal-funnel degeneracy, where a hazard at the route convergence
+    point covers every route at once and trivialises routing - the aerial min-cut must live in
+    the CORRIDOR, as the road min-cut does). step=0.5 default; the convergence row sweeps step;
+    a safe_r sensitivity row is in the screen."""
+    xs = np.arange(1.0, lat.nx - 1 + 1e-9, step)
     ys = np.arange(0.0, lat.ny - 1 + 1e-9, step)
     rects = _blocked_rects(lat)
+    base = np.asarray(lat.base, float); target = np.asarray(lat.target, float)
     pts = np.array([[x, y] for x in xs for y in ys])
+    keep = (np.linalg.norm(pts - base, axis=1) >= safe_r) & \
+           (np.linalg.norm(pts - target, axis=1) >= safe_r)
+    pts = pts[keep]
     if len(rects):
-        keep = [not _hits_obstacle(p[None, :], rects) for p in pts]
-        pts = pts[keep]
+        pts = pts[[not _hits_obstacle(q[None, :], rects) for q in pts]]
     return pts
 
 

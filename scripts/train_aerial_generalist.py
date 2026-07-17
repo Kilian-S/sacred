@@ -87,18 +87,20 @@ class AerialInstance:
 
 
 def make_layout_instance(name: str, seed: int) -> AerialInstance:
+    """A3 family (v2.1 family probe): BASE sector, r=1.6, K=1 - the family where random fields
+    keep the largest best-naive margin under standoff zones (median 1.34, min 1.20)."""
     centres = dense_hazard_grid(BASE, step=0.5)
-    return AerialInstance(name, BASE, K=1, r=1.2, pmax=random_field(centres, seed))
+    return AerialInstance(name, BASE, K=1, r=1.6, pmax=random_field(centres, seed))
 
 
-# the screened A1/A2 cells (GAME V2 screen, 2026-07-17): headline first
+# the screened A1/A2 cells (GAME V2.1 screen WITH STANDOFF ZONES, 2026-07-17): headline first
 CELLS = [
-    ("pinch_banded_K1_r1.2", PINCH, 1, 1.2, "banded"),   # A1 headline: naive/eq 1.58, eq 0.362
-    ("base_K1_r1.2",         BASE,  1, 1.2, 0.9),        # max-gap open-sector point (1.59)
-    ("banded_K1_r1.2",       BASE,  1, 1.2, "banded"),   # asymmetric-field point (1.57)
-    ("base_K1_r0.8",         BASE,  1, 0.8, 0.9),        # low-phi point (1.42)
-    ("base_K1_r1.6",         BASE,  1, 1.6, 0.9),        # low-gap cell (honest curve point, 1.32)
-    ("base_K2_r1.2",         BASE,  2, 1.2, 0.9),        # K axis (1.13; step-0.5 grid)
+    ("pinch_banded_K1_r1.6", PINCH, 1, 1.6, "banded"),   # A1 headline: naive/eq 1.28, eq 0.519
+    ("pinch_banded_K2_r1.2", PINCH, 2, 1.2, "banded"),   # K axis, same gap (1.28, eq 0.558)
+    ("banded_K1_r1.6",       BASE,  1, 1.6, "banded"),   # open-sector banded point (1.24)
+    ("base_K1_r0.8",         BASE,  1, 0.8, 0.9),        # low-phi point (1.18)
+    ("base_K1_r1.2",         BASE,  1, 1.2, 0.9),        # low-gap honest point (~1.1)
+    ("base_K2_r1.2",         BASE,  2, 1.2, 0.9),        # K axis honest low point (1.06)
 ]
 
 
@@ -228,7 +230,7 @@ def main():
                 torch.save(prot.actor.state_dict(), str(_P(args.ckpt_dir) / f"actor_ep{k+1}.pt"))
             print(f"  sortie {k+1:6d}: TRAIN ratio {tr_m:.2f} | HELD-OUT ratio {te_m:.2f} "
                   f"beats-BEST-naive {te_beats}/{len(test)} | headline "
-                  f"{tr['pinch_banded_K1_r1.2']:.3f} (naive 0.572, eq 0.362) | "
+                  f"{tr['pinch_banded_K1_r1.6']:.3f} (naive 0.665, eq 0.519) | "
                   f"rw[{fw[0]:.2f},{fw[1]:.2f}] a{prot.alpha:.2f} | {time.time()-t0:5.0f}s",
                   flush=True)
 

@@ -22,7 +22,7 @@ from src.envs.aerial_curves import build_curve_menu, build_curved_game, dense_ha
 from src.envs.aerial_sector import SectorLattice
 
 LAT = SectorLattice(ny=9, nx=13)
-K, R_HAZ = 1, 1.2
+K, R_HAZ = 1, 1.6   # v2.1: the A3 family (family probe: largest margin under standoff)
 N_LAYOUTS = 12
 BAND = (0.30, 0.95)
 

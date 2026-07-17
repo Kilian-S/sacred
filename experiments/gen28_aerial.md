@@ -315,3 +315,54 @@ LARGER in v2: the act's target strengthens.
 **Staged v3 (recorded, NOT scheduled):** real-terrain sector (obstacle polygons from
 buildings/terrain, wind as anisotropic cost/rate) on the same machinery; Kilian's decision
 2026-07-17: symmetric-rectangle v2 first, real-land upgrade later if the calendar allows.
+
+---
+
+## GAME V2.1 (2026-07-17, PRE-TRAINING; Kilian's "spawncamping" observation): TERMINAL
+## STANDOFF ZONES. The v2 anchors two sections up are retired in turn (still nothing trained).
+
+**The observation (from the interactive view, K=2 cell):** the equilibrium attacker parks its
+hazards at the route-convergence funnel by the target. **This is a structural degeneracy, not
+just unfairness:** ALL routes must pass the terminals, so a terminal hazard covers every route
+at once and routing skill is irrelevant there; the road game could never do this (edge-disjoint
+routes leave by different roads). It explains the hot v2 K=2 values (0.75) and the K>=2 gap
+compression. **Fix: no enemy emplacement within safe_r = 3.0 of base or target**
+(`dense_hazard_grid(..., safe_r)`), which is also the realistic model: friendly-controlled
+terminal airspace, secured delivery zone; the contested space is the corridor. The aerial
+min-cut now lives in the corridor, as the road min-cut does.
+
+### V2.1 SCREEN (30 cells re-run; `models/runs/gen28_screen.json`): the fair game, measured
+
+- Equilibria drop everywhere (terminal camping WAS carrying much of the interception: base
+  K1 r1.2 eq 0.407 -> 0.21; base K2 r1.2 0.75 -> 0.42): the game is winnable for a good
+  defender now, exactly what the fix intends.
+- **On the open symmetric sector with a UNIFORM field, the lane rule is now near-optimal
+  (best-naive/eq 1.06-1.18)** — the honest headline of the fair game, stated first: with
+  protected terminals and freely placeable lanes, naive independence hedging suffices on
+  featureless ground. Calibration pays where STRUCTURE breaks the lanes: **pinch + banded
+  1.24-1.28 (the A1 headline family), banded fields 1.15-1.24, K=2 pinch 1.28.**
+- Grid convergence under standoff: K=1 eq 0.196/0.212/0.217 at steps 1.0/0.5/0.25 (0.5 is
+  within 2.3% of 0.25); K=2 0.391 -> 0.424 (1.0 -> 0.5, disclosed as before).
+- **The A3 family probe (`scratch/aerial_family_probe.py`, 8 random layouts x 6 families):**
+  heterogeneous fields RESTORE the open-sector gap (the lane rule reweights fixed lanes but
+  cannot MOVE them to thread cold regions): BASE r1.6 K1 is the strongest family —
+  best-naive/eq median 1.34 (min 1.20), robust-static cap 1.32, cross-play 1.80 — while pinch
+  families lose layout-dependence (cross 1.28-1.48: the gap funnels everything). **A3 layout
+  family = BASE, r=1.6, K=1** (12-layout probe rerun at the family: inv-risk-lane 1.34
+  [1.20, 1.51], robust-static 1.32, cross-play 1.78, eq mean 0.208; menu-sensitivity R40->80
+  ~3-4%, same-menu convention standing).
+
+> **RE-PINNED BARS (v2.1, final pre-training set; structure unchanged throughout):**
+> - **A1 headline cell = pinch_banded_K1_r1.6** (eq 0.519, strongest naive 0.665, det 0.719,
+>   tabular FP 0.522): best-checkpoint TAP < 0.665 on >= 2/3 seeds AND pooled; **STRONG:**
+>   pooled <= 0.59.
+> - **A3 (the act's primary):** held-out layouts 2000-2005 (BASE r1.6 K1 family), beat each
+>   layout's strongest naive stack on >= 4/6 AND pooled, >= 2/3 seeds, select-on-train;
+>   **STRONG:** pooled <= 1.17 (halfway best-naive median 1.34 -> 1.0). Untrained-context and
+>   permuted-field mechanism rows unchanged.
+> - **A2 curve cells:** per the updated CELLS list in the trainer (pinch_banded K1 r1.6 + K2
+>   r1.2; banded K1 r1.6; base K1 r0.8 / K1 r1.2 / K2 r1.2).
+> - **The honest concession, pre-written:** on open featureless ground with protected
+>   terminals, lane hedging suffices (1.06-1.18); the trained claim lives on structured
+>   sectors (pinches, heterogeneous fields) and on never-seen layouts. This is the aerial
+>   analogue of the roads' K << m concession, stated on our terms.

@@ -45,7 +45,7 @@
 </style>
 <div class="wrap">
 <header>
-  <span class="eyebrow">gen28 · sacred aerial act · game v2: curved flight, integral exposure</span>
+  <span class="eyebrow">gen28 · sacred aerial act · game v2.1: curved flight, integral exposure, standoff zones</span>
   <h1>What the policy is trained to play: the sector, the flight, the interception</h1>
 </header>
 <div class="grid">
@@ -55,6 +55,7 @@
       <span><span class="dot" style="background:var(--threat)"></span>threat field (known): candidate positions, brightness = effectiveness</span>
       <span><span class="dot" style="background:var(--flight)"></span>route mixture (weight = probability)</span>
       <span><span class="dot" style="background:var(--hit)"></span>committed hazard(s) + radius (hidden until revealed)</span>
+      <span><span class="dot" style="background:var(--ok)"></span>standoff zones: secured terminal airspace, no enemy emplacement</span>
     </div>
   </div>
   <div class="panel">
@@ -96,8 +97,9 @@ computed live from the same integral the oracle uses, so the empirical rates con
 predicted values in the table. <b>What training does:</b> SACRED replaces the fixed strategy with
 a policy network that reads the threat field and outputs the route mixture, sparring against a
 fictitious-play enemy best-responding to its recent flights; the pre-registered bar
-(<code>experiments/gen28_aerial.md</code>, v2): beat the inverse-risk lane rule, including on
-threat layouts the policy has never seen.</p>
+(<code>experiments/gen28_aerial.md</code>, v2.1): beat the strongest naive lane/menu rule,
+including on threat layouts the policy has never seen. The green rings are your own secured
+airspace: the enemy sets up only in the contested corridor between them.</p>
 </div>
 <script>
 const DATA = /*__DATA__*/[];
@@ -157,6 +159,12 @@ function drawBase(reveal){
   const u=unit();
   ctx.fillStyle='#222c37';
   I.blocked.forEach(b=>{ const [x,y]=xy(b); ctx.fillRect(x-u*.3,y-u*.3,u*.6,u*.6); });
+  // standoff zones: friendly-controlled terminal airspace (no enemy emplacement inside)
+  for(const term of [I.base, I.target]){ const [sx,sy]=xy(term);
+    ctx.beginPath(); ctx.arc(sx,sy,I.safe_r*u,0,7);
+    ctx.fillStyle='rgba(63,174,126,.06)'; ctx.fill();
+    ctx.strokeStyle='rgba(63,174,126,.35)'; ctx.lineWidth=1.5; ctx.setLineDash([4,6]);
+    ctx.stroke(); ctx.setLineDash([]); }
   I.centres.forEach((c,j)=>{ const [x,y]=xy(c), pm=I.pmax[j];
     if(els.radii.checked){ ctx.beginPath(); ctx.arc(x,y,I.r*u,0,7);
       ctx.strokeStyle='rgba(240,160,40,.05)'; ctx.lineWidth=1; ctx.stroke(); }

@@ -41,7 +41,7 @@ def export(name, title, lat, r, pmax_spec, K=1):
     out = dict(
         name=name, title=title, ny=lat.ny, nx=lat.nx,
         blocked=sorted([list(b) for b in lat.blocked]),
-        base=list(lat.base), target=list(lat.target), r=r, K=K,
+        base=list(lat.base), target=list(lat.target), r=r, K=K, safe_r=3.0,
         pmax=[round(float(x), 4) for x in pm],
         centres=[[float(a), float(b)] for a, b in centres],
         routes=[[[round(float(x), 3), round(float(y), 3)] for x, y in c.pts[::2]]
@@ -60,11 +60,11 @@ def export(name, title, lat, r, pmax_spec, K=1):
 
 
 data = [
-    export("pinch_banded", "A1 headline: pinch + banded field (K=1, r=1.2)", PINCH, 1.2, "banded"),
+    export("pinch_banded", "A1 headline: pinch + banded field (K=1, r=1.6)", PINCH, 1.6, "banded"),
     export("base_r08", "Open sector, low coverage (K=1, r=0.8)", BASE, 0.8, 0.9),
-    export("holdout2000", "Held-out random threat layout (A3 test; K=1, r=1.2)",
-           BASE, 1.2, ("layout", 2000)),
-    export("base_K2", "Two hazards committed (K=2, r=1.2)", BASE, 1.2, 0.9, K=2),
+    export("holdout2000", "Held-out random threat layout (A3 test; K=1, r=1.6)",
+           BASE, 1.6, ("layout", 2000)),
+    export("pinch_banded_K2", "Two hazards + pinch + banded (K=2, r=1.2)", PINCH, 1.2, "banded", K=2),
 ]
 with open("models/runs/gen28_view_data.json", "w") as f:
     json.dump(data, f)
