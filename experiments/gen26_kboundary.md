@@ -223,3 +223,25 @@ of any class (full-menu-stack 0.739) — the genuine "beats every naive baseline
 n=3. Seeds 1,2 queued (`scratch/gen26_k6_n3.sh`, waits for the gen27 control; full thread caps);
 result appended. If n=3 holds < 0.739, K=6 is the citable "learning beats every naive baseline
 past the wall" cell; if not, the boundary map stands without a single-cell superiority claim.
+
+### K=6 n=3 RESULT (2026-07-17): the gate is NOT cleanly cleared; the boundary map stands, the single-cell superiority claim does NOT
+
+| seed | best-ckpt TAP @ sortie |
+|---|---|
+| 0 | 0.718 @ 800 |
+| 1 | 0.728 @ 700 |
+| 2 | 0.754 @ 1200 |
+
+> **K=6 mean 0.733 +/- 0.015 (n=3) vs the best naive baseline full-menu-uniform-stack 0.739:
+> SACRED beats it on 2/3 seeds and by a whisker in the mean (0.733 < 0.739), NOT the pre-registered
+> clean >=2/3-with-margin win.** The seed-0 single-run 0.718 was the favourable tail. HONEST VERDICT
+> (per the pre-registration's fail branch): the K=6 point is a TIE with the best naive stack, not a
+> superiority cell. **What gen26 banks, stated at exactly the evidence:** the BOUNDARY MAP is the
+> result — at K << m the disjoint heuristic is near-optimal (learning pointless); at K = m-1 SACRED
+> beats the disjoint variants on the exact yardstick but a full-menu uniform-stack ties it; at K = m
+> SACRED and the best naive stack are within noise. **No single cell licenses "deep RL beats every
+> naive baseline"; the citable claim is the SHAPE — learning's value grows monotonically with the
+> coverage fraction, from pointless to competitive-with-the-best-naive, in the regime where exact
+> solvers are also infeasible.** This is the honest, defensible gen26 result; the sharper superiority
+> sentence is retired. (The aerial act's continuous coverage axis is where a cleaner high-coverage
+> separation may exist; recorded for gen28.)
