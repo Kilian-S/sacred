@@ -21,12 +21,12 @@ def _env():
     return AerialInterdictionEnv(LAT, menu, centres, K=1, r=1.2)
 
 
-def _prot():
+def _prot(feat_dim=2):
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=32, num_layers=2, heads=2,
                           reward_scale=1.0, device="cpu", role_alpha=True)
     for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
         net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-        net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
+        net.route_feat_w = torch.nn.Parameter(torch.zeros(feat_dim))
         net.route_feats = None
     return prot
 
@@ -74,7 +74,8 @@ def test_exact_distribution_sums_to_one_and_scores():
     from scripts.train_aerial_generalist import exact_ratio, make_layout_instance
     inst = make_layout_instance("t", 1234)
     assert inst.env.config.N == 3
-    prot = _prot()
+    assert inst.env._obs_cache["menu_route_feats"].shape[1] == 1   # v3.1: exposure only
+    prot = _prot(feat_dim=1)
     ratio, d = exact_ratio(prot, inst)
     assert d.shape == (len(inst.env.occupancies),)
     assert d.sum() == pytest.approx(1.0, abs=1e-5)

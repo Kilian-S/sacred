@@ -45,9 +45,14 @@ class AerialConfig:
 
 class AerialInterdictionEnv:
     def __init__(self, lat: SectorLattice, menu: list[CurveRoute], centres: np.ndarray, *,
-                 K: int = 1, r: float, p_max=0.9, N: int = 1):
+                 K: int = 1, r: float, p_max=0.9, N: int = 1,
+                 head_feats: tuple = ("cost", "exposure")):
         """Game v2 (2026-07-17): the menu is a family of smooth curvature-bounded CurveRoutes
-        and exposure is the hazard-rate line integral (src/envs/aerial_curves.py)."""
+        and exposure is the hazard-rate line integral (src/envs/aerial_curves.py).
+        head_feats: which per-route columns reach the menu head (v3.1: ("exposure",) only -
+        cost is reward-irrelevant under the mission objective and railroaded the policy in
+        three measured runs)."""
+        self._head_feats = tuple(head_feats)
         self.lat = lat
         self.menu = menu
         self.centres = centres
@@ -88,7 +93,9 @@ class AerialInterdictionEnv:
             rng_ = x.max() - x.min()
             return (x - x.min()) / rng_ if rng_ > 0 else np.zeros_like(x)
 
-        feats = torch.tensor(np.stack([_mm(cost), _mm(exposure)], axis=1), dtype=torch.float32)
+        cols = {"cost": _mm(cost), "exposure": _mm(exposure)}
+        feats = torch.tensor(np.stack([cols[c] for c in self._head_feats], axis=1),
+                             dtype=torch.float32)
         return {
             "nodes": nodes, "edges": edges,
             "trucks": {i: {"current_node": _nid(lat.base), "destination": None, "load": 0.0,

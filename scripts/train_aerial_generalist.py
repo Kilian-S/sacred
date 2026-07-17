@@ -83,7 +83,8 @@ class AerialInstance:
         menu, _ = build_curve_menu(lat, menu_r, R=40, seed=0)
         centres = dense_hazard_grid(lat, step=0.5)
         pm = pmax if not isinstance(pmax, str) else banded_pmax(centres, lat.ny)
-        self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm, N=self.N)
+        self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm, N=self.N,
+                                         head_feats=("exposure",))
         from src.baselines.multiconvoy_oracle import solve_multiconvoy
         sol = solve_multiconvoy(self.env.game, self.N, "mission")
         self.eq = float(sol.loss_mixed)
@@ -192,7 +193,7 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--fp-tau", type=float, default=0.05)
     p.add_argument("--smooth-window", type=int, default=250)
-    p.add_argument("--head-term-lr", type=float, default=3e-2)
+    p.add_argument("--head-term-lr", type=float, default=1e-2)
     p.add_argument("--ent-frac", type=float, default=0.5)
     p.add_argument("--alpha-floor", type=float, default=0.20)
     p.add_argument("--interception-loss", type=float, default=10.0)
@@ -218,6 +219,10 @@ def main():
     train += [AerialInstance(n, lat, K, r, pm) for n, lat, K, r, pm in CELLS]
     test = [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl") for s in range(6)]
     test_ctx = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(3)]
+    # v3.1: a proper VALIDATION set for checkpoint selection (never trained, never tested;
+    # the gen24 val-stop precedent - train-mean selection measurably missed competent windows)
+    val = [make_layout_instance(f"valD{3000 + s}", 3000 + s, "dbl") for s in range(2)]
+    val += [make_layout_instance(f"valB{3100 + s}", 3100 + s, "base") for s in range(2)]
     print(f"[gen28] pool built in {time.time() - t0:.1f}s: {len(train)} train, "
           f"{len(test)} gated held-out + {len(test_ctx)} context held-out")
     for it in train + test + test_ctx:
@@ -230,7 +235,7 @@ def main():
                           alpha_floor=args.alpha_floor)
     for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
         net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-        net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
+        net.route_feat_w = torch.nn.Parameter(torch.zeros(1))   # v3.1: exposure only
         net.route_feats = None
     prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w]})
     prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w],
@@ -271,7 +276,7 @@ def main():
         prot.update(args.batch_size)
 
         if (k + 1) % args.eval_every == 0:
-            for inst_set in (train, test, test_ctx):
+            for inst_set in (train, test, test_ctx, val):
                 for it in inst_set:
                     _, d = exact_ratio(prot, it)
                     it.pol_hist.append(d)
@@ -284,25 +289,27 @@ def main():
                 return rows
 
             tr = tap_rows(train); te_rows = tap_rows(test); tc_rows = tap_rows(test_ctx)
+            va_rows = tap_rows(val)
+            va_m = float(np.mean([va_rows[i.name] / i.eq for i in val]))
             tr_m = float(np.mean([tr[i.name] / i.eq for i in train]))
             te_m = float(np.mean([te_rows[i.name] / i.eq for i in test]))
             te_beats = sum(1 for i in test if te_rows[i.name] < i.best_naive)
             fw = tuple(float(x) for x in prot.actor.route_feat_w.detach())
             hist.append((k + 1, tr_m, te_m, te_beats, tr, te_rows, fw, float(prot.alpha),
-                         tc_rows))
+                         tc_rows, va_m, va_rows))
             if args.ckpt_dir:
                 _P(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(_P(args.ckpt_dir) / f"actor_ep{k+1}.pt"))
-            print(f"  sortie {k+1:6d}: TRAIN ratio {tr_m:.2f} | HELD-OUT ratio {te_m:.2f} "
+            print(f"  sortie {k+1:6d}: TRAIN {tr_m:.2f} VAL {va_m:.2f} | HELD-OUT {te_m:.2f} "
                   f"beats-BEST-naive {te_beats}/{len(test)} | headline "
                   f"{tr['dblpinch_banded_K1_r1.2']:.3f} | "
-                  f"rw[{fw[0]:.2f},{fw[1]:.2f}] a{prot.alpha:.2f} | {time.time()-t0:5.0f}s",
+                  f"rw[{','.join(f'{x:.2f}' for x in fw)}] a{prot.alpha:.2f} | {time.time()-t0:5.0f}s",
                   flush=True)
 
     if args.json_out:
         refs = {it.name: {"eq": it.eq, "loss_det": it.loss_det,
                           "best_naive": it.best_naive, **it.naive}
-                for it in train + test + test_ctx}
+                for it in train + test + test_ctx + val}
         _P(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         _P(args.json_out).write_text(json.dumps(
             {"seed": args.seed, "refs": refs, "history": hist,

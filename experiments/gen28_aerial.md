@@ -580,3 +580,31 @@ plumbing gate): healthy; beats-best-naive already 4/6 at sortie 240 (v2.2/v2.3 n
 >   checkpoint/select-on-train discipline, drift disclosed; 3 seeds x 12,000 sorties; thread
 >   caps + nice per the standing constraint. Iteration under the reopening mandate: further
 >   attempts (if needed) are ledger amendments with disclosed changes, never silent re-rolls.
+
+### V3.0 RESULT (2026-07-18 early, 3 seeds x 12,000 sorties, ~80 min): **TIER 1 PASSES
+### (the act's FIRST positive pre-registered bar); TIER 2 FAILS 1/3. Reported plainly.**
+
+| seed | Tier-1 headline best-ckpt (bar < 0.754) | Tier-2 gated beats (bar >= 4/6) | pooled vs-naive | ratio-to-eq |
+|---|---|---|---|---|
+| 0 | 0.790 (fail) | 1/6 | 1.12 | 1.64 |
+| 1 | 0.739 (pass) | 1/6 (mid-run touched 5/6) | 1.08 | 1.58 |
+| 2 | 0.710 (pass) | **4/6, vs-naive 0.99 (passes alone)** | 0.99 | 1.45 |
+
+> **TIER 1 PRIMARY: PASS** (2/3 seeds + pooled 0.746 < 0.754). Thin (pooled margin ~1%; best
+> seed closes 20% of the naive->eq gap); STRONG (<= 0.646) not met. **TIER 2 PRIMARY: FAIL**
+> (1/3 seeds; bar needs 2/3). Iteration continues under the reopening mandate.
+
+**Diagnosis (measured, third occurrence + a selection failure):** (i) the COST head input
+railroaded again (rw[cost] -> -10..-12) despite the mission reward containing NO cost term:
+a purely spurious channel at the head; (ii) train-mean checkpoint selection missed real
+competence (seed 1 hit 5/6 gated beats + headline 0.74 mid-run; selection took a worse early
+checkpoint because the train mean stays noisy-flat here, unlike the descending road curves).
+
+### V3.1 AMENDMENT (pre-registered BEFORE launch; bars + gated test set UNCHANGED)
+
+1. **Head features = [exposure] only** (the reward-irrelevant cost channel removed from the
+   head; cost remains visible to the GNN via edge distances); head-term lr 3e-2 -> 1e-2.
+2. **Checkpoint selection = VALIDATION mean ratio** over 4 fresh layouts (2 structured seeds
+   3000-3001 + 2 open 3100-3101; never trained, never tested; the gen24 val-stop precedent).
+   Select-on-train and select-on-test dual-reported as before.
+3. Everything else byte-identical to v3.0 (pool, budgets, FP, bars, estimator).
