@@ -504,3 +504,38 @@ walker mode).**
 >   IS the mixed strategy; no Monte Carlo anywhere); best-checkpoint/select-on-train discipline
 >   and disclosed drift as standing. Exit criterion (pre-committed above) unchanged: this is
 >   the one bounded attempt.
+
+### V2.3 RESULT (2026-07-17 night, 3 seeds x 12,000 sorties, ~89 min at 3-parallel, system
+### time low): **BOTH BARS FAIL; THE PRE-COMMITTED EXIT CRITERION FIRES. THE ACT CLOSES.**
+
+| seed | A1 headline best-ckpt (bar <= 0.605) | A3 held-out beats best-naive (bar >= 4/6) | pooled ratio-to-eq | pooled vs-naive |
+|---|---|---|---|---|
+| 0 | 0.717 | 1/6 | 1.84 | 1.37 |
+| 1 | 0.706 | 0/6 | 1.80 | 1.33 |
+| 2 | 0.723 | 0/6 | 1.81 | 1.34 |
+
+**The failure signature differs from v2.2 and is diagnostic: the walker never learned AT ALL.**
+Train-pool mean stays 1.71-2.15 across all 24 evals against an untrained 1.72; the headline
+cell sits 0.72-0.77 throughout (untrained 0.752; the smoke's 240-sortie 0.689 did not
+extrapolate); held-out equals untrained (1.80-1.84 vs 1.80). Per-family: the double-pinch
+holdouts sit AT the naive rows (1.00-1.07x, as the diffuse near-uniform init already does);
+the open-sector holdouts far above (1.44-2.00x). Candidate mechanisms, recorded not asserted:
+terminal-only reward over 12-step episodes with ~500 sorties per instance is a far thinner
+credit signal than the road walk-mode act that worked (B2-P3: one instance, 3,000+ sorties,
+same machinery); the per-step entropy target (0.5 ln 3) compounds over 12 steps toward a
+highly diffuse path distribution the alpha floor then defends. Establishing which would
+require the single-instance trainability rung first (the road curriculum's own lesson:
+competence precedes comparison), which is OUTSIDE this act's pre-committed budget.
+
+**CLOSURE (per the exit criterion, verbatim from the pre-registration):** the aerial act
+closes as the SCREEN + BOUNDARY product. What it banks for the thesis: (i) the oracle-exact
+screen arc (v1 -> v2.2: proximity exposure, standoff zones, complete naive families, the
+structure-not-firepower finding, the grid-convergence certificate); (ii) the interactive
+sector exhibit; (iii) a clean, pre-registered PAIR of trained negatives with distinct
+mechanisms (menu-select N=1 = the saturating-bandit cell, measured; walker-generalist at this
+budget = credit starvation under multi-instance terminal-reward FP), which extend the road
+programme's "preconditions for adversarial training" chain into the aerial domain. The
+trained-positive burden remains on the banked road acts (gen26 boundary map; gen27 dynamic
+generalist). Reopening this act (e.g. single-instance walker rung first, larger per-instance
+budgets, or w05-scale compute) is a NEW pre-registration and Kilian's explicit call; nothing
+further trains under this ledger.
