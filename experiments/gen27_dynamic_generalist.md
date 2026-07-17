@@ -159,9 +159,9 @@ both two-line rules:
 
 **The honest claim this act banks (binding wording):** *zero-shot on a never-seen city, one
 history-aware policy beats every static method — including the locally-optimal static mixture —
-by ~36%, reaches 1.74x the exact dynamic optimum, and matches (from slightly above) the band of
-the composed independence+anti-repeat rule, having DISCOVERED both of that rule's insights from
-adversarial experience alone: label-free, structure-untold.* The composed rule itself needs both
+by ~36%, reaches 1.74x the exact dynamic optimum, and sits just ABOVE the composed independence+anti-repeat rule's band (0.639 vs 0.50-0.61: the
+composed rule remains ahead), having DISCOVERED both of that rule's insights from adversarial
+experience alone: label-free, structure-untold.* The composed rule itself needs both
 insights handed to it; the policy found them. Sentences claiming the policy BEATS every simple
 dynamic rule are NOT licensed; sentences claiming no static or naive-dynamic single-insight rule
 touches it are.

@@ -99,3 +99,51 @@ conversation on transport failure; per-model wording rule ("strong open-weight m
 ((b) x 5 at T=0.3 and T=0.8). Seeds drive the pre-registered label permutation. Outputs
 `models/runs/b2_llm/batch_35159/` (full transcripts in every JSON); runner
 `scratch/b2_batch_35159.sh`; SHA = the commit landing this record.
+
+## RESULT: the 35-159 cell (2026-07-17 ~00:40, both models, all three registers)
+
+Scored: `models/runs/b2_llm/batch_35159_scored.json`; transcripts verbatim in every per-run JSON.
+Register (b)/(a) n=10 seeds each; register (c) n=5 episodes (T=30 sorties, gen19 pattern-of-life
+adversary w=3 tau=0.15). Gate checker = last-match (the live-test fix).
+
+| register | anchor context | llama-3.3-70b | qwen3-27b |
+|---|---|---|---|
+| (a) deterministic (worst-cased) | loss_det 0.699 | 0.978 | 0.841 |
+| (b) stated-strategy | uniform-menu 0.442 · disjoint-heur 0.250 · **SACRED 0.256** · eq 0.206 | **0.604 +/- 0.100** (gate 1.0/3) | **0.523 +/- 0.161** (gate 2.1/3) |
+| (c) sequential vs pattern-of-life | iid_eq 0.147 · **SACRED 0.050** · history_opt 0.049 | **0.177 +/- 0.018** (best 0.149) | **0.297 +/- 0.176** (best 0.059) |
+
+**Reading (the pre-registered hypotheses, resolved):**
+1. **Register (a) lands ABOVE loss_det** for both (0.84-0.98): asked for one route with the
+   adversary best-responding, both pick a route whose worst case exceeds even the best
+   deterministic plan — they do not compute the minimax-safe single route. As pre-registered.
+2. **Register (b) is the headline: neither model calibrates.** Both land 0.52-0.60 — WORSE than
+   naive uniform-menu-stacking (0.442), 2x worse than the 2-line disjoint heuristic (0.250), and
+   ~2.4x SACRED (0.256). The dominant failure (seen in every transcript) is spreading mass over
+   the lowest-individual-risk routes, which are the MOST edge-shared cluster, so one ambush
+   covers most of the mass. Language models minimise per-route risk and diversify naively while
+   ignoring route CORRELATION — precisely the "predictability with extra steps" failure the
+   thesis documents for the non-adversarial control. The gate shows this is NOT a comprehension
+   failure (qwen 2.1/3, and both name a correct independent set in the post-probe): knowledge
+   present, strategic application absent. **The dissociation is the finding.**
+3. **Register (c) is where in-context adaptation partially works.** Given per-sortie feedback,
+   both models drop far below their own static register-(b) play (llama 0.177, qwen best 0.059)
+   and below iid_eq (0.147) on their best episodes — they DISCOVER round-robin / anti-repeat
+   cycling from the feedback loop (the raw sequences show explicit rotation, e.g. qwen seed 2:
+   2-0-1-3 repeating). But it is brittle: qwen's variance is huge (0.059 to 0.605 — one episode
+   locks onto a fixed 4-cycle 6-7-10-11 and gets punished), and NEITHER approaches SACRED's 0.050
+   or history_opt 0.049 reliably. The measured anti-repeat rate ~0.00 confirms they avoid
+   immediate repeats but do not find the calibrated hedge.
+
+**What the benchmark banks (binding wording):** *strong open-weight language models (Llama-3.3-70B,
+Qwen3-27B; pinned revisions, no tools), given the security game in full, fail to design a
+calibrated mixed strategy unaided — they play worse than a two-line heuristic and worse than
+naive uniform stacking despite demonstrably understanding the route structure when asked directly
+— but in-context sortie-by-sortie feedback lets them partially recover through emergent anti-repeat
+cycling, still short of the trained policy and the computable optima. Calibrated randomisation is
+exactly the capability language agents lack unaided; adaptive feedback narrows but does not close
+the gap.* Two open-weight models only (per-model wording; not "LLMs" in general). Instances
+Gdansk + 71-33 K=5 follow the harness extension (register the extension before running them).
+
+**Harness note (disclosed):** the `--print-prompts` / scoring keys are `a_deterministic`,
+`b_stated`, `c_agentic`; the c-register carries `mean_mission_failure`, `choices`, `repeat_rate_w`,
+`gate`. Live-test calibration fixes (max-tokens, timeout, gate last-match) are in the launch record.

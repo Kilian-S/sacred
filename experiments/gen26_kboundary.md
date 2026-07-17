@@ -161,7 +161,7 @@ last iterate off the K=1 hedge is much weaker. Best-checkpoint discipline retain
 | K << m | 35-159 K=1 (m=4, exact) | 0.250 | 0.241 | 0.256 [0.246, 0.266] | heuristics suffice |
 | K = m-1 | 35-159 K=3 (exact) | 0.738 | 0.737 | **0.664 +/- 0.018** | SACRED beats BOTH |
 | K = m-1 | 71-33 K=5 (m=6, greedy, past the exact wall) | 0.705 | 0.638 | **0.667 +/- 0.016** | beats uniform; inv-vuln ahead |
-| K = m | 71-33 K=6 (greedy, past the wall) | 0.800 | 0.766 | **0.718** (1 seed) | SACRED alone survives saturation |
+| K = m | 71-33 K=6 (greedy, past the wall) | 0.800 | 0.766 | **0.718** (1 seed) | SACRED ahead of both disjoint variants (n=1; n=3 + full-menu rows = the pre-registered open gate before any thesis sentence) |
 
 **The claim gen26 banks (Obj-5, rescued):** *when the interdiction budget approaches and crosses
 the min-cut — exactly the regime where the exact LP is infeasible (no labels: K=5 matrix 2.2 GB,
