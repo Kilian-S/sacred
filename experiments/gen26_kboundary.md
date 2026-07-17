@@ -205,3 +205,21 @@ boundary map and the act's wording must carry these rows.
    NOT single-instance superiority past the wall. The tabular-FP row also sharpens the
    drift finding: the average-strategy object has no last-iterate drift, so the drift is a
    property of last-iterate deep-RL training, not of the game.
+
+### FULL-MENU heuristic rows + the K=6 n=3 gate (2026-07-17, the second-pass open gate)
+
+The second pass required the FULL-MENU naive baselines (not just disjoint) at the greedy-yardstick
+cells. Oracle-computed (greedy yardstick, 71-33):
+
+| cell | full-menu-uniform-STACK | full-menu-uniform-INDEP | disjoint-uniform | SACRED |
+|---|---|---|---|---|
+| K=5 (m-1) | **0.666** | 0.752 | 0.705 | 0.667 (n=3) |
+| K=6 (m) | 0.739 | 0.799 | 0.800 | 0.718 (n=1) |
+
+**Reading:** at K=5 the full-menu uniform-STACK (0.666) TIES SACRED (0.667) — so K=5 is NOT a
+clean SACRED win once the full menu is admitted; the honest K=5 statement is "SACRED matches the
+best naive stack and beats the disjoint variants". At K=6 SACRED (0.718, n=1) beats the BEST naive
+of any class (full-menu-stack 0.739) — the genuine "beats every naive baseline" point, GATED on
+n=3. Seeds 1,2 queued (`scratch/gen26_k6_n3.sh`, waits for the gen27 control; full thread caps);
+result appended. If n=3 holds < 0.739, K=6 is the citable "learning beats every naive baseline
+past the wall" cell; if not, the boundary map stands without a single-cell superiority claim.
