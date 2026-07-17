@@ -157,3 +157,41 @@ IDENTICAL zero-shot position as the gen16 amortiser and the gen27 dynamic policy
 "can a language agent do what the trained transfer policy does, on a city it was never given
 before?" comparison. Same footprint as the headline cell: reg (a)/(b) x10 seeds, reg (c) x5
 episodes, both models, concurrent, one retry/turn. Runner `scratch/b2_batch_gdansk.sh`.
+
+## RESULT: the held-out Gdansk cell (2026-07-17, OD 249-95, both models, all registers): the finding REPLICATES zero-shot
+
+Anchors (this OD). STATIC reg (b): det 0.740 · uniform-menu-stack 0.694 · **disjoint heuristic
+0.333** · equilibrium 0.302. DYNAMIC reg (c): static_det 0.692 · **iid_eq cap 0.223** ·
+history_opt 0.079 · **gen27 trained policy zero-shot ~0.098 abs (0.44x cap)**.
+
+| register | llama-3.3-70b | qwen3-27b |
+|---|---|---|
+| (a) deterministic | 0.867 | 0.867 |
+| (b) stated-strategy | **0.798 +/- 0.072** (gate 2.0/3) | **0.354 +/- 0.066** (gate 2.1/3) |
+| (c) sequential vs pattern-of-life | 0.325 +/- 0.059 (best 0.214) | 0.394 +/- 0.047 (best 0.346) |
+
+**Reading (replication + one sharp new result):**
+1. **The calibration failure REPLICATES on a never-seen city.** In register (b) llama lands 0.798
+   (worse than deterministic 0.740 — actively harmful randomisation) and qwen 0.354; BOTH miss the
+   2-line disjoint heuristic (0.333) and the equilibrium (0.302). Same mechanism as 35-159:
+   diversify over low-per-route-risk routes, ignore correlation. So "language agents cannot design
+   calibrated mixed strategies unaided" is not a one-instance artefact — it holds zero-shot.
+2. **NEW — the models split, and qwen is genuinely close to the heuristic here.** Unlike 35-159
+   (where both tied ~0.6), on 249-95 qwen (0.354) approaches the disjoint heuristic (0.333) and
+   its gate is 2.1/3, while llama collapses to 0.798. The smaller model reasons its way nearer the
+   independence structure on this instance; a real model x instance interaction (report per-model,
+   per-instance, no pooling — the standing rule).
+3. **Register (c): neither approaches the trained policy.** Both drop below their static play via
+   in-context anti-repeat (0.325 / 0.394) but sit at 1.5-1.8x the iid_eq cap (0.223) and ~3.5-4x
+   the gen27 zero-shot policy (~0.098) and ~4-5x history_opt (0.079). The trained history-aware
+   policy's zero-shot dynamic hedging is NOT reachable by in-context adaptation here.
+
+**What the two-instance benchmark now banks (binding):** *across a headline and a held-out-city
+game, strong open-weight language models fail to design calibrated mixed strategies unaided —
+matching or losing to a two-line max-flow heuristic and, on the transfer instance, playing worse
+than deterministic routing — despite passing comprehension; in-context feedback yields emergent
+anti-repeat that stays well short of the trained policy and the computable dynamic optimum. The
+capability gap is calibrated randomisation, and it does not close with model reasoning or with
+adaptive feedback at these scales.* Two open-weight models, two instances (per-model, per-instance
+reporting; no "LLMs in general"). REMAINING (optional): 71-33 K=5 (past-the-wall reasoning) needs
+the greedy-yardstick scoring path + a design decision on its dynamic anchors; flagged, not blocking.
