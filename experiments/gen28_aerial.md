@@ -210,3 +210,31 @@ map-conditioning act). "Single UAV first" (Kilian's pin) = N=1 throughout; the f
 >   trained overlay on `assets/aerial_phi_boundary.png`.
 > - **Fail branches, all writable:** A3 partial (train-layouts yes, held-out no) = the transfer
 >   boundary measured; A3 fail = the aerial boundary map + screen stand as the act's product.
+
+### TRAINER BUILD RECORD (2026-07-17; worktree `../sacred-aerial`, branch `gen28-aerial`;
+### suite 183 green incl. 4 new contract tests)
+
+- **`src/envs/aerial_interdiction_env.py`:** the thin adapter presenting the aerial game
+  through the road env's observation/menu contract (sorted zero-padded node ids so the
+  2026-07-09 ordering bug class cannot recur; edge col 4 = the layout's per-arc worst
+  single-hazard probability, the recorded observable-projection decision; per-route head
+  features = [minmax cost, minmax layout exposure]). `route_one`, `featurize_state`,
+  `node_index_map`, the menu head and the full ProtagonistSAC update path run UNCHANGED
+  (tests/test_aerial_env_contract.py: featurisation, menu-index/sorted-row agreement,
+  obj_matrix == payoff at N=1, end-to-end replay+update, exact-distribution sanity).
+- **`scripts/train_aerial_generalist.py`:** the gen15/16-recipe generalist, N=1. Pool (fixed
+  across seeds): 18 layout instances (base sector, K=1, r=1.2, RBF fields seeds 1000-1017)
+  + the 5 screened cells (pinch_banded_K1_r1.6 = the A1 headline, pinch_K1_r1.6, base_K1_r0.8,
+  base_K1_r1.6 = the honest low-gap point, base_K2_r1.2); held-out = 6 layouts (seeds
+  2000-2005, never trained). Per-instance smooth FP (tau 0.05, window 250), analytic reward,
+  head-term lr 3e-2, ent-frac 0.5, alpha floor 0.20, select-on-train, per-eval ckpts.
+- **Held-out reference rows (built with the pool, before any training):** eq 0.152-0.196;
+  inv-risk-lane 0.213-0.287 (ratio-to-eq 1.38-1.69: the A3 comparator margins); det 0.47-0.63.
+- **Timing probe (B9 gate, 80 sorties, NOT a training run):** pool build 0.5 s; ~0.25 s/sortie
+  with updates at `--threads 3`; full eval sweep (29 instances, exact) ~1 s. **Envelope:
+  12,000 sorties/seed ~ 50-60 min; 3 seeds at 3-parallel ~ 1-1.5 h wall.** Probe anchors:
+  untrained policy = ratio ~2.77-2.79 on train AND held-out (the random-init reference row);
+  mechanism signature already visible pre-scale (route_feat_w[exposure] training negative,
+  alpha annealing off the 1.0 init).
+- **LAUNCH GATE (standing):** the 3-seed batch + any >= 240-sortie smoke await Kilian's
+  explicit go (his 2026-07-16 in-conversation amendment to the handoff's autonomy grant).

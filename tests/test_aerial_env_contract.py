@@ -1,0 +1,76 @@
+"""gen28: the aerial env's observation/menu contract against the real SAC stack (featurizer,
+node_index_map, menu-select head, replay + update). Plumbing-only: no training claims."""
+
+import numpy as np
+import pytest
+import torch
+
+from scripts.train_multiconvoy import _transition, route_one
+from src.agents.networks import featurize_state, node_index_map
+from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
+from src.envs.aerial_interdiction_env import AerialInterdictionEnv, _nid
+from src.envs.aerial_sector import SectorLattice, build_aerial_menu, hazard_grid
+
+LAT = SectorLattice(ny=9, nx=13)
+
+
+def _env():
+    menu = build_aerial_menu(LAT, R=12)
+    centres = hazard_grid(LAT, cols=(4, 8), rows=(0, 2, 4, 6, 8))
+    return AerialInterdictionEnv(LAT, menu, centres, K=1, r=1.2)
+
+
+def _prot():
+    prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=32, num_layers=2, heads=2,
+                          reward_scale=1.0, device="cpu", role_alpha=True)
+    for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
+        net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
+        net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
+        net.route_feats = None
+    return prot
+
+
+def test_observation_featurizes_and_menu_indices_match_sorted_rows():
+    env = _env()
+    obs = env.reset()
+    pyg = featurize_state(obs, 0)
+    assert pyg.x.shape == (len(obs["nodes"]), 14)
+    assert pyg.edge_attr.shape[1] == 5
+    assert float(pyg.edge_attr[:, 4].max()) > 0.0          # the threat projection reaches col 4
+    n2i = node_index_map(obs)
+    for r, route in enumerate(env.menu):                    # menu rows == sorted-order indices
+        expect = [n2i[_nid(n)] for n in route]
+        assert obs["menu_route_node_idx"][r].tolist() == expect
+    assert obs["menu_route_feats"].shape == (env.game.n_routes, 2)
+
+
+def test_obj_matrix_is_payoff_at_n1():
+    env = _env()
+    assert env.obj_matrix.shape == env.game.payoff.shape
+    assert np.allclose(env.obj_matrix, env.game.payoff)     # N=1 mission == interception
+
+
+def test_route_one_and_update_run_end_to_end():
+    env = _env()
+    prot = _prot()
+    torch.manual_seed(0)
+    for k in range(6):
+        env.reset()
+        env.commit(k % env.game.payoff.shape[1])
+        steps, occ, routes = route_one(prot, env, fleet_route=True)
+        assert len(steps) == 1 and sum(occ) == 1 and occ[routes[0]] == 1
+        obs, ci, hop, mask = steps[0]
+        obs["target_entropy"] = 0.5 * np.log(env.game.n_routes)
+        obs["alpha_group"] = 0
+        reward = -float(env.game.payoff[routes[0], k % env.game.payoff.shape[1]])
+        prot.replay_buffer.push(_transition(obs, ci, hop, mask, reward, None, None, None, True))
+    prot.update(4)                                          # one real SAC update on the batch
+
+
+def test_exact_distribution_sums_to_one_and_scores():
+    from scripts.train_aerial_generalist import exact_ratio, make_layout_instance
+    inst = make_layout_instance("t", 1234)
+    prot = _prot()
+    ratio, d = exact_ratio(prot, inst)
+    assert d.shape == (inst.R,) and d.sum() == pytest.approx(1.0, abs=1e-5)
+    assert ratio >= 1.0 - 1e-9                              # nothing beats the equilibrium
