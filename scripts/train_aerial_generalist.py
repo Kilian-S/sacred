@@ -39,7 +39,7 @@ from src.baselines.aerial_lanes import lane_stack_distributions
 from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
 from src.baselines.interdiction_oracle import best_response_attacker, solve
 from src.baselines.multiconvoy_oracle import objective_value
-from src.envs.aerial_curves import build_curve_menu, dense_hazard_grid
+from src.envs.aerial_curves import all_lane_sets, build_curve_menu, dense_hazard_grid
 from src.envs.aerial_interdiction_env import AerialInterdictionEnv
 from src.envs.aerial_sector import SectorLattice, banded_pmax
 
@@ -47,6 +47,10 @@ TAP_K = 3
 BASE = SectorLattice(ny=9, nx=13)
 PINCH = SectorLattice(ny=9, nx=13, blocked=frozenset(
     {(6, j) for j in range(9) if j not in (3, 4, 5)}))
+# staggered double pinch (v2.2): wall at x=4 open top, wall at x=8 open bottom -> forced S-turn;
+# NO lane curve exists here (the lane rule structurally dies; naive rows = full-menu stacks).
+DBL = SectorLattice(ny=9, nx=13, blocked=frozenset(
+    {(4, j) for j in range(9) if j < 5} | {(8, j) for j in range(9) if j > 3}))
 
 
 def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
@@ -63,20 +67,24 @@ def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
 
 
 class AerialInstance:
-    """Game v2 (2026-07-17): curved menu (lanes at continuous offsets first), dense 0.5-step
-    hazard grid, line-integral exposure. pmax: scalar | "banded" | per-position array (layout)."""
-    def __init__(self, name: str, lat: SectorLattice, K: int, r: float, pmax):
+    """Game v2.2 (2026-07-17): curved menu carrying ALL canonical lane spacings (the complete
+    naive set, min over spacings = best_naive), dense 0.5-step hazard grid with standoff zones,
+    line-integral exposure. pmax: scalar | "banded" | per-position array (layout); r scalar or
+    per-position array (mixed threat types)."""
+    def __init__(self, name: str, lat: SectorLattice, K: int, r, pmax, menu_r: float = 1.6):
         self.name = name
-        menu, lane_idx = build_curve_menu(lat, r, R=40, seed=0)
+        menu, _ = build_curve_menu(lat, menu_r, R=40, seed=0)
         centres = dense_hazard_grid(lat, step=0.5)
         pm = pmax if not isinstance(pmax, str) else banded_pmax(centres, lat.ny)
         self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm)
         sol = solve(self.env.game)
         self.eq = float(sol.value)
         self.loss_det = float(sol.loss_det)
-        stacks = lane_stack_distributions(self.env.game, lane_idx, self.env.S)
-        self.naive = {k: float(best_response_attacker(self.env.game, d)[1])
-                      for k, d in stacks.items()}
+        self.naive: dict[str, float] = {}
+        lsets = all_lane_sets(lat, menu)
+        for rc, li in (lsets.items() if lsets else [(0.0, [])]):
+            for k, d in lane_stack_distributions(self.env.game, li, self.env.S).items():
+                self.naive[f"{k}@{rc}"] = float(best_response_attacker(self.env.game, d)[1])
         self.best_naive = min(self.naive.values())
         self.occ_seq: list[int] = []
         self.pol_hist: list[np.ndarray] = []
@@ -86,21 +94,25 @@ class AerialInstance:
         return self.env.game.n_routes
 
 
-def make_layout_instance(name: str, seed: int) -> AerialInstance:
-    """A3 family (v2.1 family probe): BASE sector, r=1.6, K=1 - the family where random fields
-    keep the largest best-naive margin under standoff zones (median 1.34, min 1.20)."""
-    centres = dense_hazard_grid(BASE, step=0.5)
-    return AerialInstance(name, BASE, K=1, r=1.6, pmax=random_field(centres, seed))
+def make_layout_instance(name: str, seed: int, fam: str = "base") -> AerialInstance:
+    """A3 layout families (v2.2 family probes, COMPLETE naive set): "base" = open sector r=1.6
+    (best-naive 1.39 med / 1.29 min); "dbl" = staggered double pinch r=1.2 (1.55 med / 1.39
+    min; no lane rule exists). One policy is trained and held out ACROSS BOTH."""
+    lat = BASE if fam == "base" else DBL
+    centres = dense_hazard_grid(lat, step=0.5)
+    return AerialInstance(name, lat, K=1, r=(1.6 if fam == "base" else 1.2),
+                          pmax=random_field(centres, seed))
 
 
-# the screened A1/A2 cells (GAME V2.1 screen WITH STANDOFF ZONES, 2026-07-17): headline first
+# the screened A1/A2 cells (GAME V2.2: standoff + complete naive set, 2026-07-17): headline
+# first; exact anchors pinned in the ledger from the pool-build printout BEFORE any training.
 CELLS = [
-    ("pinch_banded_K1_r1.6", PINCH, 1, 1.6, "banded"),   # A1 headline: naive/eq 1.28, eq 0.519
-    ("pinch_banded_K2_r1.2", PINCH, 2, 1.2, "banded"),   # K axis, same gap (1.28, eq 0.558)
-    ("banded_K1_r1.6",       BASE,  1, 1.6, "banded"),   # open-sector banded point (1.24)
-    ("base_K1_r0.8",         BASE,  1, 0.8, 0.9),        # low-phi point (1.18)
-    ("base_K1_r1.2",         BASE,  1, 1.2, 0.9),        # low-gap honest point (~1.1)
-    ("base_K2_r1.2",         BASE,  2, 1.2, 0.9),        # K axis honest low point (1.06)
+    ("dblpinch_banded_K1_r1.2", DBL,  1, 1.2, "banded"),  # A1 headline (structure kills lanes)
+    ("pinch_banded_K1_r1.6",   PINCH, 1, 1.6, "banded"),  # single-pinch point
+    ("banded_K1_r1.6",         BASE,  1, 1.6, "banded"),  # open-sector banded point
+    ("base_K1_r0.8",           BASE,  1, 0.8, 0.9),       # low-phi honest point
+    ("base_K1_r1.2",           BASE,  1, 1.2, 0.9),       # low-gap honest point
+    ("base_K2_r1.2",           BASE,  2, 1.2, 0.9),       # K axis honest point
 ]
 
 
@@ -151,16 +163,20 @@ def main():
 
     print("[gen28] building pool (layouts fixed across seeds: 1000+, test 2000+)...", flush=True)
     t0 = time.time()
-    train = [make_layout_instance(f"layout{1000 + s}", 1000 + s)
-             for s in range(args.n_layouts_train)]
+    nb = args.n_layouts_train // 2
+    train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base") for s in range(nb)]
+    train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl")
+              for s in range(args.n_layouts_train - nb)]
     train += [AerialInstance(n, lat, K, r, pm) for n, lat, K, r, pm in CELLS]
-    test = [make_layout_instance(f"holdout{2000 + s}", 2000 + s)
-            for s in range(args.n_layouts_test)]
+    nt = args.n_layouts_test // 2
+    test = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(nt)]
+    test += [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl")
+             for s in range(args.n_layouts_test - nt)]
     print(f"[gen28] pool built in {time.time() - t0:.1f}s: {len(train)} train "
           f"({args.n_layouts_train} layouts + {len(CELLS)} cells), {len(test)} held-out layouts")
-    for it in test:
-        print(f"    {it.name}: eq={it.eq:.3f} invrisk_lane={it.naive['invrisk_lane']:.3f} "
-              f"best_naive={it.best_naive:.3f} det={it.loss_det:.3f}", flush=True)
+    for it in train + test:
+        print(f"    {it.name}: eq={it.eq:.3f} best_naive={it.best_naive:.3f} "
+              f"det={it.loss_det:.3f}", flush=True)
 
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0,
@@ -230,7 +246,7 @@ def main():
                 torch.save(prot.actor.state_dict(), str(_P(args.ckpt_dir) / f"actor_ep{k+1}.pt"))
             print(f"  sortie {k+1:6d}: TRAIN ratio {tr_m:.2f} | HELD-OUT ratio {te_m:.2f} "
                   f"beats-BEST-naive {te_beats}/{len(test)} | headline "
-                  f"{tr['pinch_banded_K1_r1.6']:.3f} (naive 0.665, eq 0.519) | "
+                  f"{tr['dblpinch_banded_K1_r1.2']:.3f} | "
                   f"rw[{fw[0]:.2f},{fw[1]:.2f}] a{prot.alpha:.2f} | {time.time()-t0:5.0f}s",
                   flush=True)
 

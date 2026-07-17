@@ -62,12 +62,7 @@
     <span class="eyebrow">Mission console</span>
     <div class="row"><select id="inst" aria-label="instance"></select></div>
     <div class="row">
-      <select id="strat" aria-label="strategy">
-        <option value="shortest">fly shortest path (deterministic)</option>
-        <option value="uniform_lane">uniform over lanes (naive)</option>
-        <option value="invrisk_lane">inverse-risk lanes (smart naive)</option>
-        <option value="equilibrium" selected>equilibrium mixture (what SACRED learns toward)</option>
-      </select>
+      <select id="strat" aria-label="strategy"></select>
       <select id="atk" aria-label="attacker">
         <option value="br" selected>enemy: best response to your strategy</option>
         <option value="eq">enemy: equilibrium mixture</option>
@@ -107,9 +102,14 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const els = Object.fromEntries(['inst','strat','atk','fly','auto','fast','reset','radii','kv','tally','log']
   .map(id => [id, document.getElementById(id)]));
 DATA.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textContent=d.title;els.inst.appendChild(o);});
+function rebuildStrat(){ const cur=els.strat.value; els.strat.innerHTML='';
+  for(const [k,label] of Object.entries(SN())){ const o=document.createElement('option');
+    o.value=k; o.textContent=label; els.strat.appendChild(o); }
+  els.strat.value = SN()[cur] ? cur : 'equilibrium'; }
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let I = DATA[0], sortie = 0, tallies = {}, anim = null, autoOn = false;
-const SNAMES = {shortest:'shortest', uniform_lane:'uniform lanes', invrisk_lane:'inv-risk lanes', equilibrium:'equilibrium'};
+const FALLBACK_SNAMES = {shortest:'shortest', uniform_lane:'uniform lanes', invrisk_lane:'inv-risk lanes', equilibrium:'equilibrium'};
+const SN = () => I.snames || FALLBACK_SNAMES;
 const PAD = 90;
 const expCache = {};
 
@@ -210,7 +210,7 @@ function runSortie(instant){
   const isLane=I.lane_idx.includes(ri);
   const logLine=()=>{ const div=document.createElement('div');
     div.className=hitSeg>=0?'hit':'ok';
-    div.textContent=`S${String(sortie).padStart(3,'0')} · ${SNAMES[strat]} · route ${ri}`+
+    div.textContent=`S${String(sortie).padStart(3,'0')} · ${SN()[strat].split(' (')[0]} · route ${ri}`+
       (isLane?' (lane)':'')+` · exposure ${pTot.toFixed(2)}`+
       (hitSeg>=0?' · INTERCEPTED':' · delivered');
     els.log.prepend(div); refresh(false); };
@@ -247,14 +247,14 @@ function refresh(redraw=true){
     `<span class="k">deterministic optimum</span><span class="v">${I.loss_det.toFixed(3)}</span>`+
     `<span class="k">predicted for this setup</span><span class="v">${expectedRate(strat,mode).toFixed(3)}</span>`;
   let rows='<tr><th>strategy</th><th>sorties</th><th>lost</th><th>rate</th><th>predicted</th></tr>';
-  for(const s of Object.keys(SNAMES)){ const t=tallies[I.name+'|'+s+'|'+mode]||{n:0,hits:0};
-    rows+=`<tr class="${s===strat?'active':''}"><td>${SNAMES[s]}</td><td>${t.n}</td>`+
+  for(const s of Object.keys(SN())){ const t=tallies[I.name+'|'+s+'|'+mode]||{n:0,hits:0};
+    rows+=`<tr class="${s===strat?'active':''}"><td>${SN()[s].split(' (')[0]}</td><td>${t.n}</td>`+
       `<td>${t.hits}</td><td>${t.n?(t.hits/t.n).toFixed(3):'–'}</td>`+
       `<td>${expectedRate(s,mode).toFixed(3)}</td></tr>`; }
   els.tally.innerHTML=rows;
   if(redraw) drawBase(null);
 }
-els.inst.onchange=()=>{ I=DATA[+els.inst.value]; els.log.innerHTML=''; refresh(); };
+els.inst.onchange=()=>{ I=DATA[+els.inst.value]; els.log.innerHTML=''; rebuildStrat(); refresh(); };
 els.strat.onchange=()=>refresh(); els.atk.onchange=()=>refresh();
 els.radii.onchange=()=>refresh();
 els.fly.onclick=()=>runSortie(false);
@@ -262,5 +262,6 @@ els.auto.onclick=()=>{ autoOn=!autoOn; els.auto.textContent=autoOn?'Stop':'Auto'
   if(autoOn) runSortie(false); };
 els.fast.onclick=()=>{ for(let i=0;i<200;i++) runSortie(true); };
 els.reset.onclick=()=>{ tallies={}; sortie=0; els.log.innerHTML=''; refresh(); };
+rebuildStrat();
 refresh();
 </script>

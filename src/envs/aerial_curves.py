@@ -120,6 +120,23 @@ def lane_offsets(lat: SectorLattice, r: float) -> list[float]:
     return [float(v) for v in np.linspace(0.0, lat.W, n)]
 
 
+def all_lane_sets(lat: SectorLattice, menu: list[CurveRoute],
+                  spacings=(0.8, 1.2, 1.6, 2.0)) -> dict[float, list[int]]:
+    """Menu indices of every canonical lane set (one per spacing radius): the COMPLETE naive
+    lane-rule family for baseline rows (min over spacings = the strongest lane rule)."""
+    pos = {c.offsets: i for i, c in enumerate(menu)}
+    out: dict[float, list[int]] = {}
+    for rc in spacings:
+        idx = []
+        for off in lane_offsets(lat, rc):
+            c = lane_curve(lat, off)
+            if c is not None and c.offsets in pos:
+                idx.append(pos[c.offsets])
+        if idx:
+            out[rc] = idx
+    return out
+
+
 def lane_curve(lat: SectorLattice, offset: float, rects: np.ndarray | None = None
                ) -> CurveRoute | None:
     """The canonical lane at a continuous lateral offset: transition out over two stations,
@@ -149,15 +166,22 @@ def build_curve_menu(lat: SectorLattice, r: float, R: int = 40, seed: int = 0
     for off in lane_offsets(lat, r):
         if add(lane_curve(lat, off, rects)):
             lane_idx.append(len(menu) - 1)
+    # v2.2 baseline completeness: the menu ALWAYS carries every canonical lane spacing, so the
+    # naive-rule set (min over spacings, `all_lane_sets`) is complete by construction.
+    for r_canon in (0.8, 1.2, 1.6, 2.0):
+        for off in lane_offsets(lat, r_canon):
+            add(lane_curve(lat, off, rects))
     add(make_curve(lat, [float(lat.base[1])] * 5, rects))       # straight centre line
     rng = np.random.default_rng(seed)
     cands: list[CurveRoute] = []
     tries = 0
-    while len(cands) < 6 * R and tries < 60 * R:
+    while len(cands) < 6 * R and tries < 200 * R:
         tries += 1
         c = make_curve(lat, rng.uniform(0.0, lat.W, size=5), rects)
         if c is not None and c.offsets not in seen:
             cands.append(c)
+    if not menu and cands:                                      # heavily constrained sector:
+        add(cands.pop(0))                                       # no lane/straight survives
     while len(menu) < R and cands:                              # greedy max-min diversity
         chosen_off = np.array([c.offsets for c in menu])
         d = [float(np.min(np.linalg.norm(chosen_off - np.array(c.offsets), axis=1)))
@@ -171,18 +195,21 @@ def build_curve_menu(lat: SectorLattice, r: float, R: int = 40, seed: int = 0
 # Line-integral exposure and the game
 
 
-def curve_survival_matrix(menu: list[CurveRoute], centres: np.ndarray, r: float,
+def curve_survival_matrix(menu: list[CurveRoute], centres: np.ndarray, r,
                           p_max) -> np.ndarray:
     """S[i, h] = exp(-integral of hazard rate along curve i for hazard h alone), with
-    kappa_h = -ln(1 - p_max_h) / r (dead-centre straight transit intercepted w.p. p_max_h)."""
+    kappa_h = -ln(1 - p_max_h) / r_h (dead-centre straight transit intercepted w.p. p_max_h).
+    ``r`` and ``p_max`` may each be scalar or per-position arrays [H] (mixed threat types:
+    large air-defence sites beside small ambush teams; v2.2 realism axis)."""
     pm = np.broadcast_to(np.asarray(p_max, float), (len(centres),))
-    kappa = -np.log(np.clip(1.0 - pm, 1e-12, 1.0)) / r
+    rr = np.broadcast_to(np.asarray(r, float), (len(centres),))
+    kappa = -np.log(np.clip(1.0 - pm, 1e-12, 1.0)) / rr
     S = np.empty((len(menu), len(centres)))
     for i, c in enumerate(menu):
         mids = (c.pts[:-1] + c.pts[1:]) / 2.0
         ds = np.linalg.norm(np.diff(c.pts, axis=0), axis=1)
         d = np.linalg.norm(mids[:, None, :] - centres[None, :, :], axis=2)   # [S-1, H]
-        taper = np.clip(1.0 - d / r, 0.0, None)
+        taper = np.clip(1.0 - d / rr[None, :], 0.0, None)
         S[i] = np.exp(-(kappa[None, :] * taper * ds[:, None]).sum(axis=0))
     return S
 
@@ -209,7 +236,7 @@ def dense_hazard_grid(lat: SectorLattice, step: float = 0.5, safe_r: float = 3.0
 
 
 def build_curved_game(lat: SectorLattice, menu: list[CurveRoute], centres: np.ndarray,
-                      K: int, *, r: float, p_max=0.9) -> tuple[InterdictionGame, np.ndarray]:
+                      K: int, *, r, p_max=0.9) -> tuple[InterdictionGame, np.ndarray]:
     """The K-hazard game over the curved menu; returns (game, S). Exact only while the iset
     enumeration fits (K <= 2 on dense grids); past that use greedy_br_hazards on S."""
     import itertools

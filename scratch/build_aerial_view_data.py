@@ -12,16 +12,19 @@ import numpy as np
 from scripts.train_aerial_generalist import random_field
 from src.baselines.aerial_lanes import lane_stack_distributions
 from src.baselines.interdiction_oracle import best_response_attacker, solve
-from src.envs.aerial_curves import build_curve_menu, build_curved_game, dense_hazard_grid
+from src.envs.aerial_curves import (all_lane_sets, build_curve_menu, build_curved_game,
+                                    dense_hazard_grid)
 from src.envs.aerial_sector import SectorLattice, banded_pmax
 
 BASE = SectorLattice(ny=9, nx=13)
 PINCH = SectorLattice(ny=9, nx=13, blocked=frozenset(
     {(6, j) for j in range(9) if j not in (3, 4, 5)}))
+DBL = SectorLattice(ny=9, nx=13, blocked=frozenset(
+    {(4, j) for j in range(9) if j < 5} | {(8, j) for j in range(9) if j > 3}))
 
 
-def export(name, title, lat, r, pmax_spec, K=1):
-    menu, lane_idx = build_curve_menu(lat, r, R=40, seed=0)
+def export(name, title, lat, r, pmax_spec, K=1, menu_r=1.6):
+    menu, _ = build_curve_menu(lat, menu_r, R=40, seed=0)
     centres = dense_hazard_grid(lat, step=0.5)
     if pmax_spec == "banded":
         pm = banded_pmax(centres, lat.ny)
@@ -31,11 +34,31 @@ def export(name, title, lat, r, pmax_spec, K=1):
         pm = random_field(centres, int(pmax_spec[1]))
     game, S = build_curved_game(lat, menu, centres, K, r=r, p_max=pm)
     sol = solve(game)
-    stacks = lane_stack_distributions(game, lane_idx, S)
+    lsets = all_lane_sets(lat, menu)
     shortest = np.zeros(game.n_routes)
     shortest[int(np.argmin(game.travel_cost))] = 1.0
-    strategies = {"shortest": shortest, "uniform_lane": stacks["uniform_lane"],
-                  "invrisk_lane": stacks["invrisk_lane"], "equilibrium": sol.defender_strategy}
+    if lsets:   # best lane spacing for THIS instance = min worst-case over spacings
+        best_rc = min(lsets, key=lambda rc: best_response_attacker(
+            game, lane_stack_distributions(game, lsets[rc], S)["invrisk_lane"])[1])
+        stacks = lane_stack_distributions(game, lsets[best_rc], S)
+        strategies = {"shortest": shortest, "uniform_lane": stacks["uniform_lane"],
+                      "invrisk_lane": stacks["invrisk_lane"],
+                      "equilibrium": sol.defender_strategy}
+        snames = {"shortest": "shortest path (deterministic)",
+                  "uniform_lane": f"uniform lanes (best spacing r={best_rc})",
+                  "invrisk_lane": f"inverse-risk lanes (r={best_rc})",
+                  "equilibrium": "equilibrium mixture (SACRED target)"}
+        lane_idx = lsets[best_rc]
+    else:       # lane-less sector: the naive family = full-menu stacks
+        stacks = lane_stack_distributions(game, [], S)
+        strategies = {"shortest": shortest, "uniform_lane": stacks["uniform_full"],
+                      "invrisk_lane": stacks["invrisk_full"],
+                      "equilibrium": sol.defender_strategy}
+        snames = {"shortest": "shortest path (deterministic)",
+                  "uniform_lane": "uniform over all routes (no lanes exist)",
+                  "invrisk_lane": "inverse-risk over all routes",
+                  "equilibrium": "equilibrium mixture (SACRED target)"}
+        lane_idx = []
     support = [{"p": [int(x) for x in game.interdiction_sets[j]], "w": round(float(w), 5)}
                for j, w in enumerate(sol.attacker_strategy) if w > 1e-4]
     out = dict(
@@ -49,7 +72,7 @@ def export(name, title, lat, r, pmax_spec, K=1):
         lengths=[round(c.length, 2) for c in menu],
         lane_idx=lane_idx,
         eq_value=round(float(sol.value), 4), loss_det=round(float(sol.loss_det), 4),
-        attacker_support=support, strategies={}, worst={}, br_pos={},
+        attacker_support=support, strategies={}, worst={}, br_pos={}, snames=snames,
     )
     for k, d in strategies.items():
         j, v = best_response_attacker(game, d)
@@ -60,11 +83,13 @@ def export(name, title, lat, r, pmax_spec, K=1):
 
 
 data = [
-    export("pinch_banded", "A1 headline: pinch + banded field (K=1, r=1.6)", PINCH, 1.6, "banded"),
-    export("base_r08", "Open sector, low coverage (K=1, r=0.8)", BASE, 0.8, 0.9),
-    export("holdout2000", "Held-out random threat layout (A3 test; K=1, r=1.6)",
+    export("dblpinch_banded", "A1 headline: staggered double pinch + banded (K=1, r=1.2)",
+           DBL, 1.2, "banded"),
+    export("holdoutB2000", "Held-out layout, open sector (A3 test; K=1, r=1.6)",
            BASE, 1.6, ("layout", 2000)),
-    export("pinch_banded_K2", "Two hazards + pinch + banded (K=2, r=1.2)", PINCH, 1.2, "banded", K=2),
+    export("holdoutD2100", "Held-out layout, double-pinch corridor (A3 test; K=1, r=1.2)",
+           DBL, 1.2, ("layout", 2100)),
+    export("base_K2", "Two hazards, open sector (K=2, r=1.2)", BASE, 1.2, 0.9, K=2),
 ]
 with open("models/runs/gen28_view_data.json", "w") as f:
     json.dump(data, f)

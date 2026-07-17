@@ -366,3 +366,52 @@ min-cut now lives in the corridor, as the road min-cut does.
 >   terminals, lane hedging suffices (1.06-1.18); the trained claim lives on structured
 >   sectors (pinches, heterogeneous fields) and on never-seen layouts. This is the aerial
 >   analogue of the roads' K << m concession, stated on our terms.
+
+---
+
+## GAME V2.2 (2026-07-17, PRE-TRAINING; Kilian's directive: shift advantage to SACRED through
+## honest structure, never firepower). FINAL pre-training design; v2.1 bars superseded in turn.
+
+**The measured answer to "more/larger radii?" (structure probe + screen):** firepower COMPRESSES
+the relative gap (base K2 1.06, K3 1.05-1.16: saturation kills everyone equally); STRUCTURE
+widens it. Probes (`scratch/aerial_structure_probe.py`, `aerial_family_probe.py` + inline
+family re-runs, all oracle-exact, committed):
+
+1. **Staggered double pinch (wall at x=4 open top, wall at x=8 open bottom: a forced S-turn):
+   NO lane curve exists at all** (the naive lane rule structurally dies; its rows become
+   full-menu stacks). Fixed-instance gaps 1.38-1.56; random-layout family **1.55 median /
+   1.39 min** under the complete naive set.
+2. **Mixed threat radii** (30% r=2.0 sites, 70% r=0.8 teams; per-position `r` now supported):
+   the single-seed 1.63 collapsed to 1.21-1.23 median once the naive rule was given BOTH lane
+   spacings — the recursive baseline-completeness lesson, caught pre-pin. Recorded as a
+   realism axis, NOT an aiming axis.
+3. **Menu completeness (binding design change):** `build_curve_menu` now always carries every
+   canonical lane spacing (0.8/1.2/1.6/2.0) and the candidate-search cap is raised for
+   constrained sectors; `all_lane_sets` + min-over-spacings defines `best_naive` everywhere.
+   Richer menus IMPROVED the equilibria (defender-side), further demotions accepted: the
+   single-pinch cell's gap collapses to ~1.06 (kept as an honest curve point).
+
+**The v2.2 pool (trainer at this commit; pool build 90 s, deterministic across seeds):**
+18 train layouts = 9 open-sector r=1.6 + 9 double-pinch r=1.2 (fields RBF-seeded 1000+/1100+);
+6 cells (headline `dblpinch_banded_K1_r1.2`: eq 0.379, best-naive 0.550, det 0.760); held-out =
+3 open-sector (2000-2002: best-naive/eq 1.52/1.31/1.26) + 3 double-pinch (2100-2102: 1.65/
+1.42/1.57), pooled mean 1.455. **Untrained-network context (disclosed, probe-measured): on
+lane-less sectors a near-uniform init MATCHES the uniform-menu stack (headline 0.548 vs naive
+0.550 at init; held-out 1.75, beats best-naive 1/6),** so beating the naive row alone is not
+evidence of learning there; the headline bar is GAP CLOSURE.
+
+> **FINAL PRE-REGISTERED BARS (v2.2; nothing has trained; these supersede all above):**
+> - **A1 (headline cell dblpinch_banded_K1_r1.2):** best-checkpoint TAP closes >= 50% of the
+>   best-naive -> equilibrium gap (**<= 0.465**) on >= 2/3 seeds AND pooled. **STRONG:** >= 75%
+>   (**<= 0.422**). Untrained row (~0.548) and tabular-FP row (recomputed at results time under
+>   these menus, eval-only) reported beside it.
+> - **A3 (the act's primary; 6 held-out layouts spanning BOTH families):** select-on-train TAP
+>   beats each layout's best_naive on **>= 4/6 AND pooled, on >= 2/3 seeds** (untrained does
+>   1/6 at 1.75 pooled). **STRONG:** pooled ratio-to-eq **<= 1.23** (halfway from the 1.455
+>   best-naive mean). Mechanism row (permuted field) and worst-case-style honesty rows as
+>   standing.
+> - **A2:** the 6 cells reported as the trained boundary/structure curve, ungated.
+> - **Claim shape if it lands:** *one policy, zero-shot on never-seen threat pictures across
+>   BOTH an open sector and a structured corridor, beats the strongest naive rule family
+>   (given every spacing) where fixed rules are 1.3-1.7x off optimal; on featureless ground
+>   with secured terminals, simple lanes suffice and we say so.*
