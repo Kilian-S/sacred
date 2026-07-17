@@ -12,10 +12,14 @@
 >    beats both max-flow heuristic variants on the exact yardstick (K=3 n=3: 0.664 +/- 0.018 vs
 >    0.737/0.738, eq 0.604); past the exact wall (71-33 m=6, certified greedy yardstick,
 >    fidelity <= 1.8%): K=5 = 0.667 +/- 0.016 < uniform-disjoint 0.705 (STRONG < 0.638 not met);
->    K=6 single seed 0.718 beats both variants. SECOND-PASS TEMPERING (in the ledger): at K=5 a
->    FULL-MENU uniform ties SACRED (0.666) and a TABULAR-FP-with-greedy-BR learner beats it
->    (0.621/0.690), so the surviving static claim is the BOUNDARY MAP
->    (`assets/k_boundary_map.png`), not deep-RL superiority; K=6 needs n=3 before any sentence.
+>    K=6 n=3 = 0.733 +/- 0.015 TIES the best naive full-menu-stack 0.739 (the seed-0 0.718 was the
+>    favourable tail). **gen26's honest verdict: NO single cell licenses 'deep RL beats every naive
+>    baseline'; the result is the BOUNDARY MAP SHAPE** (`assets/k_boundary_map.png`) — learning's
+>    value grows monotonically with coverage fraction (pointless at K<<m; beats the DISJOINT
+>    variants at K=m-1 exact but a full-menu-stack ties there too; within-noise of the best naive at
+>    K=m), in the regime where exact solvers are also infeasible. A tabular-FP+greedy-BR learner also
+>    works, so 'learning is required, deep RL is one sufficient method'. The sharper superiority
+>    sentence is RETIRED. gen28-aerial's continuous coverage axis is where a cleaner separation may live.
 > 4. **`experiments/gen27_dynamic_generalist.md`** — the rescued ZST act, PRIMARY + STRONG
 >    PASSED 3/3 seeds: one history-aware policy, trained on 3 cities, ZERO-SHOT on Gdansk beats
 >    the static cap at **0.639 +/- 0.025** (every static object beaten by MEASUREMENT incl. the

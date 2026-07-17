@@ -42,16 +42,19 @@ B.plot([1, 2, 3, 4, 5, 6], [0.167, 0.329, 0.468, 0.602, 0.705, 0.800], lw=2, col
        marker="o", ms=6, zorder=3)
 B.plot([1, 2, 3, 4, 5, 6], [0.128, 0.298, 0.456, 0.511, 0.638, 0.766], lw=2, color=MAGENTA,
        marker="s", ms=6, zorder=3)
-B.errorbar([5], [0.667], yerr=[[0.016], [0.016]], lw=2.2, color=BLUE, marker="o", ms=7,
-           capsize=3, zorder=4)
-B.plot([6], [0.718], marker="o", ms=7, mfc="white", mec=BLUE, mew=1.8, ls="none", zorder=4)
-B.plot([5, 6], [0.667, 0.718], lw=2.2, color=BLUE, zorder=3)
+# full-menu uniform-stack (the STRONGEST naive baseline, admits shared routes) - orange
+B.plot([1, 2, 3, 4, 5, 6], [0.167, 0.329, 0.468, 0.590, 0.666, 0.739], lw=1.8, color="#eb6834",
+       ls=(0, (4, 2)), marker="^", ms=5, zorder=2)
+B.errorbar([5, 6], [0.667, 0.733], yerr=[[0.016, 0.015], [0.016, 0.015]], lw=2.2, color=BLUE,
+           marker="o", ms=7, capsize=3, zorder=4)
+B.plot([5, 6], [0.667, 0.733], lw=2.2, color=BLUE, zorder=3)
 B.axvline(6, color=MUTED, lw=1, ls=":", zorder=0)
 B.text(6.02, 0.06, "min-cut m = 6", rotation=90, fontsize=8, color=MUTED, va="bottom")
 B.set_title("71–33  (m = 6; exact to K = 3, greedy K ≥ 4: past the LP wall)",
             fontsize=10, color=INK)
 B.text(4.62, 0.66, "SACRED", fontsize=9, color=BLUE, fontweight="bold", ha="right")
-B.text(5.55, 0.82, "uniform-disjoint", fontsize=8, color=GREEN, ha="center")
+B.text(5.5, 0.83, "uniform-disjoint", fontsize=8, color=GREEN, ha="center")
+B.text(3.0, 0.60, "full-menu stack (best naive)", fontsize=7.5, color="#eb6834", rotation=22)
 B.text(3.55, 0.485, "inv-vuln", fontsize=8, color=MAGENTA, rotation=18)
 B.text(2.6, 0.30, "equilibrium", fontsize=8, color=NEUTRAL)
 
