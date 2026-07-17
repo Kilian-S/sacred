@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""gen28: the aerial LAYOUT-GENERALIST (one trainer carries A1/A2/A3; ledger
-experiments/gen28_aerial.md, bars pre-registered 2026-07-17 BEFORE this file existed).
+"""gen28 v3.0: the aerial FLEET generalist (N=3 drones, fleet-route menu-select, loss-averse
+MISSION objective P(>=1 intercepted)) - the road-proven gen16 register transplanted verbatim
+onto the curved aerial game (Kilian's 2026-07-17 mandate + framing sign-off). The v2.2 (N=1
+menu: saturating bandit) and v2.3 (walker: credit starvation) negatives are the measured
+reasons for this configuration; ledger experiments/gen28_aerial.md v3.0 record.
 
 ONE menu-select policy trained across aerial instances (random hidden-hazard effectiveness
 LAYOUTS on the base sector + the screened A1/A2 cells: pinch/banded/base lattices, K/r cells),
@@ -24,9 +27,11 @@ Timing probe (the B9 gate, not a training run): --sorties 30 --eval-every 10
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import time
+from math import factorial
 from pathlib import Path as _P
 
 import numpy as np
@@ -67,27 +72,62 @@ def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
 
 
 class AerialInstance:
-    """Game v2.2 (2026-07-17): curved menu carrying ALL canonical lane spacings (the complete
-    naive set, min over spacings = best_naive), dense 0.5-step hazard grid with standoff zones,
-    line-integral exposure. pmax: scalar | "banded" | per-position array (layout); r scalar or
-    per-position array (mixed threat types)."""
+    """Game v3.0 (2026-07-17 night): N=3 fleet, MISSION objective, curved menu with the
+    complete naive set at FLEET level: STACK rules (fleet on one sampled route; lane sets per
+    spacing + full menu, uniform + inverse-risk) AND INDEPENDENT-mixing rules, all scored under
+    the mission best response. pmax: scalar | "banded" | array; r scalar or array."""
+    N = 3
+
     def __init__(self, name: str, lat: SectorLattice, K: int, r, pmax, menu_r: float = 1.6):
         self.name = name
         menu, _ = build_curve_menu(lat, menu_r, R=40, seed=0)
         centres = dense_hazard_grid(lat, step=0.5)
         pm = pmax if not isinstance(pmax, str) else banded_pmax(centres, lat.ny)
-        self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm)
-        sol = solve(self.env.game)
-        self.eq = float(sol.value)
+        self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm, N=self.N)
+        from src.baselines.multiconvoy_oracle import solve_multiconvoy
+        sol = solve_multiconvoy(self.env.game, self.N, "mission")
+        self.eq = float(sol.loss_mixed)
         self.loss_det = float(sol.loss_det)
+        R = self.env.game.n_routes
+        occs = list(itertools.combinations_with_replacement(range(R), self.N))
+        self._occ_vecs = np.zeros((len(occs), R))
+        for i, c in enumerate(occs):
+            for rr_ in c:
+                self._occ_vecs[i, rr_] += 1
         self.naive: dict[str, float] = {}
         lsets = all_lane_sets(lat, menu)
+        M = self.env.obj_matrix
         for rc, li in (lsets.items() if lsets else [(0.0, [])]):
             for k, d in lane_stack_distributions(self.env.game, li, self.env.S).items():
-                self.naive[f"{k}@{rc}"] = float(best_response_attacker(self.env.game, d)[1])
+                self.naive[f"{k}@{rc}|stack"] = float((self.stack_occ(d) @ M).max())
+                if k in ("uniform_lane", "uniform_full"):
+                    self.naive[f"{k}@{rc}|indep"] = float((self.indep_occ(d, occs) @ M).max())
         self.best_naive = min(self.naive.values())
         self.occ_seq: list[int] = []
         self.pol_hist: list[np.ndarray] = []
+
+    def stack_occ(self, d_routes: np.ndarray) -> np.ndarray:
+        out = np.zeros(len(self.env.occupancies))
+        R = self.env.game.n_routes
+        for rr_, p in enumerate(d_routes):
+            if p > 1e-12:
+                v = [0] * R
+                v[rr_] = self.N
+                out[self.env._occ_index[tuple(v)]] += p
+        return out
+
+    def indep_occ(self, d_routes: np.ndarray, occs) -> np.ndarray:
+        out = np.zeros(len(occs))
+        for i, c in enumerate(occs):
+            counts: dict[int, int] = {}
+            for rr_ in c:
+                counts[rr_] = counts.get(rr_, 0) + 1
+            coef, p = factorial(self.N), 1.0
+            for rr_, kk in counts.items():
+                coef //= factorial(kk)
+                p *= d_routes[rr_] ** kk
+            out[i] = coef * p
+        return out
 
     @property
     def R(self):
@@ -95,9 +135,9 @@ class AerialInstance:
 
 
 def make_layout_instance(name: str, seed: int, fam: str = "base") -> AerialInstance:
-    """A3 layout families (v2.2 family probes, COMPLETE naive set): "base" = open sector r=1.6
-    (best-naive 1.39 med / 1.29 min); "dbl" = staggered double pinch r=1.2 (1.55 med / 1.39
-    min; no lane rule exists). One policy is trained and held out ACROSS BOTH."""
+    """v3.0 layout families (fleet screen 2026-07-17 night): "dbl" = structured double-pinch
+    r=1.2 (fleet best-naive/eq 1.42-1.53 = Tier-2 primary ground); "base" = open sector r=1.6
+    (1.10-1.20 = the reported concession rows)."""
     lat = BASE if fam == "base" else DBL
     centres = dense_hazard_grid(lat, step=0.5)
     return AerialInstance(name, lat, K=1, r=(1.6 if fam == "base" else 1.2),
@@ -112,11 +152,15 @@ CELLS = [
     ("banded_K1_r1.6",         BASE,  1, 1.6, "banded"),  # open-sector banded point
     ("base_K1_r0.8",           BASE,  1, 0.8, 0.9),       # low-phi honest point
     ("base_K1_r1.2",           BASE,  1, 1.2, 0.9),       # low-gap honest point
-    ("base_K2_r1.2",           BASE,  2, 1.2, 0.9),       # K axis honest point
+    # K=2 cell dropped at fleet scale (exact mission matrix = 11,480 occ x 42.8k isets ~ 4 GB);
+    # the K axis returns via the greedy yardstick post-positive (recorded, not scheduled).
 ]
 
 
 def exact_ratio(prot: ProtagonistSAC, inst: AerialInstance) -> tuple[float, np.ndarray]:
+    """EXACT fleet exploitability: leader route distribution -> stacked occupancy distribution
+    (fleet-route: followers copy) -> mission best response (one matvec). Returns
+    (ratio-to-eq, occupancy dist) - the road gen16 estimator on the aerial game."""
     env = inst.env
     env.reset()
     obs = env.observe()
@@ -133,9 +177,9 @@ def exact_ratio(prot: ProtagonistSAC, inst: AerialInstance) -> tuple[float, np.n
         probs, _ = prot.actor(pyg, n2i[obs["trucks"][0]["current_node"]],
                               list(range(R)), torch.zeros(R))
     prot.actor.train()
-    d = probs.numpy()                    # N=1: route distribution IS the strategy
-    _, expl = best_response_attacker(inst.env.game, d)
-    return float(expl) / inst.eq, d
+    d_occ = inst.stack_occ(probs.numpy())
+    expl = float((d_occ @ env.obj_matrix).max())
+    return expl / inst.eq, d_occ
 
 
 def main():
@@ -167,18 +211,16 @@ def main():
 
     print("[gen28] building pool (layouts fixed across seeds: 1000+, test 2000+)...", flush=True)
     t0 = time.time()
-    nb = args.n_layouts_train // 2
-    train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base") for s in range(nb)]
-    train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl")
-              for s in range(args.n_layouts_train - nb)]
+    # v3.0 pool: Tier-2 primary lives on the STRUCTURED family, so training weights it 2:1
+    # (12 dbl + 6 base layouts); held-out = 6 dbl (GATED) + 3 base (reported concession rows).
+    train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base") for s in range(6)]
+    train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl") for s in range(12)]
     train += [AerialInstance(n, lat, K, r, pm) for n, lat, K, r, pm in CELLS]
-    nt = args.n_layouts_test // 2
-    test = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(nt)]
-    test += [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl")
-             for s in range(args.n_layouts_test - nt)]
-    print(f"[gen28] pool built in {time.time() - t0:.1f}s: {len(train)} train "
-          f"({args.n_layouts_train} layouts + {len(CELLS)} cells), {len(test)} held-out layouts")
-    for it in train + test:
+    test = [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl") for s in range(6)]
+    test_ctx = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(3)]
+    print(f"[gen28] pool built in {time.time() - t0:.1f}s: {len(train)} train, "
+          f"{len(test)} gated held-out + {len(test_ctx)} context held-out")
+    for it in train + test + test_ctx:
         print(f"    {it.name}: eq={it.eq:.3f} best_naive={it.best_naive:.3f} "
               f"det={it.loss_det:.3f}", flush=True)
 
@@ -212,10 +254,13 @@ def main():
         pay = env.game.payoff[:, j]
         reward = -args.interception_loss * objective_value(
             np.asarray(occ), pay, env.config.N, env.config.objective, env.config.threshold_m)
-        te = args.ent_frac * math.log(inst.R)
-        for obs_j, _, _, _ in steps:
-            obs_j["target_entropy"] = te
-            obs_j["alpha_group"] = 0
+        # the road gen16 split: leader mixes (ent-frac 0.5), followers commit (0.05) after warmup
+        leader_te = args.ent_frac * math.log(inst.R)
+        follower_te = 0.05 * math.log(inst.R)
+        for obs_j, ci_j, _, _ in steps:
+            is_foll = (ci_j != 0) and k >= 250
+            obs_j["target_entropy"] = follower_te if is_foll else leader_te
+            obs_j["alpha_group"] = 1 if is_foll else 0
         N = env.config.N
         for i, (obs, ci, hop, mask) in enumerate(steps):
             last = i == N - 1
@@ -226,7 +271,7 @@ def main():
         prot.update(args.batch_size)
 
         if (k + 1) % args.eval_every == 0:
-            for inst_set in (train, test):
+            for inst_set in (train, test, test_ctx):
                 for it in inst_set:
                     _, d = exact_ratio(prot, it)
                     it.pol_hist.append(d)
@@ -235,16 +280,16 @@ def main():
                 rows = {}
                 for it in insts:
                     tap = np.mean(it.pol_hist[-TAP_K:], axis=0)
-                    _, expl = best_response_attacker(it.env.game, tap)
-                    rows[it.name] = float(expl)
+                    rows[it.name] = float((tap @ it.env.obj_matrix).max())
                 return rows
 
-            tr = tap_rows(train); te_rows = tap_rows(test)
+            tr = tap_rows(train); te_rows = tap_rows(test); tc_rows = tap_rows(test_ctx)
             tr_m = float(np.mean([tr[i.name] / i.eq for i in train]))
             te_m = float(np.mean([te_rows[i.name] / i.eq for i in test]))
             te_beats = sum(1 for i in test if te_rows[i.name] < i.best_naive)
             fw = tuple(float(x) for x in prot.actor.route_feat_w.detach())
-            hist.append((k + 1, tr_m, te_m, te_beats, tr, te_rows, fw, float(prot.alpha)))
+            hist.append((k + 1, tr_m, te_m, te_beats, tr, te_rows, fw, float(prot.alpha),
+                         tc_rows))
             if args.ckpt_dir:
                 _P(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(_P(args.ckpt_dir) / f"actor_ep{k+1}.pt"))
@@ -255,8 +300,9 @@ def main():
                   flush=True)
 
     if args.json_out:
-        refs = {it.name: {"eq": it.eq, "loss_det": it.loss_det, **it.naive}
-                for it in train + test}
+        refs = {it.name: {"eq": it.eq, "loss_det": it.loss_det,
+                          "best_naive": it.best_naive, **it.naive}
+                for it in train + test + test_ctx}
         _P(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         _P(args.json_out).write_text(json.dumps(
             {"seed": args.seed, "refs": refs, "history": hist,

@@ -528,7 +528,11 @@ require the single-instance trainability rung first (the road curriculum's own l
 competence precedes comparison), which is OUTSIDE this act's pre-committed budget.
 
 **CLOSURE (per the exit criterion, verbatim from the pre-registration):** the aerial act
-closes as the SCREEN + BOUNDARY product. What it banks for the thesis: (i) the oracle-exact
+closes as the SCREEN + BOUNDARY product. **[SUPERSEDED 2026-07-17 night: Kilian REOPENED the
+act with a new mandate and full launch authority ("make this work... until the aerial branch
+provides a positive result"; walker judged a bad direction, back toward menu route choice).
+The v3.0 record below is the new pre-registration; the v2.2/v2.3 negatives stand as measured
+history.]** What it banks for the thesis: (i) the oracle-exact
 screen arc (v1 -> v2.2: proximity exposure, standoff zones, complete naive families, the
 structure-not-firepower finding, the grid-convergence certificate); (ii) the interactive
 sector exhibit; (iii) a clean, pre-registered PAIR of trained negatives with distinct
@@ -539,3 +543,40 @@ trained-positive burden remains on the banked road acts (gen26 boundary map; gen
 generalist). Reopening this act (e.g. single-instance walker rung first, larger per-instance
 budgets, or w05-scale compute) is a NEW pre-registration and Kilian's explicit call; nothing
 further trains under this ledger.
+
+---
+
+## V3.0 FLEET (2026-07-17 night; Kilian's reopening mandate + sign-offs: 3 drones, mission
+## P(>=1 lost), Tier-2 zero-shot is the primary, M4 now / w05 later, FAR safe)
+
+**Design = the road gen16 register transplanted verbatim onto the curved aerial game** (the
+one configuration that both learned and transferred on roads): N=3 fleet-route menu-select
+(three observations per sortie: the state diversity whose absence broke v2.2), loss-averse
+mission objective (the B3 law: where randomisation is irreplaceable), per-instance smooth FP,
+leader/follower entropy split (0.5/0.05, warmup 250), head features [cost, exposure] at lr
+3e-2, select-on-train, stacked-occupancy TAP under the exact mission BR. Recorded deviations
+from the road trainer: no stack-dup (uniform under fleet-route, disclosed); K=2 cell dropped
+(exact fleet matrix ~4 GB; K axis returns via the greedy yardstick post-positive).
+
+**Fleet screen + pool anchors (oracle-exact; `scratch/aerial_fleet_screen.py` + the pool
+printout, deterministic):** structured (double-pinch) layouts carry the prize: gated held-out
+best-naive/eq = 1.54 / 1.42 / 1.50 / 1.51 / 1.49 / 1.35 (mean 1.468; naive rows include stack
+AND independent-mixing rules over every lane spacing and the full menu); open-sector layouts
+1.10-1.20 (the standing concession, reported ungated); headline cell dblpinch_banded eq 0.538,
+best-naive 0.754, det 0.923; tabular FP ties eq (0.555) as always. Smoke (240 sorties,
+plumbing gate): healthy; beats-best-naive already 4/6 at sortie 240 (v2.2/v2.3 never exceeded
+2/6 at any point); ~0.29 s/sortie.
+
+> **PRE-REGISTERED BARS (v3.0; pinned before the batch):**
+> - **TIER 2 = THE ACT'S PRIMARY (Kilian's preference): zero-shot on the 6 gated held-out
+>   structured layouts (seeds 2100-2105): select-on-train stacked-TAP beats each layout's
+>   best_naive on >= 4/6 AND pooled vs-naive < 1, on >= 2/3 seeds.** **STRONG:** pooled
+>   ratio-to-eq <= 1.23 (halfway from the 1.468 mean). Open-sector holdouts (2000-2002)
+>   reported beside, ungated.
+> - **TIER 1 (headline cell dblpinch_banded_K1_r1.2):** best-checkpoint stacked-TAP < 0.754
+>   (the strongest naive) on >= 2/3 seeds AND pooled; **STRONG:** <= 0.646 (50% gap closure
+>   toward eq 0.538).
+> - Estimator exact throughout (occupancy TAP over last 3 evals under the mission BR); best-
+>   checkpoint/select-on-train discipline, drift disclosed; 3 seeds x 12,000 sorties; thread
+>   caps + nice per the standing constraint. Iteration under the reopening mandate: further
+>   attempts (if needed) are ledger amendments with disclosed changes, never silent re-rolls.

@@ -69,9 +69,15 @@ def test_route_one_and_update_run_end_to_end():
 
 
 def test_exact_distribution_sums_to_one_and_scores():
+    """v3.0 fleet contract: exact_ratio returns the stacked OCCUPANCY distribution (fleet on
+    one route) and the mission-BR ratio to the fleet equilibrium."""
     from scripts.train_aerial_generalist import exact_ratio, make_layout_instance
     inst = make_layout_instance("t", 1234)
+    assert inst.env.config.N == 3
     prot = _prot()
     ratio, d = exact_ratio(prot, inst)
-    assert d.shape == (inst.R,) and d.sum() == pytest.approx(1.0, abs=1e-5)
-    assert ratio >= 1.0 - 1e-9                              # nothing beats the equilibrium
+    assert d.shape == (len(inst.env.occupancies),)
+    assert d.sum() == pytest.approx(1.0, abs=1e-5)
+    stacked = [i for i, o in enumerate(inst.env.occupancies) if max(o) == 3]
+    assert d[stacked].sum() == pytest.approx(1.0, abs=1e-5)   # fleet-route: all mass stacked
+    assert ratio >= 1.0 - 1e-9                                # nothing beats the equilibrium

@@ -91,8 +91,9 @@ class AerialInterdictionEnv:
         feats = torch.tensor(np.stack([_mm(cost), _mm(exposure)], axis=1), dtype=torch.float32)
         return {
             "nodes": nodes, "edges": edges,
-            "trucks": {0: {"current_node": _nid(lat.base), "destination": None, "load": 0.0,
-                           "capacity": 1.0, "assigned_target": _nid(lat.target)}},
+            "trucks": {i: {"current_node": _nid(lat.base), "destination": None, "load": 0.0,
+                           "capacity": 1.0, "assigned_target": _nid(lat.target)}
+                       for i in range(self.config.N)},
             "edge_vulnerability": vuln,
             "menu_route_node_idx": menu_idx, "menu_route_feats": feats,
         }
