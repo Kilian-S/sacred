@@ -214,8 +214,11 @@ def main():
     t0 = time.time()
     # v3.0 pool: Tier-2 primary lives on the STRUCTURED family, so training weights it 2:1
     # (12 dbl + 6 base layouts); held-out = 6 dbl (GATED) + 3 base (reported concession rows).
-    train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base") for s in range(6)]
-    train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl") for s in range(12)]
+    nb_base = args.n_layouts_train // 3          # 2:1 structured:open, honouring the arg
+    train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base")
+             for s in range(nb_base)]
+    train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl")
+              for s in range(args.n_layouts_train - nb_base)]
     train += [AerialInstance(n, lat, K, r, pm) for n, lat, K, r, pm in CELLS]
     test = [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl") for s in range(6)]
     test_ctx = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(3)]

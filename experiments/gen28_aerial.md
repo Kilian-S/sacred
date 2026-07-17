@@ -608,3 +608,28 @@ checkpoint because the train mean stays noisy-flat here, unlike the descending r
    3000-3001 + 2 open 3100-3101; never trained, never tested; the gen24 val-stop precedent).
    Select-on-train and select-on-test dual-reported as before.
 3. Everything else byte-identical to v3.0 (pool, budgets, FP, bars, estimator).
+
+### V3.1 RESULT (2026-07-18, 3 seeds x 12,000): **TIER 1 REPLICATES (3/3 seeds; now 5/6 seeds
+### across two independent batches); TIER 2 fails at the frontier.**
+
+| seed | Tier-1 headline best-ckpt (bar < 0.754) | Tier-2 gated beats @ val-selection | pooled vs-naive |
+|---|---|---|---|
+| 0 | 0.716 (pass) | 1/6 | 1.04 |
+| 1 | 0.750 (pass) | 2/6 | 1.02 |
+| 2 | 0.735 (pass) | 1/6 | 1.03 |
+
+> **TIER 1: PASS 3/3 + pooled 0.734** (v3.0: 2/3 + 0.746) = a REPLICATED positive across
+> batches (5/6 seeds total). STRONG (<= 0.646) unmet. Drift visibly cured post-amendment
+> (headline stable 0.72-0.79 all run; no rw railroading, rw stays |w| < 0.2).
+> **TIER 2: FAIL** (1-2/6), but the miss is now AT the naive frontier (pooled vs-naive
+> 1.02-1.04; per-layout 0.93-1.09) vs v3.0's 1.08-1.12: zero-shot play matches the strongest
+> naive rule and does not clear it. **Pattern note (binding for wording): this mirrors the
+> ROAD generalist exactly (static zero-shot at-but-not-below its naive frontier; the
+> disjoint-baseline finding), whose honest rescue was the DYNAMIC register (gen19/gen27),
+> where every static rule is provably capped.**
+
+### V3.2 AMENDMENT (the last STATIC push; disclosed; bars + gated test set unchanged):
+24,000 sorties/seed (2x) + 36 train layouts (24 structured + 12 open, 2x variety), 3 seeds,
+everything else v3.1-identical. In parallel, the DYNAMIC aerial act (the gen19/gen27
+mechanism on the fleet game) is being built as the register where the zero-shot claim is
+provable; its own pre-registration follows below when its yardsticks are computed.
