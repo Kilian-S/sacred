@@ -179,3 +179,17 @@ pattern-of-life adversary it reaches 0.64x the static cap; against a worst-case 
 adversary its marginal is ~1.5x the equilibrium, so the static hedge remains the right play
 when the adversary best-responds to the strategy rather than the pattern.* Both policies exist;
 choosing between them is an intelligence question, not a modelling one.
+
+### NO-WINDOW CAUSAL CONTROL (2026-07-17, seed 0, 12,000 sorties): the mechanism is CONFIRMED
+
+The identical policy with the window feature ZEROED (`--no-window`): held-out ratio-to-cap
+**1.434** (select-on-train), **beats the cap on 0/6 ODs**, final iterate 2.206. The window weight
+stayed pinned at 0.00 throughout (it has no signal to train on). vs the sighted policy's 0.639
+beating the cap 6/6·5/6·5/6.
+
+> **The gain 1.434 -> 0.639 is CAUSALLY the window conditioning, not the architecture** — exactly
+> as gen19's single-instance control showed (0.148 vs iid_eq 0.147). Blinded to its own recent
+> pattern, the policy can only play the static mixture and is capped like every static object;
+> given the window, it learns the history-dependent hedge and beats the cap zero-shot on a
+> never-seen city. **gen27 is closed: PRIMARY + STRONG passed 3/3, causal control clean, worst-case
+> row honest, discovery evidence measured. The flagship positive act of the storyline.**
