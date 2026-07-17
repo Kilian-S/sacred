@@ -3,7 +3,7 @@
   :root{
     --ground:#10151b; --panel:#161d25; --panel2:#1b242e; --line:#26313d;
     --ink:#e8edf2; --ink2:#8fa0ae; --ink3:#5c6b78;
-    --flight:#4a9de0; --threat:#f0a028; --hit:#e66767; --ok:#3fae7e; --lane:#7f8ea0;
+    --flight:#4a9de0; --threat:#f0a028; --hit:#e66767; --ok:#3fae7e;
     color-scheme: dark;
   }
   body{background:var(--ground);color:var(--ink);
@@ -21,7 +21,6 @@
     border-radius:6px;padding:6px 10px;font:600 13px/1.2 inherit;cursor:pointer}
   select:focus-visible,button:focus-visible{outline:2px solid var(--flight);outline-offset:1px}
   button.primary{background:var(--flight);border-color:var(--flight);color:#0b0f14}
-  button:disabled{opacity:.45;cursor:default}
   .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;margin-top:8px}
   .kv .k{color:var(--ink2)} .kv .v{font-family:ui-monospace,"SF Mono",Menlo,monospace;
     font-variant-numeric:tabular-nums;text-align:right}
@@ -46,27 +45,25 @@
 </style>
 <div class="wrap">
 <header>
-  <span class="eyebrow">gen28 · sacred aerial act</span>
+  <span class="eyebrow">gen28 · sacred aerial act · game v2: curved flight, integral exposure</span>
   <h1>What the policy is trained to play: the sector, the flight, the interception</h1>
 </header>
 <div class="grid">
   <div class="panel">
     <canvas id="cv" width="1560" height="1080"></canvas>
     <div class="legend">
-      <span><span class="dot" style="background:var(--threat)"></span>threat field (known): candidate ambush positions, brightness = effectiveness</span>
-      <span><span class="dot" style="background:var(--flight)"></span>route mixture (line weight = probability)</span>
-      <span><span class="dot" style="background:var(--hit)"></span>committed hazard + interception radius (hidden until revealed)</span>
+      <span><span class="dot" style="background:var(--threat)"></span>threat field (known): candidate positions, brightness = effectiveness</span>
+      <span><span class="dot" style="background:var(--flight)"></span>route mixture (weight = probability)</span>
+      <span><span class="dot" style="background:var(--hit)"></span>committed hazard(s) + radius (hidden until revealed)</span>
     </div>
   </div>
   <div class="panel">
     <span class="eyebrow">Mission console</span>
-    <div class="row">
-      <select id="inst" aria-label="instance"></select>
-    </div>
+    <div class="row"><select id="inst" aria-label="instance"></select></div>
     <div class="row">
       <select id="strat" aria-label="strategy">
         <option value="shortest">fly shortest path (deterministic)</option>
-        <option value="uniform_lane">uniform over separated lanes (naive)</option>
+        <option value="uniform_lane">uniform over lanes (naive)</option>
         <option value="invrisk_lane">inverse-risk lanes (smart naive)</option>
         <option value="equilibrium" selected>equilibrium mixture (what SACRED learns toward)</option>
       </select>
@@ -82,24 +79,25 @@
       <button id="reset">Reset tallies</button>
     </div>
     <div class="row">
-      <label class="chk"><input type="checkbox" id="radii"> show all interception radii (coverage)</label>
+      <label class="chk"><input type="checkbox" id="radii"> show interception radii (coverage)</label>
     </div>
     <div class="kv" id="kv"></div>
     <table id="tally"></table>
     <div class="log" id="log" aria-live="polite"></div>
   </div>
 </div>
-<p class="explain"><b>What you are looking at.</b> Each sortie, the enemy secretly commits
-<span style="color:var(--threat)">K=1 hazard</span> to one candidate position; the UAV then flies
-base → target on one route drawn from the selected strategy. Passing within the hazard&#8217;s radius
-is survived arc-by-arc with probability 1&#8722;p, where p tapers linearly from p<sub>max</sub> at the
-centre to 0 at the radius edge &#8212; the glow you see on the flight path is that exposure, computed
-live from the same formula the oracle uses, so the empirical rate converges to the predicted value
-in the table. <b>What training does:</b> SACRED replaces the fixed strategy with a policy network
-that reads the threat field and outputs the route mixture, sparring against a fictitious-play enemy
-that keeps best-responding to its recent flights. The pre-registered bar
-(<code>experiments/gen28_aerial.md</code>): beat the inverse-risk lane rule &#8212; including on threat
-layouts the policy has never seen.</p>
+<p class="explain"><b>What you are looking at (game v2).</b> Each sortie the enemy secretly
+commits <span style="color:var(--threat)">K hazards</span> to candidate positions; the UAV then
+flies base &#8594; target on one smooth, bank-limited curve drawn from the selected strategy.
+Inside a hazard&#8217;s radius the flight accrues hazard RATE proportional to proximity; survival is
+exp(&#8722;&#8747;rate&#8201;ds) along the curve, calibrated so a straight transit through the centre is
+intercepted with probability exactly p<sub>max</sub>. The glow on the flight path is that accrual,
+computed live from the same integral the oracle uses, so the empirical rates converge to the
+predicted values in the table. <b>What training does:</b> SACRED replaces the fixed strategy with
+a policy network that reads the threat field and outputs the route mixture, sparring against a
+fictitious-play enemy best-responding to its recent flights; the pre-registered bar
+(<code>experiments/gen28_aerial.md</code>, v2): beat the inverse-risk lane rule, including on
+threat layouts the policy has never seen.</p>
 </div>
 <script>
 const DATA = /*__DATA__*/[];
@@ -110,116 +108,133 @@ DATA.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textCo
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let I = DATA[0], sortie = 0, tallies = {}, anim = null, autoOn = false;
 const SNAMES = {shortest:'shortest', uniform_lane:'uniform lanes', invrisk_lane:'inv-risk lanes', equilibrium:'equilibrium'};
-
-// geometry: unit grid -> canvas
 const PAD = 90;
-function xy(n){ const sx=(cv.width-2*PAD)/(I.nx-1), sy=(cv.height-2*PAD)/(I.ny-1);
-  return [PAD+n[0]*sx, cv.height-PAD-n[1]*sy]; }
+const expCache = {};
+
+function xy(p){ const sx=(cv.width-2*PAD)/(I.nx-1), sy=(cv.height-2*PAD)/(I.ny-1);
+  return [PAD+p[0]*sx, cv.height-PAD-p[1]*sy]; }
 function unit(){ return (cv.width-2*PAD)/(I.nx-1); }
-function pOf(mid, c, pmax){ const d=Math.hypot(mid[0]-c[0], mid[1]-c[1]);
-  return pmax*Math.max(0, 1-d/I.r); }
-function arcProbs(route, pos){ const c=I.centres[pos], pm=I.pmax[pos], out=[];
-  for(let a=0;a<route.length-1;a++){ const m=[(route[a][0]+route[a+1][0])/2,(route[a][1]+route[a+1][1])/2];
-    out.push(pOf(m,c,pm)); } return out; }
-function interceptP(route,pos){ return 1-arcProbs(route,pos).reduce((s,p)=>s*(1-p),1); }
-function expectedRate(strat, mode){ const d=I.strategies[strat];
+function kappa(h){ return -Math.log(1-Math.min(I.pmax[h],0.999999))/I.r; }
+// per-segment hazard accrual lambda_k for a route (array of pts) under committed positions
+function segLambdas(route, positions){
+  const lams=[];
+  for(let k=0;k<route.length-1;k++){
+    const mx=(route[k][0]+route[k+1][0])/2, my=(route[k][1]+route[k+1][1])/2;
+    const ds=Math.hypot(route[k+1][0]-route[k][0], route[k+1][1]-route[k][1]);
+    let lam=0;
+    for(const h of positions){
+      const d=Math.hypot(mx-I.centres[h][0], my-I.centres[h][1]);
+      if(d<I.r) lam += kappa(h)*(1-d/I.r)*ds;
+    }
+    lams.push(lam);
+  }
+  return lams;
+}
+const sum=a=>a.reduce((s,x)=>s+x,0);
+function interceptP(route,positions){ return 1-Math.exp(-sum(segLambdas(route,positions))); }
+function expectedRate(strat,mode){
   if(mode==='br') return I.worst[strat];
-  let e=0; I.attacker_eq.forEach((a,j)=>{ if(a<1e-6) return;
-    d.forEach((di,i)=>{ if(di>1e-6) e+=a*di*interceptP(I.routes[i],j); });});
-  return e; }
+  const ck=I.name+'|'+strat;
+  if(expCache[ck]!==undefined) return expCache[ck];
+  const d=I.strategies[strat]; let e=0;
+  for(const s of I.attacker_support){
+    for(let i=0;i<d.length;i++) if(d[i]>1e-5) e+=s.w*d[i]*interceptP(I.routes[i],s.p);
+  }
+  return expCache[ck]=e;
+}
 function sample(dist){ let u=Math.random(); for(let i=0;i<dist.length;i++){u-=dist[i]; if(u<=0) return i;} return dist.length-1; }
-function key(){ return I.name+'|'+els.strat.value+'|'+els.atk.value; }
-function tally(){ return tallies[key()] ??= {n:0,hits:0}; }
+function sampleSupport(){ let u=Math.random();
+  for(const s of I.attacker_support){ u-=s.w; if(u<=0) return s.p; }
+  return I.attacker_support[I.attacker_support.length-1].p; }
+function tally(){ const k=I.name+'|'+els.strat.value+'|'+els.atk.value;
+  return tallies[k] ??= {n:0,hits:0}; }
+
+function drawPath(route){ ctx.beginPath();
+  route.forEach((p,k)=>{ const [x,y]=xy(p); k?ctx.lineTo(x,y):ctx.moveTo(x,y); }); }
 
 function drawBase(reveal){
   ctx.clearRect(0,0,cv.width,cv.height);
   const u=unit();
-  // blocked wall
   ctx.fillStyle='#222c37';
-  I.blocked.forEach(b=>{ const [x,y]=xy(b); ctx.fillRect(x-u*.28,y-u*.28,u*.56,u*.56); });
-  // threat field
+  I.blocked.forEach(b=>{ const [x,y]=xy(b); ctx.fillRect(x-u*.3,y-u*.3,u*.6,u*.6); });
   I.centres.forEach((c,j)=>{ const [x,y]=xy(c), pm=I.pmax[j];
     if(els.radii.checked){ ctx.beginPath(); ctx.arc(x,y,I.r*u,0,7);
-      ctx.strokeStyle='rgba(240,160,40,.14)'; ctx.lineWidth=1; ctx.stroke(); }
-    ctx.beginPath(); ctx.arc(x,y,3.5+pm*4,0,7);
-    ctx.fillStyle=`rgba(240,160,40,${0.15+0.55*pm})`; ctx.fill(); });
-  // waypoints
-  ctx.fillStyle='#2c3946';
-  for(let i=0;i<I.nx;i++) for(let j=0;j<I.ny;j++){
-    if(I.blocked.some(b=>b[0]===i&&b[1]===j)) continue;
-    const [x,y]=xy([i,j]); ctx.beginPath(); ctx.arc(x,y,2,0,7); ctx.fill(); }
-  // route mixture
+      ctx.strokeStyle='rgba(240,160,40,.05)'; ctx.lineWidth=1; ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x,y,1.5+pm*3.2,0,7);
+    ctx.fillStyle=`rgba(240,160,40,${0.10+0.45*pm})`; ctx.fill(); });
   const d=I.strategies[els.strat.value];
   I.routes.forEach((rt,i)=>{ if(d[i]<0.004) return;
-    ctx.beginPath(); rt.forEach((n,k)=>{ const [x,y]=xy(n); k?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    drawPath(rt);
     ctx.strokeStyle=`rgba(74,157,224,${0.25+0.6*Math.min(1,d[i]*2.2)})`;
     ctx.lineWidth=1+10*d[i]; ctx.lineJoin='round'; ctx.stroke(); });
-  // base + target
   const [bx,by]=xy(I.base), [tx,ty]=xy(I.target);
-  ctx.fillStyle='var(--ink)'; ctx.fillStyle='#e8edf2';
+  ctx.fillStyle='#e8edf2';
   ctx.beginPath(); ctx.moveTo(bx-9,by+9); ctx.lineTo(bx+9,by+9); ctx.lineTo(bx,by-11);
   ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.arc(tx,ty,8,0,7); ctx.fill();
   ctx.font='600 22px Avenir Next,system-ui'; ctx.fillStyle='#8fa0ae';
   ctx.fillText('BASE',bx-22,by+38); ctx.fillText('TARGET',tx-34,ty+40);
-  if(reveal!=null){ const [hx,hy]=xy(I.centres[reveal]);
+  if(reveal){ for(const h of reveal){ const [hx,hy]=xy(I.centres[h]);
     ctx.beginPath(); ctx.arc(hx,hy,I.r*u,0,7);
     ctx.fillStyle='rgba(230,103,103,.10)'; ctx.fill();
     ctx.strokeStyle='rgba(230,103,103,.75)'; ctx.lineWidth=2.5; ctx.setLineDash([7,5]);
     ctx.stroke(); ctx.setLineDash([]);
-    ctx.beginPath(); ctx.arc(hx,hy,6,0,7); ctx.fillStyle='#e66767'; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(hx,hy,6,0,7); ctx.fillStyle='#e66767'; ctx.fill(); } }
 }
-function drawUav(x,y){ ctx.save(); ctx.translate(x,y);
-  ctx.beginPath(); ctx.arc(0,0,7,0,7); ctx.fillStyle='#e8edf2'; ctx.fill();
-  ctx.beginPath(); ctx.arc(0,0,12,0,7); ctx.strokeStyle='rgba(232,237,242,.4)';
-  ctx.lineWidth=1.5; ctx.stroke(); ctx.restore(); }
+function drawUav(x,y){ ctx.beginPath(); ctx.arc(x,y,7,0,7); ctx.fillStyle='#e8edf2'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y,12,0,7); ctx.strokeStyle='rgba(232,237,242,.4)';
+  ctx.lineWidth=1.5; ctx.stroke(); }
 
 function runSortie(instant){
   if(anim) return;
   const strat=els.strat.value, mode=els.atk.value;
-  const pos = mode==='br' ? I.br_pos[strat] : sample(I.attacker_eq);
+  const positions = mode==='br' ? I.br_pos[strat] : sampleSupport();
   const ri = sample(I.strategies[strat]);
-  const route=I.routes[ri], probs=arcProbs(route,pos);
-  let hitArc=-1;
-  for(let a=0;a<probs.length;a++) if(Math.random()<probs[a]){ hitArc=a; break; }
-  sortie++; const t=tally(); t.n++; if(hitArc>=0) t.hits++;
-  const worst=Math.max(...probs);
-  const logLine = () => {
-    const div=document.createElement('div');
-    div.className = hitArc>=0?'hit':'ok';
-    div.textContent = `S${String(sortie).padStart(3,'0')} · ${SNAMES[strat]} · route ${ri}` +
-      (worst>0.001? ` · max exposure p=${worst.toFixed(2)}`:' · clear corridor') +
-      (hitArc>=0? ` · INTERCEPTED at arc ${hitArc+1}`:' · delivered');
-    els.log.prepend(div); refresh(false);
-  };
-  if(instant || reduced){ drawBase(pos); logLine(); return; }
-  // animate flight; resolve at the failing arc's midpoint
-  const endArc = hitArc>=0 ? hitArc+0.5 : probs.length;
-  const t0=performance.now(), speed=3.2; // arcs per second
-  anim = requestAnimationFrame(function step(now){
-    const prog=Math.min((now-t0)/1000*speed, endArc);
+  const route=I.routes[ri], lams=segLambdas(route,positions);
+  const Lam=sum(lams), pTot=1-Math.exp(-Lam);
+  const u=Math.random();
+  let hitSeg=-1;
+  if(u<pTot){ const target=-Math.log(1-u); let acc=0;
+    for(let k=0;k<lams.length;k++){ acc+=lams[k]; if(acc>=target){ hitSeg=k; break; } }
+    if(hitSeg<0) hitSeg=lams.length-1;
+  }
+  sortie++; const t=tally(); t.n++; if(hitSeg>=0) t.hits++;
+  const isLane=I.lane_idx.includes(ri);
+  const logLine=()=>{ const div=document.createElement('div');
+    div.className=hitSeg>=0?'hit':'ok';
+    div.textContent=`S${String(sortie).padStart(3,'0')} · ${SNAMES[strat]} · route ${ri}`+
+      (isLane?' (lane)':'')+` · exposure ${pTot.toFixed(2)}`+
+      (hitSeg>=0?' · INTERCEPTED':' · delivered');
+    els.log.prepend(div); refresh(false); };
+  if(instant||reduced){ drawBase(positions); logLine(); return; }
+  const endSeg = hitSeg>=0 ? hitSeg+0.5 : lams.length;
+  const t0=performance.now(), speed=14;   // segments per second (36-pt curves)
+  anim=requestAnimationFrame(function step(now){
+    const prog=Math.min((now-t0)/1000*speed, endSeg);
     drawBase(null);
-    // exposure glow on flown arcs
-    for(let a=0;a<Math.min(Math.ceil(prog),probs.length);a++){ if(probs[a]<0.01) continue;
-      const [x1,y1]=xy(route[a]),[x2,y2]=xy(route[a+1]);
+    for(let k=0;k<Math.min(Math.ceil(prog),lams.length);k++){
+      const inten=1-Math.exp(-lams[k]*8);
+      if(inten<0.03) continue;
+      const [x1,y1]=xy(route[k]),[x2,y2]=xy(route[k+1]);
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-      ctx.strokeStyle=`rgba(240,${Math.round(160-90*probs[a])},40,${0.35+0.6*probs[a]})`;
-      ctx.lineWidth=5+10*probs[a]; ctx.stroke(); }
-    const a=Math.min(Math.floor(prog),route.length-2), f=prog-a;
-    const [x1,y1]=xy(route[a]),[x2,y2]=xy(route[Math.min(a+1,route.length-1)]);
+      ctx.strokeStyle=`rgba(240,${Math.round(160-100*inten)},40,${0.3+0.65*inten})`;
+      ctx.lineWidth=4+11*inten; ctx.stroke(); }
+    const k=Math.min(Math.floor(prog),route.length-2), f=prog-k;
+    const [x1,y1]=xy(route[k]),[x2,y2]=xy(route[Math.min(k+1,route.length-1)]);
     drawUav(x1+(x2-x1)*f, y1+(y2-y1)*f);
-    if(prog<endArc){ anim=requestAnimationFrame(step); return; }
+    if(prog<endSeg){ anim=requestAnimationFrame(step); return; }
     anim=null;
-    if(hitArc>=0){ ctx.beginPath(); ctx.arc(x1+(x2-x1)*f,y1+(y2-y1)*f,16,0,7);
+    if(hitSeg>=0){ ctx.beginPath(); ctx.arc(x1+(x2-x1)*f,y1+(y2-y1)*f,16,0,7);
       ctx.fillStyle='rgba(230,103,103,.9)'; ctx.fill(); }
-    setTimeout(()=>{ drawBase(pos); logLine();
-      if(autoOn) setTimeout(()=>runSortie(false),450); }, 650);
+    setTimeout(()=>{ drawBase(positions); logLine();
+      if(autoOn) setTimeout(()=>runSortie(false),450); },650);
   });
 }
 
 function refresh(redraw=true){
   const strat=els.strat.value, mode=els.atk.value;
-  els.kv.innerHTML =
+  els.kv.innerHTML=
+    `<span class="k">K (hazards committed)</span><span class="v">${I.K}</span>`+
     `<span class="k">equilibrium value</span><span class="v">${I.eq_value.toFixed(3)}</span>`+
     `<span class="k">deterministic optimum</span><span class="v">${I.loss_det.toFixed(3)}</span>`+
     `<span class="k">predicted for this setup</span><span class="v">${expectedRate(strat,mode).toFixed(3)}</span>`;

@@ -238,3 +238,80 @@ map-conditioning act). "Single UAV first" (Kilian's pin) = N=1 throughout; the f
   alpha annealing off the 1.0 init).
 - **LAUNCH GATE (standing):** the 3-seed batch + any >= 240-sortie smoke await Kilian's
   explicit go (his 2026-07-16 in-conversation amendment to the handoff's autonomy grant).
+
+---
+
+## GAME V2 (2026-07-17, PRE-TRAINING; Kilian's realism challenge, accepted): curved flight,
+## line-integral exposure, dense adversary. The v1 sections above are the DESIGN HISTORY;
+## every v1 anchor number is RETIRED (nothing had trained) and re-derived below.
+
+**Why (Kilian, verbatim intent):** straight lattice polylines look like train routing, not
+flight; the adversary's 45 unit-spaced positions under-serve a continuous placement choice.
+Both criticisms are substantive: the v1 "lane-count quantisation" finding was partly a GRID
+ARTEFACT (integer rows), and per-arc Bernoulli exposure depends on an arbitrary arc
+discretisation. **The three v2 changes (src/envs/aerial_curves.py; suite 191 incl. 8 new):**
+
+1. **Routes = curvature-bounded Catmull-Rom curves** through lateral-offset control points at
+   depth stations (what a waypoint autopilot flies; bank limit kappa_max = 1.5, obstacle
+   rejection generic point-in-rectangle -> terrain/building polygons are the recorded v3
+   drop-in). Menu = lanes at CONTINUOUS offsets first (the naive rule can now always space
+   optimally = a STRONGER baseline), then seeded diverse curves; still a finite family, so the
+   LP / greedy BR / menu head machinery is untouched.
+2. **Exposure = survival line integral:** hazard rate lambda(s) = kappa * max(0, 1 - d/r),
+   kappa = -ln(1 - p_max)/r, so a straight dead-centre transit is intercepted with probability
+   EXACTLY p_max (the calibration that preserves p_max's meaning; regression-tested at 1%).
+   Removes the arc-discretisation dependence entirely.
+3. **Adversary grid densified to step 0.5** (323 positions; K <= 2 exact; K = 3 on step 1.0,
+   disclosed) with a **grid-convergence certificate**: at K=1 the game value moves 0.4034 ->
+   0.4065 -> 0.4074 across steps 1.0/0.5/0.25 (converged, +-0.2%); at K=2 it moves 0.709 ->
+   0.750 from 1.0 -> 0.5 (not yet fully converged; disclosed; all comparative rows are
+   same-grid, same-yardstick).
+
+### V2 SCREEN RESULT (2026-07-17, 30 cells, oracle-exact; `scratch/aerial_screen.py` ->
+### `models/runs/gen28_screen.json` v2; figure `assets/aerial_phi_boundary.png` rebuilt)
+
+The integral exposure is deadlier everywhere (sustained proximity accumulates hazard) and the
+strengthened continuous-lane rule closes part of v1's gap, exactly as honesty predicted; what
+survives is real: **best naive stack = 1.03-1.59x the equilibrium across all cells**, largest
+at K=1, r=1.2 (4 lanes, spacing 2.67 vs 2r=2.4: forced grazing): base 1.59 / pinch+banded 1.58
+/ banded 1.57, all at trainable entropy (H/lnR 0.53-0.61). The v1 headline cell
+(pinch_banded_K1_r1.6) drops to 1.26: the re-screen re-aimed the act, which is what screens
+are for. The gap now DECAYS with coverage (1.59 at phi=0.3 -> ~1.03-1.06 at phi >= 1),
+opposite in shape to the roads' K -> m boundary: in the air, learning's edge lives at LOW
+coverage where calibrated grazing-avoidance matters; at saturation everything dies together.
+Tabular FP ties the equilibrium at every cell it runs (e.g. 0.3635 vs eq 0.362), as
+pre-registered. **Menu-relative-equilibrium convention + sensitivity (recorded):** the curved
+continuum is never exhausted by a finite menu; eq drifts -5.3% (pinch+banded) / -2.4% (base)
+from R=40 to R=80. All arms (naive stacks, tabular FP, SACRED, eq) share the SAME R=40 menu,
+so every comparison is same-game (the road k-menu convention, CRITIQUE_EXAMINER §4.5), and
+the R-sensitivity row is disclosed beside any absolute value.
+
+### V2 A3 AIMING (layout probe rerun; `models/runs/gen28_layout_probe.json`)
+
+12 RBF layouts, base sector, K=1, r=1.2: **inv-risk-lane (layout-aware two-line rule) median
+1.57x eq** (1.25-1.79); uniform-lane 1.69; robust-static unconditioned cap median **1.83x**
+(1.04-3.02, in-sample-fit, disclosed); cross-play mean 1.90x. The map-conditioning premium is
+LARGER in v2: the act's target strengthens.
+
+> **RE-PINNED BARS (v2 anchors; bar STRUCTURE unchanged from the pre-registration above;
+> still no training has run):**
+> - **A1 headline cell = pinch_banded_K1_r1.2** (eq 0.362, strongest naive stack 0.572,
+>   det 0.695, tabular FP 0.3635): best-checkpoint TAP < 0.572 on >= 2/3 seeds AND pooled;
+>   **STRONG:** pooled <= 0.47 (halfway naive -> eq).
+> - **A3 PRIMARY, sharpened pre-training (the baseline-completeness dogma):** zero-shot
+>   held-out layouts (2000-2005) beat each layout's **STRONGEST naive stack** (min over
+>   uniform/inv-risk x lane/full-menu, per layout: on v2 the full-menu stacks sometimes edge
+>   the lane rules) on >= 4/6 AND pooled, >= 2/3 seeds, select-on-train; **STRONG:** pooled
+>   ratio <= halfway from the per-layout best-naive mean to 1.0. Context row (disclosed): the
+>   UNTRAINED network already scores ~1.66-1.70 on this pool (near the lane-rule band, 2/6
+>   under best-naive at probe scale), so the pass requires genuine calibration, not mere
+>   spreading. Mechanism row (permuted field must degrade toward the unconditioned caps:
+>   robust-static 1.83 / cross-play 1.90) unchanged.
+> - **A2 curve cells (reported, ungated):** base r1.2 K{1,2}, base r0.8/r1.6 K1,
+>   banded r1.2 K1 + the pinch cells; overlay on the rebuilt boundary figure.
+> - **Trainer pool updated accordingly** (6 cells + 18 layouts train / 6 layouts held out);
+>   `scripts/train_aerial_generalist.py` at this commit.
+
+**Staged v3 (recorded, NOT scheduled):** real-terrain sector (obstacle polygons from
+buildings/terrain, wind as anisotropic cost/rate) on the same machinery; Kilian's decision
+2026-07-17: symmetric-rectangle v2 first, real-land upgrade later if the calendar allows.

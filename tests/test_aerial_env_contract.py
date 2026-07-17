@@ -8,15 +8,16 @@ import torch
 from scripts.train_multiconvoy import _transition, route_one
 from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
+from src.envs.aerial_curves import build_curve_menu, dense_hazard_grid
 from src.envs.aerial_interdiction_env import AerialInterdictionEnv, _nid
-from src.envs.aerial_sector import SectorLattice, build_aerial_menu, hazard_grid
+from src.envs.aerial_sector import SectorLattice
 
 LAT = SectorLattice(ny=9, nx=13)
 
 
 def _env():
-    menu = build_aerial_menu(LAT, R=12)
-    centres = hazard_grid(LAT, cols=(4, 8), rows=(0, 2, 4, 6, 8))
+    menu, _ = build_curve_menu(LAT, r=1.2, R=12, seed=0)
+    centres = dense_hazard_grid(LAT, step=1.0)
     return AerialInterdictionEnv(LAT, menu, centres, K=1, r=1.2)
 
 
@@ -38,8 +39,8 @@ def test_observation_featurizes_and_menu_indices_match_sorted_rows():
     assert pyg.edge_attr.shape[1] == 5
     assert float(pyg.edge_attr[:, 4].max()) > 0.0          # the threat projection reaches col 4
     n2i = node_index_map(obs)
-    for r, route in enumerate(env.menu):                    # menu rows == sorted-order indices
-        expect = [n2i[_nid(n)] for n in route]
+    for r, curve in enumerate(env.menu):                    # menu rows == sorted-order indices
+        expect = [n2i[_nid(n)] for n in curve.node_seq]
         assert obs["menu_route_node_idx"][r].tolist() == expect
     assert obs["menu_route_feats"].shape == (env.game.n_routes, 2)
 

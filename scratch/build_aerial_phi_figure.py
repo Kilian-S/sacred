@@ -1,4 +1,5 @@
-"""Build assets/aerial_phi_boundary.png from models/runs/gen28_screen.json (gen28 screen).
+"""Build assets/aerial_phi_boundary.png from models/runs/gen28_screen.json (GAME V2 screen:
+curved routes, line-integral exposure, dense grid; 2026-07-17).
 
 Panel A: the naive-lane gap (best-naive / equilibrium) vs coverage phi = 2Kr/W on the open
 sector, one series per hazard radius r (the lane-count quantisation is the driver, so phi does
@@ -18,7 +19,8 @@ import numpy as np
 SLOT = {0.8: "#2a78d6", 1.2: "#008300", 1.6: "#e87ba4", 2.0: "#eda100"}
 INK, MUT = "#333333", "#8a8a8a"
 
-cells = json.load(open("models/runs/gen28_screen.json"))
+_data = json.load(open("models/runs/gen28_screen.json"))
+cells = _data["cells"] if isinstance(_data, dict) else _data
 by = {c["tag"]: c for c in cells}
 
 fig, (ax, bx) = plt.subplots(1, 2, figsize=(12.5, 4.8), width_ratios=[1.15, 1.0])
@@ -37,7 +39,7 @@ for r, col in SLOT.items():
     if band:
         ax.plot([c["phi"] for c in band], [c["best_naive_over_eq"] for c in band],
                 "o", mfc="white", mec=col, mew=1.8, ms=7, zorder=3)
-for tag, dy in (("pinch_banded_K1_r1.6", 8), ("pinch_K1_r1.6", -12)):
+for tag, dy in (("pinch_banded_K1_r1.2", 8), ("pinch_K1_r1.2", -12)):
     c = by[tag]
     ax.plot(c["phi"], c["best_naive_over_eq"], "*", color=INK, ms=13, zorder=4)
     ax.annotate("pinch" + (" + banded" if "banded" in tag else ""),
@@ -46,7 +48,7 @@ for tag, dy in (("pinch_banded_K1_r1.6", 8), ("pinch_K1_r1.6", -12)):
 ax.axhline(1.0, color=MUT, lw=1, ls="--", zorder=1)
 ax.text(1.52, 1.005, "lane heuristic = optimal", color=MUT, fontsize=8, va="bottom")
 ax.set_xlabel("coverage fraction  φ = 2Kr / W"); ax.set_ylabel("best naive stack / equilibrium")
-ax.set_title("Open sector: the naive-lane gap never closes\n(filled = uniform p_max, hollow = banded; ★ = pinch cells)",
+ax.set_title("Open sector: the gap decays with coverage but never closes (1.03-1.59x)\n(filled = uniform p_max, hollow = banded; ★ = pinch cells)",
              fontsize=10, loc="left")
 
 # --- Panel B ---------------------------------------------------------------
@@ -54,8 +56,8 @@ arms = [("shortest_det", "shortest path (det)"), ("uniform_lane", "uniform-lane 
         ("invrisk_lane", "inv-risk-lane stack"), ("uniform_full", "uniform-full stack"),
         ("invrisk_full", "inv-risk-full stack"), ("tabular_fp", "tabular smooth FP"),
         ("eq", "equilibrium")]
-tags = [("pinch_banded_K1_r1.6", "#2a78d6", "pinch + banded, K=1 r=1.6 (φ=0.40)"),
-        ("base_K1_r0.8", "#eda100", "open sector, K=1 r=0.8 (φ=0.20)")]
+tags = [("pinch_banded_K1_r1.2", "#2a78d6", "pinch + banded, K=1 r=1.2 (φ=0.30)"),
+        ("base_K1_r1.2", "#008300", "open sector, K=1 r=1.2 (φ=0.30)")]
 ypos = np.arange(len(arms))[::-1]
 for off, (tag, col, label) in zip((0.16, -0.16), tags):
     c = by[tag]

@@ -35,12 +35,13 @@ import torch
 from scripts.train_multiconvoy import _transition, route_one
 from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
-from src.baselines.aerial_lanes import lane_menu_indices, lane_stack_distributions
+from src.baselines.aerial_lanes import lane_stack_distributions
 from src.baselines.fp_dynamics import sample_smooth_iset, smooth_fp_probs
 from src.baselines.interdiction_oracle import best_response_attacker, solve
 from src.baselines.multiconvoy_oracle import objective_value
+from src.envs.aerial_curves import build_curve_menu, dense_hazard_grid
 from src.envs.aerial_interdiction_env import AerialInterdictionEnv
-from src.envs.aerial_sector import SectorLattice, banded_pmax, build_aerial_menu, hazard_grid
+from src.envs.aerial_sector import SectorLattice, banded_pmax
 
 TAP_K = 3
 BASE = SectorLattice(ny=9, nx=13)
@@ -62,16 +63,17 @@ def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
 
 
 class AerialInstance:
+    """Game v2 (2026-07-17): curved menu (lanes at continuous offsets first), dense 0.5-step
+    hazard grid, line-integral exposure. pmax: scalar | "banded" | per-position array (layout)."""
     def __init__(self, name: str, lat: SectorLattice, K: int, r: float, pmax):
         self.name = name
-        menu = build_aerial_menu(lat, R=40)
-        centres = hazard_grid(lat)
+        menu, lane_idx = build_curve_menu(lat, r, R=40, seed=0)
+        centres = dense_hazard_grid(lat, step=0.5)
         pm = pmax if not isinstance(pmax, str) else banded_pmax(centres, lat.ny)
         self.env = AerialInterdictionEnv(lat, menu, centres, K=K, r=r, p_max=pm)
         sol = solve(self.env.game)
         self.eq = float(sol.value)
         self.loss_det = float(sol.loss_det)
-        lane_idx = lane_menu_indices(lat, menu, r)
         stacks = lane_stack_distributions(self.env.game, lane_idx, self.env.S)
         self.naive = {k: float(best_response_attacker(self.env.game, d)[1])
                       for k, d in stacks.items()}
@@ -85,17 +87,18 @@ class AerialInstance:
 
 
 def make_layout_instance(name: str, seed: int) -> AerialInstance:
-    centres = hazard_grid(BASE)
+    centres = dense_hazard_grid(BASE, step=0.5)
     return AerialInstance(name, BASE, K=1, r=1.2, pmax=random_field(centres, seed))
 
 
-# the screened A1/A2 cells (experiments/gen28_aerial.md SCREEN RESULT): headline first
+# the screened A1/A2 cells (GAME V2 screen, 2026-07-17): headline first
 CELLS = [
-    ("pinch_banded_K1_r1.6", PINCH, 1, 1.6, "banded"),   # A1 headline: naive/eq 1.81
-    ("pinch_K1_r1.6",        PINCH, 1, 1.6, 0.9),
-    ("base_K1_r0.8",         BASE,  1, 0.8, 0.9),
-    ("base_K1_r1.6",         BASE,  1, 1.6, 0.9),        # low-gap cell (honest curve point)
-    ("base_K2_r1.2",         BASE,  2, 1.2, 0.9),
+    ("pinch_banded_K1_r1.2", PINCH, 1, 1.2, "banded"),   # A1 headline: naive/eq 1.58, eq 0.362
+    ("base_K1_r1.2",         BASE,  1, 1.2, 0.9),        # max-gap open-sector point (1.59)
+    ("banded_K1_r1.2",       BASE,  1, 1.2, "banded"),   # asymmetric-field point (1.57)
+    ("base_K1_r0.8",         BASE,  1, 0.8, 0.9),        # low-phi point (1.42)
+    ("base_K1_r1.6",         BASE,  1, 1.6, 0.9),        # low-gap cell (honest curve point, 1.32)
+    ("base_K2_r1.2",         BASE,  2, 1.2, 0.9),        # K axis (1.13; step-0.5 grid)
 ]
 
 
@@ -217,15 +220,15 @@ def main():
             tr = tap_rows(train); te_rows = tap_rows(test)
             tr_m = float(np.mean([tr[i.name] / i.eq for i in train]))
             te_m = float(np.mean([te_rows[i.name] / i.eq for i in test]))
-            te_beats = sum(1 for i in test if te_rows[i.name] < i.naive["invrisk_lane"])
+            te_beats = sum(1 for i in test if te_rows[i.name] < i.best_naive)
             fw = tuple(float(x) for x in prot.actor.route_feat_w.detach())
             hist.append((k + 1, tr_m, te_m, te_beats, tr, te_rows, fw, float(prot.alpha)))
             if args.ckpt_dir:
                 _P(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(_P(args.ckpt_dir) / f"actor_ep{k+1}.pt"))
             print(f"  sortie {k+1:6d}: TRAIN ratio {tr_m:.2f} | HELD-OUT ratio {te_m:.2f} "
-                  f"beats-invrisk-lane {te_beats}/{len(test)} | headline "
-                  f"{tr['pinch_banded_K1_r1.6']:.3f} (naive 0.714, eq 0.394) | "
+                  f"beats-BEST-naive {te_beats}/{len(test)} | headline "
+                  f"{tr['pinch_banded_K1_r1.2']:.3f} (naive 0.572, eq 0.362) | "
                   f"rw[{fw[0]:.2f},{fw[1]:.2f}] a{prot.alpha:.2f} | {time.time()-t0:5.0f}s",
                   flush=True)
 

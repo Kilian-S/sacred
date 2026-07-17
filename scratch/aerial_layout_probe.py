@@ -1,4 +1,4 @@
-"""gen28 A3 aiming probe (oracle-only): do random hidden-hazard THREAT FIELDS (per-position
+"""gen28 A3 aiming probe v2 (curved+integral game; oracle-only): do random hidden-hazard THREAT FIELDS (per-position
 effectiveness layouts, spatially correlated, decorrelated from lattice geometry by construction)
 vary enough that (a) an unconditioned static mixture cannot cover them (the robust-static cap),
 and (b) the two-line LAYOUT-AWARE naive rule (inverse-risk lane stack, re-weighted per layout)
@@ -16,11 +16,10 @@ import json
 
 import numpy as np
 
-from src.baselines.aerial_lanes import lane_menu_indices, lane_stack_distributions
-from src.baselines.interdiction_oracle import (InterdictionGame, best_response_attacker,
-                                               solve, _row_minimiser)
-from src.envs.aerial_sector import (SectorLattice, build_aerial_game, build_aerial_menu,
-                                    hazard_grid, route_survival_matrix)
+from src.baselines.aerial_lanes import lane_stack_distributions
+from src.baselines.interdiction_oracle import (best_response_attacker, solve, _row_minimiser)
+from src.envs.aerial_curves import build_curve_menu, build_curved_game, dense_hazard_grid
+from src.envs.aerial_sector import SectorLattice
 
 LAT = SectorLattice(ny=9, nx=13)
 K, R_HAZ = 1, 1.2
@@ -42,15 +41,13 @@ def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5) -> n
 
 
 def main() -> None:
-    menu = build_aerial_menu(LAT, R=40)
-    centres = hazard_grid(LAT)
-    lane_idx = lane_menu_indices(LAT, menu, R_HAZ)
+    menu, lane_idx = build_curve_menu(LAT, r=R_HAZ, R=40, seed=0)
+    centres = dense_hazard_grid(LAT, step=0.5)
 
     games, eqs, sols, rows = [], [], [], []
     for s in range(N_LAYOUTS):
         pm = random_field(centres, seed=1000 + s)
-        game = build_aerial_game(LAT, menu, centres, K, r=R_HAZ, p_max=pm)
-        S = route_survival_matrix(menu, centres, r=R_HAZ, p_max=pm)
+        game, S = build_curved_game(LAT, menu, centres, K, r=R_HAZ, p_max=pm)
         sol = solve(game)
         d = lane_stack_distributions(game, lane_idx, S)
         row = {k: best_response_attacker(game, v)[1] for k, v in d.items()}
@@ -84,20 +81,20 @@ def main() -> None:
     print(f"crossplay_mean_over_eq     {out['crossplay_mean_over_eq']:.2f}")
     print(f"eq mean {own:.3f} range {out['eq_range']}")
 
-    # menu sufficiency at the two headline-candidate cells
-    print("\nmenu sufficiency (eq vs R):")
-    for tag, lat, pmax in (("pinch_banded_K1_r1.6",
-                            SectorLattice(ny=9, nx=13, blocked=frozenset(
-                                {(6, j) for j in range(9) if j not in (3, 4, 5)})), "banded"),
-                           ("base_K1_r0.8", LAT, 0.9)):
+    # menu sufficiency at the two v2 headline-candidate cells (curved menus)
+    print("\nmenu sufficiency (eq vs R, curved):")
+    for tag, lat, pmax, rr in (("pinch_banded_K1_r1.2",
+                                SectorLattice(ny=9, nx=13, blocked=frozenset(
+                                    {(6, j) for j in range(9) if j not in (3, 4, 5)})),
+                                "banded", 1.2),
+                               ("base_K1_r1.2", LAT, 0.9, 1.2)):
         from src.envs.aerial_sector import banded_pmax
-        cs = hazard_grid(lat)
+        cs = dense_hazard_grid(lat, step=0.5)
         pm = banded_pmax(cs, lat.ny) if pmax == "banded" else pmax
-        rr = 1.6 if "1.6" in tag else 0.8
         vals = []
         for R in (20, 40, 60, 80):
-            m = build_aerial_menu(lat, R=R)
-            g = build_aerial_game(lat, m, cs, 1, r=rr, p_max=pm)
+            m, _ = build_curve_menu(lat, rr, R=R, seed=0)
+            g, _S = build_curved_game(lat, m, cs, 1, r=rr, p_max=pm)
             vals.append(round(solve(g).value, 4))
         print(f"  {tag}: R=20/40/60/80 -> {vals}")
 

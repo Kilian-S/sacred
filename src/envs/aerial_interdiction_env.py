@@ -26,8 +26,8 @@ import numpy as np
 import torch
 
 from src.baselines.multiconvoy_oracle import objective_matrix
-from src.envs.aerial_sector import (Path, SectorLattice, arc_hazard_prob, arc_midpoints,
-                                    build_aerial_game, route_survival_matrix)
+from src.envs.aerial_curves import CurveRoute, build_curved_game
+from src.envs.aerial_sector import SectorLattice, arc_hazard_prob
 
 
 def _nid(n) -> str:
@@ -44,17 +44,16 @@ class AerialConfig:
 
 
 class AerialInterdictionEnv:
-    def __init__(self, lat: SectorLattice, menu: list[Path], centres: np.ndarray, *,
-                 K: int = 1, r: float, p_max=0.9, taper: str = "linear", weather=None,
-                 N: int = 1):
+    def __init__(self, lat: SectorLattice, menu: list[CurveRoute], centres: np.ndarray, *,
+                 K: int = 1, r: float, p_max=0.9, N: int = 1):
+        """Game v2 (2026-07-17): the menu is a family of smooth curvature-bounded CurveRoutes
+        and exposure is the hazard-rate line integral (src/envs/aerial_curves.py)."""
         self.lat = lat
         self.menu = menu
         self.centres = centres
-        self.r, self.p_max, self.taper = r, p_max, taper
+        self.r, self.p_max = r, p_max
         self.config = AerialConfig(N=N, K=K)
-        self.game = build_aerial_game(lat, menu, centres, K, r=r, p_max=p_max, taper=taper,
-                                      weather=weather or [])
-        self.S = route_survival_matrix(menu, centres, r=r, p_max=p_max, taper=taper)
+        self.game, self.S = build_curved_game(lat, menu, centres, K, r=r, p_max=p_max)
         self.occupancies, self.obj_matrix = objective_matrix(self.game, N, "mission", 1)
         self._occ_index = {tuple(int(x) for x in o): i for i, o in enumerate(self.occupancies)}
         self._committed_iset: int | None = None
@@ -75,12 +74,13 @@ class AerialInterdictionEnv:
         vuln: dict[tuple[str, str], float] = {}
         for u, v in G.edges():
             mid = (np.asarray(u, float) + np.asarray(v, float))[None, :] / 2.0
-            p = arc_hazard_prob(mid, self.centres, self.r, self.p_max, self.taper)
+            p = arc_hazard_prob(mid, self.centres, self.r, self.p_max)
             vuln[(_nid(u), _nid(v))] = float(p.max()) if p.size else 0.0
-        # menu route node indices in featurize_state's sorted row order
+        # menu route node indices in featurize_state's sorted row order (the curve's nearest-
+        # unblocked-waypoint-per-column projection = what the GNN menu head pools)
         pos = {nid: i for i, nid in enumerate(sorted(nodes.keys()))}
-        menu_idx = [torch.tensor([pos[_nid(n)] for n in route], dtype=torch.long)
-                    for route in self.menu]
+        menu_idx = [torch.tensor([pos[_nid(n)] for n in c.node_seq], dtype=torch.long)
+                    for c in self.menu]
         cost = np.asarray(self.game.travel_cost, float)
         exposure = 1.0 - self.S.min(axis=1)
 
@@ -112,7 +112,7 @@ class AerialInterdictionEnv:
             taken: dict = {}
             for ri in self._routes[:self._cur]:
                 if ri is not None:
-                    for n in self.menu[ri]:
+                    for n in self.menu[ri].node_seq:
                         taken[_nid(n)] = taken.get(_nid(n), 0.0) + 1.0 / self.config.N
             obs["taken_node_frac"] = taken
         return obs
