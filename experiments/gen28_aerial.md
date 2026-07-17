@@ -430,3 +430,43 @@ evidence of learning there; the headline bar is GAP CLOSURE.
   Outputs `models/runs/gen28_aerial/seed{0,1,2}.{json,log}` + per-eval checkpoints.
 - Bars: the v2.2 block above, pinned pre-launch; select-on-train; TAP over last 3 evals;
   results appended below when the seeds land.
+
+### RESULT (2026-07-17 evening, 3 seeds x 12,000 sorties, ~74 min at 3-parallel, system time
+### low throughout): **BOTH PRIMARIES FAIL as pre-registered. Reported plainly.**
+
+| seed | A1 headline best-ckpt TAP (bar <= 0.465) | A3 sel-on-train held-out pooled ratio | beats best-naive (bar >= 4/6) | sel-on-test (optimistic) |
+|---|---|---|---|---|
+| 0 | **0.456** @ 4000 (passes) | 1.70 | 2/6 | 1.60 |
+| 1 | **0.464** @ 1000 (passes) | 1.77 | 2/6 | 1.70 |
+| 2 | 0.478 @ 6000 (fails) | 1.84 | 2/6 | 1.71 |
+
+> **A1 (gap closure >= 50% on the dblpinch cell): FAILS on the pooled clause by 0.001**
+> (pooled best-ckpt 0.466 vs bar 0.465; 2/3 seeds pass individually). The bar is not moved;
+> the margin is stated. Mid-run the cell genuinely improves 0.72 -> 0.46 (real learning
+> signal, ~49.9% gap closure at best) before last-iterate drift takes it to 0.70-0.84.
+> **A3 (zero-shot held-out layouts): FAILS decisively, 3/3 seeds** (beats 2/6 everywhere;
+> pooled 1.77 +/- 0.06 ~ the untrained context row 1.75; vs-naive 1.20-1.30 > 1). STRONG
+> bars: not reached. The pre-written fail branch stands: the aerial act's banked product so
+> far is the SCREEN + structure/boundary story; no trained-positive sentence is licensed.
+
+**Diagnosis (from the curves + telemetry, not vibes):** the policy never learned CALIBRATED
+mixing; it learned cost-and-exposure AVOIDANCE and concentrated. The transferable head weights
+ran to rw = [-5.4 .. -7.6, -0.7 .. -5.0] (a -7.6 cost weight is a near-argmax on the cheapest
+routes: predictable, hence exploitable: exactly what the BR punishes zero-shot); alpha annealed
+to its 0.20 floor everywhere; held-out ratios never dropped materially below the untrained
+level. **The prime structural suspect is the pre-flagged saturating-bandit dogma (SYSTEM.md):
+at N=1 with menu-select, each sortie contributes ONE state; 24 instances = 24 distinct
+observations total; replay-state diversity, which the road record shows is load-bearing, is
+absent.** Roads at N=1 passed only in WALK mode (multi-state next-hop, B2-P3); roads at
+menu-select always had N=3 followers. The failed configuration is the one untested cell of
+that grid (N=1 x menu-select), now measured.
+
+**Pre-registered next step (ONE bounded structural re-aim, not a knob chase; launch = Kilian's
+go):** rebuild the aerial policy as a NEXT-WAYPOINT WALKER on the DAG (the proven road
+single-vehicle pattern): 12 decisions per sortie (12x replay diversity, position-conditioned
+states), no menu head and no route-level head terms to railroad, exact exploitability via the
+per-hazard survival DP over the policy's full path distribution (cheap: O(nodes x H)). Menu
+baselines/eq stay as reference rows (the policy class strictly contains the menu class,
+disclosed). Exit criterion, pre-committed: if the walker re-aim also fails its bars (one
+attempt, same bars re-derived for the walker class), the aerial act closes as
+screen + boundary product and the trained-positive burden stays on the road acts.
