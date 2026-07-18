@@ -712,3 +712,34 @@ delivers here is GENERALISATION to that frontier, and structured-cell superiorit
 rule-beating zero-shot. Further supremacy registers (e.g. the two-target COORDINATION game,
 whose oracle gap no per-drone rule can express by construction - the road B4 axis) are a NEW
 pre-registration and Kilian's call.
+
+---
+
+## V5 THEATRE (2026-07-18; Kilian's mega-map vision, BUILD-ONLY, review before launch)
+
+**Built (suite 202; `src/envs/aerial_terrain.py`, `tests/test_aerial_terrain.py`):** procedural
+heterogeneous theatres at ~50 km scale (ny=17 x nx=40 lattice, ~1 km/waypoint) on the existing
+machinery. Terrain classes drive the two things the game consumes: FLYABILITY (mountains =
+obstacles = organic valleys/pinches) and EMPLACEMENT + threat character (field = long-range
+kill-zone r=2.0; forest = short-range ambush r=0.8; suburb r=1.2 p=0.6; road = mobile-SAM
+danger line; urban/water/swamp = interceptor-excluded COVER corridors). Terrain is seeded and
+drawn INDEPENDENTLY of geometry -> a theatre generalist is the genuine map-conditioning test.
+`make_curve` generalised to N control points (road default preserved); menu = the k lowest-
+EXPOSURE cover curves + lateral-diversity fill (the corridor pipeline has strong material).
+
+**Screen (12 procedural theatres, N=3 mission, oracle-EXACT, `scratch/aerial_terrain_screen.py`):**
+the naive-vs-optimal gap SURVIVES rich terrain at theatre scale. **best-naive/eq: median 1.33,
+max 1.55, >= 1.3 on 58% of theatres** (degenerate saturated theatres eq~1.0 excluded by the
+same non-degeneracy gate as the road screens). The strongest naive is the inverse-exposure /
+uniform full-menu STACK (a corridor pipeline compresses to route-level inverse-exposure); any
+single fixed route is ~100% mission-fail (stacking 3 on one path invites a sit-on-it kill), so
+the game is genuinely about calibrated route MIXING. Exact fleet solve 1-7 s/theatre (nocc 8436,
+H ~950): tractable, no approximation needed at K=1.
+
+**Review render:** `assets`/artifact `terrain_view.html` (4 non-degenerate theatres seeds
+2/6/10/4, terrain-coloured map, standoff rings, the four strategies, committed-hazard best
+response, exact oracle rows; NO training). Pending Kilian's review before any v5 training
+pre-registration + launch. The pattern to test if funded: whether a trained fleet generalist
+beats the corridor-pipeline naive family zero-shot on unseen theatres (structured-cell wins are
+already banked at small scale; the open question is whether theatre-scale composition breaks the
+"rules catch up" asymptote, or whether frontier-matching + structured wins is again the result).

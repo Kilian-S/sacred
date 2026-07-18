@@ -87,13 +87,13 @@ def _hits_obstacle(pts: np.ndarray, rects: np.ndarray) -> bool:
 
 def make_curve(lat: SectorLattice, offsets, rects: np.ndarray | None = None,
                kappa_max: float = KAPPA_MAX) -> CurveRoute | None:
-    """A route from interior-station lateral offsets (stations every 2 depth units, endpoints
-    pinned to base/target). None if it leaves the sector, exceeds the bank limit, or crosses
-    an obstacle."""
-    xs = np.arange(0, lat.nx, 2, dtype=float)              # 0, 2, ..., 12
+    """A route from interior-station lateral offsets, endpoints pinned to base/target. Control
+    x-positions are evenly spaced across the depth (so a THEATRE of any length uses a fixed,
+    small number of control points = smooth long curves); the road default (offsets length 5)
+    reproduces stations at columns 0,2,...,12 on the 13-deep road sector. None if the curve
+    leaves the sector, exceeds the bank limit, or crosses an obstacle."""
+    xs = np.linspace(0.0, lat.nx - 1, len(offsets) + 2)
     ys = np.concatenate([[lat.base[1]], np.asarray(offsets, float), [lat.target[1]]])
-    if len(ys) != len(xs):
-        raise ValueError(f"need {len(xs) - 2} interior offsets, got {len(offsets)}")
     if np.any(ys < 0) or np.any(ys > lat.ny - 1):
         return None
     pts = _catmull_rom(np.stack([xs, ys], axis=1))
