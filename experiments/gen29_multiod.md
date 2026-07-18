@@ -138,3 +138,24 @@ coordination-difficulty wall. A single re-aim (dense per-stream marginal-interce
 full 14000 budget, or per-stream immediate credit) would test whether the gap is reachable with
 better credit assignment; if it also ties the blinded arm, the boundary is final. Per the brief's
 "one re-aim maximum then close", this is the last permissible attempt.
+
+### SINGLE-INSTANCE TRAINABILITY DIAGNOSTIC (2026-07-18, headline cell alone, 8000 sorties,
+### same recipe; `models/runs/gen29_single_diag.log`)
+
+Ratio-to-eq curve (cap ratio 1.547): 1.76/1.99/1.78/1.48/1.66/1.78/1.81/1.69/1.52/1.60/1.55/
+1.49/1.44/**1.41**/1.47/1.50. **Best-checkpoint 1.41x eq (exploit ~0.29 < cap 0.317); beats the
+cap at most back-half checkpoints but NEVER approaches eq (floors ~1.4x) and OSCILLATES**
+(overlap head-weight swings -1.5..+4 = FP cycling on the coordination landscape).
+
+**Diagnosis (binding):** (1) self-play is not fundamentally incapable - it beats the oracle-fitted
+cap on ONE instance (1.41 < 1.547); (2) but it cannot converge to eq (floors ~1.4x, unstable);
+(3) the generalist was DENSITY-STARVED - one instance needed ~7000 sorties to floor at 1.41, the
+generalist gave each of 16 instances ~375, so it landed worse (1.61) than single-instance and
+below independent (1.44). The generalist failure is dominated by per-instance training density +
+FP instability, NOT a pure coordination wall. Note: single-instance self-play beating the cap is
+NOT a differentiator (tabular FP ties eq < cap on any single instance, the standing wording rule);
+the unique claim must be ZERO-SHOT. **Lever verdict: self-play tuning -> likely Tier-1, unlikely
+clean Tier-2 (transfer loss on a 1.4x floor). DISTILLATION from the joint LP is the better shot
+(targets eq directly, avoids the measured instability, the proven ZST mechanism), realistic
+outcome Tier-1 + PARTIAL Tier-2 (~2-3/6), not a clean 4/6.** Decision (build distillation vs close
+as the boundary cell) = Kilian's, pending.
