@@ -674,3 +674,41 @@ static attempts); the banked static positives are Tier-1 (replicated, 8/9) and t
 matching zero-shot row (vs-naive ~1.0, itself a claim: one policy re-derives the best naive
 rule's performance on sight, without being told the rule). The zero-shot-SUPREMACY burden
 moves to the dynamic register (v4.0-dyn, pre-registered above), as the road record predicted.**
+
+### V4.0-DYN RESULT (2026-07-18 morning, 3 seeds x 16,000 sorties): **PRIMARY FAILS 0/6 ON
+### EVERY SEED - and the forensics close the register with a sharp finding.**
+
+Values 0.46-0.62 vs bars 0.35-0.45 (vs-iid 1.14-1.25: worse than static-equilibrium play).
+**Forensics:** the window channel engaged maximally (winfreq head weight -13 -> -74; zero
+probability on recent routes), and the policy's values match the ANTI-REPEAT oracle rows
+almost exactly: **the policy learned the best policy its architecture can express, and that
+policy is anti-repeat, which is provably bad on structured aerial layouts.** The window
+reaches the policy only as a per-route recency column, so anti-repeat is the ONLY expressible
+window behaviour; the road successes (gen19/gen27) were an architecture-game coincidence
+(anti-repeat/rotation IS near-optimal on those road instances - their own ledgers say so).
+
+**The corridor-collapse finding (oracle-exact, the honest reason no redesign follows):**
+giving the policy the enemy-doctrine response (per-route damage given the window) would fix
+expressibility, but baseline completeness then hands the same intel to the rules, and the
+two-line MYOPIC DODGE (fly the currently least-threatened route) scores **0.106-0.135 vs the
+exact optimum 0.077-0.098** on every gated layout: essentially optimal. **The adaptive-enemy
+register has no learning corridor on either side of the information boundary: without the
+doctrine model, the expressible optimum is anti-repeat (bad); with it, two lines suffice.**
+V4.0-dyn CLOSES as this measured information-structure boundary (a citable result in itself,
+echoing the road programme's rule-completeness pattern).
+
+### THE NIGHT'S NET POSITION (2026-07-18, binding summary)
+
+**BANKED AERIAL POSITIVES:** (1) Tier-1, TRIPLE-REPLICATED: the trained fleet beats the
+strongest naive rule family on the flagship structured cell in 8/9 seeds across three
+independent batches (0.746/0.734/0.742 pooled vs 0.754, eq 0.538); (2) zero-shot
+FRONTIER-MATCHING: one policy re-derives best-naive-rule performance (vs-naive 1.01-1.05) on
+never-seen layouts without being told any rule - the amortisation claim, third domain.
+**MEASURED BOUNDARIES (all pre-registered, all with mechanisms):** static zero-shot asymptote
+AT the naive frontier (three amendments); menu-N=1 saturating bandit; walker credit
+starvation; the dynamic information-structure collapse above. Every register of this game
+family that was probed ends with a two-line rule at its frontier; what learning uniquely
+delivers here is GENERALISATION to that frontier, and structured-cell superiority - not
+rule-beating zero-shot. Further supremacy registers (e.g. the two-target COORDINATION game,
+whose oracle gap no per-drone rule can express by construction - the road B4 axis) are a NEW
+pre-registration and Kilian's call.
