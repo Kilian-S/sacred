@@ -661,3 +661,16 @@ EVERYTHING simple is ~0.33 wide - vs the static game's 2-4%.
 > checkpoint.** **STRONG: pooled <= 2.5x history_opt.** Open-sector context rows ungated.
 > Estimator/selection/discipline as v3.1; worst-case-vs-committing-enemy row reported
 > (the gen27 regime-conditionality sentence carries over verbatim).
+
+### V3.2 RESULT (2026-07-18, 3 seeds x 24,000 sorties, 36 train layouts): **TIER 1 PASSES
+### AGAIN (3/3; now 8/9 seeds across three batches, pooled 0.742/0.734/0.746). TIER 2 FAILS
+### a third time AT the frontier (beats 2/1/1 of 6; vs-naive 1.01/1.02/1.05).**
+
+**The static-register boundary is now measured across three disclosed amendments:** zero-shot
+vs-naive converged 1.08-1.12 -> 1.02-1.04 -> 1.01-1.05 under 2x budget and 2x variety. The
+recipe amortises TO the strongest naive frontier on unseen layouts and not below it - the
+same asymptote the road generalist showed. **The static Tier-2 push CLOSES here (no further
+static attempts); the banked static positives are Tier-1 (replicated, 8/9) and the frontier-
+matching zero-shot row (vs-naive ~1.0, itself a claim: one policy re-derives the best naive
+rule's performance on sight, without being told the rule). The zero-shot-SUPREMACY burden
+moves to the dynamic register (v4.0-dyn, pre-registered above), as the road record predicted.**
