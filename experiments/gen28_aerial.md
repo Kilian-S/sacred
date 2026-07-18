@@ -756,3 +756,38 @@ menu and fly-able interception vs the oracle (published for Kilian's review).
 > multi-instance screen AFTER Kilian approves the environment (corridor, mechanics, endpoints).
 > Compute: fleet exact eval is ~seconds/instance; a theatre pool + 3 seeds is an M4 evening, or
 > n=10 on w05. NOTHING launches until Kilian's explicit go on the reviewed environment.
+
+---
+
+## V3-THEATRE, VECTOR REBUILD (2026-07-18; Kilian: "why are we rasterising so much?" +
+## "make it look like an operations map, not out-of-focus Minecraft"). Both points correct.
+
+**The rasterisation was never needed and is REMOVED.** The policy chooses among a handful of
+lanes and reads per-route features (exposure, cost) + a coarse route-vertex token graph, none
+of which depends on map resolution; terrain detail is therefore DECOUPLED from training cost.
+New continuous env `src/envs/aerial_theatre_vec.py`:
+- **Terrain = real OSM POLYGONS** (`scratch/fetch_theatre_vector.py`: 68 water / 299 urban /
+  102 forest / 388 farmland smooth shapes, km coords; no grid). Emplacement is point-in-polygon;
+  LOS masking is segment-crosses-urban; both on shapely vector geometry.
+- **Smooth continuous lanes** (Catmull-Rom, clamped to the sector) fanning across the corridor
+  and reconverging at the terminals; endpoints are the two real towns at continuous off-centre
+  positions (Kaliningrad 5.9,12.2 km; Gvardeysk 40.7,5.4 km).
+- **Exposure** = the same continuous line integral (dead-centre calibration exact).
+
+**Screen (oracle-exact, N=3 mission):** the game survives de-rasterisation as a healthy
+NON-DEGENERATE contest: K=1 standoff 4 km eq **0.382**, best naive **0.632 (1.66x)**, det
+0.898 (2.35x); standoff 7 km 1.33x; K=2 1.30x. LOS-masking ablation confirms urban shielding
+is load-bearing. Suite 203 -> 208 (5 new vector-env tests: real-polygon load, off-centre
+continuous endpoints, in-bounds smooth lanes, terrain emplacement/standoff/LOS, non-degenerate
+solve). The blocky raster env (`aerial_theatre.py`) is superseded for the deliverable but kept
+(its tests still pass); the vector env is the substrate going forward.
+
+**Operations-map artefact (the review centrepiece):** NATO-style vector cartography, real
+terrain, military grid, friendly base/objective symbols, red AD sites with dashed range rings,
+weighted route lanes, scale bar + north arrow + legend; fly-able strategies vs the oracle.
+Static asset `assets/theatre_ops_map.png`. Interactive published for Kilian's review.
+
+> **STILL AT THE REVIEW GATE - no training launched.** Draft training plan unchanged (fleet
+> theatre-generalist across corridors/endpoints/layouts, zero-shot on held-out theatres); bars
+> pinned after Kilian signs off the reviewed environment (corridor, mechanic numbers, endpoints,
+> resolution). Multiple real corridors are one command each (kgd_baltiysk also defined).
