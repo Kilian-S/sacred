@@ -715,31 +715,44 @@ pre-registration and Kilian's call.
 
 ---
 
-## V5 THEATRE (2026-07-18; Kilian's mega-map vision, BUILD-ONLY, review before launch)
+## V3-THEATRE (2026-07-18; Kilian's mandate: REAL map section + non-static endpoints; BUILT
+## and SCREENED; REVIEW GATE - no training launched, bars are DRAFT pending Kilian's review)
 
-**Built (suite 202; `src/envs/aerial_terrain.py`, `tests/test_aerial_terrain.py`):** procedural
-heterogeneous theatres at ~50 km scale (ny=17 x nx=40 lattice, ~1 km/waypoint) on the existing
-machinery. Terrain classes drive the two things the game consumes: FLYABILITY (mountains =
-obstacles = organic valleys/pinches) and EMPLACEMENT + threat character (field = long-range
-kill-zone r=2.0; forest = short-range ambush r=0.8; suburb r=1.2 p=0.6; road = mobile-SAM
-danger line; urban/water/swamp = interceptor-excluded COVER corridors). Terrain is seeded and
-drawn INDEPENDENTLY of geometry -> a theatre generalist is the genuine map-conditioning test.
-`make_curve` generalised to N control points (road default preserved); menu = the k lowest-
-EXPOSURE cover curves + lateral-diversity fill (the corridor pipeline has strong material).
+**Both requested changes delivered:**
+1. **Real map substrate.** `scratch/fetch_theatre.py` pulls OSM land cover (water/urban/
+   forest/farmland) for a real corridor and rasterises to a 1 km terrain grid (cached JSON,
+   no repeat network calls). Chosen corridor: **Kaliningrad -> Gvardeysk, 46 x 20 km**, terrain
+   mix open 34% / field 33% / forest 17% / urban 12% / water 4% (spatially coherent: the city
+   is its real urban cluster, the Pregolya water threads the middle; `assets/theatre_kgd_
+   gvardeysk.png`). Corridor is a swappable parameter (kgd_baltiysk also defined).
+2. **Non-static endpoints.** Base = Kaliningrad (row 12, col 5); target = Gvardeysk (row 5,
+   col 40): different rows, off-centre, W->E-and-down. "Forward progress" redefined as
+   projection onto the base->target axis (`forward_dag`), so the corridor runs its true
+   direction and the route set stays a finite DAG.
 
-**Screen (12 procedural theatres, N=3 mission, oracle-EXACT, `scratch/aerial_terrain_screen.py`):**
-the naive-vs-optimal gap SURVIVES rich terrain at theatre scale. **best-naive/eq: median 1.33,
-max 1.55, >= 1.3 on 58% of theatres** (degenerate saturated theatres eq~1.0 excluded by the
-same non-degeneracy gate as the road screens). The strongest naive is the inverse-exposure /
-uniform full-menu STACK (a corridor pipeline compresses to route-level inverse-exposure); any
-single fixed route is ~100% mission-fail (stacking 3 on one path invites a sit-on-it kill), so
-the game is genuinely about calibrated route MIXING. Exact fleet solve 1-7 s/theatre (nocc 8436,
-H ~950): tractable, no approximation needed at K=1.
+**Terrain drives the interdictor (the mechanic table, `src/envs/aerial_theatre.py:TERRAIN`):**
+open/field = long-range (2.5 km) high-p emplacement; forest = short-range (1.2 km) concealed
+ambush + LOS block; urban = NO emplacement + LOS block (the "urban corridors block contesting"
+mechanic); water = no emplacement. Exposure = the same line-integral survival (dead-centre leg
+calibration exact), with URBAN/forest cells masking a hazard's line of sight to an arc.
 
-**Review render:** `assets`/artifact `terrain_view.html` (4 non-degenerate theatres seeds
-2/6/10/4, terrain-coloured map, standoff rings, the four strategies, committed-hazard best
-response, exact oracle rows; NO training). Pending Kilian's review before any v5 training
-pre-registration + launch. The pattern to test if funded: whether a trained fleet generalist
-beats the corridor-pipeline naive family zero-shot on unseen theatres (structured-cell wins are
-already banked at small scale; the open question is whether theatre-scale composition breaks the
-"rules catch up" asymptote, or whether frontier-matching + structured wins is again the result).
+**Screen (oracle-exact, N=3 fleet mission; `scratch/theatre_screen.py`):** after fixing the
+menu (24 corridor-spanning lanes, full-width fan, no funnel) and adding terminal standoff, the
+real corridor is a healthy NON-DEGENERATE game: naive/eq **1.35-1.78x** across the aiming grid
+(K in {1,2}, stride {3,4}, standoff {4,7,10} km); det/eq 2.7-4.0x. Headline cell (K=1, stride
+3, standoff 4 km): **eq 0.330, best naive 0.589 (1.78x), det 0.899**, R=24 lanes, H=90 sites.
+LOS-masking ablation confirms urban shielding is load-bearing (turning it off shifts the gap).
+Suite 203 (6 new theatre tests incl. off-centre endpoints, forward-DAG acyclicity, no-funnel
+menu, terrain emplacement/standoff, LOS masking, non-degenerate solve).
+
+**Interactive review artefact:** the real terrain map with endpoints, threat sites, the lane
+menu and fly-able interception vs the oracle (published for Kilian's review).
+
+> **DRAFT training plan (NOT launched; for Kilian's review):** the winning FLEET register
+> (N=3, mission, menu-select, leader/follower split, exposure-only head, validation selection)
+> as a THEATRE GENERALIST: train across many (corridor x endpoint-pair x hazard-layout)
+> instances, evaluate zero-shot on held-out corridors/endpoints. This is the A3 map-conditioned
+> transfer claim at real-terrain scale, the ladder's step 2. Bars will be pinned from a
+> multi-instance screen AFTER Kilian approves the environment (corridor, mechanics, endpoints).
+> Compute: fleet exact eval is ~seconds/instance; a theatre pool + 3 seeds is an M4 evening, or
+> n=10 on w05. NOTHING launches until Kilian's explicit go on the reviewed environment.
