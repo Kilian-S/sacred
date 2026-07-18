@@ -163,13 +163,151 @@ def route_survival(th: VecTheatre, route: np.ndarray, coords, rr, pp, *, los: bo
     return S
 
 
-def build_theatre_game(th: VecTheatre, K: int = 1, menu_size: int = 24, spacing_km: float = 2.0,
-                       standoff_km: float = 4.0, los: bool = True):
-    """(InterdictionGame, menu, coords, r_km, p_max, S[R,H]) on the continuous polygon terrain.
-    Route 'edges' for the InterdictionGame are consecutive rounded-waypoint pairs (the graph the
-    menu head would pool); exact only while C(H,K) fits, else use greedy BR on S."""
-    menu = build_menu(th, R=menu_size)
+def engagement_footprint(th: VecTheatre, center, r_km: float, n_rays: int = 96) -> list:
+    """The hazard's TRUE engagement silhouette: ray-cast the range circle against the urban
+    LOS-blockers, so each ray reaches only to the first building it hits -> a star-shaped
+    viewshed with SHADOW ZONES behind the city (matches the game's segment-crosses-urban mask).
+    Returns polygon vertices [[x, y], ...] in km."""
+    c = np.asarray(center, float)
+    urb = th._urban_union
+    verts = []
+    for k in range(n_rays):
+        a = 2 * np.pi * k / n_rays
+        d = np.array([np.cos(a), np.sin(a)])
+        reach = r_km
+        if urb is not None and not urb.is_empty:
+            inter = LineString([tuple(c), tuple(c + r_km * d)]).intersection(urb.boundary)
+            if not inter.is_empty:
+                pts = []
+                if inter.geom_type == "Point":
+                    pts = [inter]
+                elif inter.geom_type == "MultiPoint":
+                    pts = list(inter.geoms)
+                else:
+                    for g in getattr(inter, "geoms", [inter]):
+                        pts += [Point(xy) for xy in g.coords]
+                if pts:
+                    reach = min(reach, min(np.hypot(q.x - c[0], q.y - c[1]) for q in pts))
+        verts.append([round(float(c[0] + reach * d[0]), 3), round(float(c[1] + reach * d[1]), 3)])
+    return verts
+
+
+def _threat_field(th: VecTheatre, coords, rr, pp, step=1.0):
+    """Peak engageable interception intensity at each coarse node (max over candidate sites in
+    range AND with LOS): the threat map a planner routes against. Helper grid ONLY (routing);
+    the game itself stays continuous."""
+    xs = np.arange(0.0, th.W + 1e-9, step)
+    ys = np.arange(0.0, th.H + 1e-9, step)
+    urb = th._urban_union
+    P = np.asarray(coords)
+    T = {}
+    for x in xs:
+        for y in ys:
+            d = np.hypot(P[:, 0] - x, P[:, 1] - y)
+            inten = np.where(d < rr, pp * (1.0 - d / np.clip(rr, 1e-9, None)), 0.0)
+            best = 0.0
+            for h in np.argsort(-inten):
+                if inten[h] <= best:
+                    break
+                if urb is None or urb.is_empty or not LineString(
+                        [(float(P[h, 0]), float(P[h, 1])), (float(x), float(y))]).intersects(urb):
+                    best = float(inten[h]); break
+            T[(round(float(x), 3), round(float(y), 3))] = best
+    return xs, ys, T
+
+
+def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float = 1.0) -> list:
+    """TERRAIN-AWARE routes: shortest paths base->target on a coarse 8-connected grid with edge
+    cost = length * (1 + lam * peak-threat-along-edge), swept over lam (0 = direct/exposed ->
+    high = long/covered: the open-field-vs-cover tradeoff) + lateral mid-waypoint seeds for
+    diversity; smoothed (Catmull through ~4 km control points) into flight paths. Bends through
+    LOS shadow and around threat coverage. Falls back to geometric lanes if routing fails."""
+    import networkx as nx
+    xs, ys, T = _threat_field(th, coords, rr, pp, step=step)
+    _, nrm = _axis(th)
+
+    def snap(xy):
+        return (round(float(xs[np.argmin(np.abs(xs - xy[0]))]), 3),
+                round(float(ys[np.argmin(np.abs(ys - xy[1]))]), 3))
+
+    b, t = snap(th.base), snap(th.target)
+
+    def build_graph(lam, seed_lat):
+        G = nx.DiGraph()
+        for x in xs:
+            for y in ys:
+                xk = (round(float(x), 3), round(float(y), 3))
+                for dx in (-step, 0, step):
+                    for dy in (-step, 0, step):
+                        if dx == 0 and dy == 0:
+                            continue
+                        nx_, ny_ = round(float(x + dx), 3), round(float(y + dy), 3)
+                        if 0 <= nx_ <= th.W and 0 <= ny_ <= th.H:
+                            seg = np.hypot(dx, dy)
+                            thr = 0.5 * (T[xk] + T.get((nx_, ny_), T[xk]))
+                            lat = abs(float((np.array([x, y]) - th.base) @ nrm) - seed_lat) * 0.02
+                            G.add_edge(xk, (nx_, ny_), w=seg * (1 + lam * thr) + lat * seg)
+        return G
+
+    cands, seen = [], set()
+    for lam in (0.0, 3.0, 8.0, 18.0):
+        for seed in np.linspace(-0.4 * th.H, 0.4 * th.H, 7):
+            try:
+                path = nx.shortest_path(build_graph(lam, float(seed)), b, t, weight="w")
+            except Exception:
+                continue
+            key = tuple(round(v, 0) for pt in path[::3] for v in pt)
+            if key in seen:
+                continue
+            seen.add(key)
+            arr = np.array([th.base] + [np.array(p) for p in path[1:-1]] + [th.target])
+            idx = np.unique(np.linspace(0, len(arr) - 1,
+                                        max(4, int(len(arr) * step / 4))).astype(int))
+            cands.append(_catmull(arr[idx]))
+    if not cands:
+        return build_menu(th, R=R)
+    u2, nrm2 = _axis(th)
+
+    def sig(rte):
+        al = np.array([(p - th.base) @ u2 for p in rte])
+        la = np.array([(p - th.base) @ nrm2 for p in rte])
+        return np.interp(np.linspace(al.min(), al.max(), 10), al, la)
+
+    menu, sigs = [cands[0]], [sig(cands[0])]
+    while len(menu) < R and len(menu) < len(cands):
+        best, bd = None, -1
+        for i, rte in enumerate(cands):
+            if any(rte is m for m in menu):
+                continue
+            dd = min(np.linalg.norm(sig(rte) - x) for x in sigs)
+            if dd > bd:
+                bd, best = dd, rte
+        if best is None:
+            break
+        menu.append(best); sigs.append(sig(best))
+    return menu
+
+
+def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain: int = 12,
+                       spacing_km: float = 2.0, standoff_km: float = 4.0, los: bool = True):
+    """(InterdictionGame, menu, coords, r_km, p_max, S[R,H], lane_idx) on the continuous polygon
+    terrain. The menu carries BOTH geometric LANES (the naive rule's support: direct/exposed) and
+    TERRAIN-AWARE routes (the equilibrium's cover-seeking options), so the game measures
+    terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes."""
     coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km)
+    lanes = build_menu(th, R=n_lanes)
+    lane_idx = list(range(len(lanes)))
+    menu = list(lanes)
+    u2, nrm2 = _axis(th)
+
+    def sig(rte):
+        al = np.array([(np.asarray(p) - th.base) @ u2 for p in rte])
+        la = np.array([(np.asarray(p) - th.base) @ nrm2 for p in rte])
+        return np.interp(np.linspace(al.min(), al.max(), 10), al, la)
+    lane_sigs = [sig(l) for l in lanes]
+    for r_ in build_terrain_menu(th, coords, rr, pp, R=n_terrain):
+        if min(np.linalg.norm(sig(r_) - s) for s in lane_sigs) > 1.0:   # distinct from a lane
+            menu.append(r_)
     S = np.stack([route_survival(th, r_, coords, rr, pp, los=los) for r_ in menu])
     H = len(coords)
     isets = list(itertools.combinations(range(H), K)) if K <= H else [tuple(range(H))]
@@ -186,4 +324,4 @@ def build_theatre_game(th: VecTheatre, K: int = 1, menu_size: int = 24, spacing_
                         for t in (toks(r_) for r_ in menu))
     game = InterdictionGame(tuple(tuple(map(tuple, r_)) for r_ in menu), route_edges,
                             tuple(tuple(t) for t in isets), payoff, travel, K)
-    return game, menu, coords, rr, pp, S
+    return game, menu, coords, rr, pp, S, lane_idx

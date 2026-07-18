@@ -791,3 +791,28 @@ Static asset `assets/theatre_ops_map.png`. Interactive published for Kilian's re
 > theatre-generalist across corridors/endpoints/layouts, zero-shot on held-out theatres); bars
 > pinned after Kilian signs off the reviewed environment (corridor, mechanic numbers, endpoints,
 > resolution). Multiple real corridors are one command each (kgd_baltiysk also defined).
+
+### V3-THEATRE readability + terrain-effect rebuild (2026-07-18; Kilian's second review pass:
+### "which UAV on which route" unclear; only one site shown; unclear if routes/interceptors are
+### terrain-affected; want visible LOS shadow zones). All addressed; still REVIEW GATE, no training.
+
+- **LOS-masked engagement footprints (the explicit ask).** `engagement_footprint` ray-casts each
+  hazard's range circle against the urban LOS-blockers -> a star-shaped VIEWSHED with SHADOW ZONES
+  behind the city (matches the game's segment-crosses-urban mask exactly). The committed site now
+  renders as its true clipped silhouette (radial-graded intensity), not a plain circle; a "threat
+  coverage" toggle overlays all sites' footprints to reveal the safe shadow corridors.
+- **Terrain-aware routes (interceptors AND routes now visibly terrain-affected).** `build_terrain_menu`
+  routes base->target on a coarse helper graph with edge cost = length * (1 + lam * peak-threat),
+  swept over lam (direct/exposed -> long/covered: the open-field-vs-cover tradeoff) + lateral seeds,
+  smoothed into flight paths. The menu now carries BOTH the geometric LANES (naive support) and the
+  terrain-aware COVER routes; the equilibrium puts ~31% of its mass on cover routes the naive lane
+  rule never uses. Screen: eq 0.373, best-naive(lanes) 0.609 = **1.63x**, det 2.41x (non-degenerate,
+  gap preserved).
+- **Readability.** Full menu drawn faint (dashed = lanes, solid = cover routes); the selected
+  strategy's mass overlaid bold; on "fly" the chosen route goes bold + bright, others dim, and the
+  3 UAVs animate in TRAIL with a "fleet -> route k" callout (the fleet stacks-and-randomises, so
+  they share one route per serial by design). All candidate AD sites shown (not just the committed
+  one).
+- Suite 203 -> 209 (engagement-footprint shadow test + mixed-menu/lane-idx test). Static
+  `assets/theatre_ops_map.png`; interactive republished. Still no training; bars pinned after
+  Kilian signs off the environment.

@@ -51,8 +51,23 @@ def test_los_masking_only_helps_defender():
 
 
 def test_game_nondegenerate_on_real_terrain():
-    game, menu, coords, rr, pp, S = build_theatre_game(TH, K=1, menu_size=24, spacing_km=2.0,
-                                                       standoff_km=4.0)
+    game, menu, coords, rr, pp, S, lane_idx = build_theatre_game(TH, K=1, n_lanes=14,
+                                                                 n_terrain=12, standoff_km=4.0)
+    assert len(menu) > len(lane_idx) >= 10                      # lanes + terrain-aware routes
     sol = solve(game)
     assert 0.05 < sol.value < 0.9
     assert sol.loss_det > sol.value + 0.1                       # determinism exploitable
+
+
+def test_engagement_footprint_shadows():
+    from src.envs.aerial_theatre_vec import engagement_footprint
+    coords, rr, pp, cls = hazard_sites(TH, spacing_km=2.0, standoff_km=4.0)
+    # a site near the city should have a shadowed (non-circular) footprint; a far-rural one round
+    areas = []
+    for h in range(len(coords)):
+        fp = np.array(engagement_footprint(TH, coords[h], rr[h], n_rays=64))
+        a = 0.5 * abs(np.dot(fp[:, 0], np.roll(fp[:, 1], 1)) - np.dot(fp[:, 1], np.roll(fp[:, 0], 1)))
+        areas.append(a / (np.pi * rr[h] ** 2))                  # fraction of the full disc
+    areas = np.array(areas)
+    assert areas.min() < 0.9                                    # at least one shadowed footprint
+    assert areas.max() <= 1.01                                  # never exceeds the range disc
