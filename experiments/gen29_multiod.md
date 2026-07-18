@@ -94,3 +94,47 @@ Suite 173 green (6 new gen29 tests: joint-payoff cross-check, eq well-posed, nod
 contract, overlap/blind channel, deterministic pool, exact-vs-MC estimator).
 
 ## RESULTS (appended after Kilian's go; nothing above changes)
+
+## RESULTS (2026-07-18; 3 sighted seeds + 1 blinded control, STOPPED at sortie 6000/14000,
+## Kilian's call: the curve was flat from sortie 3000 so the full budget could not change the
+## verdict; validation-selected best checkpoints re-evaluated per-cell offline from the saved
+## per-1000-sortie checkpoints. DISCLOSED early stop.)
+
+**BOTH TIERS FAIL. The pre-registered boundary outcome.**
+
+| tier | measured | bar | verdict |
+|---|---|---|---|
+| Tier 1 (headline 147->212,188,195 < 0.317) | 0.330 / 0.399 / 0.364 (pooled 0.364) | < 0.317 on 2/3 + pooled | **FAIL** (0/3) |
+| Tier 2 (held-out beat cap >=4/6 + pooled, 2/3 seeds) | beats 0 / 0 / 2 of 6; pooled ratio-to-eq 2.16 / 2.00 / 1.91 | 4/6 + pooled<1, 2/3 | **FAIL** |
+| Causal control (blinded) | held-out pooled 2.07 ~ sighted 2.02 | blinded ~ indep, sighted below | channel carried ~nothing |
+
+**Reading (binding for the writeup):**
+1. The trained generalist plateaued near its UNTRAINED level (sighted pooled 2.02 vs untrained
+   1.90) and did NOT reach even the best INDEPENDENT product (mean indep/eq 1.44), let alone the
+   in-sample cap. It did not clear ANY baseline row.
+2. **sighted (2.02) ~ blinded (2.07):** the overlap coordination channel did not convert into a
+   gain: the gen18 independent-learner boundary REPLICATES in the closing register, now with an
+   architectural-conditioning + undiluted-head-term + causal-control design that was built
+   specifically to avoid it. That the channel still did not carry is the measured finding.
+3. Best checkpoints are EARLY (ep1000-3000); last-iterate FP drift (the project's standing
+   dynamics finding) confirmed, so the full 14000 budget could not change the verdict.
+4. **What SURVIVES as the contribution (the oracle half):** the screen proves the multi-OD
+   coordination moat is real and PREVALENT (median gap-vs-cap 31% over 55 cells, 37-55% on the
+   screened best; no hand-built lottery, even oracle-fitted, closes it) — the FIRST and ONLY
+   register in the whole project where a complete hostile baseline family leaves a gap. The
+   learning half does not reach it at thesis scale.
+
+**The boundary-map sentence this act earns (Kilian's framing, honoured):** *contested routing
+needs no learning below a measurable boundary (a two-line rule is near-optimal, proven across
+registers); in the one register where no simple rule, however oracle-assisted, can express the
+optimal defence (coordination gap 37-55%, measured), model-free adversarial self-play at thesis
+scale also fails to capture it, with a blinded control confirming the coordination channel does
+not carry.* The map closes with a measured edge, not a trophy.
+
+**Pre-committed re-aim (one attempt, per the brief) — AVAILABLE, Kilian's call, NOT taken
+autonomously:** the flat, below-independent curve points at a CREDIT/CAPACITY problem
+(terminal-only reward over the 3-stream chain at ~375 sorties/instance) more than a pure
+coordination-difficulty wall. A single re-aim (dense per-stream marginal-interception reward +
+full 14000 budget, or per-stream immediate credit) would test whether the gap is reachable with
+better credit assignment; if it also ties the blinded arm, the boundary is final. Per the brief's
+"one re-aim maximum then close", this is the last permissible attempt.
