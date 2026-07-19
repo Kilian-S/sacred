@@ -15,7 +15,9 @@
 >    `experiments/b2_llm_benchmark.md` + `experiments/regime_decision_table.md`) — the
 >    2026-07-16 "B2 is LIVE, do not touch" banners below are OBSOLETE (the workbench
 >    connection details remain valid for reuse). Also here: the coordination-gap probes
->    (`738ddd1`, `e6c29e2`) and `GEN29_MULTIOD_HANDOFF.md` (`e898f07`). Suite 167+ green.
+>    (`738ddd1`, `e6c29e2`); the gen29 build brief `GEN29_MULTIOD_HANDOFF.md` now lives ON the
+>    gen29 branch (moved there by the implementer; original in history at `e898f07`).
+>    Suite 167+ green.
 > 2. **`../sacred-aerial` (branch `gen28-aerial`): the aerial act, CLOSED for trained claims**
 >    (`experiments/gen28_aerial.md`; read its 2026-07-19 BASELINE-COMPLETENESS APPENDIX
 >    FIRST). v2.2 (menu-N=1 saturating bandit), v2.3 (walker credit starvation) and v4.0-dyn
