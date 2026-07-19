@@ -1,6 +1,65 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-16 NIGHT)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-19)
 
-> **★★★★★★ 2026-07-16 NIGHT (fresh agent: START HERE; this banner supersedes the stack below).**
+> **★★★★★★★ 2026-07-19 REFRESH (fresh agent: START HERE; this banner supersedes every
+> OPERATIONAL item in the stack below, which is preserved as history).** The experimental
+> campaign is COMPLETE on all three fronts and **WRITING is now the critical path** (FAR
+> hard-due 30 July; freeze 3 Aug; thesis + poster 10:00, 28 Aug). The thesis spine is Kilian's
+> binding 2026-07-18 decision: **the BOUNDARY MAP** ("where does learning pay in contested
+> routing?") — gen27 the flagship positive, gen26 the boundary companion, gen03-06 the
+> motivating negative, gen28/gen29 the closing cells. The project now spans THREE worktrees:
+>
+> 1. **This branch (`gen08-interdiction`): roads.** gen26 CLOSED (the boundary map; K=6 is a
+>    TIE with the best naive stack, no superiority cell). gen27 CLOSED = the flagship
+>    (PRIMARY+STRONG 3/3, no-window causal control clean, `e439394`). **B2 COMPLETE** (both
+>    models, three registers, two instances; the knowledge/application dissociation;
+>    `experiments/b2_llm_benchmark.md` + `experiments/regime_decision_table.md`) — the
+>    2026-07-16 "B2 is LIVE, do not touch" banners below are OBSOLETE (the workbench
+>    connection details remain valid for reuse). Also here: the coordination-gap probes
+>    (`738ddd1`, `e6c29e2`) and `GEN29_MULTIOD_HANDOFF.md` (`e898f07`). Suite 167+ green.
+> 2. **`../sacred-aerial` (branch `gen28-aerial`): the aerial act, CLOSED for trained claims**
+>    (`experiments/gen28_aerial.md`; read its 2026-07-19 BASELINE-COMPLETENESS APPENDIX
+>    FIRST). v2.2 (menu-N=1 saturating bandit), v2.3 (walker credit starvation) and v4.0-dyn
+>    (the corridor-collapse information-boundary finding) are measured negatives; the
+>    v3.0-3.2 fleet "Tier-1 positive" is RETIRED by the appendix (the act's own tabular-FP
+>    row 0.555 and a best-5-route stack 0.600 beat SACRED's 0.734-0.746; a TIE with the
+>    naive frontier, the gen26 K=6 pattern). Surviving trained claim: zero-shot
+>    frontier-MATCHING (vs-naive 1.01-1.05, the amortisation row). The 2026-07-16 banner's
+>    item 5 ("trained aerial result = MUST-HAVE, go build") is SUPERSEDED — do NOT reopen;
+>    its hope that "the aerial continuous axis is where a cleaner separation may live" is
+>    measured FALSE. The vector-THEATRE env (real-map NATO-style ops exhibit = the project's
+>    strongest Obj-2 asset) sits at Kilian's REVIEW GATE with DRAFT bars; per the appendix,
+>    its lanes-only naive rows (1.63x) deflate to 1.26x (payoff-blind) / 1.07x (oracle-fit)
+>    under the complete family, which MUST be gated in before any bar is pinned. Suite 209.
+> 3. **`../sacred-gen29` (branch `gen29-multiod`): the CLOSING EXPERIMENT** (three-stream
+>    coordination; `experiments/gen29_multiod.md`). The ORACLE half is the project's only gap
+>    that survives a complete hostile baseline family (median 31% vs the oracle-fitted cap
+>    over 55 cells; prevalence figure banked). The TRAINED half FAILED both tiers (0/3 seeds;
+>    blinded ~ sighted = the coordination channel carried nothing; the gen18 boundary
+>    replicating in the final register); single-instance diagnostic: self-play beats the cap
+>    on one instance (1.41x eq) but floors and oscillates; the generalist was density-starved
+>    (~375 sorties/instance vs ~7000 needed). **OPEN DECISION (Kilian's; the last
+>    computational call of the project): the one pre-committed re-aim (dense per-stream
+>    credit) and/or the DISTILLATION control — framed strictly as "locating the wall"
+>    (dynamics vs capacity), never as "SACRED works" — or close as the final boundary cell.**
+>    Suite 173.
+>
+> **New direction interest (supervisor, 2026-07-19): facility/depot location.** The
+> pre-freeze-feasible act is oracle-only "security-aware facility location": the
+> (cost, exploitability) design frontier, the connectivity exchange rate from the gen26
+> boundary map, and depot-overlap redundancy priced by the gen29 correlation gap; randomised
+> basing and the displacement game are the future-work registers. Shortlist recorded in the
+> 2026-07-19 session + agent memory (`gen29-closing-experiment`).
+>
+> **Read order for a fresh agent NOW:** this banner -> `../sacred-gen29/experiments/
+> gen29_multiod.md` -> `../sacred-aerial/experiments/gen28_aerial.md` (appendix first) ->
+> `CRITIQUE_16-07-26.md` -> `NEXT_STEPS_MASTER.md` (Block R, now closed-out) -> the gen26/
+> gen27/B2 ledgers + `experiments/regime_decision_table.md` -> `SACRED_PROGRESS.md` entries
+> 22-27. House rules UNCHANGED (never launch training without Kilian's explicit go; ledgers
+> before CPU; numbers live only in ledgers; baseline completeness pre-registered, screens by
+> heuristic-gap; commit critique artefacts in-session; cap all thread pools). The stack below
+> is the historical record.
+
+> **★★★★★★ 2026-07-16 NIGHT (superseded by the 2026-07-19 banner above; preserved as history).**
 > Today's session (the Block R rescue programme, Kilian's full autonomous launch authority)
 > changed what the thesis claims and where its positive results live. Read in this order:
 > 1. **`CRITIQUE_16-07-26.md`** — the disjoint-baseline finding (a 2-line max-flow heuristic

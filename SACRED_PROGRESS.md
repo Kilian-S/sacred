@@ -768,3 +768,66 @@ to their supersession notes.)*
   absent: the dissociation the benchmark exists to measure.** Transcript:
   `scratch/b2_livetest_llama_transcript.txt`; comprehension gate 1/3 (reported). Qwen live test +
   the overnight batch follow Kilian's review.
+
+## 25. B2 COMPLETE: the LLM benchmark banked on two instances  (2026-07-17/18 · `experiments/b2_llm_benchmark.md`, `experiments/regime_decision_table.md`)
+
+- **Headline results:** on 35-159, NEITHER model calibrates a mixed strategy (register (b)
+  0.52-0.60, worse than the uniform-menu stack 0.442, far above the disjoint heuristic 0.250 and
+  SACRED 0.256) despite passing comprehension probes and NAMING near-correct independent route
+  sets on demand — the knowledge/application dissociation is the finding. Register (c): partial
+  recovery via emergent anti-repeat (qwen best 0.059 vs SACRED 0.050; llama 0.177). The Gdansk
+  zero-shot cell REPLICATES the calibration failure on a never-seen city, with a model x
+  instance interaction (qwen approaches the heuristic there); neither model approaches the
+  gen27 trained policy in the dynamic register. Binding two-instance wording recorded in the
+  ledger; `regime_decision_table.md` is the practical synthesis (which policy for which
+  adversary type x budget).
+- **Thesis fit:** the differentiator act; independent support for the central mechanism
+  (calibrated randomisation is exactly what language agents lack unaided); one subsection +
+  one ladder column, workshop spin-out recorded.
+
+## 26. gen28: the aerial act — three measured negatives, a retired positive, and the theatre exhibit  (2026-07-16 -> 18 · branch `gen28-aerial`, worktree `../sacred-aerial` · `experiments/gen28_aerial.md` + its 2026-07-19 appendix)
+
+- **Goal (prospective):** the free-flight act (continuous coverage axis; the map-conditioning
+  de-confounder; Kilian's then-standing "trained aerial result = MUST-HAVE").
+- **What happened (five game revisions, all pre-registered, all disclosed):** the oracle screen
+  arc (proximity exposure, standoff zones fixing the terminal-funnel degeneracy, complete lane
+  families, the structure-not-firepower finding, grid-convergence certificates) delivered a
+  genuinely non-degenerate game family. The trained acts then failed in sequence, each with a
+  mechanism: v2.2 menu-N=1 = the saturating-bandit cell, measured; v2.3 walker = credit
+  starvation; v4.0-dyn = the corridor-collapse information-structure finding (without the
+  doctrine model the only expressible window behaviour is anti-repeat, which is provably bad on
+  aerial layouts; with it, a two-line dodge is near-optimal — and the road gen19/27 successes
+  are partly architecture-game coincidences, a caveat the flagship's wording must carry). The
+  v3.0-3.2 fleet line learned and replicated a thin Tier-1 pass, RETIRED 2026-07-19 by the
+  baseline-completeness appendix (the act's own tabular-FP row 0.555 + a best-5-route stack
+  0.600 beat SACRED 0.734-0.746: a tie with the naive frontier, the gen26 K=6 pattern).
+- **What survives:** zero-shot frontier-MATCHING (vs-naive 1.01-1.05: one policy re-derives the
+  best rule's performance on sight, the amortisation claim in a third domain); the boundary/
+  structure screen findings; the vector-theatre real-map ops exhibit (the strongest Obj-2
+  asset, at Kilian's review gate); and the extension of the preconditions chain to the air.
+- **Thesis fit:** the aerial cells of the boundary map; Obj-2's "visual, interactive" clause
+  finally earned; NO aerial trained-positive sentence is licensed.
+
+## 27. gen29: the closing experiment — the coordination moat is real, and self-play cannot cross it  (2026-07-18 · branch `gen29-multiod`, worktree `../sacred-gen29` · `experiments/gen29_multiod.md`; probes `738ddd1`/`e6c29e2`; brief `GEN29_MULTIOD_HANDOFF.md`)
+
+- **Goal (prospective):** Kilian's confirmed CLOSING EXPERIMENT: three supply streams sharing
+  corridors (K=1, mission objective), the one register where the naive ceiling provably lifts.
+- **Headline results:** (i) **The oracle half is the only gap in the whole project that
+  survives a complete hostile baseline family** — screened over 55 non-degenerate cells, the
+  joint equilibrium sits a median 31% below even the oracle-fitted best-m-pairing cap (37-55%
+  on the screened best; coordinated napkin rules are WORSE than independence on 15/15 probe
+  triples; K=2 compresses the gap, so structure, never firepower). (ii) **The trained half
+  FAILED both pre-registered tiers on every seed**, and the blinded causal control came out
+  EQUAL to the sighted policy (2.07 vs 2.02): the coordination channel carried nothing — the
+  gen18 boundary replicating in the final register despite an architecture built specifically
+  to avoid it. (iii) Single-instance diagnostic: self-play beats the oracle-fitted cap on one
+  instance (1.41x eq) but floors ~1.4x and oscillates (FP cycling); the generalist was
+  density-starved (~375 sorties/instance vs ~7000 to floor). (iv) OPEN (Kilian's call, the
+  last computational decision): the pre-committed dense-credit re-aim and/or the distillation
+  control as a "locate the wall" pair, or close.
+- **What it means for the thesis (the boundary-map closing sentence, Kilian's framing):**
+  *below a measurable boundary, contested routing needs no learning (two-line rules are
+  near-optimal, proven across three domains); in the one register where no hand-built rule,
+  however oracle-assisted, can express the optimal defence, model-free adversarial self-play
+  at thesis scale also fails to capture it, with a causal control confirming the channel does
+  not carry.* The map closes with a measured edge; gen27 remains the flagship positive.

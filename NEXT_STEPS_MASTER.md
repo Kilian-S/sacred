@@ -118,6 +118,18 @@
 >   thesis sentence. Rescued-claim centre of gravity: boundary map + label-free amortisation
 >   (gen27), not single-instance superiority.
 
+> **⚠️ BLOCK R CLOSE-OUT (2026-07-19, the critic instance; this block is now HISTORY).**
+> B2 COMPLETE (two instances, both models; `experiments/regime_decision_table.md` = the
+> synthesis). R3-air CLOSED (gen28: three measured negatives + the screen/exhibit products;
+> the fleet Tier-1 wording RETIRED by the 2026-07-19 baseline-completeness appendix in the
+> aerial ledger). The CLOSING EXPERIMENT gen29 (three-stream coordination, worktree
+> `../sacred-gen29`) RAN AND FAILED both tiers with a clean blinded control, while its oracle
+> screen banked the project's only complete-baseline-proof gap (median 31%). OPEN: the gen29
+> re-aim/distillation/close decision (Kilian's). **The active front is now Block C — the FAR
+> (hard 30 July) and the boundary-map re-spine — plus, optionally, the oracle-only
+> security-aware facility-location act (supervisor direction 2026-07-19).** See the HANDOVER
+> 2026-07-19 banner for the three-worktree map; the items below are the historical record.
+
 ### R0. Repair + aim (oracle/eval-only, FREE, no go needed; ~1 day; do first, in this order)
 
 - [ ] **R0a. Fold the disjoint rows into every ladder** [eval/oracle, ~half day].
