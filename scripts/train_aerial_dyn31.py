@@ -93,11 +93,16 @@ class DynInstance:
         self.window = tuple(np.random.default_rng(0).integers(self.R, size=W))
         self.pol_hist: list = []
 
+    blind = False                                                  # causal-control switch
+
     def feats(self, window) -> torch.Tensor:
         wf = np.zeros(self.R)
         for r in window:
             wf[r] += 1.0 / W
         doc = _mm(self.stepdmg[self.widx[tuple(window)]])          # the doctrine column
+        if self.blind:                                             # window channels zeroed:
+            wf = np.zeros(self.R)                                  # the policy can only play
+            doc = np.zeros(self.R)                                 # a static mixture
         return torch.tensor(np.stack([self.exposure, wf, doc], axis=1), dtype=torch.float32)
 
     def _fitted_rows(self) -> dict[str, float]:
@@ -271,6 +276,7 @@ def main():
     p.add_argument("--json-out", default="")
     p.add_argument("--ckpt-dir", default="")
     p.add_argument("--eval-gated", action="store_true")
+    p.add_argument("--blind", action="store_true")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
     try:
@@ -284,6 +290,9 @@ def main():
     print("[gen28d] building pool (exact chains per instance)...", flush=True)
     t0 = time.time()
     train, val, test, ctx = make_pool(eval_gated=args.eval_gated)
+    if args.blind:
+        for it in train + val + test + ctx:
+            it.blind = True
     print(f"[gen28d] pool in {time.time()-t0:.0f}s", flush=True)
     for it in val + test + ctx:
         print(f"    {it.name}: iid_eq={it.iid_eq:.3f} static_opt={it.static_opt:.3f} "

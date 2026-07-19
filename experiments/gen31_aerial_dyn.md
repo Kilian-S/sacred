@@ -153,3 +153,27 @@ standing open-sector concession; B rows are context, not gated). **Untrained: be
 selection on VALIDATION mean ratio; per-eval checkpoints; outputs
 `models/runs/gen31_dyn/seed{0,1,2}.{json,log}`. Iteration protocol: autopsy before any
 change; gated set untouched.
+
+### ATTEMPT 1 RESULT (2026-07-19/20, 3 seeds x 16,000 sorties, ~100 min each at 3-parallel):
+### PASSES iteration diagnostics on every seed; the confirmation gate fires
+
+| seed | val-selected @ | dev-test beats-CAP | beats-BLIND | mean ratio-to-iid | vs hist_opt (pooled) | final-iterate drift |
+|---|---|---|---|---|---|---|
+| 0 | 16000 | 3/3 | 3/3 | 0.514 | 2.25x | none (final = best) |
+| 1 | 7000 | 3/3 | 3/3 | 0.507 | 2.22x | none |
+| 2 | 9000 | 3/3 | 3/3 | 0.513 | 2.25x | none |
+
+Per-layout (all seeds within 0.004 of each other - striking cross-seed consistency):
+D2100 0.218-0.220 (0.51x iid, 2.2x opt, 1.28x fitted), D2101 0.220-0.226 (0.49x, 2.0x,
+1.4x), D2102 0.249-0.252 (0.54x, 2.5x, 2.5x). The fitted doctrine rules stay ahead
+(1.3-2.5x above the policy's level -> the policy sits BETWEEN the blind family and the
+fitted caps, the gen27 composed-rule pattern). Mechanism: rw[doctrine] -14 to -16
+dominant, rw[winfreq] -1 to -6, rw[exposure] ~0; alpha 0.25-0.37; NO last-iterate drift
+(the high-coverage no-drift pattern, third occurrence). Autopsy verdict: the doctrine
+channel converts; no design change needed; proceed to confirmation.
+
+### CONFIRMATION LAUNCH (protocol: fresh seeds 10/11/12 + BLINDED control seed 10;
+### `--eval-gated` = the pristine gatedD4100-4105, never touched by any probe or run;
+### config byte-identical to attempt 1; the trainer gains `--blind` (window-frequency +
+### doctrine columns zeroed -> the policy can only express a static mixture; must land
+### ~ the cap for the causal claim). Bars as pre-registered; this run is the citable one.
