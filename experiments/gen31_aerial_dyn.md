@@ -177,3 +177,49 @@ channel converts; no design change needed; proceed to confirmation.
 ### config byte-identical to attempt 1; the trainer gains `--blind` (window-frequency +
 ### doctrine columns zeroed -> the policy can only express a static mixture; must land
 ### ~ the cap for the causal claim). Bars as pre-registered; this run is the citable one.
+
+### CONFIRMATION RESULT (2026-07-20, fresh seeds 10/11/12 + blinded control, 16,000 sorties
+### each, pristine gated set D4100-4105 evaluated for the first time ever): **EVERY
+### PRE-REGISTERED BAR PASSES. THE ACT BANKS ITS POSITIVE.**
+
+| arm | val-sel @ | beats-CAP (bar >= 4/6, >= 2/3 seeds) | beats-BLIND | pooled ratio-to-cap | vs hist_opt (STRONG <= 2.5x) | vs fitted | drift |
+|---|---|---|---|---|---|---|---|
+| seed 10 | 8000 | **6/6** | 5/6 | 0.523 | 2.09x | 1.48x | none (final 6/6) |
+| seed 11 | 15000 | **6/6** | 6/6 | 0.517 | 2.07x | 1.46x | none |
+| seed 12 | 5000 | **6/6** | 6/6 | 0.505 | 2.02x | 1.43x | none |
+| **BLINDED control** | 15000 | **0/6** | 0/6 | **1.206** | 4.83x | 3.42x | none (rw window/doctrine pinned 0.00) |
+
+> **PRIMARY: PASS 3/3 seeds, 18/18 seed-layout cells, pooled 0.515x the static cap.
+> STRONG: PASS (pooled 2.06x the exact dynamic optimum). CAUSAL: PASS (blinded 1.21x the
+> cap, 0/6; the gain is causally the window + doctrine conditioning).** Reported rows:
+> beats the payoff-blind dynamic family 17/18 cells; the oracle-fitted doctrine rules stay
+> ~1.4-1.5x BELOW the policy's level (ahead; disclosed, the gen27 composed-rule pattern);
+> **worst-case-vs-committing premium 1.22x mean (gen27's was 1.57x: the aerial policy is
+> MORE robust to the enemy committing than the road flagship was)**; no last-iterate drift
+> anywhere (the high-coverage no-drift pattern).
+
+**Iteration history, in full: ONE attempt.** The corridor hunt aimed the design; attempt 1
+passed iteration diagnostics; the confirmation passed blind on the first try. No re-rolls,
+no amendments, no bar movement.
+
+**THE BANKED CLAIM (binding wording; gen27-comparable and on two axes stronger):** *one
+history-aware fleet policy, trained across aerial threat layouts against an anticipatory
+pattern-of-life doctrine (70% punish the recent pattern, 30% pre-aim at the obvious
+escape), evaluated ZERO-SHOT on six never-touched layouts, beats every static object (the
+equilibrium mixture and the local static optimum: 18/18 seed-layout cells, pooled 0.52x
+the static cap) AND the entire payoff-blind dynamic rule family (17/18), reaching 2.06x
+the exact dynamic optimum, with a blinded control (1.21x the cap, 0/6) confirming the gain
+is causally the window-plus-doctrine conditioning, and a 1.22x worst-case premium against
+a committing enemy. Oracle-fitted doctrine-informed rules remain ~30-35% ahead of the
+policy (disclosed: the gen27 composed-rule precedent - the fitted rules are per-instance
+oracle fits; the policy does it zero-shot from features). On open sectors simple rotation
+suffices and the act says so.* No unconditional "SACRED superior" sentence is licensed or
+used; tabular FP with the same oracle ties the optimum on any single instance (standing).
+
+**gen27 side-by-side:** pooled ratio-to-cap 0.515 vs gen27's 0.639; vs-optimum 2.06x vs
+1.74x; beats-cap 6/6 on 3/3 seeds vs 6/6-5/6; blind-family beaten here (gen27's composed
+rule stayed ahead); worst-case premium 1.22x vs 1.57x; causal control clean in both. The
+aerial conversion is gen27-comparable on every axis and stronger on cap-margin, blind-rule
+coverage and worst-case robustness. **THE ACT'S DEFINITION OF DONE IS MET; gen31 CLOSES
+PASSED.** Recorded future work: closing the remaining 1.4x gap to the fitted doctrine
+rules; K=2; w=3; theatre-substrate transplant.
