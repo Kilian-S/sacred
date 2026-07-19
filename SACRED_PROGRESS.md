@@ -831,3 +831,37 @@ to their supersession notes.)*
   however oracle-assisted, can express the optimal defence, model-free adversarial self-play
   at thesis scale also fails to capture it, with a causal control confirming the channel does
   not carry.* The map closes with a measured edge; gen27 remains the flagship positive.
+
+## 28. gen30: security-aware facility location — Obj-4 realised at the placement tier, oracle-only  (2026-07-19 · branch `gen08-interdiction` · `experiments/gen30_secure_flp.md`; scripts `scratch/gen30_{secure_flp,analysis,surrogate}.py`; figures `assets/gen30_*.png`)
+
+- **Goal (prospective):** the supervisor-direction act (2026-07-19): price depot designs
+  against the operational security game, entirely oracle/eval-only (no training anywhere),
+  pre-registered before any analysis code; the machinery anchor (147 -> 212,188,195)
+  reproduces the committed gen29 headline exactly before any new number was read.
+- **Headline results:** (i) **Component A:** the (cost, security) frontier is computable
+  exactly at ~0.3 s/design; the cost-optimal depot's security premium is demand-dependent
+  (0-206% across six seeded draws, 12-49% typical; fail branch fired and reported on 2/6),
+  the knee recovers most of it for 3-7% extra cost, site spread x2.5-5.3 everywhere, and the
+  design RANKING is deployment-robust (Spearman v_joint-vs-cap 0.865-0.923). (ii) **Component
+  B (the headline):** dual-servability redundancy, which classical nearest-assignment FLP
+  prunes by construction, is worth a median 25% (max 61%, >=5% on 35/40 payoff-blind pairs)
+  at the coordinated joint optimum on the primary instance; the mechanism is corridor
+  DIVERSITY (value ~ -0.56 vs depot-corridor Jaccard); **redundancy and coordination are
+  measured COMPLEMENTS** (under m<=4 napkin deployment the median value is -10% on the
+  deep-moat instance, 13/40 positive, while on the shallow-moat Gdansk draw it is freely
+  harvestable) - the gen29 correlation moat reproduced and WIDENED (46% median gap-vs-cap on
+  redundant designs) at the strategic tier; operating premium +49%/+72% at matched openings
+  (security is paid in operations, not construction). (iii) **Demand-side floor:** a Gdansk
+  target whose routes share 7 mandatory edges pins EVERY design at >= 0.330 (verified
+  mechanically): a single-approach target caps security before any facility decision.
+  (iv) **Component C:** the SurrogateMLP prices designs from 12 cheap features at held-out
+  Spearman 0.870 (bar 0.8 MET; argmin rank 4/129); cross-city calibration does not transfer
+  (0.46, disclosed boundary).
+- **What we learned:** the strategic tier inherits the operational boundary map: where the
+  coordination moat is deep, design value is locked behind coordination capability; where it
+  is shallow, napkin deployment harvests it. Buying the second depot without the C2 to use it
+  is usually worse than deploying one depot well.
+- **Thesis fit:** Obj-4's "facility location ... holistic, simultaneous evaluation" sentence
+  in its honest oracle-priced form (metamodel included); the D2/B1 tier-coupling arc completed
+  at the placement tier; two committed figure pairs (frontier + overlap value, Kaliningrad +
+  held-out Gdansk); fleet composition recorded as the one-line future rung.

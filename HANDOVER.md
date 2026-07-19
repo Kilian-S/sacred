@@ -52,6 +52,19 @@
 > basing and the displacement game are the future-work registers. Shortlist recorded in the
 > 2026-07-19 session + agent memory (`gen29-closing-experiment`).
 >
+> **ADDENDUM 2026-07-19 (later the same day): gen30_secure_flp is DONE and committed** — the
+> supervisor-direction facility-location act ran entirely oracle-only under the standing free-probe
+> rule (pre-registered ledger `experiments/gen30_secure_flp.md` BEFORE analysis code; anchor
+> reproduces the gen29 headline exactly; ~4 min of compute). What it banks: the exact (cost,
+> security) depot frontier (premium 0-206% across six seeded draws, knee recovers it for 3-7%
+> cost, ranking deployment-robust at Spearman 0.87-0.92); the headline **redundancy-coordination
+> complementarity** (dual-servability that classical FLP prunes is worth median 25%/max 61% at the
+> coordinated optimum on the primary instance but median -10% under napkin deployment there: the
+> gen29 moat at the strategic tier, 46% median gap-vs-cap on redundant designs); the Gdansk
+> mandatory-corridor demand floor (0.330, mechanically verified); and the Obj-4 metamodel row
+> (held-out Spearman 0.870, bar met). Figures `assets/gen30_*.png`; chronicle entry 28; no
+> training anywhere; both pre-written fail branches fired partially and are reported per-draw.
+>
 > **Read order for a fresh agent NOW:** this banner -> `../sacred-gen29/experiments/
 > gen29_multiod.md` -> `../sacred-aerial/experiments/gen28_aerial.md` (appendix first) ->
 > `CRITIQUE_16-07-26.md` -> `NEXT_STEPS_MASTER.md` (Block R, now closed-out) -> the gen26/

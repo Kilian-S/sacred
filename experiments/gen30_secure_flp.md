@@ -173,3 +173,116 @@ Every design is a seconds-scale LP (b4_widen precedent: F=3 cells solve in secon
 under 1 h wall, hard ceiling 3-4 h per the mission. Single process; BLAS pools capped.
 
 ## RESULTS (appended per component; nothing above changes)
+
+### Provenance (2026-07-19, same session as the pre-registration)
+
+Sweep `scratch/gen30_secure_flp.py`; analysis + figures `scratch/gen30_analysis.py`; surrogate
+`scratch/gen30_surrogate.py`. Artefacts `models/runs/gen30_secure_flp_*.json` +
+`gen30_surrogate.json` (gitignored per the models/runs convention; regenerable in ~4 min total
+from the seeded scripts). Figures committed: `assets/gen30_frontier.png`,
+`assets/gen30_overlap_value.png`, `assets/gen30_frontier_gdansk.png`,
+`assets/gen30_overlap_value_gdansk.png`. **Machinery verification: the anchor design
+(147 -> 212,188,195) reproduces the committed gen29 headline exactly (eq 0.205, cap 0.317,
+indep 0.321, det 0.555)** before any new number was read. ~0.3 s per design; whole act ~4 min
+of compute. Disclosed deviations from the pre-registration: (i) two EXTRA seeded target draws
+were added on each axis after the first draws landed (Kaliningrad frontier seeds 31, 32;
+Gdansk seed 31) so the tension statistic is a distribution, not an anecdote; all draws are
+reported, none dropped; (ii) an output-naming bug overwrote the first seed-30 artefacts before
+analysis was re-run; they were regenerated bit-identically from the seeds (no numbers changed).
+
+### Component A RESULT: the (cost, security) frontier, six draws
+
+| draw | targets | sites | cost-argmin premium | knee (extra cost -> residual premium) | site spread (worst/best v_joint) | Spearman(v_joint, v_cap) |
+|---|---|---|---|---|---|---|
+| kal_primary | 212,188,195 | 150 | **12.4%** | +4% -> 0% | x5.3 | 0.891 |
+| kal_random_s30 | 40,198,63 | 80 | 0.0% (argmins coincide) | - | x2.9 | 0.870 |
+| kal_random_s31 | 102,273,135 | 80 | 15.0% | +3% -> 10% | x3.2 | 0.865 |
+| kal_random_s32 | 123,165,146 | 80 | **206%** | +4% -> 52% | x4.2 | 0.918 |
+| gdansk_s30 (held-out) | 275,70,184 | 60 | **48.5%** | +7% -> 11% | x2.7 | 0.923 |
+| gdansk_s31 (held-out) | 10,229,132 | 60 | 0.0% (argmins coincide) | - | x2.5 | 0.918 |
+
+**Reading (the honest claim, exactly at the evidence):** the (cost, security) tension at the
+argmin is DEMAND-GEOMETRY-DEPENDENT: 0% on 2/6 draws (the pre-written fail branch fires there
+and is reported), 12-49% typically, 206% on the worst draw. **Where tension exists, the knee
+buys most of it back for 3-7% extra service cost.** Placement always matters even when the
+argmins coincide: the site spread is x2.5-5.3 in every draw (the prevalence panels show the
+full population; nothing is cherry-picked). **Policy-robustness row: Spearman(v_joint, v_cap)
+= 0.865-0.923 on every draw** - the design RANKING survives pricing by the napkin m-pairing
+cap instead of the exact equilibrium, so the frontier's advice does not depend on deploying an
+exact-equilibrium mixer (the R0a deployed-policy discipline holds at design level). The gen29
+anchor (147) ranks 20/150 on security at mid cost.
+
+### Component B RESULT: redundancy priced by the correlation gap (the headline)
+
+| draw | pairs | eq-value of dual-servability (median, >=5% count, max) | napkin-deployed redundant beats PERFECTLY-deployed classical | redundant designs' gap-vs-cap (median) | value ~ corridor-Jaccard (Spearman) | operating premium (cls / red, median) |
+|---|---|---|---|---|---|---|
+| kal_primary | 40 | **25%, 35/40, 61%** | 13/40 (median -10%) | **46%** | -0.56 | +49% / +72% |
+| gdansk_s30 | 30 | 11%, 19/30, 40% | 18/30 (median +10%) | 0% | -0.53 | +14% / +46% |
+| gdansk_s31 | 30 | 0%, 4/30, 40% | 7/30 (median 0%) | 0% | -0.00 | +23% / +44% |
+
+**Reading (binding wording; both pre-written branches partially fire and are both reported):**
+1. **At the coordinated joint optimum, the dual-servability redundancy classical FLP prunes is
+   worth a median 25% of mission exploitability on the primary instance (up to 61%), >=5% on
+   35/40 payoff-blind sampled pairs.** Classical nearest-assignment can never harvest it: its
+   joint play set is a strict subset by construction.
+2. **The mechanism is corridor DIVERSITY, not depot proximity: the value anti-correlates with
+   the two depots' candidate-edge Jaccard (rho -0.56/-0.53)** - a second depot pays when it
+   opens genuinely different corridors, not when it duplicates nearby ones.
+3. **The deployment-conditionality finding (the act's sharpest sentence): redundancy and
+   coordination are COMPLEMENTS.** On the deep-moat instance (redundant designs' gap-vs-cap
+   median 46%: the gen29 correlation moat, reproduced at design level and WIDENED by the richer
+   union menus), a napkin-deployed redundant design beats a perfectly-deployed classical design
+   on only 13/40 pairs (median -10%): buying the second depot WITHOUT the coordination
+   capability is usually worse than deploying the single-assignment design well. Where the
+   moat is shallow (both Gdansk draws: cap ties eq), the (smaller) redundancy value is freely
+   harvestable by napkin mixtures (18/30 positive, median +10%, on s30). The <5%-vs-cap fail
+   branch fires exactly there: on gdansk_s31 redundancy buys ~0% and that is reported plainly.
+4. **The security is paid in operations, not construction:** at matched openings and identical
+   classical service cost, the equilibrium mixture's expected route length runs +49% (classical
+   designs) to +72% (redundant designs) over the classical service cost on the primary
+   instance: the R0b fleet-cost discipline, now at design level.
+5. **Demand-side floor (held-out-city finding, verified mechanically):** on gdansk_s30, target
+   184's candidate routes share 7 mandatory edges (max vulnerability 0.330), so EVERY design -
+   any placement, any redundancy - is pinned at mission exploitability >= 0.330 (12/60 sites
+   and every redundant design sit exactly there). A single-approach target caps achievable
+   security before any facility decision is made: the D2 tier-coupling lesson at the demand
+   tier.
+
+### Component C RESULT: the Obj-4 metamodel rider
+
+SurrogateMLP (the repo model, 12 cheap pre-solve features, no LP at query time) on the pooled
+430 Kaliningrad designs (70/30 seeded split), scored zero-shot on the 180 Gdansk designs:
+
+| row | n | RMSE | Spearman | argmin regret (true rank of chosen design) |
+|---|---|---|---|---|
+| held-out Kaliningrad | 129 | 0.072 | **0.870** | 13.6% (rank 4/129) |
+| zero-shot Gdansk (exploratory, disclosed) | 180 | 0.148 | 0.459 | 0.0% (rank 1/180) |
+
+**The pre-registered expectation (Spearman >= 0.8 held-out) is MET** (0.870; the F3/D3
+precedent band). Cross-city: absolute calibration does NOT transfer (RMSE doubles, rho 0.46)
+- reported as the boundary; the argmin transferring (rank 1/180) is a single-draw observation,
+not a claim. The D1-style acquisition loop was the pre-registered drop-first item and was
+dropped (recorded). Fleet composition stays out of the design space per the pre-registration;
+future work in one line: per-stream fleet sizing as a design axis needs a stacking convention
+for multi-convoy streams and is the natural next rung.
+
+### The act's sentences (claim shapes resolved; no sentence exceeds its evidence)
+
+- **A (lands, with a measured boundary):** cost-optimal placement silently pays a
+  demand-dependent security premium (0-206% across six seeded draws; 12-49% typical); the
+  (cost, security) frontier and its knee are computable exactly in ~0.3 s per design, the knee
+  recovers most of the premium for 3-7% extra cost, and the advice is robust to pricing by
+  napkin deployment (rank correlation 0.87-0.92).
+- **B (the headline, two-sided by measurement):** security-aware facility location buys
+  corridor-diverse redundancy that classical FLP provably prunes, worth a median 25% (up to
+  61%) at the coordinated optimum against the complete hostile family including the
+  oracle-fitted m-pairing cap; but that value is CONDITIONAL on joint deployment (median -10%
+  under napkin play on the deep-moat instance): the design decision and the coordination
+  capability must be bought together, which is exactly the gen29 boundary surfacing at the
+  strategic tier.
+- **C (lands):** a neural metamodel prices strategic designs against the operational security
+  game from cheap features (held-out rank correlation 0.87, chosen design rank 4/129),
+  enabling the holistic, simultaneous evaluation Objective 4 promised, in its honest
+  oracle-priced form.
+- **No training was run anywhere in this act; no sentence says "SACRED superior"; all designs
+  are priced by oracle values under the R0a deployed-policy wording.**
