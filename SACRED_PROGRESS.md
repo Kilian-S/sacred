@@ -865,3 +865,36 @@ to their supersession notes.)*
   in its honest oracle-priced form (metamodel included); the D2/B1 tier-coupling arc completed
   at the placement tier; two committed figure pairs (frontier + overlap value, Kaliningrad +
   held-out Gdansk); fleet composition recorded as the one-line future rung.
+
+## 29. gen31: the gen27 conversion lands — the aerial trained positive, confirmed blind  (2026-07-19/20 · branch `gen28-aerial`, worktree `../sacred-aerial` · `experiments/gen31_aerial_dyn.md`; trainer `scripts/train_aerial_dyn31.py`; corridor hunt `scratch/gen31_corridor_hunt.py`)
+
+- **Goal (prospective):** Kilian's 2026-07-19 mandate: analyse what made gen27 work and
+  recreate it in the air (iterate-until-positive, unlimited budget, full enemy-design
+  freedom, M4 only). The literal transplant (v4.0-dyn) had already failed with the
+  corridor-collapse mechanism; gen31 redesigned the ENEMY and the INFORMATION CHANNEL until
+  gen27's preconditions held, oracle-verified before any training.
+- **Headline results:** (i) **Phase 0 (corridor hunt, 48 oracle-exact cells):** the
+  anticipatory mixed doctrine (70% punish the recent pattern, 30% pre-aim at the obvious
+  escape route, tau 0.10) opens a corridor no rule class closes: static cap 3.8-4.9x the
+  exact optimum, payoff-blind avoidance rules 2.7x+ (on structured layouts the doctrine
+  punishes naive avoidance BELOW static play), fitted doctrine rules 1.45-1.8x; honest
+  surprise: the corridor existed even under the v4.0 doctrine at tau 0.10 - v4.0 rejected
+  the temperature and its policy lacked the doctrine channel to reach it. (ii) **Attempt 1
+  (3 seeds x 16k sorties):** passes iteration diagnostics 3/3 (dev-test beats-cap and
+  beats-blind 3/3 at ~0.51x the cap; rw[doctrine] ~ -15 dominant; no drift).
+  (iii) **CONFIRMATION (fresh seeds 10/11/12 + blinded control, six PRISTINE gated
+  layouts never touched by any probe): every bar passes - 6/6 beats-cap on 3/3 seeds
+  (18/18 cells), pooled 0.515x the static cap, 2.06x the exact dynamic optimum (STRONG),
+  blinded control 1.21x the cap at 0/6 (causal), blind dynamic family beaten 17/18,
+  worst-case-vs-committing premium 1.22x (gen27's was 1.57x). ONE attempt, no re-rolls,
+  no bar movement.** Fitted doctrine rules stay ~1.4x ahead (disclosed, the gen27
+  composed-rule pattern).
+- **What we learned:** the v4.0 failure was an information-channel failure, not a game
+  impossibility - give the policy the per-route threat-given-window column and the win is
+  expressible AND trainable; a corridor hunt with representability + complete-family gates
+  aims a training act so well that iteration was not needed; the untouched-gated-set +
+  blind-confirmation protocol makes an iterate-until-done mandate scientifically safe.
+- **Thesis fit:** the aerial branch gains its trained positive in gen27's exact claim
+  shape (zero-shot dynamic hedging, causal control, complete family), retiring the "no
+  aerial trained-positive" caveat; the boundary map gains a second domain where learning
+  pays in the adaptive register; the regime table's dynamic row now has an aerial cell.

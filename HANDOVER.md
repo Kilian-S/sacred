@@ -52,6 +52,17 @@
 > basing and the displacement game are the future-work registers. Shortlist recorded in the
 > 2026-07-19 session + agent memory (`gen29-closing-experiment`).
 >
+> **ADDENDUM 2026-07-20: gen31 (the gen27 conversion) PASSED CONFIRMATION — the aerial
+> trained positive is BANKED** (branch `gen28-aerial`, `experiments/gen31_aerial_dyn.md`,
+> commits `490f4b1..0200767`; Kilian's 2026-07-19 reopening mandate). The anticipatory mixed
+> doctrine + the doctrine head column recreate gen27's preconditions in the air
+> (corridor-hunt-verified); confirmation on six pristine gated layouts with fresh seeds:
+> 6/6 beats-static-cap on 3/3 seeds (pooled 0.515x cap), 2.06x the exact optimum, blinded
+> control 1.21x cap 0/6 (causal), blind dynamic family beaten 17/18, worst-case premium
+> 1.22x; ONE attempt, no re-rolls. Chronicle entry 29. The gen28 "no aerial trained-positive"
+> sentences are SUPERSEDED for the gen31 register (the gen28 static/v4.0 negatives stand as
+> history). Fitted doctrine rules remain ~1.4x ahead, disclosed.
+>
 > **ADDENDUM 2026-07-19 (later the same day): gen30_secure_flp is DONE and committed** — the
 > supervisor-direction facility-location act ran entirely oracle-only under the standing free-probe
 > rule (pre-registered ledger `experiments/gen30_secure_flp.md` BEFORE analysis code; anchor
