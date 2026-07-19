@@ -97,3 +97,34 @@ full generality).
   K=2 cell, with Kilian informing the professor before sustained use.
 
 ## RESULTS / ITERATION LOG (appended per attempt; nothing above changes)
+
+### PHASE 0 RESULT (2026-07-19, oracle-only; `scratch/gen31_corridor_hunt.py` ->
+### `models/runs/gen31_corridor_hunt.json`; 48 cells, ~6 s each, exact throughout)
+
+RVI integrity: the first plain-RVI build let the dodge row land 0.002 BELOW the "optimum"
+(the dbf385d periodic-chain artefact recurring); fixed with the lazy-chain aperiodicity
+transform before any number was read as final; post-fix every rule >= history_opt on every
+cell, and the v4.0-baseline cell reproduces its ledger band (hopt 0.098 in 0.077-0.098).
+
+**Honest surprise, recorded first: the corridor existed under the OLD v4.0 doctrine at
+tau=0.10** (G1 11-20x, G2 6.7-11.5x, G3 1.5-2.7x; hopt 0.023-0.038) - v4.0 rejected that
+temperature as degenerate-adjacent and its policy lacked the doctrine channel to reach the
+corridor anyway. The flee axis (second-order anticipation) opens G3 at moderate
+temperatures; heavy flee/dodge weights close G1 (the enemy wastes aim and static play
+recovers); q_eq mostly compresses everything.
+
+> **OPERATING POINT PINNED (all gates green on all 3 probe layouts, comfortable margins):**
+> **doctrine q = (0.7 repeat, 0.3 flee), tau = 0.10, w = 2, structured double-pinch
+> family.** Probe-layout anchors (s2100/s2101/s2102): static cap 0.429/0.462/0.464; best
+> payoff-blind dynamic rule 0.305/0.274/0.294; myopic dodge 0.173/0.156/0.186; best fitted
+> rule 0.166/0.136/0.173; **history_opt 0.113/0.094/0.096** -> G1 3.8-4.9, G2 2.7-3.1,
+> G3 1.45-1.80. G4 (representability): the fitted softdodge/composed rows sit INSIDE the
+> policy head's function class once the per-route DOCTRINE column (this-sortie expected
+> damage given the window) is a head feature; those rows reach 0.136-0.173, far below the
+> blind family - the class provably expresses corridor-entering play. G5: values healthy,
+> asymmetric. **Militarily legible doctrine: 70% punish the recent pattern, 30% pre-aim
+> where a pattern-punished defender would obviously flee.**
+
+Phase 1 (next): extend the v4.0 trainer with the anticipatory enemy + the doctrine head
+column; pool/val/gated splits at the pinned point; refs per layout; then iteration 1
+(3 seeds + blinded control) under the standing launch authority.
