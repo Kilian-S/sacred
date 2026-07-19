@@ -128,3 +128,28 @@ recovers); q_eq mostly compresses everything.
 Phase 1 (next): extend the v4.0 trainer with the anticipatory enemy + the doctrine head
 column; pool/val/gated splits at the pinned point; refs per layout; then iteration 1
 (3 seeds + blinded control) under the standing launch authority.
+
+### ATTEMPT 1 LAUNCH (2026-07-19; trainer `scripts/train_aerial_dyn31.py`, SHA at this commit)
+
+Trainer = v4.0 machinery + the three gen31 changes: (i) the anticipatory doctrine
+(q=(0.7 rep, 0.3 flee), tau=0.10) in `stepdmg`; (ii) the DOCTRINE head column (per-route
+this-window expected damage, min-max) beside exposure + window-frequency, `route_feat_w`
+now 3-dim; (iii) pools per the iteration protocol: train 18 (12 dbl + 6 base), val 4
+(D3000-1, B3100-1), **dev-test = D2100-2102 (burned by Phase 0, iteration diagnostics
+only), GATED = D4100-4105 pristine behind `--eval-gated` (confirmation only)**, ctx
+B4000-4001. PRIMARY bar object = the static CAP min(iid_eq, static_opt); beats-BLIND
+tracked as the aiming row.
+
+**Refs (exact, trainer RVI = the binding values; the Phase-0 hunt's g-extraction read
+~10-15% high on hopt, so the corridor is slightly WIDER than the hunt stated, disclosed):**
+dev-test D2100/1/2: CAP 0.422/0.429/0.448, blind 0.523/0.351/0.554 (ABOVE the cap: the
+doctrine punishes naive avoidance on structured layouts - beating the cap there also beats
+the blind family), fitted 0.170/0.154/0.100, hist_opt 0.098/0.113/0.100. Val D: CAP
+0.400-0.418, fit 0.156, hopt ~0.105. Open-sector context: blind 0.09-0.13 << cap (the
+standing open-sector concession; B rows are context, not gated). **Untrained: beats-CAP
+0/3, ratios 1.23-1.27 (no init freebie).** Pool build ~205 s/process (fitted-row chains).
+
+**Batch: 3 seeds x 16,000 sorties, threads 2, 3-parallel, all pools capped, nice 10;**
+selection on VALIDATION mean ratio; per-eval checkpoints; outputs
+`models/runs/gen31_dyn/seed{0,1,2}.{json,log}`. Iteration protocol: autopsy before any
+change; gated set untouched.
