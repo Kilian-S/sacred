@@ -816,3 +816,48 @@ Static asset `assets/theatre_ops_map.png`. Interactive published for Kilian's re
 - Suite 203 -> 209 (engagement-footprint shadow test + mixed-menu/lane-idx test). Static
   `assets/theatre_ops_map.png`; interactive republished. Still no training; bars pinned after
   Kilian signs off the environment.
+
+---
+
+## BASELINE-COMPLETENESS APPENDIX (2026-07-19, the critic instance; measured 2026-07-18,
+## probe `scratch/critic_baseline_probe.py`, oracle-only, all numbers reproduced at commit
+## time). THIS APPENDIX RETIRES THE TIER-1 SUPERIORITY WORDING.
+
+The critic session applied the act's own dogma (the strongest baseline a practitioner could
+write; the gen26 K=6 pattern) to the two flagship games. Findings, binding for all wording:
+
+**1. The fleet flagship cell (dblpinch_banded_K1_r1.2, eq 0.538).** The ledger's `best_naive`
+0.754 comes from `all_lane_sets` + full-menu + independent rows — but on the LANE-LESS double
+pinch that family collapses to its weakest member (the full-menu uniform stack), inflating the
+comparator. The complete family:
+
+| row (same mission BR yardstick) | value | ratio to eq |
+|---|---|---|
+| ledger best_naive (lane sets + full menu + indep) | 0.754 | 1.40x |
+| **SACRED pooled best-ckpts (v3.0/3.1/3.2)** | **0.746 / 0.734 / 0.742** | 1.37-1.39x |
+| strongest payoff-BLIND rule found (safest-L + max-separation stack) | 0.760 | 1.41x |
+| **best 5-route uniform stack (oracle-fitted, exhaustive)** | **0.5995** | **1.12x** |
+| **the act's own row 6: tabular smooth FP (mission BR)** | **0.555** | **1.03x** |
+| equilibrium | 0.538 | 1.00x |
+
+Reading: SACRED's Tier-1 result survives payoff-BLIND rules (0.742 < 0.760) but LOSES to the
+oracle-fitted small-stack class (0.600) and to the act's own pre-registered tabular-FP row
+(0.555). Statistically, the six individually-ledgered seeds (0.790/0.739/0.710/0.716/0.750/
+0.735, mean 0.740 +/- 0.028) do not separate from 0.754 at n=6 (t ~ 1.2). **Binding verdict
+(the gen26 K=6 pattern): Tier-1 is a TIE with the naive frontier, not superiority. The
+"BANKED AERIAL POSITIVES: (1) Tier-1 triple-replicated" sentence in the night's-net-position
+section is RETIRED as worded; what stands there is (2) zero-shot frontier-MATCHING (vs-naive
+1.01-1.05, the amortisation claim) plus the screen/boundary products and the three measured
+negatives.**
+
+**2. The vector theatre headline (K=1, standoff 4 km, eq 0.373).** The review artefact's naive
+rows are LANES-ONLY (`build_theatre_vec_view.py`). Measured complete family on the same game:
+the lane rows (0.609 = 1.63x) are in fact the best FIXED-support rule (full-menu 1.74-1.75x,
+cover-only 1.89x, top-k-safest 1.99-2.67x all worse — concentration is punished under the BR),
+BUT: **best 3-route uniform stack 0.438 (1.17x); best 5-route 0.399 (1.07x); payoff-blind
+greedy-max-separation k=3 stack 0.470 (1.26x).** The honest quotable theatre gap is therefore
+**~1.26x against blind rules and ~1.07x against the oracle-fitted cap — not the advertised
+1.63-1.78x.** BINDING: no theatre training bar may be pinned until the gated baseline carries
+the best-k-subset stacks (oracle-fitted, disclosed) and the blind separation rules; and per the
+gen29 outcome (the coordination register failed to train on roads), any new aerial training is
+Kilian's explicit call, framed by the boundary map.
