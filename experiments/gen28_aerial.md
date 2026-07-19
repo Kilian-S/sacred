@@ -850,6 +850,34 @@ section is RETIRED as worded; what stands there is (2) zero-shot frontier-MATCHI
 1.01-1.05, the amortisation claim) plus the screen/boundary products and the three measured
 negatives.**
 
+**1b. ADDENDUM (2026-07-19, second critic pass; probe `scratch/critic_holdout_family_probe.py`,
+oracle/eval-only, numbers reproduced at commit time): the surviving zero-shot claim, re-based
+on the held-out cells themselves.** The appendix above corrected the flagship cell and the
+theatre but not the 6 gated held-out layouts, which carry the act's ONE surviving trained
+claim (frontier-matching, vs-naive 1.01-1.05). Measured on those exact instances (the
+trainer's own objects) with the completed family, plus the six committed v3.1/v3.2 seeds'
+validation-selected zero-shot values from the run JSONs:
+
+| row (per held-out layout, ratio to eq) | range |
+|---|---|
+| ledger best_naive (the act's family) | 1.34-1.53x |
+| payoff-blind safest+separated stacks (new) | 1.39-1.64x |
+| **best k-route uniform stack (oracle-fitted, exhaustive k<=5)** | **1.03-1.16x** |
+| SACRED zero-shot (val-selected, 6 seeds) | vs-ledger 1.02-1.05; vs-blind 0.99-1.02 (beats 1-3/6); **vs-fitted-stack 1.36-1.40 (beats 0/6)** |
+
+Binding wording consequences: (i) the frontier the policy matches is the PAYOFF-BLIND rule
+frontier, and the sentence must say so; the oracle-fitted small-stack cap sits at ~1.1x eq on
+every held-out cell, so the advertised 1.35-1.54x holdout gap was mostly family
+incompleteness, not irreducible defence complexity (the aerial layout register has NO gen29-
+style moat). (ii) "re-derives the best rule's performance ON SIGHT" is not licensed: on 2/6
+held-out cells the best family member is the fully layout-BLIND uniform-full stack (the
+layout-aware member is within noise on the rest), and the pre-registered permuted-field
+mechanism row was never run (the bars it was attached to never passed). Before the thesis
+cites the amortisation sentence, run the permuted-field row on the committed v3.1/v3.2
+checkpoints (eval-only, minutes); if permuting the field does not degrade the zero-shot
+values, the claim re-scopes to "amortised calibrated spreading", with no map-conditioning
+content.
+
 **2. The vector theatre headline (K=1, standoff 4 km, eq 0.373).** The review artefact's naive
 rows are LANES-ONLY (`build_theatre_vec_view.py`). Measured complete family on the same game:
 the lane rows (0.609 = 1.63x) are in fact the best FIXED-support rule (full-menu 1.74-1.75x,
