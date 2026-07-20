@@ -129,3 +129,22 @@ run, vs the naive rules that get punished. Static asset + interactive.
 - **Attempt 1: 3 seeds x 16,000 sorties on dev-test, threads 2, 3-parallel, capped + niced;**
   validation-selected checkpoints; outputs `models/runs/gen32_dyn/seed{0,1,2}.{json,log}`.
   Gated set untouched until confirmation.
+
+### ATTEMPT 1 RESULT (2026-07-20, 3 seeds x 16,000 sorties, ~3.4 h each at 3-parallel):
+### PASSES on every seed; confirmation gate fires
+
+| seed | val-sel @ | dev beats-CAP | beats-BLIND | ratio-to-cap | ratio-to-optimum | drift |
+|---|---|---|---|---|---|---|
+| 0 | 10000 | 2/2 | 2/2 | 0.44-0.47 | 1.29x | none (final 2/2) |
+| 1 | 7000 | 2/2 | 2/2 | 0.45-0.47 | 1.29-1.31x | none |
+| 2 | 4000 | 2/2 | 2/2 | 0.45-0.47 | 1.30-1.31x | none |
+
+Per-dev-field, all seeds within 0.002: 5101 0.076-0.078, 5102 0.100-0.101. rw[doctrine] -11
+to -14 dominant, exposure/recency small, alpha 0.20-0.21; NO last-iterate drift. The policy
+lands **~1.30x the exact dynamic optimum on real terrain** (gen31 synthetic: 1.74x): tighter,
+because the doctrine column is a cleaner signal on the richer real field. Autopsy: the doctrine
+channel converts; no design change; proceed to confirmation.
+
+### CONFIRMATION LAUNCH (protocol: fresh seeds 10/11/12 + BLINDED control seed 10; `--eval-gated`
+### = the PRISTINE gatedD4100-4105, never touched by any probe or run; config byte-identical to
+### attempt 1; `--blind` zeros the recency + doctrine head columns. This run is the citable one.
