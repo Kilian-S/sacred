@@ -104,3 +104,28 @@ trained policy's window-conditioned route distribution shifting against it, over
 run, vs the naive rules that get punished. Static asset + interactive.
 
 ## RESULTS / ITERATION LOG (appended per attempt; nothing above changes)
+
+### TRAINER BUILD + ATTEMPT 1 LAUNCH (2026-07-20; `src/envs/aerial_theatre_env.py` +
+### `scripts/train_aerial_dyn32.py`; suite 209 green, raw output in the session)
+
+- **`src/envs/aerial_theatre_env.py` (new, additive):** the SAC-trainable adapter for the real
+  vec-theatre. Presents the theatre routes as coarse 0.5 km waypoint-token nodes + edges through
+  the SAME observation/menu contract the lattice aerial env uses, so featurize_state /
+  node_index_map / the menu head / the ProtagonistSAC update path run UNCHANGED. Per-edge threat
+  = max exposure of routes traversing it (a GNN threat gradient); per-route head features set
+  externally per window (exposure + recency + doctrine). Contract-tested against the head.
+- **`scripts/train_aerial_dyn32.py`:** the gen31 dynamic trainer on the theatre substrate. W=3,
+  the 3-component doctrine (0.6 rep, 0.2 flee, 0.3 anti-repeat-anticipation, tau 0.10); pool =
+  18 train fields (1000-1017) + 4 val (3000-3003); dev-test = 5101/5102 (Phase-0-burned,
+  diagnostics); GATED = 4100-4105 behind `--eval-gated` (confirmation only); `--blind` zeros the
+  recency + doctrine head columns (the causal control). Exact policy eval = stationary damage of
+  the policy-induced R^3 window chain (encoder once, head per window, lazy power iteration).
+- **Gated anchors (pool build, exact):** CAP 0.189-0.231, blind 0.100-0.236 (>cap on 4101:
+  blind worse than static there), fitted 0.072-0.087, hist_opt 0.066-0.082. **Untrained:
+  beats-CAP 0/6, ratios-to-iid 1.11-1.42 (no init freebie).** Pool build ~365 s/process.
+- **Smoke (320 sorties, dev-test): plumbing sound + mechanism present** — beats-CAP 2/2 and
+  beats-BLIND 2/2 by sortie 320 (ratio 0.67), rw[doctrine] trains to -3.95 (the doctrine channel
+  engages), rw[exposure]/[recency] small, alpha healthy. ~0.6 s/sortie.
+- **Attempt 1: 3 seeds x 16,000 sorties on dev-test, threads 2, 3-parallel, capped + niced;**
+  validation-selected checkpoints; outputs `models/runs/gen32_dyn/seed{0,1,2}.{json,log}`.
+  Gated set untouched until confirmation.

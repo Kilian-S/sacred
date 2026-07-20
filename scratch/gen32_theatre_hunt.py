@@ -72,8 +72,10 @@ class TheatreBase:
 class DynTheatre:
     """One (field, doctrine, operating point) cell with exact machinery (gen31 math)."""
 
-    def __init__(self, base: TheatreBase, pp_field, w, tau, q_rep, q_flee, q_ar=0.0):
+    def __init__(self, base: TheatreBase, pp_field, w, tau, q_rep, q_flee, q_ar=0.0,
+                 build_env=False):
         game, S = base.game_for(pp_field)
+        self.game = game
         self.R, self.w = base.R, w
         self.dmg = 1.0 - S ** N                                   # [R, H]
         sol = solve_multiconvoy(game, N, "mission")
@@ -106,10 +108,26 @@ class DynTheatre:
         Zs = (Z - Z.max(axis=1, keepdims=True)) / tau
         A = np.exp(Zs); A /= A.sum(axis=1, keepdims=True)
         self.stepdmg = A @ self.dmg.T                            # [Sn, R]
-        pows = R ** np.arange(w - 1, -1, -1)
+        self.pows = R ** np.arange(w - 1, -1, -1)
         shifted = np.concatenate([self.states[:, 1:], np.zeros((Sn, 1), int)], axis=1)
-        self.succ = (shifted @ pows)[:, None] + np.arange(R)[None, :]
+        self.succ = (shifted @ self.pows)[:, None] + np.arange(R)[None, :]
         self.in_window = mask
+        self.exposure = _mm(1.0 - S.min(axis=1))                 # per-route static exposure
+        self.env = None
+        if build_env:
+            from src.envs.aerial_theatre_env import TheatreEnv
+            self.env = TheatreEnv(base.menu, game, S, N=N)
+
+    def widx(self, window) -> int:
+        return int(np.asarray(window) @ self.pows)
+
+    def feats(self, window):
+        import torch
+        wf = np.zeros(self.R)
+        for r in window:
+            wf[r] += 1.0 / self.w
+        doc = _mm(self.stepdmg[self.widx(window)])               # the doctrine column
+        return torch.tensor(np.stack([self.exposure, wf, doc], axis=1), dtype=torch.float32)
 
     def history_opt(self, iters=4000, tol=1e-12):
         V = np.zeros(len(self.states))
