@@ -148,3 +148,43 @@ channel converts; no design change; proceed to confirmation.
 ### CONFIRMATION LAUNCH (protocol: fresh seeds 10/11/12 + BLINDED control seed 10; `--eval-gated`
 ### = the PRISTINE gatedD4100-4105, never touched by any probe or run; config byte-identical to
 ### attempt 1; `--blind` zeros the recency + doctrine head columns. This run is the citable one.
+
+### CONFIRMATION RESULT (2026-07-21, fresh seeds 10/11/12 + blinded control, 16,000 sorties
+### each, PRISTINE gated set D4100-4105 evaluated for the first time): **EVERY BAR PASSES ON
+### REAL KALININGRAD TERRAIN. THE POSITIVE IS BANKED.**
+
+| arm | val-sel @ | beats-CAP (bar >= 4/6, >= 2/3 seeds) | beats-BLIND | pooled cap-ratio | vs hist_opt (STRONG <= 2.5x) | worst-case | drift |
+|---|---|---|---|---|---|---|---|
+| seed 10 | 15000 | **6/6** | 5/6 | 0.455 | 1.31x | 1.36x | none (final 6/6) |
+| seed 11 | 10000 | **6/6** | 5/6 | 0.453 | 1.31x | 1.36x | none |
+| seed 12 | 8000 | **6/6** | 5/6 | 0.446 | 1.28x | 1.37x | none |
+| **BLINDED control** | 11000 | **0/6** | 0/6 | **1.283** | 3.71x | - | none (rw recency+doctrine pinned 0.00) |
+
+> **PRIMARY: PASS 3/3 seeds, 18/18 seed-layout cells, pooled 0.451x the static cap. STRONG:
+> PASS (pooled 1.30x the exact dynamic optimum). CAUSAL: PASS (blinded 1.28x cap, 0/6; the gain
+> 1.283 -> 0.451 is causally the window + doctrine conditioning).** Beats the payoff-blind
+> dynamic family 15/18 cells (the one un-beaten field per seed is gated4102, the pre-disclosed
+> small-safe-support marginal, G2~1.2). Worst-case-vs-committing premium mean 1.36x. No
+> last-iterate drift anywhere. Cross-seed consistency striking (per-field within 0.003).
+
+**Iteration history: ONE attempt.** The corridor hunt aimed the design (the anti-repeat-
+anticipation + w=3 fixes for the real corridor's higher field variance); attempt 1 passed on
+dev-test 3/3; the confirmation passed blind on the pristine gated set first try. No re-rolls,
+no amendments, no bar movement.
+
+**THE BANKED CLAIM (binding wording; the gen31 positive REPRODUCED ON REAL TERRAIN, and
+tighter):** *on the real Kaliningrad->Gvardeysk resupply corridor (OSM vector terrain, LOS-masked
+air defence), one history-aware fleet policy, trained across resampled hidden threat laydowns and
+evaluated ZERO-SHOT on six never-touched laydowns, beats every static object (the equilibrium
+mixture and the local static optimum: 18/18 seed-layout cells, pooled 0.45x the static cap) and
+the payoff-blind dynamic rule family (15/18 cells), reaching 1.30x the exact dynamic optimum, with
+a blinded control (1.28x cap, 0/6) confirming the gain is causally the window-plus-doctrine
+conditioning, and a 1.36x worst-case premium against a committing enemy. Oracle-fitted
+doctrine-informed rules remain near-optimal per instance (as always); the policy achieves this
+zero-shot from features, on real geography, without per-instance fitting.* The abstract lattice
+did NOT do the work: the gen31 result reproduces on real terrain, tighter to the optimum
+(0.45x cap / 1.30x opt here vs 0.52x / 2.06x on the synthetic lattice), because the real threat
+field is a richer, cleaner signal for the doctrine channel. Honest concession (pre-written): on
+the marginal field gated4102 a two-line rotation nearly attains the optimum and the policy only
+matches it; the static-cap bar holds there regardless. **gen32 CLOSES PASSED; deliverable = the
+dynamic ops-map render next.**
