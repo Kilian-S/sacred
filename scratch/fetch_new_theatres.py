@@ -30,7 +30,7 @@ CORRIDORS = {
         base=("CARRIER GROUP", 56.55, 25.85), target=("BANDAR ABBAS", 56.28, 27.18),
         bridgehead=(56.28, 27.18, 14.0),
         title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead"),
-    "dnipro": dict(
+    "ukraine": dict(
         bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
         base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
         title="Dnipro -> Zaporizhzhia resupply corridor"),
@@ -54,24 +54,14 @@ COL = dict(sea="#a3bccf", water="#8fb0c6", land="#e7dec9", island="#ddd3ba", coa
            hostile="#b23524", secured="#3f7a4e", ink="#2c2820", grid="#8a806a")
 
 
-# overpass-api.de rate-limits heavy use; rotate through faster/alternate mirrors.
-ENDPOINTS = [
-    "https://overpass-api.de/api",
-    "https://overpass.private.coffee/api",
-]
-
-
-def fetch_layer(ox, bbox, tags, tries=9):
+def fetch_layer(ox, bbox, tags, tries=3):
     for k in range(tries):
-        ep = ENDPOINTS[k % len(ENDPOINTS)]
-        ox.settings.overpass_url = ep
-        host = ep.split("//")[1].split("/")[0]
         try:
             return ox.features_from_bbox(bbox, tags=tags)
         except Exception as e:
-            print(f"      {host} attempt {k+1}/{tries}: {type(e).__name__}; retry...",
+            print(f"      attempt {k+1}/{tries} failed ({type(e).__name__}); retrying...",
                   flush=True)
-            time.sleep(6)
+            time.sleep(8)
     return None
 
 
