@@ -54,14 +54,24 @@ COL = dict(sea="#a3bccf", water="#8fb0c6", land="#e7dec9", island="#ddd3ba", coa
            hostile="#b23524", secured="#3f7a4e", ink="#2c2820", grid="#8a806a")
 
 
-def fetch_layer(ox, bbox, tags, tries=3):
+# overpass-api.de rate-limits heavy use; rotate through faster/alternate mirrors.
+ENDPOINTS = [
+    "https://overpass-api.de/api",
+    "https://overpass.private.coffee/api",
+]
+
+
+def fetch_layer(ox, bbox, tags, tries=9):
     for k in range(tries):
+        ep = ENDPOINTS[k % len(ENDPOINTS)]
+        ox.settings.overpass_url = ep
+        host = ep.split("//")[1].split("/")[0]
         try:
             return ox.features_from_bbox(bbox, tags=tags)
         except Exception as e:
-            print(f"      attempt {k+1}/{tries} failed ({type(e).__name__}); retrying...",
+            print(f"      {host} attempt {k+1}/{tries}: {type(e).__name__}; retry...",
                   flush=True)
-            time.sleep(8)
+            time.sleep(6)
     return None
 
 
