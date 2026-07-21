@@ -22,24 +22,24 @@ DNIPRO = [(35.02, 48.55), (35.05, 48.47), (35.12, 48.40), (35.08, 48.31), (34.98
           (35.02, 48.12), (35.09, 48.02), (35.12, 47.92), (35.09, 47.84), (35.14, 47.76)]
 
 SPECS = {
-    "hormuz": dict(bbox=(54.90, 25.75, 57.45, 27.42), epsg="EPSG:32640", maritime=True,
+    "hormuz": dict(bbox=(55.15, 25.85, 57.20, 27.35), epsg="EPSG:32640", maritime=True,
                    scenario="carrier", land=["Iran", "Oman", "United Arab Emirates"],
-                   base=("CARRIER GROUP", 57.05, 25.90), target=("BANDAR ABBAS", 56.28, 27.18),
+                   base=("CARRIER GROUP", 57.05, 25.95), target=("BANDAR ABBAS", 56.28, 27.18),
                    bridgehead=(56.28, 27.18, 14.0),   # lon, lat, secured-radius km
                    title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead",
-                   note="drones: carrier -> bridgehead across the contested island belt · "
+                   note="drones: carrier (SE) -> bridgehead across the contested island belt · "
                         "HOSTILE emplacement = strait islands + Iranian mainland OUTSIDE the "
                         "bridgehead · sea + bridgehead = friendly · islands sketched (approx.)",
                    islands=[
-                       ("Qeshm (E)", [(55.75, 26.68), (56.05, 26.78), (56.32, 26.96),
-                                      (56.34, 26.88), (56.05, 26.70), (55.78, 26.60),
-                                      (55.75, 26.68)]),
+                       ("Qeshm", [(55.28, 26.62), (55.6, 26.68), (55.95, 26.72), (56.15, 26.82),
+                                  (56.32, 26.96), (56.34, 26.90), (56.10, 26.74), (55.75, 26.60),
+                                  (55.4, 26.54), (55.28, 26.55), (55.28, 26.62)]),
                        ("Hormoz", [(56.42, 27.03), (56.50, 27.07), (56.50, 27.01), (56.43, 26.99),
                                    (56.42, 27.03)]),
                        ("Larak", [(56.33, 26.84), (56.40, 26.88), (56.40, 26.83), (56.34, 26.81),
                                   (56.33, 26.84)]),
-                       ("Hengam", [(55.86, 26.62), (55.95, 26.65), (55.95, 26.60), (55.87, 26.59),
-                                   (55.86, 26.62)])]),
+                       ("Hengam", [(55.86, 26.55), (55.95, 26.58), (55.95, 26.52), (55.87, 26.51),
+                                   (55.86, 26.55)])]),
     "ukraine": dict(bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
                     land=["Ukraine"], river=DNIPRO,
                     base=("DNIPRO (supply)", 35.045, 48.465),
@@ -126,7 +126,7 @@ def render(name):
                    markeredgecolor="white", markersize=10, label="carrier group"),
             Patch(facecolor=COL["secured"], alpha=.4, label="friendly bridgehead"),
             Patch(facecolor=COL["hostile"], alpha=.3, label="hostile emplacement (land/islands)")],
-            loc="lower left", bbox_to_anchor=(0.0, 0.06), fontsize=9, framealpha=.92)
+            loc="lower right", fontsize=9, framealpha=.9)
     ax.set_xlim(0, Wkm); ax.set_ylim(0, Hkm); ax.set_aspect("equal")
     ax.set_title(f"{spec['title']}\n{Wkm:.0f} x {Hkm:.0f} km   ·   {spec['note']}",
                  fontsize=11.5, loc="left")
