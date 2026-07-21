@@ -52,6 +52,21 @@
 > basing and the displacement game are the future-work registers. Shortlist recorded in the
 > 2026-07-19 session + agent memory (`gen29-closing-experiment`).
 >
+> **ADDENDUM 2026-07-21: gen32 — the aerial positive REPRODUCED ON THE REAL KALININGRAD MAP
+> and rendered as the operations map** (branch `gen28-aerial`, `experiments/gen32_theatre_dyn.md`,
+> commits `5683ee8..5e45a69`; Kilian's 2026-07-20 mandate). The gen31 dynamic register transplanted
+> onto the committed vec-theatre (Kaliningrad->Gvardeysk, real OSM terrain, LOS-masked AD).
+> Corridor-hunt fix for the real corridor's higher field variance: a 3rd doctrine component
+> (anti-repeat anticipation) + w=3 (the gen27 rotation-breaker). Confirmation on six PRISTINE
+> gated threat-laydowns with fresh seeds + blinded control: **6/6 beats-static-cap on 3/3 seeds
+> (18/18 cells, pooled 0.451x cap), 1.30x the exact dynamic optimum (TIGHTER than gen31's 1.74x
+> on the synthetic lattice), blinded control 1.28x cap 0/6 (causal), blind family beaten 15/18,
+> worst-case 1.36x; ONE attempt.** The abstract lattice did NOT do the work. New:
+> `src/envs/aerial_theatre_env.py` (any vec-theatre now SAC-trainable). Deliverable = the dynamic
+> ops map (`scratch/gen32_ops_map.html`, published artifact) showing the AD re-aiming and SACRED
+> threading around it. Chronicle entry 30. The gen28 "no aerial trained-positive" / "synthetic
+> only" caveats are SUPERSEDED (gen28 static/v4.0 negatives stand as history).
+>
 > **ADDENDUM 2026-07-20: gen31 (the gen27 conversion) PASSED CONFIRMATION — the aerial
 > trained positive is BANKED** (branch `gen28-aerial`, `experiments/gen31_aerial_dyn.md`,
 > commits `490f4b1..0200767`; Kilian's 2026-07-19 reopening mandate). The anticipatory mixed
