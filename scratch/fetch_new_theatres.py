@@ -73,7 +73,7 @@ def run(name):
 
     spec = CORRIDORS[name]
     W, S, E, N = spec["bbox"]; crs = spec["epsg"]
-    ox.settings.requests_timeout = 300
+    ox.settings.requests_timeout = 1500
     ox.settings.use_cache = True
 
     corners = gpd.GeoSeries([Point(W, S), Point(E, N)], crs="EPSG:4326").to_crs(crs)
