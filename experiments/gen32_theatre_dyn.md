@@ -188,3 +188,15 @@ field is a richer, cleaner signal for the doctrine channel. Honest concession (p
 the marginal field gated4102 a two-line rotation nearly attains the optimum and the policy only
 matches it; the static-cap bar holds there regardless. **gen32 CLOSES PASSED; deliverable = the
 dynamic ops-map render next.**
+
+### DELIVERABLE: the dynamic operations map (2026-07-21; `scratch/build_gen32_dyn_view.py` ->
+### `models/runs/gen32_dyn_view.json`; render `scratch/gen32_ops_map.html`)
+
+The gen31->gen32 story rendered in the committed artefact's NATO ops-map style, extended to the
+ADAPTIVE register: real OSM terrain (Kaliningrad->Gvardeysk), the fleet's chosen route per serial,
+the pattern-of-life air defence RE-AIMING its LOS-masked footprints to the fleet's recent track,
+and a live mission-failure scoreboard racing SACRED vs anti-repeat vs static equilibrium vs
+uniform lanes. Rolled out on gated field 4100 (seed-10 val-selected checkpoint), 80 serials:
+SACRED 0.096 vs anti-repeat 0.179 vs static-eq 0.198 vs uniform-lanes 0.230 (exact policy
+stationary value 0.095; static cap 0.204; dynamic optimum 0.075). Published artifact:
+https://claude.ai/code/artifact/8b4cf58a-7f29-4f8e-82ac-dfb411963465 . **gen32 COMPLETE.**
