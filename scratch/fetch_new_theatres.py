@@ -35,12 +35,10 @@ CORRIDORS = {
         base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
         title="Dnipro -> Zaporizhzhia resupply corridor"),
 }
-TAGS_SEA = {
-    "coast": {"natural": ["coastline"]},
-    "island": {"place": ["island", "islet"]},
-    "urban": {"landuse": ["residential", "industrial", "port", "military"],
-              "place": ["city", "town"]},
-}
+TAGS_SEA = {                              # coast + islands are all the game needs (land =
+    "coast": {"natural": ["coastline"]},  # emplaceable + LOS block, sea = traversable). The
+    "island": {"place": ["island", "islet"]},  # urban layer (Dubai/Sharjah landuse) is heavy
+}                                         # and non-essential, so it is dropped for Hormuz.
 TAGS_LAND = {
     "water": {"natural": ["water"], "waterway": ["riverbank"],
               "landuse": ["reservoir", "basin"]},
