@@ -6,6 +6,7 @@ BUILD time on a machine with reliable Overpass access (see note in the reply).
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, box, LineString
@@ -13,37 +14,39 @@ from shapely.geometry import Point, box, LineString
 NE = ("/Users/kilian/Kilian/ICL/Thesis/code/sacred/.venv/lib/python3.13/site-packages/"
       "pyogrio/tests/fixtures/naturalearth_lowres/naturalearth_lowres.shp")
 COL = dict(sea="#9fbdd0", land="#e7dec9", coast="#6b6350", river="#7fa6c4",
-           friend="#274c86", grid="#8a806a", ink="#2c2820")
+           friend="#274c86", grid="#8a806a", ink="#2c2820",
+           hostile="#b23524", secured="#3f7a4e")
 
 # approximate Dnipro course through the Dnipro->Zaporizhzhia corridor (lon,lat; for framing only)
 DNIPRO = [(35.02, 48.55), (35.05, 48.47), (35.12, 48.40), (35.08, 48.31), (34.98, 48.22),
           (35.02, 48.12), (35.09, 48.02), (35.12, 47.92), (35.09, 47.84), (35.14, 47.76)]
 
 SPECS = {
-    "hormuz": dict(bbox=(54.20, 24.90, 57.80, 27.60), epsg="EPSG:32640", maritime=True,
-                   land=["Iran", "Oman", "United Arab Emirates"],
-                   base=("GULF OF OMAN", 57.40, 25.55), target=("PERSIAN GULF", 54.85, 26.80),
-                   title="Strait of Hormuz — WIDE theatre (Iran / Musandam / UAE)",
-                   note="sea = transit corridor · coasts + islands = threat emplacement · "
-                        "islands sketched (approx.); exact coast/islands from OSM at build",
+    "hormuz": dict(bbox=(55.55, 25.55, 57.05, 27.40), epsg="EPSG:32640", maritime=True,
+                   scenario="carrier", land=["Iran", "Oman", "United Arab Emirates"],
+                   base=("CARRIER GROUP", 56.55, 25.85), target=("BANDAR ABBAS", 56.28, 27.18),
+                   bridgehead=(56.28, 27.18, 14.0),   # lon, lat, secured-radius km
+                   title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead",
+                   note="drones: carrier -> bridgehead across the contested island belt · "
+                        "HOSTILE emplacement = strait islands + Iranian mainland OUTSIDE the "
+                        "bridgehead · sea + bridgehead = friendly · islands sketched (approx.)",
                    islands=[
-                       ("Qeshm", [(55.25, 26.55), (55.7, 26.66), (56.05, 26.78), (56.30, 26.96),
-                                  (56.33, 26.88), (56.05, 26.72), (55.7, 26.60), (55.3, 26.48),
-                                  (55.22, 26.50), (55.25, 26.55)]),
-                       ("Hormoz", [(56.42, 27.02), (56.50, 27.06), (56.50, 27.00), (56.43, 26.98),
-                                   (56.42, 27.02)]),
-                       ("Larak", [(56.33, 26.83), (56.40, 26.87), (56.40, 26.82), (56.34, 26.80),
-                                  (56.33, 26.83)]),
-                       ("Abu Musa", [(55.00, 25.86), (55.07, 25.89), (55.07, 25.84),
-                                     (55.01, 25.83), (55.00, 25.86)]),
-                       ("Tunbs", [(55.20, 26.24), (55.33, 26.27), (55.33, 26.22), (55.21, 26.21),
-                                  (55.20, 26.24)])]),
+                       ("Qeshm (E)", [(55.75, 26.68), (56.05, 26.78), (56.32, 26.96),
+                                      (56.34, 26.88), (56.05, 26.70), (55.78, 26.60),
+                                      (55.75, 26.68)]),
+                       ("Hormoz", [(56.42, 27.03), (56.50, 27.07), (56.50, 27.01), (56.43, 26.99),
+                                   (56.42, 27.03)]),
+                       ("Larak", [(56.33, 26.84), (56.40, 26.88), (56.40, 26.83), (56.34, 26.81),
+                                  (56.33, 26.84)]),
+                       ("Hengam", [(55.86, 26.62), (55.95, 26.65), (55.95, 26.60), (55.87, 26.59),
+                                   (55.86, 26.62)])]),
     "ukraine": dict(bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
                     land=["Ukraine"], river=DNIPRO,
-                    base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
-                    title="PROPOSAL B — Dnipro corridor (land, river-structured)",
-                    note="Dnipro river (approx.) = the natural chokepoint · crossings + urban "
-                         "= where routing matters · exact banks/terrain from OSM at build"),
+                    base=("DNIPRO (supply)", 35.045, 48.465),
+                    target=("ZAPORIZHZHIA (front)", 35.145, 47.840),
+                    title="Dnipro -> Zaporizhzhia resupply corridor (land, river-structured)",
+                    note="resupply flows FROM Dnipro (rear) TO Zaporizhzhia (front) · Dnipro river "
+                         "(approx.) = the natural chokepoint · exact banks/terrain from OSM at build"),
 }
 
 
@@ -62,6 +65,7 @@ def render(name):
 
     fig, ax = plt.subplots(figsize=(11, 11 * Hkm / Wkm + 0.6))
     ax.set_facecolor(COL["sea"] if spec["maritime"] else COL["land"])
+    hostile = spec.get("scenario") == "carrier"
     land = ne[ne["name"].isin(spec["land"])].to_crs(crs)
     for geom in land.geometry:
         geom = geom.intersection(clip)
@@ -69,16 +73,28 @@ def render(name):
             if p.is_empty:
                 continue
             xs, ys = p.exterior.coords.xy
-            ax.fill([(x - x0) / 1000 for x in xs], [(y - y0) / 1000 for y in ys],
-                    color=COL["land"] if spec["maritime"] else "#ded4bd",
-                    ec=COL["coast"], lw=1.1, zorder=2)
+            X = [(x - x0) / 1000 for x in xs]; Y = [(y - y0) / 1000 for y in ys]
+            ax.fill(X, Y, color=COL["land"], ec=COL["coast"], lw=1.1, zorder=2)
+            if hostile:                                    # all land = potential hostile
+                ax.fill(X, Y, color=COL["hostile"], alpha=0.22, zorder=3, lw=0)
     for lab, ring in spec.get("islands", []):             # sketched islands (maritime)
         pts = [km_xy(lo, la) for lo, la in ring]
-        ax.fill([p[0] for p in pts], [p[1] for p in pts], color=COL["land"],
-                ec=COL["coast"], lw=1.0, zorder=3)
-        cx, cy = np.mean([p[0] for p in pts]), np.mean([p[1] for p in pts])
-        ax.annotate(lab, (cx, cy), ha="center", va="center", fontsize=8.5,
-                    fontstyle="italic", color="#5b5342", zorder=6)
+        X = [p[0] for p in pts]; Y = [p[1] for p in pts]
+        ax.fill(X, Y, color=COL["land"], ec=COL["coast"], lw=1.0, zorder=3)
+        if hostile:
+            ax.fill(X, Y, color=COL["hostile"], alpha=0.30, zorder=4, lw=0)
+        cx, cy = np.mean(X), np.mean(Y)
+        ax.annotate(lab, (cx, cy), (0, -11), textcoords="offset points", ha="center",
+                    fontsize=8, fontstyle="italic", color="#7a3b30" if hostile else "#5b5342",
+                    zorder=6)
+    if hostile and "bridgehead" in spec:                  # friendly secured bridgehead
+        blo, bla, br = spec["bridgehead"]
+        bcx, bcy = km_xy(blo, bla)
+        ax.add_patch(Circle((bcx, bcy), br, facecolor=COL["secured"], alpha=0.32,
+                            edgecolor=COL["secured"], lw=1.6, zorder=5))
+        ax.annotate("bridgehead\n(secured)", (bcx, bcy), (0, -br - 4),
+                    textcoords="offset points", ha="center", va="top", fontsize=8,
+                    color="#2c5438", zorder=7)
     if not spec["maritime"]:                              # land theatre: draw the river
         pts = [km_xy(lo, la) for lo, la in spec["river"]]
         ax.plot([p[0] for p in pts], [p[1] for p in pts], color=COL["river"], lw=6, zorder=3,
@@ -101,6 +117,16 @@ def render(name):
                     fontsize=10.5, fontweight="bold", color="#1c3a66")
     ax.plot([3, 23], [3, 3], color=COL["ink"], lw=3, zorder=9)
     ax.annotate("20 km", (13, 4), ha="center", fontsize=8.5, zorder=9, color=COL["ink"])
+    if spec.get("scenario") == "carrier":                 # legend
+        from matplotlib.patches import Patch
+        from matplotlib.lines import Line2D
+        ax.legend(handles=[
+            Line2D([0], [0], color=COL["friend"], ls="--", lw=2, label="drone resupply axis"),
+            Line2D([0], [0], marker="s", color="none", markerfacecolor=COL["friend"],
+                   markeredgecolor="white", markersize=10, label="carrier group"),
+            Patch(facecolor=COL["secured"], alpha=.4, label="friendly bridgehead"),
+            Patch(facecolor=COL["hostile"], alpha=.3, label="hostile emplacement (land/islands)")],
+            loc="lower right", fontsize=9, framealpha=.9)
     ax.set_xlim(0, Wkm); ax.set_ylim(0, Hkm); ax.set_aspect("equal")
     ax.set_title(f"{spec['title']}\n{Wkm:.0f} x {Hkm:.0f} km   ·   {spec['note']}",
                  fontsize=11.5, loc="left")
