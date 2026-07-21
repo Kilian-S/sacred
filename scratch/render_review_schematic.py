@@ -22,9 +22,9 @@ DNIPRO = [(35.02, 48.55), (35.05, 48.47), (35.12, 48.40), (35.08, 48.31), (34.98
           (35.02, 48.12), (35.09, 48.02), (35.12, 47.92), (35.09, 47.84), (35.14, 47.76)]
 
 SPECS = {
-    "hormuz": dict(bbox=(55.55, 25.55, 57.05, 27.40), epsg="EPSG:32640", maritime=True,
+    "hormuz": dict(bbox=(54.90, 25.75, 57.45, 27.42), epsg="EPSG:32640", maritime=True,
                    scenario="carrier", land=["Iran", "Oman", "United Arab Emirates"],
-                   base=("CARRIER GROUP", 56.55, 25.85), target=("BANDAR ABBAS", 56.28, 27.18),
+                   base=("CARRIER GROUP", 57.05, 25.90), target=("BANDAR ABBAS", 56.28, 27.18),
                    bridgehead=(56.28, 27.18, 14.0),   # lon, lat, secured-radius km
                    title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead",
                    note="drones: carrier -> bridgehead across the contested island belt · "
@@ -126,7 +126,7 @@ def render(name):
                    markeredgecolor="white", markersize=10, label="carrier group"),
             Patch(facecolor=COL["secured"], alpha=.4, label="friendly bridgehead"),
             Patch(facecolor=COL["hostile"], alpha=.3, label="hostile emplacement (land/islands)")],
-            loc="lower right", fontsize=9, framealpha=.9)
+            loc="lower left", bbox_to_anchor=(0.0, 0.06), fontsize=9, framealpha=.92)
     ax.set_xlim(0, Wkm); ax.set_ylim(0, Hkm); ax.set_aspect("equal")
     ax.set_title(f"{spec['title']}\n{Wkm:.0f} x {Hkm:.0f} km   ·   {spec['note']}",
                  fontsize=11.5, loc="left")

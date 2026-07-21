@@ -26,8 +26,8 @@ import numpy as np
 
 CORRIDORS = {
     "hormuz": dict(
-        bbox=(55.55, 25.55, 57.05, 27.40), epsg="EPSG:32640", maritime=True,
-        base=("CARRIER GROUP", 56.55, 25.85), target=("BANDAR ABBAS", 56.28, 27.18),
+        bbox=(54.90, 25.75, 57.45, 27.42), epsg="EPSG:32640", maritime=True,
+        base=("CARRIER GROUP", 57.05, 25.90), target=("BANDAR ABBAS", 56.28, 27.18),
         bridgehead=(56.28, 27.18, 14.0),
         title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead"),
     "ukraine": dict(
@@ -35,10 +35,11 @@ CORRIDORS = {
         base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
         title="Dnipro -> Zaporizhzhia resupply corridor"),
 }
-TAGS_SEA = {                              # coast + islands are all the game needs (land =
-    "coast": {"natural": ["coastline"]},  # emplaceable + LOS block, sea = traversable). The
-    "island": {"place": ["island", "islet"]},  # urban layer (Dubai/Sharjah landuse) is heavy
-}                                         # and non-essential, so it is dropped for Hormuz.
+TAGS_SEA = {                              # land (coast+islands) = emplaceable + LOS block;
+    "coast": {"natural": ["coastline"]},  # sea = traversable. urban kept but LIGHT (residential/
+    "island": {"place": ["island", "islet"]},  # industrial/port only); the box now ends at RAK,
+    "urban": {"landuse": ["residential", "industrial", "port"]},  # cropping Dubai/Sharjah.
+}
 TAGS_LAND = {
     "water": {"natural": ["water"], "waterway": ["riverbank"],
               "landuse": ["reservoir", "basin"]},
@@ -148,6 +149,7 @@ def run(name):
         fill(poly_layers["island"], COL["hostile"], 3, alpha=0.28)
         for r in line_layers["coast"]:
             ax.plot([p[0] for p in r], [p[1] for p in r], color=COL["coast"], lw=1.3, zorder=3)
+        fill(poly_layers.get("urban", []), COL["urban"], 4, ec="#9c917d", lw=0.3)
         if "bridgehead" in out:
             bx, by = out["bridgehead"]["xy_km"]
             ax.add_patch(Circle((bx, by), out["bridgehead"]["radius_km"], facecolor=COL["secured"],
