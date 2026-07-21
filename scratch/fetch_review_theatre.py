@@ -17,9 +17,9 @@ import numpy as np
 CORRIDORS = {
     # Strait of Hormuz core chokepoint: sea = highway, coasts/islands = threat emplacement.
     "hormuz": dict(
-        bbox=(55.75, 26.05, 56.85, 27.00), epsg="EPSG:32640", maritime=True,
-        base=("GULF OF OMAN", 56.65, 26.25), target=("PERSIAN GULF", 55.95, 26.85),
-        title="Strait of Hormuz — contested transit corridor"),
+        bbox=(54.20, 24.90, 57.80, 27.60), epsg="EPSG:32640", maritime=True,
+        base=("GULF OF OMAN", 57.40, 25.55), target=("PERSIAN GULF", 54.85, 26.80),
+        title="Strait of Hormuz — wide transit theatre (Iran / Musandam / UAE)"),
     # Dnipro river corridor Dnipro city <-> Zaporizhzhia: river + urban = strong structure.
     "ukraine": dict(
         bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
@@ -57,7 +57,7 @@ def main():
     spec = CORRIDORS[args.name]
     W, S, E, N = spec["bbox"]
     crs = spec["epsg"]
-    ox.settings.requests_timeout = 90
+    ox.settings.requests_timeout = 300
 
     corners = gpd.GeoSeries([Point(W, S), Point(E, N)], crs="EPSG:4326").to_crs(crs)
     x0, y0, x1, y1 = corners.iloc[0].x, corners.iloc[0].y, corners.iloc[1].x, corners.iloc[1].y
@@ -72,7 +72,7 @@ def main():
     tagset = TAGS_SEA if spec["maritime"] else TAGS_LAND
     layers = {}
     for cls, tags in tagset.items():
-        signal.alarm(75)                              # hard cap per layer; skip if it hangs
+        signal.alarm(480)                             # generous cap (queries are slow, not failing)
         try:
             g = ox.features_from_bbox((W, S, E, N), tags=tags).to_crs(crs)
             layers[cls] = g[~g.geometry.is_empty]

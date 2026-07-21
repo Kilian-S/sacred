@@ -20,12 +20,24 @@ DNIPRO = [(35.02, 48.55), (35.05, 48.47), (35.12, 48.40), (35.08, 48.31), (34.98
           (35.02, 48.12), (35.09, 48.02), (35.12, 47.92), (35.09, 47.84), (35.14, 47.76)]
 
 SPECS = {
-    "hormuz": dict(bbox=(55.75, 26.05, 56.85, 27.00), epsg="EPSG:32640", maritime=True,
+    "hormuz": dict(bbox=(54.20, 24.90, 57.80, 27.60), epsg="EPSG:32640", maritime=True,
                    land=["Iran", "Oman", "United Arab Emirates"],
-                   base=("GULF OF OMAN", 56.65, 26.25), target=("PERSIAN GULF", 55.95, 26.85),
-                   title="PROPOSAL A — Strait of Hormuz (maritime chokepoint)",
-                   note="sea = transit corridor · coasts/islands = threat emplacement · "
-                        "narrowest ~40 km (Iran coast vs Oman's Musandam)"),
+                   base=("GULF OF OMAN", 57.40, 25.55), target=("PERSIAN GULF", 54.85, 26.80),
+                   title="Strait of Hormuz — WIDE theatre (Iran / Musandam / UAE)",
+                   note="sea = transit corridor · coasts + islands = threat emplacement · "
+                        "islands sketched (approx.); exact coast/islands from OSM at build",
+                   islands=[
+                       ("Qeshm", [(55.25, 26.55), (55.7, 26.66), (56.05, 26.78), (56.30, 26.96),
+                                  (56.33, 26.88), (56.05, 26.72), (55.7, 26.60), (55.3, 26.48),
+                                  (55.22, 26.50), (55.25, 26.55)]),
+                       ("Hormoz", [(56.42, 27.02), (56.50, 27.06), (56.50, 27.00), (56.43, 26.98),
+                                   (56.42, 27.02)]),
+                       ("Larak", [(56.33, 26.83), (56.40, 26.87), (56.40, 26.82), (56.34, 26.80),
+                                  (56.33, 26.83)]),
+                       ("Abu Musa", [(55.00, 25.86), (55.07, 25.89), (55.07, 25.84),
+                                     (55.01, 25.83), (55.00, 25.86)]),
+                       ("Tunbs", [(55.20, 26.24), (55.33, 26.27), (55.33, 26.22), (55.21, 26.21),
+                                  (55.20, 26.24)])]),
     "ukraine": dict(bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
                     land=["Ukraine"], river=DNIPRO,
                     base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
@@ -60,6 +72,13 @@ def render(name):
             ax.fill([(x - x0) / 1000 for x in xs], [(y - y0) / 1000 for y in ys],
                     color=COL["land"] if spec["maritime"] else "#ded4bd",
                     ec=COL["coast"], lw=1.1, zorder=2)
+    for lab, ring in spec.get("islands", []):             # sketched islands (maritime)
+        pts = [km_xy(lo, la) for lo, la in ring]
+        ax.fill([p[0] for p in pts], [p[1] for p in pts], color=COL["land"],
+                ec=COL["coast"], lw=1.0, zorder=3)
+        cx, cy = np.mean([p[0] for p in pts]), np.mean([p[1] for p in pts])
+        ax.annotate(lab, (cx, cy), ha="center", va="center", fontsize=8.5,
+                    fontstyle="italic", color="#5b5342", zorder=6)
     if not spec["maritime"]:                              # land theatre: draw the river
         pts = [km_xy(lo, la) for lo, la in spec["river"]]
         ax.plot([p[0] for p in pts], [p[1] for p in pts], color=COL["river"], lw=6, zorder=3,
