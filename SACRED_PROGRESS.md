@@ -898,3 +898,37 @@ to their supersession notes.)*
   shape (zero-shot dynamic hedging, causal control, complete family), retiring the "no
   aerial trained-positive" caveat; the boundary map gains a second domain where learning
   pays in the adaptive register; the regime table's dynamic row now has an aerial cell.
+
+## 30. gen32: the aerial positive on the REAL Kaliningrad map, rendered as the operations map  (2026-07-20/21 · branch `gen28-aerial`, worktree `../sacred-aerial` · `experiments/gen32_theatre_dyn.md`; trainer `scripts/train_aerial_dyn32.py`; env `src/envs/aerial_theatre_env.py`; render `scratch/gen32_ops_map.html`)
+
+- **Goal (prospective):** Kilian's 2026-07-20 mandate: reproduce the gen31 synthetic-lattice
+  positive on the REAL Kaliningrad->Gvardeysk vec-theatre (the substrate behind the committed
+  ops-map artefact), answering the examiner question "did the abstract grid do the work?";
+  full enemy-design freedom, M4, iterate-until-done; deliverable = the operations-map render.
+- **Headline results:** (i) **Phase 0 (corridor hunt on real terrain, oracle-only):** the literal
+  gen31 doctrine (rep+flee, w=2) COLLAPSES on real fields with a small safe support (blind
+  rotation attains the optimum); the FIX (enemy-design freedom, never map edits) = a third
+  doctrine component (anti-repeat anticipation) + w=3 (the gen27 value that breaks small-support
+  rotation). Pinned q=(0.6,0.2,0.3) tau=0.10 w=3: across 12 fields G1 (static cap) min 2.67,
+  G2 (blind beatable) >=1.25 on 11/12, G3 (fitted) ~1.08. (ii) **Attempt 1 (3 seeds x 16k):**
+  PASS 3/3 on dev-test (beats-cap + beats-blind 2/2, ~1.30x the exact optimum). (iii)
+  **CONFIRMATION (fresh seeds 10/11/12 + blinded control, six PRISTINE gated fields): every bar
+  passes - 6/6 beats-cap on 3/3 seeds (18/18 cells), pooled 0.451x the static cap, 1.30x the
+  exact dynamic optimum (STRONG), blinded control 1.28x cap 0/6 (causal, recency+doctrine
+  columns pinned 0), beats the blind dynamic family 15/18 (the un-beaten field = the
+  pre-disclosed marginal), worst-case premium 1.36x. ONE attempt, no re-rolls.** The abstract
+  lattice did NOT do the work: the gen31 positive reproduces on real OSM terrain and TIGHTER to
+  the optimum (0.45x cap / 1.30x opt vs gen31's 0.52x / 1.74x), because the real threat field is
+  a cleaner signal for the doctrine channel.
+- **What we learned:** the real-map corridor has higher field variance than the synthetic pinch,
+  so the doctrine needed the anti-repeat-anticipation component + w=3 to be robust; a corridor
+  hunt with the completed baseline family aims a real-terrain training act precisely; the new
+  theatre env adapter (`src/envs/aerial_theatre_env.py`) makes any vec-theatre SAC-trainable.
+- **Deliverable:** the dynamic operations map (`scratch/gen32_ops_map.html`, published artifact),
+  matching the committed static ops-map style, extended to show the pattern-of-life AD re-aiming
+  and SACRED threading around it, live scoreboard (SACRED 0.096 vs naive 0.18-0.23 over 80
+  serials on real terrain).
+- **Thesis fit:** the aerial positive now lives on the REAL Kaliningrad map (Obj-2's visual +
+  the map-conditioned transfer the branch was built for), retiring the "synthetic lattice" caveat;
+  the boundary map's adaptive register has a real-geography cell; the ops-map exhibit is the
+  strongest Obj-2 asset, now carrying a trained positive.
