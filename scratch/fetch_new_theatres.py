@@ -29,6 +29,8 @@ CORRIDORS = {
         bbox=(55.15, 25.85, 57.20, 27.35), epsg="EPSG:32640", maritime=True,
         base=("CARRIER GROUP", 57.05, 25.95), target=("BANDAR ABBAS", 56.28, 27.18),
         bridgehead=(56.28, 27.18, 14.0),
+        # open-water seeds (km) to classify coastline faces as sea vs land (carrier auto-added)
+        sea_seeds=[[130, 55], [40, 55], [150, 105], [95, 40], [175, 70]],
         title="Hormuz — carrier drone resupply to the Bandar Abbas bridgehead"),
     "ukraine": dict(
         bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
@@ -51,6 +53,24 @@ SIMPLIFY_M = 80.0
 COL = dict(sea="#a3bccf", water="#8fb0c6", land="#e7dec9", island="#ddd3ba", coast="#6b6350",
            urban="#c3b9a6", forest="#a9c089", field="#dfe0b8", friend="#274c86",
            hostile="#b23524", secured="#3f7a4e", ink="#2c2820", grid="#8a806a")
+
+
+def coastline_to_land(coast_km_lines, Wkm, Hkm, sea_seeds, island_rings=None):
+    """Turn OSM coastline LINES into filled LAND polygons: close them against the bbox, then a
+    face is SEA if it contains any open-water seed, else LAND. Returns (exterior rings, hole rings
+    = sea inlets). Islands (place=island polygons) are unioned in for good measure."""
+    from shapely.geometry import LineString, Point, Polygon, box as shbox
+    from shapely.ops import polygonize, unary_union
+    segs = [LineString(l) for l in coast_km_lines if len(l) >= 2]
+    merged = unary_union(segs + [shbox(0, 0, Wkm, Hkm).boundary])
+    seeds = [Point(s) for s in sea_seeds]
+    land = [f for f in polygonize(merged) if not any(f.contains(sp) for sp in seeds)]
+    land += [Polygon(r) for r in (island_rings or []) if len(r) >= 3]
+    u = unary_union(land)
+    polys = [u] if u.geom_type == "Polygon" else list(getattr(u, "geoms", []))
+    ext = [[[round(x, 3), round(y, 3)] for x, y in p.exterior.coords] for p in polys]
+    holes = [[[round(x, 3), round(y, 3)] for x, y in h.coords] for p in polys for h in p.interiors]
+    return ext, holes
 
 
 def fetch_layer(ox, bbox, tags, tries=3):
@@ -122,6 +142,15 @@ def run(name):
         line_layers[cls] = lrs
         print(f"    {cls}: {len(rings)} polygons, {len(lrs)} lines", flush=True)
 
+    if spec["maritime"]:                      # coastline lines -> filled land (+ sea inlets)
+        seeds = [kmxy(*spec["base"][1:])] + spec.get("sea_seeds", [])
+        ext, holes = coastline_to_land(line_layers.get("coast", []), Wkm, Hkm, seeds,
+                                       poly_layers.get("island"))
+        poly_layers["land"] = ext
+        poly_layers["land_holes"] = holes
+        print(f"    land: {len(ext)} polygons ({len(holes)} sea inlets) from coastline",
+              flush=True)
+
     out = dict(name=name, W_km=round(Wkm, 3), H_km=round(Hkm, 3), epsg=crs,
                maritime=spec["maritime"], bbox_lonlat=list(spec["bbox"]),
                poly=poly_layers, line=line_layers,
@@ -145,11 +174,10 @@ def run(name):
                     ec=ec or "none", lw=lw, alpha=alpha)
 
     if spec["maritime"]:
-        fill(poly_layers["island"], COL["island"], 2, ec=COL["coast"], lw=0.6)
-        fill(poly_layers["island"], COL["hostile"], 3, alpha=0.28)
-        fill(poly_layers.get("urban", []), COL["urban"], 4, ec="#9c917d", lw=0.3)
-        for r in line_layers["coast"]:
-            ax.plot([p[0] for p in r], [p[1] for p in r], color=COL["coast"], lw=1.3, zorder=3)
+        fill(poly_layers.get("land", []), COL["land"], 2, ec=COL["coast"], lw=0.8)
+        fill(poly_layers.get("land", []), COL["hostile"], 3, alpha=0.22)
+        fill(poly_layers.get("land_holes", []), COL["sea"], 4)     # sea inlets punched back
+        fill(poly_layers.get("urban", []), COL["urban"], 5, ec="#9c917d", lw=0.3)
         if "bridgehead" in out:
             bx, by = out["bridgehead"]["xy_km"]
             ax.add_patch(Circle((bx, by), out["bridgehead"]["radius_km"], facecolor=COL["secured"],
