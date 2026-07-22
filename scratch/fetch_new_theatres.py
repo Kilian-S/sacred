@@ -36,6 +36,15 @@ CORRIDORS = {
         bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
         base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
         title="Dnipro -> Zaporizhzhia resupply corridor"),
+    # the original WIDE strait (retry with good network): ~360x300 km, ~43x the Overpass
+    # per-query limit so it fragments into MANY sub-queries; urban over Dubai/Sharjah is the
+    # heavy one. Kept separate from the tight carrier theatre so both survive.
+    "hormuz_wide": dict(
+        bbox=(54.20, 24.90, 57.80, 27.60), epsg="EPSG:32640", maritime=True,
+        base=("CARRIER GROUP", 57.50, 25.30), target=("BANDAR ABBAS", 56.28, 27.18),
+        bridgehead=(56.28, 27.18, 14.0),
+        sea_seeds_ll=[(56.4, 26.0), (57.4, 25.4), (54.5, 26.7), (56.0, 25.3), (57.0, 26.4)],
+        title="Hormuz WIDE — full strait (Iran / Qeshm / Musandam / UAE)"),
 }
 TAGS_SEA = {                              # land (coast + islands) = emplaceable + LOS block,
     "coast": {"natural": ["coastline"]},  # sea = traversable. urban kept (the tighter box tops
@@ -143,7 +152,8 @@ def run(name):
         print(f"    {cls}: {len(rings)} polygons, {len(lrs)} lines", flush=True)
 
     if spec["maritime"]:                      # coastline lines -> filled land (+ sea inlets)
-        seeds = [kmxy(*spec["base"][1:])] + spec.get("sea_seeds", [])
+        seeds = ([kmxy(*spec["base"][1:])] + spec.get("sea_seeds", [])
+                 + [kmxy(lo, la) for lo, la in spec.get("sea_seeds_ll", [])])
         ext, holes = coastline_to_land(line_layers.get("coast", []), Wkm, Hkm, seeds,
                                        poly_layers.get("island"))
         poly_layers["land"] = ext
