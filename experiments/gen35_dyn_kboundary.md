@@ -162,3 +162,21 @@ is the window conditioning.**
 > collects value no two-line rule reaches; the exact optimum remains ~1.4x away.* The
 > REPORTED rows (tabular window-Q with matched budget; worst-case committing row) follow in an
 > appended record.
+
+### REPORTED ROWS (2026-07-23 22:05 BST; `scratch/gen35_reported_rows.py`,
+### `models/runs/gen35_dyn_kboundary/reported_rows.json`; eval-only)
+
+**Tabular window-Q (no network, SAME budget + signal; 3 seeds, greedy policy evaluated
+exactly):** K=2 bests 0.0918/0.1160/0.1172 (pooled **0.1083**); K=3 bests 0.1596/0.1966/0.1714
+(pooled **0.1759**). The matched-budget tabular learner FAILS to beat the best naive rule at
+BOTH cells (0.1083 > 0.0929; 0.1759 > 0.1539) - unlike the static register (gen26, where
+tabular-FP matched SACRED), the dynamic high-K value is NOT collectable by a no-net learner at
+this budget. This sharpens the K=3 positive: SACRED 0.1406 < rule 0.1539 < tabular-Q 0.1759.
+(One K=2 tabular seed, 0.0918, matches the rule level - the rule is representable tabularly;
+the pooled row carries the comparison.)
+
+**Worst-case committing row (best seed's best checkpoint, 2000-sortie realised marginal vs the
+one-shot oracle BR):** K=2 marginal worst-case 0.4383 = **1.72x** the one-shot v_eq 0.2553;
+K=3 0.5796 = **1.51x** v_eq 0.3829. The gen27-pattern regime-conditional premium, disclosed:
+the dynamic policy is specialised against the pattern-of-life enemy; against a committing
+worst-case adversary the static equilibrium hedge remains the right play.
