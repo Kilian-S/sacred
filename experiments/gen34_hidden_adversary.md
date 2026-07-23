@@ -145,3 +145,12 @@ gen27's measured scale (~8 h/seed at 12k sorties, 3-parallel) + per-episode memb
 the following night. Hard ceiling: 2 nights; no chase beyond the pre-registered budget.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+**BUILD RECORD (2026-07-23 evening).** Trainer `scripts/train_family_generalist.py` built
+(additive; new file only) + refs generator `scratch/gen34_refs.py` run
+(`models/runs/gen34_hidden_adversary/family_refs.json`, oracle-exact, regenerable). Full-pool
+exact anchors - held-out Gdansk blind caps / omni caps / inference gaps: 249-95
+0.1198/0.0589/2.04x; 106-173 0.1074/0.0547/1.97x; 351-210 0.1282/0.0674/1.90x; 146-296
+0.1101/0.0601/1.83x; 275-72 0.1159/0.0638/1.82x; 193-278 0.1023/0.0735/1.39x. Anti-repeat
+mixture row 0.1478-0.1780 (all >= 1.39x the blind cap). Train-pool gaps 1.17-2.23x. Smoke +
+launch pending the gen35 batch freeing the CPU.
