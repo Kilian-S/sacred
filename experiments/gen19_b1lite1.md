@@ -129,3 +129,39 @@ wording rule: "SACRED reaches the dynamic optimum" stands, but the optimum on th
 nearly attained by a two-line heuristic, so the act's unique content is (a) DISCOVERING the
 anti-repeat form without being told it (the rw[2] telemetry), and (b) regimes where rotation
 fails (m <= w: the entire gen27 held-out pool) — see the gen27 ledger's second amendment.
+
+### CORRECTED-YARDSTICK APPENDIX (2026-07-23; oracle-exact; `scratch/dyn_exact.py`,
+### `models/runs/gen35_mmc_check.json`, `models/runs/dyn_yardstick_repair.json`)
+
+**The `history_opt` values in this ledger were computed with a defective solver and are
+superseded for citation.** The window MDP has deterministic transitions, so undamped RVI
+(`scripts/train_b1lite1.py:oracle_refs`) OSCILLATES rather than converging; the ledger's 0.049
+(headline table) and the 2026-07-16 appendix's 0.0388 recompute are two different non-converged
+snapshots of the same oscillation. Two independent exact methods (Karp minimum-mean-cycle on the
+window graph, and RVI with the lazy-chain aperiodicity transform) agree to 5 decimals on every
+cell tested and give the truth. The aerial branch found and fixed this same defect on
+2026-07-17 (`dbf385d`, "plain RVI over-reported the optimum; caught by the rotation-beats-
+optimum test") - the fix never propagated back to this branch's `oracle_refs`; gen31/gen32's
+aerial yardsticks are sound.
+
+**Corrected values on this instance (35-159, N=3, K=1, w=3, tau=0.15):**
+
+| quantity | ledger value | EXACT | note |
+|---|---|---|---|
+| history_opt | 0.049 (and 0.0388 in the 16-07 appendix) | **0.0413** | Karp = damped RVI |
+| rotation (disjoint, m=4) | 0.0413 "= 1.07x the optimum" | **0.0413 = 1.000x: rotation ATTAINS the exact optimum** | the min-mean cycle IS the 4-route rotation |
+| SACRED best-ckpt | 0.050 "~ history_opt" | **1.21x the exact optimum** | |
+
+**Binding restatements (supersede the earlier binding wording):**
+1. The STRONG sentence "SACRED ~ history_opt (reaches the dynamic optimum)" is RETIRED. The
+   honest sentence: *SACRED lands at 1.21x the exact dynamic optimum; on this instance the exact
+   optimum is attained by plain disjoint rotation (m=4 > w=3), which the 2026-07-16 appendix
+   already recorded as ahead of SACRED.* The act's unique content is unchanged: DISCOVERING the
+   anti-repeat form unprompted (rw[2] telemetry) and the regimes where rotation fails.
+2. **PRIMARY and the causal control are UNAFFECTED**: iid_eq (0.147) and the no-window control
+   (0.148) are exact enumerations with no RVI involved; SACRED 0.050 << 0.147 stands as banked.
+3. The w/tau grid's history_opt column is RVI-valued; its qualitative monotone-in-w reading
+   survives but any future citation of those cells must recompute via `scratch/dyn_exact.py`.
+4. New scoping fact (`gen35_mmc_check.json`): on m=4 instances rotation attains the exact
+   optimum at EVERY K tested (1-3); dynamic-learning headroom over naive rules exists only where
+   m <= w (the gen27 pool) or m >= 6 at K >= 2 (the gen35 pre-registration's regime).

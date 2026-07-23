@@ -1,4 +1,21 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-19)
+# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-19; Phase-1 addendum 2026-07-23)
+
+> **★★★★★★★★ ADDENDUM 2026-07-23: PHASE-1 FRONTIER HARDENING IS THE ACTIVE FRONT (Kilian:
+> deadlines set aside; "make the frontier more complex without damaging banked claims, then
+> complete the LLM experiments").** Three acts PRE-REGISTERED this session, all launches
+> awaiting Kilian's explicit go: **gen34** (hidden adversary-TYPE family; beat the exact
+> type-blind cap; `experiments/gen34_hidden_adversary.md`), **gen35** (dynamic K=2/3 corner on
+> 71-33; the first pre-registerable beats-every-two-line-rule bar;
+> `experiments/gen35_dyn_kboundary.md`), **gen36** (gen29's pre-committed distillation control +
+> the one dense-credit re-aim, B gated on A;
+> `../sacred-gen29/experiments/gen36_multiod_rescue.md`). En route, a MATERIAL REPAIR: the
+> roads-side dynamic-optimum yardstick (`oracle_refs` undamped RVI) was WRONG on every cell
+> tested; exact truth = Karp min-mean-cycle (`scratch/dyn_exact.py`); corrected-yardstick
+> appendices are in the gen19/gen27 ledgers (PRIMARY claims unaffected; gen19's STRONG retired;
+> the aerial branch had fixed the same bug in `dbf385d` and the fix never crossed back).
+> Chronicle entry 31 is the narrative. After Phase 1: complete gen33 (metric-2 full re-run +
+> stronger K=3 anchors) per the agreed plan. The 2026-07-19 banner below remains the
+> orientation stack for everything else.
 
 > **★★★★★★★ 2026-07-19 REFRESH (fresh agent: START HERE; this banner supersedes every
 > OPERATIONAL item in the stack below, which is preserved as history).** The experimental

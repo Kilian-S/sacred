@@ -932,3 +932,38 @@ to their supersession notes.)*
   the map-conditioned transfer the branch was built for), retiring the "synthetic lattice" caveat;
   the boundary map's adaptive register has a real-geography cell; the ops-map exhibit is the
   strongest Obj-2 asset, now carrying a trained positive.
+
+## 31. The dynamic-yardstick repair + the Phase-1 hardening pre-registrations (gen34/gen35/gen36)  (2026-07-23 · branch `gen08-interdiction` + worktree `../sacred-gen29` · probes `scratch/dyn_exact.py`, `scratch/gen35_{kdyn_probe,mmc_check}.py`, `scratch/dyn_yardstick_repair.py`, `scratch/gen34_family_probe.py`, `../sacred-gen29/scratch/gen36_label_probe.py`)
+
+- **Kilian's direction (2026-07-23, deadlines set aside):** harden the current frontier without
+  damaging banked claims, then complete the LLM experiments. Phase 1 = (1) adversary-family act,
+  (2) dynamic high-K corner, (3) the gen29 reopening. All oracle-only this session; no training
+  launched.
+- **The repair (found by the gen35 design probe, verified two independent ways):** the undamped
+  RVI behind `oracle_refs`' `history_opt` OSCILLATES on the deterministic-transition window MDP
+  and is wrong on every cell tested (both directions; -57% worst). Exact truth = Karp minimum
+  mean cycle = damped RVI (`scratch/dyn_exact.py`; 10/10 agreement to 5 decimals). The aerial
+  branch had found and fixed the same defect (`dbf385d`, 2026-07-17: "rotation-beats-optimum
+  test") - the fix never crossed back; gen31/32 aerial yardsticks are sound. Corrected-yardstick
+  appendices landed in the gen19 and gen27 ledgers: gen19's STRONG "reaches the dynamic optimum"
+  is retired (SACRED = 1.21x the exact optimum, which plain rotation ATTAINS on that m=4
+  instance); gen27's pooled optimum-ratio restates 1.74x -> 1.97x. Every PRIMARY and causal
+  control is UNAFFECTED (iid_eq is exact enumeration). Process lesson recorded: a solver defect
+  fixed on one worktree stayed live on the sibling that shared the pattern.
+- **gen34 pre-registered** (`experiments/gen34_hidden_adversary.md`): the enemy TYPE drawn
+  hidden per episode from a five-doctrine family; the exact type-blind cap and per-type optima
+  are computable, the inference gap is 1.36-2.04x (largest on the gen27 held-out class), the
+  playbook-fitted Bayes-MAP row captures ~80% of it, and every specialist counter-doctrine blows
+  up off-diagonal. PRIMARY = beat the blind cap zero-shot (impossible for any type-blind
+  object), causal control = intel columns zeroed.
+- **gen35 pre-registered** (`experiments/gen35_dyn_kboundary.md`): the corrected landscape shows
+  rotation IS the exact optimum at every K on m=4 instances (scoping fact), while on 71-33
+  (m=6) the naive-rule gap widens 1.31x -> 1.56x with K. K=2/3 cells on 71-33, gen19 trainer
+  unmodified: the programme's first pre-registerable "beats every two-line rule" bar.
+- **gen36 pre-registered** (`../sacred-gen29/experiments/gen36_multiod_rescue.md`): executes
+  gen29's two pre-committed options - distillation control first (labels verified: anchors
+  reproduce exactly, sparse 2-11-atom supports, ~1 s for all 26 cells), then the single
+  permissible dense-credit re-aim (exact telescoping per-stream decomposition), B gated on A,
+  the wall-location matrix pre-written (capacity vs dynamics).
+- **State:** suite 167 green; all probes committed with JSONs regenerable from seeds; every
+  launch awaits Kilian's explicit go.
