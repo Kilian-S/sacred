@@ -125,3 +125,10 @@ cell's seed batch. Plan: both cells + control in one night. Hard ceiling: 2 nigh
 the optional K=4 stretch.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+**LAUNCH RECORD (2026-07-23 16:41 BST, authority: Kilian's full launch control granted
+in-conversation 2026-07-23).** Batch `scratch/gen35_batch.sh` at SHA `5af4dd1` (ledger SHA;
+no code changed since pre-registration): K=2 seeds 0-2 (3-parallel) -> K=3 seeds 0-2 ->
+no-window control at K=3. Plumbing smokes at both K (80 sorties, seed 99, discarded for
+selection purposes; `smoke_K*.json`) reproduced the probe anchors exactly (K=2 iid_eq 0.182,
+static_det 0.490; K=3 0.260/0.552). Estimated completion ~2-2.5 h.
