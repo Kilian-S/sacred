@@ -132,3 +132,33 @@ no code changed since pre-registration): K=2 seeds 0-2 (3-parallel) -> K=3 seeds
 no-window control at K=3. Plumbing smokes at both K (80 sorties, seed 99, discarded for
 selection purposes; `smoke_K*.json`) reproduced the probe anchors exactly (K=2 iid_eq 0.182,
 static_det 0.490; K=3 0.260/0.552). Estimated completion ~2-2.5 h.
+
+### RESULT (2026-07-23 21:41 BST; batch `scratch/gen35_batch.sh`, launch SHA `5af4dd1`;
+### artefacts `models/runs/gen35_dyn_kboundary/` incl. per-eval checkpoints; scored against the
+### PINNED probe refs; the trainer's internal iid_eq prints (0.257-0.258) differ from the pinned
+### 0.2549 by the disclosed LP-degeneracy wobble and are not used)
+
+| cell | seed bests | pooled | bar (best naive rule) | PRIMARY | vs exact opt | STRONG (<=1.15x) |
+|---|---|---|---|---|---|---|
+| K=2 | 0.0933 / 0.0919 / 0.0950 | 0.0934 | 0.0929 | **FAIL: 1/3, pooled +0.5% = a TIE AT THE RULE** | 1.42x | not met |
+| K=3 | 0.1356 / 0.1428 / 0.1435 | **0.1406** | 0.1539 | **PASS: 3/3 seeds AND pooled (-8.6%)** | 1.38x | not met |
+
+**Causal control (no-window, K=3):** best 0.2328, final iterates 0.26-0.29; the window weight
+rw[2] stayed pinned at 0.00 throughout. 0.2328 = 0.91x the pinned iid_eq - as expected for a
+window-blind LEARNER, which optimises the best static mixture (gen27's static rows showed the
+local static optimum sits slightly below the equilibrium mixture's iid value); it remains
+2.29x the exact optimum, versus the sighted arms' 1.38x. **The causal clause holds: the gain
+is the window conditioning.**
+
+> **VERDICT (per the pre-written branches): PASS AT K=3, TIE AT K=2 - "the boundary sits
+> between K=2 and K=3, report as measured."** K=3 is the programme's FIRST cell where "the
+> trained policy beats every naive baseline" holds under a bar fixed before launch: all three
+> seeds sit 7-12% below the best two-line rule, in the regime where those rules leave 52% on
+> the table. At K=2 the policy CONVERGES TO the rule (rw[2] strongly negative = the anti-repeat
+> form rediscovered; pooled within 0.5% of the rule value). STRONG missed at both cells: the
+> policy collects ~26% of the rule-to-optimum slack at K=3 ((0.1539-0.1406)/(0.1539-0.1018)),
+> i.e. it goes meaningfully beyond every naive rule but remains far from the exact optimal
+> cycle. Claim licensed: *at high interdiction budget on the m=6 instance, self-play learning
+> collects value no two-line rule reaches; the exact optimum remains ~1.4x away.* The
+> REPORTED rows (tabular window-Q with matched budget; worst-case committing row) follow in an
+> appended record.
