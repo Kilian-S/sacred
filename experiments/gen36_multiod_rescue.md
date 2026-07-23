@@ -119,3 +119,33 @@ hour total including evals). Step B: the gen29 batch scale at 14000/seed, 3 seed
 BEFORE results are read.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+### RESULT, STEP A (2026-07-23 21:51 BST; batch `scratch/gen36a_batch.sh`, SHA `3dd71c5`;
+### artefacts `models/runs/gen36_multiod_rescue/distill_seed{0,1,2}.{json,log}`; ~7 min compute)
+
+| seed | pooled held-out ratio-to-eq (A-TIER-1 bar < 1.44) | beats-cap (A-TIER-2 bar >= 4/6) | early stop |
+|---|---|---|---|
+| 0 | 1.796 | 2/6 | epoch 35 (val 2.24) |
+| 1 | 2.453 | 1/6 | epoch 100 (val 1.96) |
+| 2 | 2.492 | 1/6 | epoch 105 (val 1.87) |
+
+**A-TIER-1 FAILS 0/3 seeds; A-TIER-2 FAILS 0/3.** The mechanism is unambiguous in the loss
+curves: the cross-entropy to the exact coordinated labels plateaus FAR above the sparse-label
+entropy floor (seed 0: 101 -> 87 over 85 epochs, still creeping, while val transfer never
+improves) - the class cannot FIT the correlated targets even in-sample. This is the pure
+CAPACITY failure mode, and it coheres exactly with gen29's blinded~sighted control: the
+prefix-conditioning channel (overlap head column + taken_node_frac) is too weak to carry the
+sharp conditionals the sparse correlated optimum requires, under supervision just as under
+self-play.
+
+> **VERDICT (the pre-written matrix, row 3): A FAIL -> STEP B IS NOT LAUNCHED (the
+> pre-registered gate; the one permissible re-aim is not spent on a foregone conclusion).
+> The wall is CAPACITY, not self-play dynamics.** gen29 closes as the final boundary cell
+> with its mechanism now SEPARATED: the coordination moat (median 31% vs the cap, the
+> programme's only surviving oracle gap) is unreachable by this policy class regardless of
+> training signal - exact labels, validation early stopping and zero adversarial dynamics do
+> not help. Bankable sentence: *the binding constraint on learned three-stream coordination at
+> thesis scale is the policy class's conditioning capacity, not the training method.*
+> Future-work register (recorded, NOT launched; the attempt budget is closed): a
+> prefix-identity conditioning channel at the head (the gen11 lever-2 pattern applied to
+> committed routes) is the constructive candidate an examiner would ask about.
