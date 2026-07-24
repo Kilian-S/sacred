@@ -137,6 +137,12 @@ class MultiODInterdictionEnv:
         return self._cur if self._cur < self.F else None
 
     def defender_action_mask(self) -> dict:
+        sl = getattr(self, "shortlist", None)
+        if sl is not None:                                   # gen37: restrict to shortlist S
+            prefix = tuple(int(self._committed[f]) for f in range(self._cur))
+            allowed = sorted({t[self._cur] for t in sl if tuple(t[:self._cur]) == prefix})
+            if allowed:
+                return {self._cur: allowed}
         return {self._cur: list(range(len(self.route_sets[self._cur])))}
 
     def route_stream_by_index(self, ri: int) -> int:

@@ -63,11 +63,22 @@ def stream_probs(prot, env, prefix):
     with torch.no_grad():
         probs, _ = prot.actor(pyg, active, list(range(R)), None)
     prot.actor.train()
-    return probs.cpu().numpy()
+    p = probs.cpu().numpy()
+    sl = getattr(env, "shortlist", None)               # gen37: renormalise over allowed routes
+    if sl is not None:
+        pref = tuple(int(x) for x in prefix)
+        allowed = sorted({t[len(pref)] for t in sl if tuple(t[:len(pref)]) == pref})
+        if allowed:
+            mask = np.zeros_like(p); mask[allowed] = 1.0
+            p = p * mask
+            p = p / p.sum() if p.sum() > 1e-12 else mask / mask.sum()
+    return p
 
 
 def joint_dist(prot, env) -> np.ndarray:
-    """EXACT joint route-tuple distribution by conditional enumeration (~1 + R1 + R1R2 forwards)."""
+    """EXACT joint route-tuple distribution by conditional enumeration (~1 + R1 + R1R2 forwards).
+    gen37: when env.shortlist is set, stream_probs renormalises over the shortlist-allowed
+    routes per prefix, so this is the exact distribution of the MASKED (deployed) policy."""
     R = [len(rs) for rs in env.route_sets]
     d1 = stream_probs(prot, env, [])
     dist = np.zeros(env.n_joint)
@@ -105,6 +116,8 @@ def main():
     p.add_argument("--blind", action="store_true", help="causal control: zero coordination channel")
     p.add_argument("--threads", type=int, default=2)
     p.add_argument("--screen", default="models/runs/gen29_screen.json")
+    p.add_argument("--shortlist", default="", help="gen37: JSON {inst.name: [[r0,r1,r2],...]} "
+                   "restricting each instance's joint action space to the shortlist")
     p.add_argument("--json-out", default="")
     p.add_argument("--ckpt-dir", default="")
     args = p.parse_args()
@@ -121,6 +134,17 @@ def main():
     train = [Inst(c, blind=args.blind) for c in ([sc["headline"]] + sc["pool"])]
     held = [Inst(c, blind=args.blind) for c in sc["held_out"]]
     val = [Inst(c, blind=args.blind) for c in sc["validation"]]
+    if args.shortlist:                                   # gen37: attach per-instance shortlist S
+        sl = json.load(open(args.shortlist))
+        miss = 0
+        for it in train + held + val:
+            S = sl.get(it.name)
+            if S is None:
+                miss += 1
+            else:
+                it.env.shortlist = [tuple(int(x) for x in t) for t in S]
+        print(f"[gen37] shortlist attached ({args.shortlist}); {miss} instances unmatched "
+              f"(full-space)", flush=True)
     print(f"[gen29] pool {len(train)} train / {len(held)} held-out / {len(val)} val "
           f"in {time.time()-t0:.0f}s", flush=True)
     for it in [train[0]] + held:

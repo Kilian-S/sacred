@@ -125,3 +125,44 @@ runs x 14000 sorties, staged 6-then-3 at 2 threads each; estimate one long night
 morning. Hard ceiling: 36 h wall; no extension without a dated amendment before results.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+### RESULT-A: MECHANISM ROWS (2026-07-24; oracle+LLM, NO training; `scratch/gen37_shortlist.py`,
+### `scratch/gen37_mchoice.py`, `scratch/gen37_smallM.py`; transcripts committed). The LLM
+### curator verdict is decided at the ceiling BEFORE any training spend.
+
+**Anchor reproduction:** the shortlist builder reproduced every gen29 screen anchor exactly
+(eq/cap dev 0.0 across the 26 cells) before any new number was read.
+
+**LP-over-shortlist / eq (held-out pooled; lower = the shortlist retains more coordination
+value; = the exact ceiling ANY policy restricted to that shortlist can reach):**
+
+| M | llm | random | heuristic | held cells llm<random |
+|---|---|---|---|---|
+| 10 | 1.662 | **1.422** | 2.170 | 3/6 |
+| 15 | 1.574 | **1.469** | 2.136 | 3/6 |
+| 50 | 1.213 | **1.096** | 1.667 | 1/6 |
+
+Random-curation ceiling vs M (held pooled, `gen37_mchoice.py`): 1.93 @6 -> 1.63 @10 ->
+1.48 @15 -> 1.26 @20 -> 1.14 @30 -> 1.10 @50. The LLM's 50-triple ceiling (1.213) equals a
+random ~20-triple ceiling. Containment (mass of the true optimal mixture inside the shortlist):
+llm 0.10 @M=50 (vs random/heuristic ~0.01) - a weak reasoning signal that does NOT convert into
+a better attainable ceiling; at M=10/15 all arms contain 0 of the 11-atom optimal support.
+
+> **VERDICT-A (the pre-written "reasoning-is-not-the-ingredient" branch, decided at the
+> mechanism level): the LLM is a WORSE-than-random route curator at every prune size tested.**
+> Random's restricted-game ceiling is lower (better) than the LLM's pooled at M=10/15/50, and
+> the LLM wins on only a coin-flip fraction of individual held-out cells (3/6, 3/6, 1/6). The
+> COMPARATIVE clause (llm < random) is therefore falsified before training - no trained policy
+> inside the LLM shortlist can beat one inside the better-ceilinged random shortlist. **The
+> hypothesis "LLM structural reasoning curates the coordination action space better than a
+> naive baseline" is REJECTED, oracle-exact, for ~52 LLM calls and zero training.** This
+> coheres with the B2 (knowledge-not-application) and gen33 (no terrain grounding) findings:
+> the model's verbal grasp of "spread the routes, stay disjoint" does not produce a
+> quantitatively good selection over a large correlated combinatorial set.
+>
+> **What survives as the trained question (RESULT-B, launched):** the SAME mechanism rows show
+> that restriction to ANY 50-triple shortlist collapses the achievable ceiling from the
+> full-space gen29 trained failure (~1.90x eq) to ~1.10-1.21x. So the pre-registered batch now
+> tests the LLM-agnostic, on-spine question: does action-space RESTRICTION per se let SACRED
+> reach the coordination moat the full space could not (the gen36 capacity wall = size, or
+> representation)? Tiers unchanged; the llm arm is reported as one (inferior) curator among three.
