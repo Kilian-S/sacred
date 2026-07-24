@@ -967,3 +967,30 @@ to their supersession notes.)*
   the wall-location matrix pre-written (capacity vs dynamics).
 - **State:** suite 167 green; all probes committed with JSONs regenerable from seeds; every
   launch awaits Kilian's explicit go.
+
+## 32. Phase-1 verdicts in one day: the first beats-every-baseline cell, and the capacity wall sighted twice  (2026-07-23/24 · branches `gen08-interdiction` + `gen29-multiod` · ledgers `experiments/gen35_dyn_kboundary.md`, `../sacred-gen29/experiments/gen36_multiod_rescue.md`, `experiments/gen34_hidden_adversary.md`)
+
+- **gen35 (dynamic K-boundary, 71-33 m=6): the milestone.** K=3 PRIMARY PASS 3/3 seeds +
+  pooled (0.1406 < best two-line rule 0.1539, -8.6%) - the programme's FIRST cell where "the
+  trained policy beats every naive baseline" was the pre-registered bar. K=2 = a tie AT the
+  rule (pooled +0.5%): the boundary sits between K=2 and K=3. STRONG missed (1.38x the exact
+  optimum; ~26% of the rule-to-optimum slack collected). No-window control clean (0.2328, rw
+  pinned 0 = causal). Sharpener: tabular window-Q at MATCHED budget fails both cells
+  (0.1083/0.1759) - unlike gen26's static register, this value is not no-net collectable.
+  Worst-case committing premiums 1.72x/1.51x disclosed.
+- **gen36 (the gen29 reopening): the wall is CAPACITY.** Distillation with EXACT coordinated
+  labels fails both tiers 0/3 seeds (pooled 1.80-2.49 vs bar 1.44); CE plateaus far above the
+  label-entropy floor = the class cannot fit the correlated targets even in-sample. Step B
+  (the one permissible re-aim) correctly NOT launched per the pre-registered gate. gen29
+  closes with its mechanism separated: conditioning capacity, not training dynamics.
+- **gen34 (hidden adversary family): FAIL per the pre-written branch, with the same wall.**
+  Pooled held-out 1.373x the type-blind cap, 0/18 crossings - no type inference. Nuances: the
+  intel channel is causally useful short of inference (control interim 2.135 vs sighted ~1.5;
+  control stopped 5520/12000 on Kilian's instruction); the policy lands ~7% BELOW the composed
+  anti-repeat rule. The oracle landscape (inference worth 1.39-2.04x held-out, brittleness
+  cross-table, ~80% playbook row) is the act's banked contribution. Two independent sightings
+  of the head's conditioning-capacity limit in one day (gen36: prefix identity; gen34: member
+  identity) = the sharpest architecture-directed future-work sentence the thesis has.
+- **State:** all three ledgers folded and committed; Kilian 2026-07-24: skip the control
+  remainder, proceed to Phase 2 = gen33 completion (anchor repair, then the metric-2 full
+  re-run).
