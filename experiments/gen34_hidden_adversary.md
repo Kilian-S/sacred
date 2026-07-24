@@ -154,3 +154,33 @@ exact anchors - held-out Gdansk blind caps / omni caps / inference gaps: 249-95
 0.1101/0.0601/1.83x; 275-72 0.1159/0.0638/1.82x; 193-278 0.1023/0.0735/1.39x. Anti-repeat
 mixture row 0.1478-0.1780 (all >= 1.39x the blind cap). Train-pool gaps 1.17-2.23x. Smoke +
 launch pending the gen35 batch freeing the CPU.
+
+### RESULT (2026-07-24; batch `scratch/gen34_batch.sh`, launch SHA `0c4ac91`, seeds complete
+### 05:47; artefacts `models/runs/gen34_hidden_adversary/`; control TERMINATED EARLY at
+### sortie 5520/12000 on Kilian's instruction 2026-07-24 morning - disclosed below)
+
+| seed | select-on-train held-out ratio-to-blind-cap | beats blind cap | select-on-test | final iterate |
+|---|---|---|---|---|
+| 0 | 1.406 @ 9520 | 0/6 | 1.403 | 1.429 |
+| 1 | 1.359 @ 10520 | 0/6 | 1.359 | 1.406 |
+| 2 | 1.355 @ 12000 | 0/6 | 1.355 | 1.355 |
+| pooled | **1.373** | **0/18 cells** | | |
+
+> **PRIMARY FAIL (the pre-written boundary branch): 0/6 held-out ODs crossed on every seed;
+> pooled 1.373 vs the bar < 1.0. STRONG moot.** The policy does NOT convert placement
+> observations into type inference at this scale. The act's bankable content is the oracle
+> landscape (inference worth 1.39-2.04x on held-out, the brittleness cross-table, the ~80%
+> playbook row) plus this measured wall - the SECOND independent sighting of the head's
+> conditioning-capacity limit in one day (gen36's distillation failure is the first; there the
+> channel was prefix-overlap, here member-identity).
+>
+> **Reported nuances (honest, both directions):** (1) the intel channel is causally USEFUL
+> short of inference: rw[3]/rw[4] train strongly negative (reactive dodge-recent-attacks) and
+> the no-intel control sat at 2.135 at sortie 5520 where sighted seeds were ~1.5 - but the
+> control was STOPPED at 5520/12000 (Kilian's instruction, machine freed for gen33), so the
+> causal row is INTERIM TELEMETRY, not a completed pre-registered control; its pre-registered
+> clause (>= 0.95, cannot beat the blind cap) was trivially satisfied throughout. (2) At 1.373
+> pooled the policy sits ~7% below the composed anti-repeat rule's mixture row (~1.47 mean on
+> held-out; stationary-vs-episodic horizon caveat applies) - top of the naive class, not
+> inside it. (3) select-on-test == select-on-train to 3 decimals (no selection gaming);
+> drift small. Per-member rows live in the seed JSONs.
