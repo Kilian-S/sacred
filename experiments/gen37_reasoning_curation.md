@@ -166,3 +166,17 @@ a better attainable ceiling; at M=10/15 all arms contain 0 of the 11-atom optima
 > tests the LLM-agnostic, on-spine question: does action-space RESTRICTION per se let SACRED
 > reach the coordination moat the full space could not (the gen36 capacity wall = size, or
 > representation)? Tiers unchanged; the llm arm is reported as one (inferior) curator among three.
+
+### RESULT-B: ABORTED (2026-07-24, Kilian's instruction "stop the gen37 batch and focus on the
+### LLM work"). The training batch (`gen37_batch.sh`, 3 arms x 3 seeds) was killed mid-wave-1;
+### NO run completed (0 `*_s*.json` written), so the restriction-unlocks-SACRED trained question
+### is NOT answered here and no trained number is claimed. It is recorded as future work: the
+### mechanism rows (RESULT-A) already show ANY 50-triple restriction collapses the achievable
+### ceiling from the full-space gen29 failure (~1.90x) to ~1.10-1.21x, so "does SACRED reach
+### that ceiling when restricted" remains a clean, cheap follow-up (one arm, 3 seeds) whenever
+### the machine is free.
+
+> **gen37 VERDICT (final): the act's banked finding is RESULT-A - the LLM is a worse-than-random
+> route curator at every prune size (oracle-exact, ~52 LLM calls, no training). The
+> reasoning-curation hypothesis is REJECTED at the ceiling. RESULT-B (restriction-unlocks-SACRED)
+> was deprioritised for the gen38 LLM line and is logged as future work.**
