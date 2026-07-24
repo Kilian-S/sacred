@@ -119,3 +119,38 @@ hour. V2 (if gated in): one gen34-scale training batch (3 seeds ~ overnight) + o
 No extension without a dated amendment before results.
 
 ## RESULTS (appended per step; nothing above changes after launch)
+
+### RESULT V1 (2026-07-24; oracle+LLM, NO training; `scratch/gen38_enemy_id.py`,
+### `models/runs/gen38_llm_enemy_id/{v1_result.json,transcripts/}`; ~60 LLM calls)
+
+**Apparatus reproduced gen34's banked held-cell caps exactly** (e.g. 249-95 blind_cap 0.1198 /
+omni_cap 0.0589) before any new number was read.
+
+| quantity | value | note |
+|---|---|---|
+| LLM classification accuracy | **1.000** (60/60 draws; perfect diagonal confusion) | |
+| keyword-control accuracy | 0.800 | strong baseline, but its 20% errors are operationally CATASTROPHIC |
+| random-control accuracy | 0.200 | |
+| blind_cap (THE WALL) | 0.1140 pooled | best type-blind play; gen34's trained generalist reached only 1.373x it |
+| omni_cap (perfect type-ID) | 0.0631 pooled | the ceiling |
+| **LLM commit-to-argmax** | **0.0631 pooled = omni_cap; crosses the wall 6/6 cells** | 100% ID -> always the right specialist |
+| keyword commit | 0.1942 pooled; crosses 0/6 | WORSE THAN BLINDNESS: wrong calls deploy brittle wrong counters (the cross-table biting) |
+| random commit | 0.2925 pooled | |
+
+> **VERDICT V1: PASS on every clause. PRIMARY 6/6 (bar >=4/6); STRONG (<=1.15x omni_cap);
+> COMPARATIVE (LLM acc 1.0 > kw 0.8 AND LLM value 0.063 < kw 0.194).** The first genuine
+> positive in the LLM strand: an LLM reading a plain-language intelligence assessment
+> identifies the enemy doctrine and supplies the type the type-blind SACRED generalist
+> provably could not infer (gen34), crossing the exact banked wall. The comparative is sharp -
+> naive keyword lookup, though 80% accurate, CROSSES 0/6 because its confident wrong calls are
+> worse than blindness (mean 0.194 > blind 0.114): correct doctrine ID, not surface matching,
+> is the ingredient. This is language->decision, the LLM's native register, and it succeeds
+> exactly where the quantitative registers (B2 numbers, gen33 grounding, gen37 curation)
+> failed - the honest shape of "where LLMs help this pipeline".
+>
+> **Scope + skeptic's caveats (binding):** (1) V1's counter is the ORACLE specialist; the full
+> "trained SACRED assisted" claim needs V2 (type-conditioned SACRED), now GATED-IN and
+> launched. (2) The 20 narratives are author-written and behaviourally clear; 100% may be
+> optimistic. A ROBUSTNESS row (perturbed/noisier/mixed-cue narratives) is run ungated below to
+> probe fragility - the operational value rests entirely on classification accuracy, so its
+> robustness IS the result.
