@@ -154,3 +154,30 @@ omni_cap 0.0589) before any new number was read.
 > optimistic. A ROBUSTNESS row (perturbed/noisier/mixed-cue narratives) is run ungated below to
 > probe fragility - the operational value rests entirely on classification accuracy, so its
 > robustness IS the result.
+
+### ROBUSTNESS ROW (2026-07-24, ungated/disclosed; `scratch/gen38_robustness.py`,
+### `models/runs/gen38_llm_enemy_id/robustness.json`; the skeptic's attack on the clean 100%)
+
+Narratives degraded PROGRAMMATICALLY (not re-authored): TERSE = first sentence only;
+DISTRACTOR = full assessment + one CONFLICTING sentence from a different doctrine (realistic
+contradictory intel); BOTH = terse + distractor. Blind_cap 0.1140, omni_cap 0.0631.
+
+| condition | LLM acc | keyword acc | LLM op value | keyword op value | LLM crosses wall |
+|---|---|---|---|---|---|
+| clean (V1) | 1.000 | 0.800 | 0.0631 | 0.1942 | 6/6 |
+| terse | 0.950 | 0.800 | 0.1035 | 0.1758 | 5/6 |
+| **distractor** | **0.800** | 0.450 | **0.0895** | 0.3701 | **6/6** |
+| both (terse+distractor) | 0.400 | 0.400 | 0.2175 | 0.3659 | 0/6 |
+
+> **Reading (binding):** the result is ROBUST to realistic messy intel and the reasoning-vs-
+> lookup gap WIDENS under it. The distractor condition is the decisive discriminator - with a
+> contradictory sentence spliced in, surface matching collapses (keyword 0.80 -> 0.45, op
+> 0.19 -> 0.37) while the LLM holds 0.80 and still crosses the wall 6/6: correct doctrine
+> reasoning, not pattern-matching, is confirmed as the ingredient. The FRAGILITY BOUNDARY is
+> honest and disclosed: when intel is BOTH minimal AND self-contradictory ("both", 0.40 acc)
+> classification fails for everything and commit-to-argmax is worse than blindness (0/6) - this
+> is exactly the regime for CONFIDENCE-HEDGED deployment (play the blind policy when the model
+> is unsure), the pre-registered hedge variant, which is the deployment recommendation. The V1
+> headline stands with the scope: *the LLM supplies the enemy doctrine and crosses the gen34
+> wall under clean, terse, or contradictory intelligence; it should hedge to the blind policy
+> when the assessment is both sparse and conflicting.*
