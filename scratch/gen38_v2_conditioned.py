@@ -4,8 +4,9 @@
 type call, crosses the gen34 blind wall that the trained agent alone could not.
 
 Self-contained (no edit to the banked gen34 trainer). Same gen34 pool/config; the head gains a
-5-col one-hot of the (known) member type. Training TELLS the policy the true type each episode
-(an easier task than blind inference). Two evals on held-out Gdansk:
+per-route TYPE-THREAT column (the believed type's expected per-route loss next sortie; a
+broadcast one-hot is inert - see feats_cond). Training TELLS the policy the true type each
+episode (an easier task than blind inference). Two evals on held-out Gdansk:
   - told-TRUE-type  = the trained ceiling ("if you knew the type"); target ~ omni_cap.
   - told-LLM-type   = the deployment number: feed the V1 LLM predictions
                       (models/runs/gen38_llm_enemy_id/transcripts/) as the conditioning type.
@@ -52,14 +53,20 @@ def prep(it, refs):
 
 
 def feats_cond(it, counts, w, j_last, ewma, member_idx):
+    """5 base cols (gen34) + 1 TYPE-CONDITIONING col: the believed type's expected per-route
+    threat NEXT sortie, threat_m[r] = (L @ q_m(counts))[r], where q_m is the conditioned
+    member's response to the current window. This is per-route AND type-dependent, so it
+    actually discriminates routes (a broadcast one-hot adds a constant to every route logit and
+    cancels in the softmax - the 2026-07-24 V2 bug). It hands the policy the doctrine's
+    immediate threat model, NOT its optimal policy; the multi-step anti-repeat hedge must still
+    be learned (as gen19/27 did from the window feature)."""
     mm = lambda x: (x - x.min()) / (x.max() - x.min()) if x.max() > x.min() else np.zeros_like(x)
     freq = counts / w if counts.sum() > 0 else np.zeros_like(counts)
     intel1 = mm(it.L[:, j_last]) if j_last is not None else np.zeros(it.nR)
     intel2 = mm(ewma) if ewma is not None and ewma.max() > 0 else np.zeros(it.nR)
-    onehot = np.zeros((it.nR, len(MEMBERS)))
-    onehot[:, member_idx] = 1.0                       # broadcast the (known) type across routes
-    f = np.concatenate([np.stack([it.base_cost, it.base_worst, freq, intel1, intel2], axis=1),
-                        onehot], axis=1)
+    q_m = it.fns[MEMBERS[member_idx]](counts)         # believed type's response to the window
+    threat = mm(it.L @ q_m)                            # per-route expected loss under that type
+    f = np.stack([it.base_cost, it.base_worst, freq, intel1, intel2, threat], axis=1)
     return torch.tensor(f, dtype=torch.float32)
 
 
@@ -142,7 +149,7 @@ def main():
                           reward_scale=1.0, lr_actor=3e-4, gamma=0.95, autotune_alpha=True,
                           alpha_init=1.0, device="cpu")
     for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
-        net.route_feat_w = torch.nn.Parameter(torch.zeros(5 + len(MEMBERS)))
+        net.route_feat_w = torch.nn.Parameter(torch.zeros(6))
         net.route_feats = None
     prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w], "lr": a.head_term_lr})
     prot.critic_optimizer.add_param_group(
