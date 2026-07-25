@@ -237,25 +237,33 @@ class ConcealDyn:
             self._mem = (expose, (memb @ self.dmg_j) / cnt, memb.sum(axis=1))
         return self._mem
 
-    def episodic(self, T=40, rule=None, start_mask=0):
+    def episodic(self, T=40, rule=None, start_mask=0, horizons=None):
         """Mean per-serial damage over a T-serial mission with PERSISTENT memory.
 
         rule=None returns the exact optimum for a defender that knows the laydown (backward
-        induction). Otherwise rule(state_index, mask) -> [R] route distribution is evaluated.
-        The start is averaged over track windows with nothing known, so no opening move is
-        privileged."""
+        induction). Otherwise rule(state_index, mask, perceived_row) -> [R] route distribution is
+        evaluated. The start is averaged over track windows with nothing known, so no opening move
+        is privileged.
+
+        `horizons`: an iterable of mission lengths. The value after t backward steps IS the
+        t-serial answer, so one sweep yields the whole mission-length curve and a dict {t: value}
+        is returned instead of a scalar. Mission length is therefore free rather than a
+        multiplier on the screen's cost."""
         expose, perceived, _ = self._memory_tables()
         Sn, R, M = len(self.states), self.R, 1 << len(self.L)
         nxt_m = np.bitwise_or(np.arange(M)[:, None], expose[None, :])          # [M, R]
-        V = np.zeros((Sn, M))
-        for _ in range(T):
+        # the rule reads (state, mask) only, never V, so its matrix is built ONCE rather than once
+        # per backward step: a T-fold saving on the term that otherwise dominates the screen
+        W = None if rule is None else np.stack(
+            [rule(np.arange(Sn), m, perceived[m]) for m in range(M)], axis=1)  # [Sn, M, R]
+        want = sorted({int(t) for t in horizons}) if horizons else [int(T)]
+        out, V = {}, np.zeros((Sn, M))
+        for t in range(1, want[-1] + 1):
             Q = self.stepdmg[:, None, :] + V[self.succ[:, None, :], nxt_m[None, :, :]]  # [Sn,M,R]
-            if rule is None:
-                V = Q.min(axis=2)
-            else:
-                W = np.stack([rule(np.arange(Sn), m, perceived[m]) for m in range(M)], axis=1)
-                V = (W * Q).sum(axis=2)
-        return float(V[:, start_mask].mean() / T)
+            V = Q.min(axis=2) if W is None else (W * Q).sum(axis=2)
+            if t in want:
+                out[t] = float(V[:, start_mask].mean() / t)
+        return out if horizons else out[want[-1]]
 
     def _topm_row(self, perc, m):
         """Uniform over the m routes that look safest given what is known: the rule a practitioner
@@ -266,7 +274,8 @@ class ConcealDyn:
         row[np.argsort(perc)[:max(1, min(m, self.R))]] = 1.0
         return row / row.sum()
 
-    def episodic_rule(self, fallback, anti_repeat=False, softness=0.0, T=40, topm=0):
+    def episodic_rule(self, fallback, anti_repeat=False, softness=0.0, T=40, topm=0,
+                      horizons=None):
         """The avoid-revealed rule under persistent memory: fly the route that looks safest given
         every team seen so far this mission, falling back to the blind rule while nothing is
         known."""
@@ -292,7 +301,7 @@ class ConcealDyn:
                 s = out.sum(axis=1, keepdims=True)
                 out = np.where(s > 1e-12, out / np.where(s > 1e-12, s, 1.0), base_m)
             return out
-        return self.episodic(T=T, rule=rule)
+        return self.episodic(T=T, rule=rule, horizons=horizons)
 
     # --- exact evaluators (gen32 verbatim) ------------------------------------------------------
 
