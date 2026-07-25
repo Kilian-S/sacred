@@ -738,3 +738,39 @@ Suite 240 -> 243 green (choose_force never-worse; schema-follows-table; spotting
 The cost table + break-even sweep re-measure (repaired probe, new trigger) writes
 `results/gen39_conceal_cost_v2.txt`, named apart from the void v1 numbers; the lethality-vs-reach
 decision is taken from THAT table.
+
+### COST TABLE v2, ALL FOUR MAPS (2026-07-26 early; repaired probe + spot-where-it-fires;
+### `results/gen39_conceal_cost_v2.txt`; pool-parallel `gen39_conceal_cost.py`, serial path
+### verified byte-identical on kgd K=3)
+
+**The v1 verdict ("concealment never pays; ukraine breaks even at no swept setting") is
+OVERTURNED by the honest probe.** Share of an open force's damage achieved by a concealed force
+against an observing defender, at the PINNED table (concealed lethality 0.55, reach 0.85):
+
+| map | cover share | K=3 | K=6 | options control |
+|---|---|---|---|---|
+| kgd_gvardeysk | 26% | 57% | 52% | 77% / 87% |
+| ukraine | 12% | 82% | 69% | 113% / 112% |
+| narva | 64% | 80% | 91% | 100% / 100% |
+| fulda | 66% | **121%** | 91% | 100% / 100% |
+
+**Concealment's value tracks the cover share of the map**: on fulda (66% wooded) hiding already
+BEATS an open force at the pinned table; on narva it is near parity; on kaliningrad (26% cover)
+it costs ~45%. The "choice" charge exists only where cover is scarce (kgd control 77-87%; 100%
+on the wooded maps). The v1 ukraine columns (28-37%) were dominated by the three probe defects;
+honest values are 82/69. Fulda/narva remain omniscient-degenerate for concealed forces in the
+earlier sense retired with the symmetric table; against perfect play concealed forces now reach
+0.9-1.0x of open on fulda (the woods are simply where the corridor is).
+
+**RECOMMENDATION (firm, awaiting Kilian): concealed lethality 0.55 -> 0.70, reach penalty kept
+at 0.85.** At that setting the observing-defender shares become kgd 70/60, ukraine 98/84,
+narva 99/114, fulda 159/119: the choice is live on every map, open ground still favoured on the
+primary (kgd), hiding favoured on the cover-rich maps, near parity between. Two supporting
+arguments: (i) these numbers are a FLOOR (rule 3): a TRAINED defender exploits sightings harder,
+which lowers only the open force's value, so a kgd measured at 70-84% vs simple rules can cross
+parity vs SACRED, making the crossover a trainable, SACRED-dependent quantity: exactly the act's
+question; (ii) the physical story stands (an unseen team's first shot has an unspoiled firing
+solution: more kill probability than clutter-degraded 0.55, still below open 0.90 with restricted
+arcs). The 0.90 alternative overshoots: hiding becomes dominant on three of four maps.
+Keeping 0.55 is defensible too (the map-gradient already gives a live choice across theatres,
+just not ON the primary); recorded as the fallback.

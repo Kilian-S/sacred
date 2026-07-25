@@ -1,0 +1,34 @@
+
+============================================================================================
+narva: 77 open/farmland positions, 123 concealed (same points per km2)
+============================================================================================
+
+--- 3 teams --- open force = 0.0689 vs perfect play, 0.2556 vs an observing defender
+concealed force pays back                   vs perfect  vs observing  % of open
+nothing (the table as pinned)                   0.0389        0.2040        80%
++ open REACH                                    0.0669        0.2425        95%
++ open LETHALITY                                0.0391        0.2708       106%
++ open reach AND lethality                      0.0647        0.3600       141%
+[control] OPEN force, only 123 positions        0.0689        0.2556       100%
+
+  break-even sweep (% of the open force, vs an observing defender):
+   reach\lethality       0.55      0.70      0.90
+              0.85       80%       99%      106%
+              1.00       95%      115%      141%
+              1.20      107%      139%      183%
+              1.50      133%      171%      230%
+
+--- 6 teams --- open force = 0.0652 vs perfect play, 0.2146 vs an observing defender
+concealed force pays back                   vs perfect  vs observing  % of open
+nothing (the table as pinned)                   0.0394        0.1951        91%
++ open REACH                                    0.0720        0.2272       106%
++ open LETHALITY                                0.0451        0.2972       138%
++ open reach AND lethality                      0.0669        0.3396       158%
+[control] OPEN force, only 123 positions        0.0652        0.2146       100%
+
+  break-even sweep (% of the open force, vs an observing defender):
+   reach\lethality       0.55      0.70      0.90
+              0.85       91%      114%      138%
+              1.00      106%      129%      158%
+              1.20      125%      156%      207%
+              1.50      155%      200%      268%
