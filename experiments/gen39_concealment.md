@@ -719,13 +719,22 @@ lethality decision.
 6. **The `w=2` comment corrected:** it claimed the "gen32 pinned operating point" but gen32
    pinned w=3; w=2 is a deliberate cost choice, and the defender's memory of DISCOVERED teams is
    whole-mission in the persistent arm regardless (Kilian's requirement, already satisfied).
-7. **OPEN DESIGN QUESTION (Kilian's, blocks the cost re-measure and the re-run):** reveal reads
-   only the team's NOMINAL site while its fire is delivered from its same-class concentration, so
-   a team on revealing ground can engage a flight whose track never enters the nominal ring and
-   stay unspotted: the within-class remnant of the fault-4 leak. It biases every hide-vs-open
-   number AGAINST concealment. Proposal on the table: a team is spotted when the flight comes
-   within radar radius of any position it fights from (spot-where-it-shoots); only that team is
-   spotted, per Kilian's rule.
+7. **SPOTTING FOLLOWS THE FIRE (decided by Kilian 2026-07-25, in-conversation, and implemented
+   in the same session).** The old trigger read only the team's NOMINAL site while its fire is
+   delivered from its whole same-class zone (it relocates between serials), so a team on
+   revealing ground could engage a flight whose track never entered the nominal ring and stay
+   unspotted: the within-class remnant of the fault-4 leak, free invisibility on open ground,
+   biasing every hide-vs-open number AGAINST concealment. New rule (Kilian's, stated in his own
+   words: static within a serial, relocates between serials, engages only from where it sits,
+   spotted exactly when it can engage, and only THAT team is spotted): a team is revealed when
+   the flight comes within range of any position carrying >= 5% of its peak concentration
+   weight; spotting reveals the team's operating ZONE (its `dmg_j` threat), so relocation within
+   the patch does not stale the intel. Concealed ground still never reveals. Contract test:
+   the new trigger is a superset of the old one and hidden teams stay dark.
+   **RULE 8: spot-at-nominal-site and spot-where-it-fires are DIFFERENT GAMES; every number
+   above this line was measured under the old trigger and may not be mixed with what follows.**
 
-Suite 240 -> 242 green (choose_force never-worse contract; schema-follows-table). Nothing
-launched; the cost table and break-even sweep re-run only after decision 7.
+Suite 240 -> 243 green (choose_force never-worse; schema-follows-table; spotting-follows-fire).
+The cost table + break-even sweep re-measure (repaired probe, new trigger) writes
+`results/gen39_conceal_cost_v2.txt`, named apart from the void v1 numbers; the lethality-vs-reach
+decision is taken from THAT table.

@@ -276,12 +276,23 @@ class ConcealDyn:
         self.succ = (shifted @ self.pows)[:, None] + np.arange(R)[None, :]
 
         # --- gen39: what the defender has been shown --------------------------------------------
-        # known[s, j]: some route in the window flew inside emplaced team j's ring, and that team
-        # sits on revealing ground. A deterministic function of the state, so the MDP is unchanged.
-        revealable = base.expo[:, self.L] & base.reveal[self.L][None, :]  # [R, k]
+        # known[s, j]: some route in the window was ENGAGEABLE by team j, and team j sits on
+        # revealing ground. A deterministic function of the state, so the MDP is unchanged.
+        #
+        # SPOTTING FOLLOWS THE FIRE (Kilian 2026-07-25): a team relocates between serials within
+        # its zone (the same concentration its damage is delivered from), so it is spotted when
+        # the flight comes within range of ANY position it fights from, not only its nominal
+        # site. The earlier own-site-only trigger let a team engage from the far side of its zone
+        # while staying unspotted: free invisibility on open ground, biasing every hide-vs-open
+        # number against concealment. "Fights from" = positions carrying at least 5% of the
+        # team's peak concentration weight (the Gaussian tail cut, documented threshold); the
+        # nominal site always carries the peak, so the new trigger is a superset of the old one.
+        zone = self.prior_j >= 0.05 * self.prior_j.max(axis=1, keepdims=True)   # [k, H]
+        engaged = (base.expo.astype(int) @ zone.T.astype(int)) > 0              # [R, k]
+        self.revealable = engaged & base.reveal[self.L][None, :]
         self.known = np.zeros((Sn, len(self.L)), bool)
         for k in range(w):
-            self.known |= revealable[self.states[:, k]]
+            self.known |= self.revealable[self.states[:, k]]
         self.n_known = self.known.sum(axis=1)
         # perceived threat of each route given ONLY the teams whose position is known
         kf = self.known.astype(float)
@@ -300,12 +311,12 @@ class ConcealDyn:
 
     def _memory_tables(self):
         """expose[r] = bitmask of revealable teams route r gives away; perceived_mask[m, r] = the
-        route's threat as judged from the teams in mask m (uniform over what is known)."""
+        route's threat as judged from the teams in mask m (uniform over what is known). Uses the
+        spot-where-it-fires trigger (self.revealable), same as the window form."""
         if getattr(self, "_mem", None) is None:
             k = len(self.L)
-            revealable = self.base.expo[:, self.L] & self.base.reveal[self.L][None, :]
             bits = (1 << np.arange(k))
-            expose = (revealable * bits[None, :]).sum(axis=1).astype(int)      # [R]
+            expose = (self.revealable * bits[None, :]).sum(axis=1).astype(int)  # [R]
             masks = np.arange(1 << k)
             memb = ((masks[:, None] & bits[None, :]) > 0).astype(float)        # [2^k, k]
             cnt = np.clip(memb.sum(axis=1, keepdims=True), 1.0, None)

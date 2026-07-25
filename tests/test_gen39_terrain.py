@@ -234,6 +234,24 @@ def test_choose_force_scores_both_pickers_and_is_never_worse_than_topk():
     assert g.episodic(T=40) >= g0.episodic(T=40) - 1e-12
 
 
+def test_spotting_follows_the_fire_and_hidden_teams_never_reveal():
+    """Kilian 2026-07-25: a team is spotted when the flight comes within range of ANY position it
+    fights from (it relocates between serials within its zone), not only its nominal site. The
+    new trigger must be a superset of the old own-site-only one, and concealed ground must still
+    never reveal."""
+    from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
+    base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
+    pp = base.lethality(resample_field(base.coords, 5100))
+    open_pool = np.where(~base.concealed)[0]
+    hid_pool = np.where(base.concealed)[0]
+    L = np.concatenate([open_pool[:2], hid_pool[:1]])
+    g = ConcealDyn(base, pp, L, w=2)
+    old = base.expo[:, L] & base.reveal[L][None, :]
+    assert g.revealable[old].all()                      # superset of the own-site trigger
+    assert not g.revealable[:, 2].any()                 # the concealed team never reveals
+    assert g.revealable[:, :2].sum() >= old[:, :2].sum()
+
+
 def test_force_schema_follows_the_table_in_force():
     from src.redforce import FORCE_SCHEMA, force_schema
     path = lambda s: s["properties"]["agents"]["items"]["properties"]["emplacement_zone"][  # noqa: E731
