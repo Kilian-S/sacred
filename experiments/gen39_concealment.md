@@ -281,3 +281,25 @@ static row for a null result.
 **Not yet built (next tranche):** the reveal channel in the dynamic game (exposure -> decaying
 observation, gen34 form), the avoid-revealed rule and the rest of the baseline family, and the
 step-1 sweep script.
+
+### STEP-3 LAUNCH LOCATION AND SEED COUNT, PINNED BEFORE LAUNCH (2026-07-25, Kilian's call)
+
+**Step 3 runs LOCALLY on the M4 (10 cores), 3 seeds x 3 arms, 8000 sorties, launched DETACHED.**
+Pinned here before any training starts, because gen33's batch was launched in a place its ledger
+did not pin and the deviation had to be disclosed afterwards.
+
+The alternative considered and declined was w05 (2x RTX A6000, 251 GB RAM, shared). The estimate
+that informed the call, stated so a reader can check it: w05 is **not** materially faster for this
+batch. Nine runs on ten local cores already give each run about one core, so the wall-clock is set
+by SINGLE-RUN speed, not by core count, and a server core is not quicker than an M4 performance
+core for these small graphs (the GPUs are irrelevant: CPU already beat the Mac's GPU by 2.4-4x on
+this workload, and the A6000s are serving the two language models). Measured local rate, from the
+gen33 attempt: 42 min / 1000 sorties at 9-way contention, so **~5.6 h for the full batch**;
+w05 was estimated at 4-6 h. The genuine w05 advantages were an uninterruptible host and the
+headroom for 5 seeds at the same wall-clock; **3 seeds is therefore the pinned n, with the thinness
+disclosed** (gen33's preliminary read failed on exactly this: 1/3 seeds met the bar). Any later
+seed extension is a NEW pinned decision, never a response to the first three.
+
+Step 2 (the three composers) needs no SSH and no tunnel: contrary to the HANDOVER note, the
+workbench gateway on port 8080 is now reachable directly from the Mac (verified 2026-07-25,
+both `llama-3.3-70b` and `qwen3-27b` answering `/v1/models`). Kilian's go for w05 is on record.
