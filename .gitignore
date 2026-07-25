@@ -3,6 +3,9 @@
 /logs/
 /models/
 
+# OSM fetch cache (osmnx query cache; regenerable, never commit).
+/cache/
+
 # Python cache and local environments.
 __pycache__/
 *.py[cod]

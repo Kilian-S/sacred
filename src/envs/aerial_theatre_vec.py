@@ -24,15 +24,103 @@ from shapely.ops import unary_union
 
 from src.baselines.interdiction_oracle import InterdictionGame
 
-# terrain -> (emplaceable, radius_km, p_max, blocks_LOS)
+# terrain -> (emplaceable, radius_km, p_max, blocks_LOS). r_km/p_max are the BASE (kgd-scale)
+# values; ranges scale per theatre via range_scale so the coverage fraction phi=2Kr/W_lat is
+# comparable across maps of different size (gen33_llm_adversary ledger; ratios between classes
+# stay fixed). Firepower is terrain-set, never adversary-set (the honesty safeguard).
 TERRAIN = {
     "open":   dict(emplace=True,  r_km=2.5, p_max=0.90, los=False),
     "field":  dict(emplace=True,  r_km=2.5, p_max=0.90, los=False),
     "forest": dict(emplace=True,  r_km=1.2, p_max=0.92, los=True),
     "urban":  dict(emplace=False, r_km=0.0, p_max=0.00, los=True),
     "water":  dict(emplace=False, r_km=0.0, p_max=0.00, los=False),
+    "sea":    dict(emplace=False, r_km=0.0, p_max=0.00, los=False),  # open sea: non-emplaceable
+    "alpine": dict(emplace=False, r_km=0.0, p_max=0.00, los=True),   # high terrain: no-emplace,
+    #          blocks LOS (a passive wall; the drone-no-fly mechanic is a parked showcase decision)
 }
-PRIORITY = ["water", "urban", "forest", "field"]
+PRIORITY = ["water", "sea", "urban", "alpine", "forest", "field"]
+
+# --- gen39 TERRAIN v2 (concealment buys persistence; experiments/gen39_concealment.md) ---------
+# v1 above stays the module DEFAULT so gen31/gen32/gen33 reproduce byte-identically. v2 adds:
+#   * a real reach-vs-cover trade (open reaches furthest and kills hardest; cover shoots short and
+#     weak, because restricted arcs and a masked own-sensor are what cover costs you);
+#   * `reveal`: a site on revealing ground that ENGAGES the flight (exposure, not a kill) becomes
+#     visible to the defender from the next serial; concealed ground never reveals;
+#   * forest actually blocks line of sight (v1 declared it and only `redforce.serialise_theatre`
+#     ever read the flag, so the LLM was briefed on a mechanic the physics did not implement);
+#   * urban emplaceable (short reach, low lethality, best cover), which needs the self-polygon LOS
+#     exemption in `route_survival` or an urban site masks itself and is dead.
+# r_km are RELATIVE to the v1 open anchor (2.5 km at kgd scale); `range_scale` sets the absolute
+# difficulty and is a screen axis, so no range here was chosen to produce a result.
+TERRAIN_V2 = {
+    "open":   dict(emplace=True,  r_km=3.5, p_max=0.90, los=False, reveal=True),
+    "field":  dict(emplace=True,  r_km=2.5, p_max=0.85, los=False, reveal=True),
+    "forest": dict(emplace=True,  r_km=1.5, p_max=0.55, los=True,  reveal=False),
+    "urban":  dict(emplace=True,  r_km=1.0, p_max=0.45, los=True,  reveal=False),
+    "water":  dict(emplace=False, r_km=0.0, p_max=0.00, los=False, reveal=True),
+    "sea":    dict(emplace=False, r_km=0.0, p_max=0.00, los=False, reveal=True),
+    "alpine": dict(emplace=False, r_km=0.0, p_max=0.00, los=True,  reveal=True),
+}
+
+
+def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = True) -> dict:
+    """TERRAIN_V2 with the two screen knobs applied (gen39 step 1).
+
+    hidden_leth: multiplier on the CONCEALED classes' lethality (forest, urban). This is the
+      screened ratio "how much of the visible classes' killing power does cover retain": too low
+      and the two-line avoid-revealed rule wins because hidden teams cannot hurt, too high and
+      hiding dominates and the game collapses onto one terrain class.
+    forest_los: the pre-registered sensitivity row (does woodland mask engagements across it).
+    """
+    t = {k: dict(v) for k, v in TERRAIN_V2.items()}
+    for k in ("forest", "urban"):
+        t[k]["p_max"] = float(np.clip(t[k]["p_max"] * hidden_leth, 0.0, 0.999))
+    t["forest"]["los"] = bool(forest_los)
+    return t
+
+
+def blocker_union(th: "VecTheatre", terrain: dict | None = None):
+    """Union of every terrain class that blocks line of sight under `terrain` (v1: urban only;
+    v2: urban + forest). Cached on the theatre by the blocking-class set."""
+    terrain = TERRAIN if terrain is None else terrain
+    keys = tuple(sorted(k for k, v in terrain.items() if v.get("los")))
+    cache = getattr(th, "_los_cache", None)
+    if cache is None:
+        cache = {}
+        object.__setattr__(th, "_los_cache", cache)
+    if keys not in cache:
+        parts = [u for k in keys if (u := th._union.get(k)) is not None and not u.is_empty]
+        cache[keys] = unary_union(parts) if parts else None
+    return cache[keys]
+
+
+def containing_blockers(th: "VecTheatre", coords, terrain: dict | None = None) -> list:
+    """Per site, the LOS-blocking polygon it STANDS IN (or None). A site is never masked by its
+    own polygon: without this an urban/forest site starts its own sightline inside the blocker and
+    can never engage anything."""
+    # terrain=None reproduces the IMPLEMENTED v1 behaviour (urban-only masking), NOT the v1
+    # table's declared flags: v1 declares forest los=True and route_survival never honoured it
+    # (the gen39 mismatch). Passing a table explicitly opts into honouring it.
+    keys = ["urban"] if terrain is None else [k for k, v in terrain.items() if v.get("los")]
+    out = []
+    for xy in np.asarray(coords, dtype=float):
+        p = Point(float(xy[0]), float(xy[1]))
+        own = None
+        for k in keys:
+            for poly in th.polys.get(k, []):
+                if poly.contains(p):
+                    own = poly
+                    break
+            if own is not None:
+                break
+        out.append(own)
+    return out
+
+
+def reveal_flags(cls, terrain: dict | None = None) -> np.ndarray:
+    """Per site: does engaging the flight give this site away to the defender (gen39 mechanic)?"""
+    terrain = TERRAIN if terrain is None else terrain
+    return np.array([bool(terrain[c].get("reveal", True)) for c in cls], dtype=bool)
 
 
 @dataclass
@@ -57,9 +145,18 @@ class VecTheatre:
 
 
 def load_vec_theatre(path: str) -> VecTheatre:
+    """Accepts the old {"classes": ...} layout AND the new fetch layout {"poly": ..., "line": ...}
+    (scratch/fetch_new_theatres.py). Classes the terrain table does not model (maritime
+    land/island/coast, a parked showcase) are skipped, so only known terrain drives the game."""
     d = json.load(open(path))
+    raw = d.get("classes")
+    if raw is None:                                   # new fetch format
+        raw = dict(d.get("poly", {}))
+        raw.pop("land_holes", None)                   # maritime sea-inlet holes (deferred)
     polys, union, tree = {}, {}, {}
-    for cls, rings in d["classes"].items():
+    for cls, rings in raw.items():
+        if cls not in TERRAIN:                        # skip unmodelled classes (maritime showcase)
+            continue
         ps = [Polygon(r) for r in rings if len(r) >= 4]
         ps = [p if p.is_valid else p.buffer(0) for p in ps]
         polys[cls] = ps
@@ -68,6 +165,17 @@ def load_vec_theatre(path: str) -> VecTheatre:
     return VecTheatre(d["name"], d["W_km"], d["H_km"],
                       np.array(d["base"]["xy_km"]), np.array(d["target"]["xy_km"]),
                       polys, union, tree, union.get("urban"))
+
+
+def lateral_width(th: VecTheatre) -> float:
+    """Extent of the theatre box perpendicular to the base->target axis: the corridor's lateral
+    dimension. Weapon ranges scale by lateral_width(th)/lateral_width(reference) so the coverage
+    fraction is comparable across maps (a 2.5 km SHORAD on a 20 km-wide corridor and a scaled SAM
+    on a 60 km one contest the same fraction of the width)."""
+    _, nrm = _axis(th)
+    corners = np.array([[0.0, 0.0], [th.W, 0.0], [0.0, th.H], [th.W, th.H]])
+    lat = corners @ nrm
+    return float(lat.max() - lat.min())
 
 
 # ---------------------------------------------------------------------------
@@ -123,9 +231,13 @@ def build_menu(th: VecTheatre, R: int = 24) -> list[np.ndarray]:
 # continuous hazards + exposure
 
 
-def hazard_sites(th: VecTheatre, spacing_km: float = 2.0, standoff_km: float = 4.0):
+def hazard_sites(th: VecTheatre, spacing_km: float = 2.0, standoff_km: float = 4.0,
+                 range_scale: float = 1.0, terrain: dict | None = None):
     """Continuous candidate sites on emplaceable terrain, outside terminal standoff. Returns
-    (coords[H,2], r_km[H], p_max[H], cls[H])."""
+    (coords[H,2], r_km[H], p_max[H], cls[H]). range_scale multiplies every weapon range (the
+    coverage-fraction scaling; default 1.0 = kgd-scale, so existing games are byte-identical).
+    terrain defaults to the v1 table, so existing callers are unchanged (gen39)."""
+    terrain = TERRAIN if terrain is None else terrain
     xs = np.arange(1.0, th.W, spacing_km)
     ys = np.arange(1.0, th.H, spacing_km)
     coords, rr, pp, cls = [], [], [], []
@@ -136,40 +248,59 @@ def hazard_sites(th: VecTheatre, spacing_km: float = 2.0, standoff_km: float = 4
                     or np.linalg.norm(xy - th.target) < standoff_km):
                 continue
             k = th.classify(xy)
-            spec = TERRAIN[k]
+            spec = terrain[k]
             if not spec["emplace"]:
                 continue
-            coords.append(xy); rr.append(spec["r_km"]); pp.append(spec["p_max"]); cls.append(k)
+            coords.append(xy); rr.append(spec["r_km"] * range_scale)
+            pp.append(spec["p_max"]); cls.append(k)
     return np.array(coords), np.array(rr), np.array(pp), cls
 
 
-def route_survival(th: VecTheatre, route: np.ndarray, coords, rr, pp, *, los: bool) -> np.ndarray:
+def route_survival(th: VecTheatre, route: np.ndarray, coords, rr, pp, *, los: bool,
+                   terrain: dict | None = None, own_polys: list | None = None,
+                   return_exposed: bool = False):
     """S[h] = survival vs hazard h alone: exp(-integral of rate along the lane), rate =
     kappa_h * max(0, 1 - d/r_h), kappa_h = -ln(1-p_h)/r_h (dead-centre leg -> p_h). LOS-masked
-    by urban polygons (a hazard cannot engage an arc if the segment crosses urban)."""
+    by the blocking terrain (v1: urban; v2 adds forest): a hazard cannot engage an arc if the
+    segment crosses a blocker OTHER THAN the polygon it stands in (gen39 self-polygon exemption;
+    without it an emplaced urban/forest site masks itself and is dead).
+
+    return_exposed also returns a bool[H] flag: did the flight pass inside this site's ring WITH
+    line of sight, i.e. was the site ENGAGED this serial (the gen39 reveal trigger, exposure not
+    kill)."""
     mids = (route[:-1] + route[1:]) / 2.0
     ds = np.linalg.norm(np.diff(route, axis=0), axis=1)
     kappa = -np.log(np.clip(1.0 - pp, 1e-12, 1.0)) / np.clip(rr, 1e-9, None)
     S = np.ones(len(coords))
-    urb = th._urban_union if los else None
+    exposed = np.zeros(len(coords), dtype=bool)
+    # terrain=None -> the implemented v1 blocker (urban only), so banked games are untouched
+    blk = (th._urban_union if terrain is None else blocker_union(th, terrain)) if los else None
     for h in range(len(coords)):
         d = np.linalg.norm(mids - coords[h], axis=1)
         taper = np.clip(1.0 - d / rr[h], 0.0, None)
-        if urb is not None and not urb.is_empty:
+        if blk is not None and not blk.is_empty:
+            own = own_polys[h] if own_polys is not None else None
             for a in np.where(taper > 0)[0]:
-                if LineString([tuple(coords[h]), tuple(mids[a])]).intersects(urb):
+                seg = LineString([tuple(coords[h]), tuple(mids[a])])
+                if own is not None:
+                    seg = seg.difference(own)          # never masked by your own polygon
+                    if seg.is_empty:
+                        continue
+                if seg.intersects(blk):
                     taper[a] = 0.0
         S[h] = np.exp(-(kappa[h] * taper * ds).sum())
-    return S
+        exposed[h] = bool((taper > 0).any())
+    return (S, exposed) if return_exposed else S
 
 
-def engagement_footprint(th: VecTheatre, center, r_km: float, n_rays: int = 96) -> list:
+def engagement_footprint(th: VecTheatre, center, r_km: float, n_rays: int = 96,
+                         terrain: dict | None = None) -> list:
     """The hazard's TRUE engagement silhouette: ray-cast the range circle against the urban
     LOS-blockers, so each ray reaches only to the first building it hits -> a star-shaped
     viewshed with SHADOW ZONES behind the city (matches the game's segment-crosses-urban mask).
     Returns polygon vertices [[x, y], ...] in km."""
     c = np.asarray(center, float)
-    urb = th._urban_union
+    urb = th._urban_union if terrain is None else blocker_union(th, terrain)
     verts = []
     for k in range(n_rays):
         a = 2 * np.pi * k / n_rays
@@ -192,13 +323,13 @@ def engagement_footprint(th: VecTheatre, center, r_km: float, n_rays: int = 96) 
     return verts
 
 
-def _threat_field(th: VecTheatre, coords, rr, pp, step=1.0):
+def _threat_field(th: VecTheatre, coords, rr, pp, step=1.0, terrain: dict | None = None):
     """Peak engageable interception intensity at each coarse node (max over candidate sites in
     range AND with LOS): the threat map a planner routes against. Helper grid ONLY (routing);
     the game itself stays continuous."""
     xs = np.arange(0.0, th.W + 1e-9, step)
     ys = np.arange(0.0, th.H + 1e-9, step)
-    urb = th._urban_union
+    urb = th._urban_union if terrain is None else blocker_union(th, terrain)
     P = np.asarray(coords)
     T = {}
     for x in xs:
@@ -216,14 +347,15 @@ def _threat_field(th: VecTheatre, coords, rr, pp, step=1.0):
     return xs, ys, T
 
 
-def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float = 1.0) -> list:
+def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float = 1.0,
+                       terrain: dict | None = None) -> list:
     """TERRAIN-AWARE routes: shortest paths base->target on a coarse 8-connected grid with edge
     cost = length * (1 + lam * peak-threat-along-edge), swept over lam (0 = direct/exposed ->
     high = long/covered: the open-field-vs-cover tradeoff) + lateral mid-waypoint seeds for
     diversity; smoothed (Catmull through ~4 km control points) into flight paths. Bends through
     LOS shadow and around threat coverage. Falls back to geometric lanes if routing fails."""
     import networkx as nx
-    xs, ys, T = _threat_field(th, coords, rr, pp, step=step)
+    xs, ys, T = _threat_field(th, coords, rr, pp, step=step, terrain=terrain)
     _, nrm = _axis(th)
 
     def snap(xy):
@@ -289,12 +421,17 @@ def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float 
 
 
 def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain: int = 12,
-                       spacing_km: float = 2.0, standoff_km: float = 4.0, los: bool = True):
+                       spacing_km: float = 2.0, standoff_km: float = 4.0, los: bool = True,
+                       range_scale: float = 1.0, terrain: dict | None = None,
+                       return_cls: bool = False):
     """(InterdictionGame, menu, coords, r_km, p_max, S[R,H], lane_idx) on the continuous polygon
     terrain. The menu carries BOTH geometric LANES (the naive rule's support: direct/exposed) and
     TERRAIN-AWARE routes (the equilibrium's cover-seeking options), so the game measures
-    terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes."""
-    coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km)
+    terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes.
+    range_scale scales weapon ranges for coverage-fraction comparability across map sizes."""
+    coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km,
+                                       range_scale=range_scale, terrain=terrain)
+    own = containing_blockers(th, coords, terrain) if terrain is not None else None
     lanes = build_menu(th, R=n_lanes)
     lane_idx = list(range(len(lanes)))
     menu = list(lanes)
@@ -305,10 +442,11 @@ def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain:
         la = np.array([(np.asarray(p) - th.base) @ nrm2 for p in rte])
         return np.interp(np.linspace(al.min(), al.max(), 10), al, la)
     lane_sigs = [sig(l) for l in lanes]
-    for r_ in build_terrain_menu(th, coords, rr, pp, R=n_terrain):
+    for r_ in build_terrain_menu(th, coords, rr, pp, R=n_terrain, terrain=terrain):
         if min(np.linalg.norm(sig(r_) - s) for s in lane_sigs) > 1.0:   # distinct from a lane
             menu.append(r_)
-    S = np.stack([route_survival(th, r_, coords, rr, pp, los=los) for r_ in menu])
+    S = np.stack([route_survival(th, r_, coords, rr, pp, los=los, terrain=terrain, own_polys=own)
+                  for r_ in menu])
     H = len(coords)
     isets = list(itertools.combinations(range(H), K)) if K <= H else [tuple(range(H))]
     logS = np.log(np.clip(S, 1e-300, 1.0))
@@ -324,4 +462,6 @@ def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain:
                         for t in (toks(r_) for r_ in menu))
     game = InterdictionGame(tuple(tuple(map(tuple, r_)) for r_ in menu), route_edges,
                             tuple(tuple(t) for t in isets), payoff, travel, K)
+    if return_cls:                                   # gen39: callers need the per-site terrain
+        return game, menu, coords, rr, pp, S, lane_idx, cls
     return game, menu, coords, rr, pp, S, lane_idx

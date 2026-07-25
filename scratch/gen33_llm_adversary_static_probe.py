@@ -1,7 +1,10 @@
-"""ORACLE-ONLY probe (2026-07-21): does a HETEROGENEOUS multi-system laydown (Kilian's
-proposal: 2 long-range SAMs + 3 short-range MANPADS) tie the naive frontier when reshuffled
-per episode but NON-reacting, and does making the short-range teams RE-CUE within the episode
-open a corridor? Tests the static-vs-reactive distinction on real Kaliningrad->Gvardeysk terrain.
+"""gen33_llm_adversary PHASE 0 (oracle-only, 2026-07-21; folded into
+experiments/gen33_llm_adversary.md 2026-07-22): does a HETEROGENEOUS multi-system laydown
+(Kilian's proposal: 2 long-range SAMs + 3 short-range MANPADS) tie the naive frontier when
+reshuffled per episode but NON-reacting, and does making the short-range teams RE-CUE within the
+episode open a corridor? Tests the static-vs-reactive distinction on real Kaliningrad->Gvardeysk
+terrain. FINDING (binding for the LLM-adversary act): static heterogeneous placement ties the
+naive frontier (0.99-1.02x, outlier 1.29x); the corridor needs the MIXED/dynamic register.
 
 Systems (Kilian's characteristics):
   SAM  : range 2.5 km, p_max 0.90, eligible on open/field terrain (long-range, LOS).   x2

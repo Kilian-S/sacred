@@ -49,10 +49,12 @@ class TheatreBase:
     """Loads the fixed theatre ONCE (menu, sites, radii, route topology). Field-specific games
     are cheap rebuilds (recompute survival + payoff for a resampled effectiveness field)."""
 
-    def __init__(self, path="data/maps/theatre_kgd_gvardeysk_vec.json"):
+    def __init__(self, path="data/maps/theatre_kgd_gvardeysk_vec.json",
+                 range_scale=1.0, spacing_km=2.0, standoff_km=4.0):
         self.th = load_vec_theatre(path)
         game, menu, coords, rr, pp, S, lane_idx = build_theatre_game(
-            self.th, K=1, n_lanes=14, n_terrain=12, standoff_km=4.0)
+            self.th, K=1, n_lanes=14, n_terrain=12, spacing_km=spacing_km,
+            standoff_km=standoff_km, range_scale=range_scale)
         self.menu, self.coords, self.rr, self.lane_idx = menu, coords, rr, lane_idx
         self.routes, self.route_edges = game.routes, game.route_edges
         self.isets, self.travel = game.interdiction_sets, game.travel_cost

@@ -36,11 +36,59 @@ CORRIDORS = {
         bbox=(34.80, 47.75, 35.45, 48.55), epsg="EPSG:32636", maritime=False,
         base=("DNIPRO", 35.045, 48.465), target=("ZAPORIZHZHIA", 35.145, 47.840),
         title="Dnipro -> Zaporizhzhia resupply corridor"),
+    # --- added 2026-07-22 (Kilian's theatre list; all trimmed to the Ukraine/Kaliningrad size band) ---
+    "singapore": dict(
+        # Sisters' Islands / southern anchorage -> Changi naval area: urban archipelago + reservoirs
+        bbox=(103.60, 1.18, 104.10, 1.48), epsg="EPSG:32648", maritime=True,
+        base=("SOUTHERN GROUP", 103.74, 1.21), target=("CHANGI", 103.99, 1.39),
+        bridgehead=(103.99, 1.39, 6.0),
+        sea_seeds=[[10, 5], [45, 6], [25, 3], [8, 30], [50, 28]],
+        title="Singapore - archipelago resupply across the southern anchorage to Changi"),
+    "hongkong": dict(
+        # South Lamma/Lantau approach -> Victoria Harbour: dense urban + country-park forest + sea
+        bbox=(113.85, 22.15, 114.30, 22.45), epsg="EPSG:32650", maritime=True,
+        base=("SOUTH LANTAU", 113.92, 22.19), target=("VICTORIA HARBOUR", 114.17, 22.30),
+        bridgehead=(114.17, 22.30, 5.0),
+        sea_seeds=[[8, 6], [42, 5], [22, 4], [10, 28], [40, 30]],
+        title="Hong Kong - approach through the islands to Victoria Harbour"),
+    "taiwan": dict(
+        # Xiamen coast -> Kinmen (the Strait chokepoint at its narrowest, island vs mainland)
+        bbox=(118.15, 24.30, 118.65, 24.60), epsg="EPSG:32651", maritime=True,
+        base=("XIAMEN COAST", 118.20, 24.55), target=("KINMEN", 118.42, 24.43),
+        bridgehead=(118.42, 24.43, 6.0),
+        sea_seeds=[[25, 15], [40, 10], [12, 8], [45, 25], [30, 30]],
+        title="Taiwan Strait - Xiamen coast to the Kinmen bridgehead"),
+    "narva": dict(
+        # Kohtla-Jarve -> Kingisepp: the Narva river border crossing is the natural pinch.
+        # coast=True: the Gulf of Finland fills the north; OSM does NOT tag open sea, so without
+        # this the sea reads as `open` (emplaceable!) - seeds mark the sea faces -> water.
+        bbox=(27.20, 59.15, 29.10, 59.68), epsg="EPSG:32635", maritime=False, coast=True,
+        base=("KOHTLA-JARVE", 27.28, 59.40), target=("KINGISEPP", 28.61, 59.37),
+        sea_seeds=[[15, 57], [40, 57], [65, 57], [90, 57], [105, 52]],
+        title="Kohtla-Jarve -> Kingisepp corridor (the Narva river crossing)"),
+    "karelia": dict(
+        # Kotka -> Lappeenranta: coastal port to inland lakeland (the Karelian lake maze)
+        bbox=(26.85, 60.45, 28.20, 61.20), epsg="EPSG:32635", maritime=False,
+        base=("KOTKA", 26.945, 60.467), target=("LAPPEENRANTA", 28.19, 61.058),
+        title="Kotka -> Lappeenranta corridor (Finnish lakeland)"),
+    "alps": dict(
+        # Innsbruck -> Trento: the Brenner axis, deep alpine valleys (mountains = no-fly walls)
+        bbox=(11.05, 46.05, 11.75, 47.30), epsg="EPSG:32632", maritime=False,
+        base=("INNSBRUCK", 11.393, 47.267), target=("TRENTO", 11.121, 46.070),
+        title="Innsbruck -> Trento (the Brenner alpine corridor)"),
+    "fulda": dict(
+        # THE FULDA GAP: the Cold War Warsaw-Pact invasion axis, from the inner-German border
+        # observation post Point Alpha SW to Frankfurt, flanked by the forested Vogelsberg (S)
+        # and Rhon (NE) uplands. Deep inland (no coast); heavy forest cover. Biased large.
+        bbox=(8.45, 49.90, 10.20, 50.90), epsg="EPSG:32632", maritime=False,
+        base=("POINT ALPHA", 9.938, 50.686), target=("FRANKFURT", 8.682, 50.110),
+        title="The Fulda Gap - Point Alpha to Frankfurt (the Cold War invasion axis)"),
 }
 TAGS_SEA = {                              # land (coast + islands) = emplaceable + LOS block,
     "coast": {"natural": ["coastline"]},  # sea = traversable. urban kept (the tighter box tops
     "island": {"place": ["island", "islet"]},  # out at Musandam, N of Dubai/Sharjah, so the
     "urban": {"landuse": ["residential", "industrial", "port", "military"]},  # layer is light.
+    "forest": {"natural": ["wood"], "landuse": ["forest"]},   # country-park concealment (HK/SG)
 }
 TAGS_LAND = {
     "water": {"natural": ["water"], "waterway": ["riverbank"],
@@ -48,6 +96,8 @@ TAGS_LAND = {
     "urban": {"landuse": ["residential", "commercial", "industrial", "retail", "port"]},
     "forest": {"natural": ["wood"], "landuse": ["forest"]},
     "field": {"landuse": ["farmland", "meadow", "orchard"], "natural": ["grassland", "scrub"]},
+    # bare high terrain = flight walls / no emplacement; only populated in alpine boxes, empty elsewhere
+    "alpine": {"natural": ["bare_rock", "scree", "glacier", "cliff", "ridge"]},
 }
 SIMPLIFY_M = 80.0
 COL = dict(sea="#a3bccf", water="#8fb0c6", land="#e7dec9", island="#ddd3ba", coast="#6b6350",
@@ -71,6 +121,50 @@ def coastline_to_land(coast_km_lines, Wkm, Hkm, sea_seeds, island_rings=None):
     ext = [[[round(x, 3), round(y, 3)] for x, y in p.exterior.coords] for p in polys]
     holes = [[[round(x, 3), round(y, 3)] for x, y in h.coords] for p in polys for h in p.interiors]
     return ext, holes
+
+
+def coastline_sea(coast_km_lines, Wkm, Hkm, base_xy, target_xy):
+    """Derive the open-SEA polygon(s) from OSM coastline lines (OSM does NOT tag open sea as
+    water). OSM coastline arrives as many disconnected fragments that DON'T span the box, so
+    polygonize cannot close them (it collapses to one all-box face). Instead: linemerge the
+    fragments into the main coast, extend its endpoints past the box edges, and SPLIT the box by
+    it. The SEA side is the piece holding neither the base nor the target (both on land). Falls
+    back to a buffered-coast barrier if the split degenerates. Source stays OSM."""
+    from shapely.geometry import LineString, Point, box as shbox
+    from shapely.ops import linemerge, split, unary_union
+    segs = [LineString(l) for l in coast_km_lines if len(l) >= 2]
+    if not segs:
+        return []
+    bx = shbox(0, 0, Wkm, Hkm)
+    base, tgt = Point(*base_xy), Point(*target_xy)
+    merged = linemerge(unary_union(segs))
+    lines = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
+    main = max(lines, key=lambda l: l.length)
+    cs = list(main.coords)
+
+    def _ext(p_from, p_to, d=15.0):               # push an endpoint d km past the box edge
+        vx, vy = p_to[0] - p_from[0], p_to[1] - p_from[1]
+        n = (vx * vx + vy * vy) ** 0.5 or 1.0
+        return (p_to[0] + vx / n * d, p_to[1] + vy / n * d)
+
+    crossing = LineString([_ext(cs[1], cs[0])] + cs + [_ext(cs[-2], cs[-1])])
+    sea = []
+    try:
+        pieces = [g for g in split(bx, crossing).geoms if g.area > 1.0]
+        sea = [p for p in pieces if not p.contains(base) and not p.contains(tgt)]
+    except Exception:
+        sea = []
+    if not sea:                                    # fallback: buffer the fragments into a barrier
+        band = unary_union(segs).buffer(2.0)
+        comps = bx.difference(band)
+        comps = list(comps.geoms) if comps.geom_type == "MultiPolygon" else [comps]
+        sea = [c for c in comps if c.area > 1.0 and not c.contains(base) and not c.contains(tgt)]
+    if not sea:
+        return []
+    u = unary_union(sea)
+    polys = [u] if u.geom_type == "Polygon" else list(getattr(u, "geoms", []))
+    return [[[round(x, 3), round(y, 3)] for x, y in p.exterior.coords]
+            for p in polys if p.area > 1.0]
 
 
 def fetch_layer(ox, bbox, tags, tries=3):
@@ -150,6 +244,31 @@ def run(name):
         poly_layers["land_holes"] = holes
         print(f"    land: {len(ext)} polygons ({len(holes)} sea inlets) from coastline",
               flush=True)
+    elif spec.get("coast"):                   # coastal LAND theatre: capture the open sea as water
+        print("    coast (sea capture) ...", flush=True)
+        gc = fetch_layer(ox, (W, S, E, N), {"natural": ["coastline"]})
+        coast_lines = []
+        if gc is not None:
+            gc = gc.to_crs(crs)
+            lines = gc[gc.geometry.type.isin(["LineString", "MultiLineString"])]
+            if len(lines):
+                geom = unary_union(list(lines.geometry)).intersection(clip)
+                geom = geom.simplify(SIMPLIFY_M, preserve_topology=True)
+                for ln in ([geom] if geom.geom_type == "LineString"
+                           else getattr(geom, "geoms", [])):
+                    if ln.is_empty:
+                        continue
+                    xs, ys = ln.coords.xy
+                    coast_lines.append([[(x - x0) / 1000, (y - y0) / 1000]
+                                        for x, y in zip(xs, ys)])
+        from shapely.geometry import Polygon as _Poly
+        sea = coastline_sea(coast_lines, Wkm, Hkm,
+                            kmxy(*spec["base"][1:]), kmxy(*spec["target"][1:]))
+        poly_layers["sea"] = sea                    # own layer: sea backdrop + non-emplaceable
+        line_layers.setdefault("coast", coast_lines)
+        seapct = 100 * sum(_Poly(r).area for r in sea) / (Wkm * Hkm) if sea else 0.0
+        print(f"    sea: {len(sea)} polygon(s), {seapct:.0f}% of box -> non-emplaceable "
+              f"(was reading as emplaceable 'open')", flush=True)
 
     out = dict(name=name, W_km=round(Wkm, 3), H_km=round(Hkm, 3), epsg=crs,
                maritime=spec["maritime"], bbox_lonlat=list(spec["bbox"]),
@@ -183,6 +302,7 @@ def run(name):
             ax.add_patch(Circle((bx, by), out["bridgehead"]["radius_km"], facecolor=COL["secured"],
                                 alpha=0.32, edgecolor=COL["secured"], lw=1.6, zorder=5))
     else:
+        fill(poly_layers.get("sea", []), COL["sea"], 0)        # open-sea backdrop (below land)
         fill(poly_layers["field"], COL["field"], 1)
         fill(poly_layers["forest"], COL["forest"], 2)
         fill(poly_layers["water"], COL["water"], 3)
