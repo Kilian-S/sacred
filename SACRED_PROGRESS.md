@@ -994,3 +994,32 @@ to their supersession notes.)*
 - **State:** all three ledgers folded and committed; Kilian 2026-07-24: skip the control
   remainder, proceed to Phase 2 = gen33 completion (anchor repair, then the metric-2 full
   re-run).
+
+## 33. The LLM arc resolves: worse-than-random at numbers, decisive at language - and the first LLM-assists-SACRED positive  (2026-07-24/25 · branches `gen08-interdiction` + `gen29-multiod` · ledgers `experiments/gen38_llm_enemy_id.md`, `../sacred-gen29/experiments/gen37_reasoning_curation.md`)
+
+- **Kilian's Phase-2 pivot (24 Jul):** the staged gen33 metric-2 curriculum act was dropped for
+  "SACRED enhanced via LLM reasoning". Two acts, both pre-registered, both decided cheaply at
+  the mechanism level before any training spend.
+- **gen37 (route curation): REJECTED at the ceiling.** The LLM shortlists route-triples WORSE
+  than random at every prune size (LP-over-shortlist held pooled: llm 1.66/1.57/1.21 at
+  M=10/15/50 vs random 1.42/1.47/1.10; oracle-exact, ~52 LLM calls, zero training). The
+  trained half (does restriction per se unlock SACRED) was aborted on Kilian's instruction
+  before any run completed - logged as future work, nothing claimed.
+- **gen38 (enemy identification): the strand's POSITIVE, all three steps.** V1: the LLM reads
+  behavioural intelligence narratives and classifies the five gen34 doctrines at 100% (60/60),
+  crossing the gen34 type-blind wall 6/6 with the exact counters (0.063 = omni cap; keyword
+  control 80% accurate yet WORSE THAN BLINDNESS operationally, 0.194 vs blind 0.114, crosses
+  0/6). Robustness: the reasoning-vs-lookup gap WIDENS under contradictory intel (LLM 0.80 and
+  6/6 vs keyword 0.45); honest fragility at terse+contradictory (0.40, 0/6) = the
+  confidence-hedge regime. V2: a TRAINED type-conditioned SACRED (per-route type-threat
+  column; the naive one-hot was inert - disclosed repair) crosses the wall 3/3 seeds at
+  pooled 0.664x the blind cap (gen34's blind generalist: 1.373x), capturing ~75% of the exact
+  inference gap, with the LLM-supplied type indistinguishable from truth (delta <= 0.003).
+- **The arc's honest shape (the thesis sentence):** across B2 -> gen33 -> gen37 -> gen38, the
+  LLM is measurably USELESS-TO-HARMFUL at the quantitative registers of this pipeline
+  (numeric mixtures, terrain-grounded composition, combinatorial curation) and decisively
+  VALUABLE at the language->decision register (doctrine identification from prose), where it
+  supplies exactly the ingredient the RL side provably lacked (gen34/gen36's
+  conditioning-capacity wall). Where-LLMs-help is now a measured map, not an opinion.
+- **State:** suites green both worktrees; all ledgers folded and committed; the one open
+  computational thread = the cheap gen37 restriction follow-up (future work).
