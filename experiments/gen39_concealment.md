@@ -774,3 +774,9 @@ solution: more kill probability than clutter-degraded 0.55, still below open 0.9
 arcs). The 0.90 alternative overshoots: hiding becomes dominant on three of four maps.
 Keeping 0.55 is defensible too (the map-gradient already gives a live choice across theatres,
 just not ON the primary); recorded as the fallback.
+
+**Screen re-run re-timed on the repaired code (2026-07-26 early):** one full kgd block (240
+cells, with the honest two-picker force selection) = 8.4 min serial, run to a SCRATCH folder
+(no head start on the real outdir). Full 36-block grid at 10 workers: **roughly 30-50 min**
+(was 139-165 min at 8 workers; the paired-memory hoists and cheap builds pay for the costlier
+picker). The re-run itself still waits on the lethality decision.
