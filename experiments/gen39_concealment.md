@@ -342,3 +342,71 @@ measurement of what the channel is worth to a TRAINED policy, and therefore of w
 becomes the enemy's better choice against a good defender. Not blinded across all three curricula
 (18 runs): that would answer a second-order question we have no reason to ask. Local, detached,
 8000 sorties; measured local rate 42 min/1000 sorties at 9-way => **~7.5 h at 12-way**.
+
+### STEP 1 RESULTS (2026-07-25; `models/runs/gen39_screen2.json`, 8640 cells, oracle-only, free)
+
+Grid: 4 maps x 3 range multipliers x 3 concealed reaches x 5 team counts x 4 laydown archetypes x
+4 hidden-lethality settings x 3 fields. Every cell scored under BOTH defender memories in one
+build (`scratch/gen39_screen2.py`, block-parallel, 165 min on 8 workers). Read-outs:
+`scratch/gen39_read_{screen,scoping,operating_point}.py`.
+
+**VALIDATION.** The forgetful column reproduces the independent serial screen (`gen39_screen.py`,
+run to completion separately) on all 8640 overlapping cells: **0 value mismatches, largest absolute
+difference 0.00e+00**. The `episodic` hoist is byte-identical to the pre-hoist loop across 3
+laydowns x 20 rule variants. Suite 235 green.
+
+**G1. Room for a learned policy (vs the omniscient optimum) - PASSES, and is unaffected by the
+yardstick correction.**
+
+| map | cells | a real game | G1 cap/opt | G2 rules/opt |
+|---|---|---|---|---|
+| kgd_gvardeysk | 2160 | 89% | 4.59 | 3.47 |
+| ukraine | 2160 | 84% | 3.52 | 3.37 |
+| narva | 2160 | 32% | 1.65 | 2.07 |
+| fulda | 2160 | **0%** | - | - |
+
+Both pre-registered gates (G1>=2.0, G2>=1.25) pass on **87% of non-degenerate cells**.
+
+**G2. Concealment denies the information channel - the mechanic works, with an internal control.**
+Same defender, same map, same rules; only the ground the enemy sits on changes:
+
+| enemy sits in | flying blind | using what it saw | sight is worth |
+|---|---|---|---|
+| open | 0.1334 | 0.1059 | **1.61x** |
+| mixed | 0.1281 | 0.0936 | **1.62x** |
+| random | 0.1418 | 0.1158 | 1.12x |
+| concealed | 0.0842 | 0.0842 | **1.00x (nothing)** |
+
+**G3. The crossover: hiding is the better force design against a defender that must observe.**
+Median hidden-laydown damage as a share of open-laydown damage, all cells (degenerate INCLUDED:
+"a knowing defender can walk around it" is a real property of a short-ranged concealed force, not
+a missing datum). The split by map is material and is NOT pooled:
+
+| map | concealed reach | vs an omniscient defender | vs a defender that must observe |
+|---|---|---|---|
+| kgd_gvardeysk | 0.43 / 0.65 / 0.85 | 0.07 / 0.66 / 0.72 | 0.93 / **1.10** / **1.23** |
+| ukraine | 0.43 / 0.65 / 0.85 | 0.20 / 0.32 / 0.44 | 0.50 / 0.54 / 0.53 |
+
+**Memory (the 2026-07-25 fix) is faithful but is NOT where the value is.** Paired, same cell:
+optimum 1.00x, best blind rule 1.00x, best observing rule 1.08x, G2 1.03x. Recorded plainly: the
+whole-mission form is kept because it is the correct model of the mechanic, not because it moved
+the numbers. The earlier single-cell reading (G2 2.67 -> 3.85) did not survive the full grid.
+
+**SCOPING NEGATIVE (binding on every later claim).** **Fulda is not a game at any swept setting:
+100% of its 2160 cells are degenerate (median optimum 0.00024), flat in team count (K=1 0.00032 ->
+K=6 0.00059).** Narva is degenerate in 68% of cells and its concealed laydowns survive in 2%. The
+coverage fraction phi is ~0.51-0.55 on ALL FOUR maps, so **phi does not capture playability**: on
+the long, wide corridors the route menu spans more ground than <=6 concentrations can threaten and
+the defender always finds a free lane. **The scored theatres for gen39 are kgd_gvardeysk (primary)
+and ukraine (held out).** Narva and Fulda are reported as a measured scoping boundary with this
+mechanism, never as failed runs, and no gen39 claim is made on them.
+
+**OPERATING POINT (pinned for steps 2-4): kgd_gvardeysk, K=3 teams, concealed reach 0.85,
+range multiplier 1.3, hidden lethality 0.8.** At that cell: 100% of laydowns are a real game,
+G1 4.44, G2 3.93, sight worth 1.54x, and - the reason for this cell over its neighbours - **the two
+force designs are exactly equally dangerous to an omniscient defender (hidden/open = 1.00) while
+hiding is 1.65x better against one that must observe.** Raw firepower is matched by construction,
+so everything that separates the two designs at this point IS the information channel. Chosen on
+the pre-registered rule that ranges are pinned as ratios with the absolute difficulty set by the
+screen. Alternative recorded, for a stricter physical story on reach (forest at 0.65 of open):
+cr 0.65 / rm 1.3 / hl 0.6, omniscient 0.93 and observing 1.47.
