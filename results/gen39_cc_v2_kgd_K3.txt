@@ -1,0 +1,19 @@
+
+============================================================================================
+kgd_gvardeysk: 147 open/farmland positions, 53 concealed (same points per km2)
+============================================================================================
+
+--- 3 teams --- open force = 0.1452 vs perfect play, 0.5049 vs an observing defender
+concealed force pays back                   vs perfect  vs observing  % of open
+nothing (the table as pinned)                   0.0442        0.2867        57%
++ open REACH                                    0.0547        0.3329        66%
++ open LETHALITY                                0.0447        0.4247        84%
++ open reach AND lethality                      0.0445        0.4820        95%
+[control] OPEN force, only 53 positions         0.1438        0.3893        77%
+
+  break-even sweep (% of the open force, vs an observing defender):
+   reach\lethality       0.55      0.70      0.90
+              0.85       57%       70%       84%
+              1.00       66%       81%       95%
+              1.20       82%      102%      123%
+              1.50       97%      123%      151%

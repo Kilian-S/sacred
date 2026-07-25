@@ -90,55 +90,121 @@ def run(base, K, kind, leth=BASE_LETH, sub=0, seed_pool=0):
     return float(np.median([g[0] for g in got])), float(np.median([g[1] for g in got]))
 
 
+REACHES, LETHS = (0.85, 1.0, 1.2, 1.5), (0.55, 0.70, 0.90)
+
+# --- 10-core pool (Kilian 2026-07-25: full capacity by default). One task = one
+# (K, kind, reach, leth, sub, field) evaluation; each worker caches bases per reach; tasks are
+# sorted by reach so a worker mostly stays on warm caches. The serial path (--serial) is the
+# byte-identical reference: same seeds, same maths, same medians.
+
+_CTX: dict = {}
+
+
+def _pool_init(name, sc):
+    _CTX["name"], _CTX["sc"], _CTX["bases"] = name, sc, {}
+
+
+def _pool_task(spec):
+    K, kind, rch, lth, sub, field = spec
+    if rch not in _CTX["bases"]:
+        _CTX["bases"][rch] = build(_CTX["name"], rch, _CTX["sc"])
+    base = _CTX["bases"][rch]
+    pp = base.lethality(resample_field(base.coords, field), hidden_leth=lth / BASE_LETH)
+    pool = np.where(base.concealed if kind == "hidden" else ~base.concealed)[0]
+    if sub and len(pool) > sub:
+        pool = np.random.default_rng(field).choice(pool, size=sub, replace=False)
+    return spec, best_force(base, pp, K, pool)
+
+
+def _report(name, teams, med, n_open, n_hid):
+    print(f"\n{'=' * 92}\n{name}: {n_open} open/farmland positions, {n_hid} concealed "
+          f"(same points per km2)\n{'=' * 92}")
+    for K in teams:
+        ref_open = med(K, "open", BASE_REACH, BASE_LETH, 0)
+        print(f"\n--- {K} teams --- open force = {ref_open[0]:.4f} vs perfect play, "
+              f"{ref_open[1]:.4f} vs an observing defender")
+        print(f'{"concealed force pays back":42s} {"vs perfect":>11s} {"vs observing":>13s} '
+              f'{"% of open":>10s}')
+        rows = [("nothing (the table as pinned)", BASE_REACH, BASE_LETH),
+                ("+ open REACH", OPEN_REACH, BASE_LETH),
+                ("+ open LETHALITY", BASE_REACH, OPEN_LETH),
+                ("+ open reach AND lethality", OPEN_REACH, OPEN_LETH)]
+        for lab, rch, lth in rows:
+            r = med(K, "hidden", rch, lth, 0)
+            if r:
+                print(f'{lab:42s} {r[0]:11.4f} {r[1]:13.4f} {100 * r[1] / ref_open[1]:9.0f}%')
+        r = med(K, "open", BASE_REACH, BASE_LETH, n_hid)   # the OPTIONS charge, isolated
+        print(f'{"[control] OPEN force, only " + str(n_hid) + " positions":42s} '
+              f'{r[0]:11.4f} {r[1]:13.4f} {100 * r[1] / ref_open[1]:9.0f}%')
+        print(f'\n  break-even sweep (% of the open force, vs an observing defender):')
+        print("   reach\\lethality " + "".join(f"{x:>10.2f}" for x in LETHS))
+        for rch in REACHES:
+            cells = []
+            for lth in LETHS:
+                r = med(K, "hidden", rch, lth, 0)
+                cells.append(f"{100 * r[1] / ref_open[1]:9.0f}%" if r else "        -")
+            print(f"   {rch:15.2f}" + "".join(cells))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--maps", default="kgd_gvardeysk,ukraine")
+    ap.add_argument("--maps", default="kgd_gvardeysk,ukraine,narva,fulda")
     ap.add_argument("--teams", default="3,6")
+    ap.add_argument("--workers", type=int, default=10)
+    ap.add_argument("--serial", action="store_true", help="the single-process reference path")
     a = ap.parse_args()
     ref = lateral_width(load_vec_theatre(PATH % "kgd_gvardeysk"))
+    teams = [int(x) for x in a.teams.split(",")]
 
     for name in a.maps.split(","):
         sc = lateral_width(load_vec_theatre(PATH % name)) / ref
-        bases = {}
 
-        def get(reach):
-            if reach not in bases:
-                bases[reach] = build(name, reach, sc)
-            return bases[reach]
+        if a.serial:
+            bases = {}
 
-        b0 = get(BASE_REACH)
-        n_hid = int(b0.concealed.sum())
-        n_open = int((~b0.concealed).sum())
-        print(f"\n{'=' * 92}\n{name}: {n_open} open/farmland positions, {n_hid} concealed "
-              f"(same points per km2)\n{'=' * 92}")
-        for K in [int(x) for x in a.teams.split(",")]:
-            ref_open = run(b0, K, "open")
-            print(f"\n--- {K} teams --- open force = {ref_open[0]:.4f} vs perfect play, "
-                  f"{ref_open[1]:.4f} vs an observing defender")
-            print(f'{"concealed force pays back":42s} {"vs perfect":>11s} {"vs observing":>13s} '
-                  f'{"% of open":>10s}')
-            rows = [("nothing (the table as pinned)", BASE_REACH, BASE_LETH),
-                    ("+ open REACH", OPEN_REACH, BASE_LETH),
-                    ("+ open LETHALITY", BASE_REACH, OPEN_LETH),
-                    ("+ open reach AND lethality", OPEN_REACH, OPEN_LETH)]
-            for lab, rch, lth in rows:
-                r = run(get(rch), K, "hidden", leth=lth)
-                if r:
-                    print(f'{lab:42s} {r[0]:11.4f} {r[1]:13.4f} {100 * r[1] / ref_open[1]:9.0f}%')
-            r = run(b0, K, "open", sub=n_hid)          # the OPTIONS charge, isolated
-            print(f'{"[control] OPEN force, only " + str(n_hid) + " positions":42s} '
-                  f'{r[0]:11.4f} {r[1]:13.4f} {100 * r[1] / ref_open[1]:9.0f}%')
+            def get(reach):
+                if reach not in bases:
+                    bases[reach] = build(name, reach, sc)
+                return bases[reach]
 
-            print(f'\n  break-even sweep (% of the open force, vs an observing defender):')
-            reaches = (0.85, 1.0, 1.2, 1.5)
-            leths = (0.55, 0.70, 0.90)
-            print("   reach\\lethality " + "".join(f"{x:>10.2f}" for x in leths))
-            for rch in reaches:
-                cells = []
-                for lth in leths:
-                    r = run(get(rch), K, "hidden", leth=lth)
-                    cells.append(f"{100 * r[1] / ref_open[1]:9.0f}%" if r else "        -")
-                print(f"   {rch:15.2f}" + "".join(cells))
+            b0 = get(BASE_REACH)
+            n_hid, n_open = int(b0.concealed.sum()), int((~b0.concealed).sum())
+
+            def med(K, kind, rch, lth, sub):
+                return run(get(rch), K, kind, leth=lth, sub=sub)
+        else:
+            from src.envs.aerial_theatre_vec import quota_sites, reveal_flags
+            t = terrain_v2(hidden_leth=1.0, conceal_reach=BASE_REACH)
+            _, _, _, cls = quota_sites(load_vec_theatre(PATH % name), n_sites=N_SITES,
+                                       standoff_km=4.0 * sc, range_scale=sc, terrain=t)
+            conc = ~reveal_flags(cls, t)
+            n_hid, n_open = int(conc.sum()), int((~conc).sum())
+            specs = set()
+            for K in teams:
+                for f in FIELDS:
+                    specs.add((K, "open", BASE_REACH, BASE_LETH, 0, f))
+                    specs.add((K, "open", BASE_REACH, BASE_LETH, n_hid, f))
+                    combos = {(BASE_REACH, BASE_LETH), (OPEN_REACH, BASE_LETH),
+                              (BASE_REACH, OPEN_LETH), (OPEN_REACH, OPEN_LETH)}
+                    combos |= {(r_, l_) for r_ in REACHES for l_ in LETHS}
+                    for rch, lth in combos:
+                        specs.add((K, "hidden", rch, lth, 0, f))
+            order = sorted(specs, key=lambda s: (s[2], s[0], s[1], s[3], s[5]))
+            import multiprocessing as mp_
+            with mp_.get_context("spawn").Pool(a.workers, initializer=_pool_init,
+                                               initargs=(name, sc)) as P:
+                res = dict(P.imap_unordered(_pool_task, order,
+                                            chunksize=max(1, len(order) // (a.workers * 3))))
+
+            def med(K, kind, rch, lth, sub):
+                got = [res[(K, kind, rch, lth, sub, f)] for f in FIELDS]
+                got = [g for g in got if g]
+                if not got:
+                    return None
+                return (float(np.median([g[0] for g in got])),
+                        float(np.median([g[1] for g in got])))
+
+        _report(name, teams, med, n_open, n_hid)
 
 
 if __name__ == "__main__":

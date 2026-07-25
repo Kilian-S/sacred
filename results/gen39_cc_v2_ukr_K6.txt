@@ -1,0 +1,19 @@
+
+============================================================================================
+ukraine: 173 open/farmland positions, 26 concealed (same points per km2)
+============================================================================================
+
+--- 6 teams --- open force = 0.0568 vs perfect play, 0.1549 vs an observing defender
+concealed force pays back                   vs perfect  vs observing  % of open
+nothing (the table as pinned)                   0.0000        0.1073        69%
++ open REACH                                    0.0000        0.1167        75%
++ open LETHALITY                                0.0000        0.1582       102%
++ open reach AND lethality                      0.0000        0.1739       112%
+[control] OPEN force, only 26 positions         0.0496        0.1738       112%
+
+  break-even sweep (% of the open force, vs an observing defender):
+   reach\lethality       0.55      0.70      0.90
+              0.85       69%       84%      102%
+              1.00       75%       92%      112%
+              1.20       86%      105%      128%
+              1.50       97%      119%      138%
