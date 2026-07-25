@@ -27,14 +27,19 @@ import time
 
 import numpy as np
 
-from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
+from src.envs.aerial_conceal import (ConcealBase, ConcealDyn, choose_force, pick_laydown,  # noqa: F401
+                                     resample_field)
 from src.envs.aerial_theatre_vec import lateral_width, load_vec_theatre, terrain_v2
 
 MAPS = ["kgd_gvardeysk", "ukraine", "narva", "fulda"]
 PATH = "data/maps/theatre_%s_vec.json"
 OUT = "models/runs/gen39_screen.json"
 
-# the gen32 pinned doctrine and operating point (the banked, proven enemy form)
+# the gen32 pinned doctrine (q_rep/q_flee/q_ar). NOTE: the enemy habit window w=2 is a deliberate
+# COST choice, not gen32's pinned w=3 (state space R^w). The defender's memory of DISCOVERED
+# teams is whole-mission in the persistent arm (the arm the gates are read from), which is the
+# quantity that must never be forgotten (Kilian 2026-07-25); w only bounds the enemy's memory of
+# the defender's recent routes and the anti-repeat rules' window.
 DOCTRINE = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)
 TAU, W = 0.10, 2
 FIELDS = (5100, 5101, 5102)
@@ -106,34 +111,12 @@ def ladder(g: ConcealDyn):
     return rows
 
 
-def pick_laydown(base, pp, kind, K, rng):
-    """Enemy laydown archetypes. The enemy commits to ground BEFORE the run, so this is the choice
-    concealment is actually about: shoot hard from open ground and be located, or shoot weak from
-    cover and stay unknown. `threat` ranks sites by the worst damage they can do to any route."""
-    thr = base.threat_rank(pp)
-    open_sites = np.where(~base.concealed)[0]
-    hid_sites = np.where(base.concealed)[0]
-    def top(idx, n):
-        return idx[np.argsort(-thr[idx])[:n]]
-    if kind == "open":
-        return top(open_sites, K)
-    if kind == "hidden":
-        return top(hid_sites, K)
-    if kind == "mixed":
-        h = K // 2
-        return np.concatenate([top(open_sites, K - h), top(hid_sites, h)])
-    if kind == "random":
-        return rng.choice(len(pp), size=K, replace=False)
-    raise ValueError(kind)
-
-
 def cell(base: ConcealBase, seed, hidden_leth, K, kind, tag):
     t0 = time.time()
     field = resample_field(base.coords, seed)
     pp = base.lethality(field, hidden_leth=hidden_leth)
     rng = np.random.default_rng(seed * 131 + K)
-    L = pick_laydown(base, pp, kind, K, rng)
-    g = ConcealDyn(base, pp, L, w=W, tau=TAU, **DOCTRINE)
+    L, g, picker = choose_force(base, pp, kind, K, rng, w=W, tau=TAU, doctrine=DOCTRINE)
     rows = ladder(g)
     opt = g.history_opt()
 
@@ -158,7 +141,7 @@ def cell(base: ConcealBase, seed, hidden_leth, K, kind, tag):
                                                                   / base.terrain["open"]["r_km"]),
                n_conceal=int(base.concealed[L].sum()), opt=opt, cap=cap,
                blind=b_blind, blind_arm=n_blind, revealed=b_rev, revealed_arm=n_rev,
-               fit=b_fit, eq_static=g.eq_static, G1=g1, G2=g2, G_conceal=gc,
+               fit=b_fit, eq_static=g.eq_static, G1=g1, G2=g2, G_conceal=gc, picker=picker,
                R=g.R, H=g.H, k_teams=len(L), mean_known=float(g.n_known.mean()),
                secs=time.time() - t0,
                rows={k: float(v) for k, v in rows.items()})
@@ -194,10 +177,13 @@ def main():
             # position means the same thing on every map (2 km spacing against a 3.5 km reach on
             # Kaliningrad is 11.6 km against a 20 km reach on Fulda). Without this, the big maps
             # are both incomparable and needlessly expensive.
+            # asymmetric-forest DEFAULT + the 200-site quota sampler, matching gen39_screen2
+            # (this script's earlier runs used forest_los=True + the raster: DIFFERENT GAMES,
+            # archived as *_symforest; rule 8)
             base = ConcealBase(PATH % name,
-                               terrain=terrain_v2(hidden_leth=1.0, forest_los=True,
-                                                  conceal_reach=cr),
-                               range_scale=sc * rm, spacing_km=2.0 * sc, standoff_km=4.0 * sc)
+                               terrain=terrain_v2(hidden_leth=1.0, conceal_reach=cr),
+                               range_scale=sc * rm, spacing_km=2.0 * sc, standoff_km=4.0 * sc,
+                               n_sites=200)
             print(f"[{name} x{rm} cr{cr}] scale={sc * rm:.2f} R={base.R} H={base.H} "
                   f"lanes={len(base.lane_idx)} concealed={int(base.concealed.sum())} "
                   f"menu_step={base.menu_step:.1f}km build={time.time() - t0:.0f}s", flush=True)

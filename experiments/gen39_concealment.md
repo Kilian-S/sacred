@@ -467,8 +467,12 @@ likelier of the two candidate causes of gen33's failed terrain control: `_physic
 derived "it conceals you (blocks line of sight)" from the single `los` flag, so the model was told
 woodland concealed it (which the simulator did not implement) via a flag that actually means
 sight-masking. Hiding and sight-blocking are now stated separately, and `serialise_theatre` takes
-the table in force (defaulting to v1, so gen33's briefs still reproduce verbatim). Three contract
-tests pin the asymmetry, the default blocker set and the brief wording; suite 235 -> 238 green.
+the table in force (defaulting to v1). **CORRECTION 2026-07-25 (Kilian's call: remove the claim):**
+the v1-default brief text is NOT byte-identical to the brief gen33 actually sent (the wording
+changed in this same commit, and the new v1 default describes the reveal mechanic, which v1 does
+not implement); gen33's reproducibility record is its stored transcripts, and any regeneration run
+would use the new text. Three contract tests pin the asymmetry, the default blocker set and the
+brief wording; suite 235 -> 238 green.
 
 **Re-run launched** (same grid, same harness, ~2.5 h). Prediction to be checked against it, on
 record before the numbers land: narva and fulda should become playable, since the mechanism was
@@ -680,3 +684,48 @@ deletes the decision the act exists to study. The physical story fits that shape
 shoots first with an unspoiled firing solution, so surprise buys KILL PROBABILITY while clutter
 costs ENGAGEMENT ENVELOPE. Ukraine breaks even at no swept setting (best 80% at K=3), which is a
 map-dependent finding rather than a knob.
+
+### CODE REPAIRS BEFORE THE STEP-1 RE-RUN (2026-07-25 late, critic session; no screen re-run, no training)
+
+An audit of the committed gen39 code (fresh critic instance, Kilian's blanket approval for the
+bug fixes, in-conversation) found and repaired the following. Every prior number stands where its
+script was sound; the cost table above gains three disclosed caveats and is RE-MEASURED before the
+lethality decision.
+
+1. **`gen39_screen2.py` could not run and finding 6 was never wired in.** `cell()` recorded an
+   undefined `picker` (NameError on the first cell of every block: the planned re-run would have
+   failed 36/36), and the force was still chosen by the OLD top-K picker alone, the exact fault
+   finding 6 retired. Fixed: `choose_force` (now in `src/envs/aerial_conceal.py`, with
+   `pick_laydown` moved beside it) scores BOTH pickers exactly (episodic optimum, T=40) per cell,
+   keeps the winner and records which won; both screens use it. Per-cell cost rises (up to 4
+   candidate games per cell); re-estimate the wall-clock from the first block before trusting the
+   ~2.5 h figure.
+2. **`gen39_screen.py` (the independent cross-check) was three games stale**: symmetric forest
+   (`forest_los=True`), the raster sampler (no `n_sites`), the old picker. Aligned to the current
+   game (asymmetric default, 200-site quota, `choose_force`); its symmetric-era artefacts remain
+   archived apart (rule 8).
+3. **`gen39_conceal_cost.py` (the decision table's source) carried three distortions,** so the
+   table above is honest-but-caveated: (a) the terminal standoff did not scale with the map (its
+   UKRAINE columns were measured at 4 km where every other gen39 artefact uses ~8.2 km: a
+   different game; kgd unaffected at scale 1.0); (b) forces were selected by perfect-play damage
+   but reported in the observing-defender matchup (now selected by the observing score, the
+   reported column); (c) the lethality axis rebuilt the terrain table and therefore the route
+   MENU per cell (now one base per reach, lethality applied via the score-time knob, menu
+   frozen: the screen's convention). `gen39_verify_fixes.py` selection aligned likewise (its
+   verdict was already void: the sampler bug).
+4. **The "gen33 briefs reproduce verbatim" sentence is removed** (correction block above).
+5. **Step-2 readiness:** `redforce.force_schema(terrain)` makes URBAN choosable under v2 (the
+   frozen module constant, computed from v1 at import, excluded it); the v1 default is untouched.
+6. **The `w=2` comment corrected:** it claimed the "gen32 pinned operating point" but gen32
+   pinned w=3; w=2 is a deliberate cost choice, and the defender's memory of DISCOVERED teams is
+   whole-mission in the persistent arm regardless (Kilian's requirement, already satisfied).
+7. **OPEN DESIGN QUESTION (Kilian's, blocks the cost re-measure and the re-run):** reveal reads
+   only the team's NOMINAL site while its fire is delivered from its same-class concentration, so
+   a team on revealing ground can engage a flight whose track never enters the nominal ring and
+   stay unspotted: the within-class remnant of the fault-4 leak. It biases every hide-vs-open
+   number AGAINST concealment. Proposal on the table: a team is spotted when the flight comes
+   within radar radius of any position it fights from (spot-where-it-shoots); only that team is
+   spotted, per Kilian's rule.
+
+Suite 240 -> 242 green (choose_force never-worse contract; schema-follows-table). Nothing
+launched; the cost table and break-even sweep re-run only after decision 7.

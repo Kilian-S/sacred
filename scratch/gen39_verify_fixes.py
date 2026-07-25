@@ -37,11 +37,13 @@ def score(base, pp, L):
 
 
 def force(base, pp, K, pool):
-    """The best force we can find: the old K-best-points picker AND the combination search."""
+    """The best force we can find: the old K-best-points picker AND the combination search.
+    Selected by the OBSERVING-defender score (t[2]), the matchup the shares are reported in
+    (2026-07-25 repair; was perfect-play, the wrong defender for the reported column)."""
     thr = base.threat_rank(pp)
     cands = [pool[np.argsort(-thr[pool])[:K]]] + base.best_laydown(pp, K, pool=pool, n_out=3)
     got = [score(base, pp, L) for L in cands]
-    return max(got, key=lambda t: t[0])
+    return max(got, key=lambda t: t[2])
 
 
 def main():

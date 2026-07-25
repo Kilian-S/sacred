@@ -460,3 +460,59 @@ class ConcealDyn:
             row[np.arange(len(P)), Pm.argmin(axis=1)] = 1.0
         m[seen] = row
         return m
+
+
+# --- force selection (gen39 finding 6) --------------------------------------------------------
+
+
+def pick_laydown(base, pp, kind, K, rng):
+    """Enemy laydown archetypes by top-K INDIVIDUAL threat (the original picker). Kept as one of
+    the candidates `choose_force` scores, never trusted alone: with a dense candidate set it
+    stacks K adjacent points and leaves the corridor open (finding 6)."""
+    thr = base.threat_rank(pp)
+    open_sites = np.where(~base.concealed)[0]
+    hid_sites = np.where(base.concealed)[0]
+
+    def top(idx, n):
+        return idx[np.argsort(-thr[idx])[:n]]
+
+    if kind == "open":
+        return top(open_sites, K)
+    if kind == "hidden":
+        return top(hid_sites, K)
+    if kind == "mixed":
+        h = K // 2
+        return np.concatenate([top(open_sites, K - h), top(hid_sites, h)])
+    if kind == "random":
+        return rng.choice(len(pp), size=K, replace=False)
+    raise ValueError(kind)
+
+
+def choose_force(base, pp, kind, K, rng, w=2, tau=0.10, doctrine=None, T=40):
+    """The archetype's force from BOTH pickers (top-K individual threat AND the `best_laydown`
+    combination search), every candidate scored EXACTLY (episodic optimum over a T-serial
+    mission), keeping the winner and recording which picker produced it. The surrogate inside
+    `best_laydown` can lose to the old picker on some maps, so scoring both exactly is what makes
+    the chosen force never worse than either picker alone (finding 6).
+
+    Returns (laydown, ConcealDyn, picker_name); the winner's game object is handed back so the
+    caller never rebuilds it."""
+    doctrine = doctrine or {}
+    cands = [("topk", np.asarray(pick_laydown(base, pp, kind, K, rng)))]
+    if kind == "mixed":
+        h = K // 2
+        parts = [base.best_laydown(pp, K - h, pool=np.where(~base.concealed)[0])]
+        if h:
+            parts.append(base.best_laydown(pp, h, pool=np.where(base.concealed)[0]))
+        cands.append(("comb", np.concatenate(parts)))
+    elif kind in ("open", "hidden"):
+        pool = np.where(base.concealed if kind == "hidden" else ~base.concealed)[0]
+        for i, L in enumerate(base.best_laydown(pp, K, pool=pool, n_out=3)):
+            cands.append((f"comb{i}", L))
+    best = None
+    for name, L in cands:
+        g = ConcealDyn(base, pp, L, w=w, tau=tau, **doctrine)
+        v = g.episodic(T=T)
+        if best is None or v > best[3]:
+            best = (L, g, name, v)
+    return best[0], best[1], best[2]

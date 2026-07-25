@@ -1,5 +1,16 @@
 # HANDOVER AERIAL, session of 2026-07-25 (gen39 concealment)
 
+> **ADDENDUM 2026-07-25 late (critic session): read the ledger's "CODE REPAIRS BEFORE THE STEP-1
+> RE-RUN" block before acting on this file.** The re-run command below would have crashed
+> (`gen39_screen2.py` recorded an undefined `picker`, and the finding-6 force wiring was absent:
+> the "wired to choose_force" sentence was aspirational, true only after the repair). Also
+> repaired: the stale symmetric-forest cross-check screen; three distortions in
+> `gen39_conceal_cost.py` (unscaled ukraine standoff, wrong-matchup force selection, per-cell
+> menu rebuild), so THE DECISION TABLE BELOW IS RE-MEASURED before the lethality decision; the
+> "gen33 briefs reproduce verbatim" claim (false, removed); urban missing from the step-2 schema.
+> One design question now blocks the cost re-measure alongside the lethality call: whether a team
+> is spotted where it SHOOTS FROM (its manoeuvre cloud) or only at its nominal point (current).
+
 Assumes you have read `HANDOVER.md` and have your context built. This file covers ONE session and
 one act: **gen39, the terrain redesign** (`experiments/gen39_concealment.md` is the authoritative
 ledger; this is the map to it). Read the ledger top-to-bottom afterwards: it is written so that
@@ -161,7 +172,8 @@ variant, but every measurement of it is on void code and must be re-run.
   `ConcealBase.best_laydown()` (the force picker); `ConcealBase(n_sites=, stratified=, site_seed=)`.
 - `src/redforce.py`: `_physics_table_text(terrain=)` states HIDING and SIGHT-BLOCKING separately
   (was conflated off `los`); `serialise_theatre(terrain=)` takes the table in force, defaulting to
-  v1 so gen33's briefs reproduce verbatim.
+  v1. (The v1-default text is NOT byte-identical to gen33's original brief; gen33's record is its
+  stored transcripts. Claim corrected 2026-07-25, Kilian's call.)
 
 **Screens and probes (`scratch/`)**
 - `gen39_screen2.py` — the paired-memory screen, block-parallel (36 blocks, `--launch --workers N`,

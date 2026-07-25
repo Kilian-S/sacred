@@ -42,7 +42,7 @@ import numpy as np
 
 from scratch.gen39_screen import (CONCEAL_REACH, DOCTRINE, FIELDS, HIDDEN_LETH, KINDS, MAPS, PATH,
                                   RANGE_MULT, TAU, TEAMS, W, map_scale, pick_laydown)
-from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
+from src.envs.aerial_conceal import ConcealBase, ConcealDyn, choose_force, resample_field
 from src.envs.aerial_theatre_vec import lateral_width, load_vec_theatre, terrain_v2
 
 OUTDIR = "models/runs/gen39_screen2"
@@ -169,8 +169,8 @@ def cell(base, seed, hidden_leth, K, kind, tag, horizons=HORIZONS):
     t0 = time.time()
     pp = base.lethality(resample_field(base.coords, seed), hidden_leth=hidden_leth)
     rng = np.random.default_rng(seed * 131 + K)
-    L = pick_laydown(base, pp, kind, K, rng)
-    g = ConcealDyn(base, pp, L, w=W, tau=TAU, **DOCTRINE)
+    L, g, picker = choose_force(base, pp, kind, K, rng, w=W, tau=TAU, doctrine=DOCTRINE,
+                                T=T_PIN)
 
     sl_val, sl_d = static_localopt_d(g)
     fg = ladder_forgetful(g, sl_val)

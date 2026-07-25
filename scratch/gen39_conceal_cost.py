@@ -40,11 +40,15 @@ BASE_REACH, BASE_LETH = 0.85, 0.55          # the concealed team's table values,
 OPEN_REACH, OPEN_LETH = 1.00, 0.90
 
 
-def build(name, reach, leth, sc):
-    """A theatre whose CONCEALED classes carry the given reach fraction and lethality, with the
-    reveal flags untouched: only the price of cover changes, never what cover buys."""
-    t = terrain_v2(hidden_leth=leth / 0.55, conceal_reach=reach)
-    return ConcealBase(PATH % name, terrain=t, range_scale=sc, n_sites=N_SITES)
+def build(name, reach, sc):
+    """One theatre per (map, reach), built at the PINNED lethality: the lethality axis is applied
+    at SCORE time via the `hidden_leth` knob, so the route menu stays frozen across it (the
+    screen's same-game convention; rebuilding the table per lethality also moved the menu, a
+    confound repaired 2026-07-25). Terminal standoff scales with the map, matching every other
+    gen39 artefact (the earlier unscaled 4 km made the ukraine columns a different game)."""
+    t = terrain_v2(hidden_leth=1.0, conceal_reach=reach)
+    return ConcealBase(PATH % name, terrain=t, range_scale=sc, standoff_km=4.0 * sc,
+                       n_sites=N_SITES)
 
 
 def score(base, pp, L):
@@ -59,18 +63,22 @@ def score(base, pp, L):
 
 
 def best_force(base, pp, K, pool):
+    """Selected by the OBSERVING-defender score (t[1]): the matchup every reported share is
+    measured in. The earlier selection by perfect-play damage picked forces for the wrong
+    defender (repaired 2026-07-25; both columns still come from the ONE chosen force)."""
     thr = base.threat_rank(pp)
     if len(pool) < K:
         return None
     cands = [pool[np.argsort(-thr[pool])[:K]]] + base.best_laydown(pp, K, pool=pool, n_out=3)
-    return max((score(base, pp, L) for L in cands), key=lambda t: t[0])
+    return max((score(base, pp, L) for L in cands), key=lambda t: t[1])
 
 
-def run(base, K, kind, sub=0, seed_pool=0):
-    """Median over fields. `sub` restricts the pool to a random subset (the OPTIONS ablation)."""
+def run(base, K, kind, leth=BASE_LETH, sub=0, seed_pool=0):
+    """Median over fields. `leth` = concealed lethality, applied via the score-time knob (menu
+    frozen). `sub` restricts the pool to a random subset (the OPTIONS ablation)."""
     got = []
     for s in FIELDS:
-        pp = base.lethality(resample_field(base.coords, s), hidden_leth=1.0)
+        pp = base.lethality(resample_field(base.coords, s), hidden_leth=leth / BASE_LETH)
         pool = np.where(base.concealed if kind == "hidden" else ~base.concealed)[0]
         if sub and len(pool) > sub:
             pool = np.random.default_rng(seed_pool + s).choice(pool, size=sub, replace=False)
@@ -91,7 +99,14 @@ def main():
 
     for name in a.maps.split(","):
         sc = lateral_width(load_vec_theatre(PATH % name)) / ref
-        b0 = build(name, BASE_REACH, BASE_LETH, sc)
+        bases = {}
+
+        def get(reach):
+            if reach not in bases:
+                bases[reach] = build(name, reach, sc)
+            return bases[reach]
+
+        b0 = get(BASE_REACH)
         n_hid = int(b0.concealed.sum())
         n_open = int((~b0.concealed).sum())
         print(f"\n{'=' * 92}\n{name}: {n_open} open/farmland positions, {n_hid} concealed "
@@ -102,13 +117,12 @@ def main():
                   f"{ref_open[1]:.4f} vs an observing defender")
             print(f'{"concealed force pays back":42s} {"vs perfect":>11s} {"vs observing":>13s} '
                   f'{"% of open":>10s}')
-            rows = [("nothing (the table as pinned)", BASE_REACH, BASE_LETH, 0),
-                    ("+ open REACH", OPEN_REACH, BASE_LETH, 0),
-                    ("+ open LETHALITY", BASE_REACH, OPEN_LETH, 0),
-                    ("+ open reach AND lethality", OPEN_REACH, OPEN_LETH, 0)]
-            for lab, rch, lth, _ in rows:
-                bb = b0 if (rch, lth) == (BASE_REACH, BASE_LETH) else build(name, rch, lth, sc)
-                r = run(bb, K, "hidden")
+            rows = [("nothing (the table as pinned)", BASE_REACH, BASE_LETH),
+                    ("+ open REACH", OPEN_REACH, BASE_LETH),
+                    ("+ open LETHALITY", BASE_REACH, OPEN_LETH),
+                    ("+ open reach AND lethality", OPEN_REACH, OPEN_LETH)]
+            for lab, rch, lth in rows:
+                r = run(get(rch), K, "hidden", leth=lth)
                 if r:
                     print(f'{lab:42s} {r[0]:11.4f} {r[1]:13.4f} {100 * r[1] / ref_open[1]:9.0f}%')
             r = run(b0, K, "open", sub=n_hid)          # the OPTIONS charge, isolated
@@ -122,8 +136,7 @@ def main():
             for rch in reaches:
                 cells = []
                 for lth in leths:
-                    bb = build(name, rch, lth, sc)
-                    r = run(bb, K, "hidden")
+                    r = run(get(rch), K, "hidden", leth=lth)
                     cells.append(f"{100 * r[1] / ref_open[1]:9.0f}%" if r else "        -")
                 print(f"   {rch:15.2f}" + "".join(cells))
 

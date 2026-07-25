@@ -64,6 +64,21 @@ FORCE_SCHEMA = {
 TAU_BIN = {"decisive": 0.05, "balanced": 0.10, "hedged": 0.20}
 
 
+def force_schema(terrain: dict | None = None) -> dict:
+    """FORCE_SCHEMA for the table in force. The module constant's terrain enum was computed from
+    the v1 table at import, so under v2 a model could never choose URBAN although v2 makes it
+    emplaceable (and it is the strongest cover class). gen39 step 2 must pass its terrain table
+    here; the default returns the frozen v1 schema unchanged (gen33's contract)."""
+    if terrain is None:
+        return FORCE_SCHEMA
+    import copy
+    s = copy.deepcopy(FORCE_SCHEMA)
+    empl = [k for k, v in terrain.items() if v["emplace"] and k != "open"]
+    s["properties"]["agents"]["items"]["properties"]["emplacement_zone"]["properties"][
+        "terrain"]["enum"] = empl + ["open"]
+    return s
+
+
 def terrain_composition(th, n=44) -> dict:
     xs = np.linspace(1, th.W - 1, n)
     ys = np.linspace(1, th.H - 1, n)

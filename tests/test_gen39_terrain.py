@@ -218,3 +218,26 @@ def test_same_class_default_is_the_non_leaking_one():
 
     from src.envs.aerial_conceal import ConcealDyn
     assert inspect.signature(ConcealDyn.__init__).parameters["same_class"].default is True
+
+
+# --- (vii) force selection scores both pickers (finding 6) -------------------------------------
+
+def test_choose_force_scores_both_pickers_and_is_never_worse_than_topk():
+    from src.envs.aerial_conceal import ConcealBase, ConcealDyn, choose_force, pick_laydown, \
+        resample_field
+    base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
+    pp = base.lethality(resample_field(base.coords, 5100))
+    L, g, picker = choose_force(base, pp, "open", 2, np.random.default_rng(0), w=2)
+    assert picker in ("topk", "comb0", "comb1", "comb2") and len(L) == 2
+    L0 = pick_laydown(base, pp, "open", 2, np.random.default_rng(0))
+    g0 = ConcealDyn(base, pp, L0, w=2)
+    assert g.episodic(T=40) >= g0.episodic(T=40) - 1e-12
+
+
+def test_force_schema_follows_the_table_in_force():
+    from src.redforce import FORCE_SCHEMA, force_schema
+    path = lambda s: s["properties"]["agents"]["items"]["properties"]["emplacement_zone"][  # noqa: E731
+        "properties"]["terrain"]["enum"]
+    assert "urban" not in path(FORCE_SCHEMA)            # the frozen v1 contract (gen33)
+    assert "urban" in path(force_schema(terrain_v2()))  # v2: urban is choosable
+    assert force_schema() is FORCE_SCHEMA               # default untouched
