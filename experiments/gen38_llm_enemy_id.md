@@ -181,3 +181,38 @@ contradictory intel); BOTH = terse + distractor. Blind_cap 0.1140, omni_cap 0.06
 > headline stands with the scope: *the LLM supplies the enemy doctrine and crosses the gen34
 > wall under clean, terse, or contradictory intelligence; it should hedge to the blind policy
 > when the assessment is both sparse and conflicting.*
+
+### RESULT V2 (2026-07-25 00:35; batch `scratch/gen38_v2_batch.sh` at SHA `475698b`;
+### artefacts `models/runs/gen38_llm_enemy_id/v2_seed{0,1,2}.{json,log}` + ckpts; 3 seeds x
+### 12000 sorties. One disclosed mid-act repair BEFORE any result was read: the first V2
+### launch's type one-hot was INERT (constant across routes cancels in the softmax; policy sat
+### at 1.38x blind = gen34's blind level); replaced by the per-route type-threat column
+### (commit `475698b`), verified type-discriminating offline; the aborted run's outputs were
+### discarded unread beyond the diagnosis)
+
+| seed | best told-TRUE-type (ratio-to-blind-cap) | told-LLM-type at that checkpoint |
+|---|---|---|
+| 0 | 0.670 @ 8000 | 0.673 |
+| 1 | 0.664 @ 7000 | 0.663 |
+| 2 | 0.657 @ 12000 | 0.660 |
+| pooled | **0.664** | **0.665** |
+
+> **VERDICT V2: CONFIRMED 3/3 seeds - the full "SACRED enhanced via LLM reasoning" claim.**
+> The trained type-conditioned policy crosses the type-blind wall decisively (pooled 0.664x
+> the blind cap, vs the gen34 blind generalist's 1.373x - a 2.07x improvement), capturing
+> ~75% of the exact inference gap ((blind 0.1140 - achieved 0.0758) / (blind - omni 0.0631)),
+> and **the LLM-supplied type is operationally indistinguishable from the truth** (pooled
+> delta 0.001-0.003 across seeds; V1's 100% classification carries through end-to-end). The
+> conditioning-capacity lesson recurs and is disclosed: the type signal only works delivered
+> as a per-route DISCRIMINATING feature (the threat column), not as a symbol (the inert
+> one-hot) - the same head limitation gen36/gen34 measured, here engineered around.
+>
+> **The banked act-level claim (V1+robustness+V2):** *an LLM reading a plain-language,
+> possibly self-contradictory intelligence assessment identifies the enemy doctrine (100%
+> clean, 80% under contradictory intel where keyword lookup collapses to 45% and is worse
+> than blindness) and hands it to a trained SACRED policy, which then crosses the exact
+> type-blind performance wall it provably could not cross alone (0.66x vs 1.37x the blind
+> cap), capturing ~75% of the theoretical value of knowing the enemy; deployment should
+> confidence-hedge when intel is both sparse and contradictory.* This is the LLM strand's
+> positive, in the language->decision register, completing the measured arc with B2/gen33/
+> gen37's quantitative-register negatives.
