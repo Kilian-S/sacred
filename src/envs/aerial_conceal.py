@@ -61,7 +61,7 @@ class ConcealBase:
     Built once per (theatre, terrain table, range scale); field-specific games are cheap."""
 
     def __init__(self, path, terrain=None, range_scale=1.0, spacing_km=2.0, standoff_km=4.0,
-                 n_lanes=14, n_terrain=12, menu_step=None):
+                 n_lanes=14, n_terrain=12, menu_step=None, stratified=0, site_seed=0):
         self.path, self.terrain = path, (terrain if terrain is not None else terrain_v2())
         self.th = load_vec_theatre(path)
         # the cover-route seeding grid scales with the map so the big theatres stay affordable
@@ -70,7 +70,7 @@ class ConcealBase:
         game, menu, coords, rr, pp, S, lane_idx, cls = build_theatre_game(
             self.th, K=1, n_lanes=n_lanes, n_terrain=n_terrain, spacing_km=spacing_km,
             standoff_km=standoff_km, range_scale=range_scale, terrain=self.terrain,
-            return_cls=True)
+            return_cls=True, stratified=stratified, site_seed=site_seed)
         self.menu, self.coords, self.rr, self.cls = menu, coords, rr, cls
         self.lane_idx, self.routes, self.route_edges = lane_idx, game.routes, game.route_edges
         self.isets, self.travel = game.interdiction_sets, game.travel_cost

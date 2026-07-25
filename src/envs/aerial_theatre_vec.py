@@ -247,28 +247,69 @@ def build_menu(th: VecTheatre, R: int = 24) -> list[np.ndarray]:
 # continuous hazards + exposure
 
 
+def _class_parts(th: VecTheatre, cls: str) -> list:
+    out = []
+    for p in th.polys.get(cls, []):
+        out += list(p.geoms) if hasattr(p, "geoms") else [p]
+    return [g for g in out if g.area > 0 and g.is_valid]
+
+
 def hazard_sites(th: VecTheatre, spacing_km: float = 2.0, standoff_km: float = 4.0,
-                 range_scale: float = 1.0, terrain: dict | None = None):
+                 range_scale: float = 1.0, terrain: dict | None = None,
+                 stratified: int = 0, seed: int = 0):
     """Continuous candidate sites on emplaceable terrain, outside terminal standoff. Returns
     (coords[H,2], r_km[H], p_max[H], cls[H]). range_scale multiplies every weapon range (the
     coverage-fraction scaling; default 1.0 = kgd-scale, so existing games are byte-identical).
-    terrain defaults to the v1 table, so existing callers are unchanged (gen39)."""
+    terrain defaults to the v1 table, so existing callers are unchanged (gen39).
+
+    `stratified > 0` adds that many EXTRA candidates drawn inside the emplaceable polygons,
+    allocated across classes in proportion to their area and sampled uniformly by area within a
+    class. Kilian's catch, 2026-07-25: a plain raster systematically misses COVER, because cover
+    comes in patches smaller than the grid while open ground comes in blocks. Measured on the
+    2 km kgd grid, only 17% of forest patches and 5% of urban patches contained any candidate at
+    all; on ukraine's 4.1 km grid the sampled forest patches held just 11% of the forest AREA and
+    urban 5%. That biases every concealment result downwards by simply not offering the enemy the
+    cover that exists. Default 0 keeps the pure raster, so banked games are untouched."""
     terrain = TERRAIN if terrain is None else terrain
     xs = np.arange(1.0, th.W, spacing_km)
     ys = np.arange(1.0, th.H, spacing_km)
     coords, rr, pp, cls = [], [], [], []
+
+    def offer(xy):
+        if (np.linalg.norm(xy - th.base) < standoff_km
+                or np.linalg.norm(xy - th.target) < standoff_km):
+            return
+        k = th.classify(xy)
+        spec = terrain[k]
+        if not spec["emplace"]:
+            return
+        coords.append(np.asarray(xy, float)); rr.append(spec["r_km"] * range_scale)
+        pp.append(spec["p_max"]); cls.append(k)
+
     for x in xs:
         for y in ys:
-            xy = np.array([x, y])
-            if (np.linalg.norm(xy - th.base) < standoff_km
-                    or np.linalg.norm(xy - th.target) < standoff_km):
+            offer(np.array([x, y]))
+
+    if stratified > 0:
+        rng = np.random.default_rng(seed)
+        pool = {k: _class_parts(th, k) for k, v in terrain.items()
+                if v["emplace"] and _class_parts(th, k)}
+        areas = {k: sum(g.area for g in v) for k, v in pool.items()}
+        tot = sum(areas.values()) or 1.0
+        for k, parts in pool.items():
+            n = int(round(stratified * areas[k] / tot))
+            if n <= 0:
                 continue
-            k = th.classify(xy)
-            spec = terrain[k]
-            if not spec["emplace"]:
-                continue
-            coords.append(xy); rr.append(spec["r_km"] * range_scale)
-            pp.append(spec["p_max"]); cls.append(k)
+            w = np.array([g.area for g in parts], float)
+            w /= w.sum()
+            for j in rng.choice(len(parts), size=n, p=w):        # patch ~ area, point ~ uniform
+                g = parts[int(j)]
+                x0, y0, x1, y1 = g.bounds
+                for _ in range(40):                              # rejection-sample inside it
+                    xy = np.array([rng.uniform(x0, x1), rng.uniform(y0, y1)])
+                    if g.covers(Point(*xy)):
+                        offer(xy)
+                        break
     return np.array(coords), np.array(rr), np.array(pp), cls
 
 
@@ -439,14 +480,15 @@ def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float 
 def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain: int = 12,
                        spacing_km: float = 2.0, standoff_km: float = 4.0, los: bool = True,
                        range_scale: float = 1.0, terrain: dict | None = None,
-                       return_cls: bool = False):
+                       return_cls: bool = False, stratified: int = 0, site_seed: int = 0):
     """(InterdictionGame, menu, coords, r_km, p_max, S[R,H], lane_idx) on the continuous polygon
     terrain. The menu carries BOTH geometric LANES (the naive rule's support: direct/exposed) and
     TERRAIN-AWARE routes (the equilibrium's cover-seeking options), so the game measures
     terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes.
     range_scale scales weapon ranges for coverage-fraction comparability across map sizes."""
     coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km,
-                                       range_scale=range_scale, terrain=terrain)
+                                       range_scale=range_scale, terrain=terrain,
+                                       stratified=stratified, seed=site_seed)
     own = containing_blockers(th, coords, terrain) if terrain is not None else None
     lanes = build_menu(th, R=n_lanes)
     lane_idx = list(range(len(lanes)))
