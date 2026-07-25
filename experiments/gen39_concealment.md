@@ -444,3 +444,32 @@ information-channel mechanic (which is what this act claims), and stop penalisin
 It is a DIFFERENT GAME: nothing measured under symmetric forest may be mixed with it (rule 8).
 Until Kilian decides, the scored theatres remain kgd (primary) + ukraine (held out) and the
 operating point above stands.
+
+### DESIGN CHANGE: FOREST HIDES WITHOUT BLINDING (2026-07-25, Kilian's call; SHA at the commit)
+
+> "With modern radar equipment the team in the forest should only hide it, not blind it."
+
+Table v2 blocked sight SYMMETRICALLY, so a team in woodland was invisible AND blind. That is not
+the physics (canopy conceals a ground team from an aircraft looking down; it does not stop a
+radar-cued crew engaging an aircraft above the treeline) and it is what killed two theatres.
+**`TERRAIN_V2["forest"]["los"]` True -> False; `reveal` stays False. Urban keeps both, because
+buildings are genuine vertical obstacles.** `terrain_v2(forest_los=True)` restores the symmetric
+rule as the disclosed sensitivity row.
+
+**Rule 8 applies with full force: the symmetric and asymmetric tables are DIFFERENT GAMES.** Every
+number in "STEP 1 RESULTS" above was measured under the symmetric rule and is superseded, not
+amended. Those artefacts are archived as `models/runs/gen39_screen{,2}_symforest*` and keep their
+own cross-check (0 mismatches on 8640 cells). **The pinned operating point above is VOID** and is
+re-picked from the re-run. Nothing from the two tables may appear in one figure or one ladder.
+
+**The LLM brief is repaired in the same commit,** because it carried the same conflation and is the
+likelier of the two candidate causes of gen33's failed terrain control: `_physics_table_text`
+derived "it conceals you (blocks line of sight)" from the single `los` flag, so the model was told
+woodland concealed it (which the simulator did not implement) via a flag that actually means
+sight-masking. Hiding and sight-blocking are now stated separately, and `serialise_theatre` takes
+the table in force (defaulting to v1, so gen33's briefs still reproduce verbatim). Three contract
+tests pin the asymmetry, the default blocker set and the brief wording; suite 235 -> 238 green.
+
+**Re-run launched** (same grid, same harness, ~2.5 h). Prediction to be checked against it, on
+record before the numbers land: narva and fulda should become playable, since the mechanism was
+measured at 13.3x on fulda and 3.2x on narva, while ukraine (12% wooded, 1.0x) should barely move.
