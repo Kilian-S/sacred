@@ -61,7 +61,8 @@ class ConcealBase:
     Built once per (theatre, terrain table, range scale); field-specific games are cheap."""
 
     def __init__(self, path, terrain=None, range_scale=1.0, spacing_km=2.0, standoff_km=4.0,
-                 n_lanes=14, n_terrain=12, menu_step=None, stratified=0, site_seed=0):
+                 n_lanes=14, n_terrain=12, menu_step=None, stratified=0, site_seed=0,
+                 n_sites=0):
         self.path, self.terrain = path, (terrain if terrain is not None else terrain_v2())
         self.th = load_vec_theatre(path)
         # the cover-route seeding grid scales with the map so the big theatres stay affordable
@@ -70,7 +71,7 @@ class ConcealBase:
         game, menu, coords, rr, pp, S, lane_idx, cls = build_theatre_game(
             self.th, K=1, n_lanes=n_lanes, n_terrain=n_terrain, spacing_km=spacing_km,
             standoff_km=standoff_km, range_scale=range_scale, terrain=self.terrain,
-            return_cls=True, stratified=stratified, site_seed=site_seed)
+            return_cls=True, stratified=stratified, site_seed=site_seed, n_sites=n_sites)
         self.menu, self.coords, self.rr, self.cls = menu, coords, rr, cls
         self.lane_idx, self.routes, self.route_edges = lane_idx, game.routes, game.route_edges
         self.isets, self.travel = game.interdiction_sets, game.travel_cost
@@ -109,6 +110,69 @@ class ConcealBase:
         """Per site: the worst damage it could do to any single route. Ranks GROUND, which is what
         an enemy choosing where to emplace actually compares."""
         return (1.0 - self.survival(pp) ** n_fleet).max(axis=0)
+
+    def best_laydown(self, pp, K, pool=None, cand=60, restarts=3, iters=40, seed=0, n_out=0):
+        """The best FORCE of K positions, not the K best positions.
+
+        The screen's original picker took the K sites with the highest individual threat, which is
+        not a force: with a dense candidate set it selects K nearly adjacent points in the same
+        piece of ground and leaves the rest of the corridor open. Measured 2026-07-25: as the
+        candidate count rose 563 -> 2360 the greedy force got monotonically WORSE against perfect
+        play (ratio 0.28 -> 0.05), i.e. the numbers were reporting the picker rather than the
+        terrain.
+
+        Objective (cheap, and the one a planner actually has): maximise the damage on the SAFEST
+        route, i.e. close every lane. Exact scoring still happens downstream on the chosen force;
+        this only has to choose well, not to score. Greedy max-min seed + steepest-descent swaps,
+        several restarts, restricted to the `cand` most threatening sites of the allowed classes.
+
+        The surrogate is not the true objective (which is the defender's optimum under the enemy's
+        doctrine), so it can lose to the old individual-threat picker on some maps: measured
+        2026-07-25, +53% on ukraine but -9% on kaliningrad. `n_out>0` therefore returns the best
+        n distinct candidate FORCES instead of one, so the caller can score them exactly and keep
+        the winner. The force actually used is then never worse than the old picker's."""
+        S = self.survival(pp)
+        logS = np.log(np.clip(S, 1e-300, 1.0)) * N_FLEET                  # [R, H]
+        idx = np.arange(self.H) if pool is None else np.asarray(pool, dtype=int)
+        if len(idx) > cand:
+            idx = idx[np.argsort(-self.threat_rank(pp)[idx])[:cand]]
+        K = min(K, len(idx))
+
+        def obj(L):
+            return float((1.0 - np.exp(logS[:, list(L)].sum(axis=1))).min())
+
+        best, best_v, out = None, -np.inf, []
+        rng = np.random.default_rng(seed)
+        for r in range(restarts):
+            if r == 0:                                                    # greedy max-min seed
+                L = []
+                for _ in range(K):
+                    L.append(int(max((c for c in idx if c not in L), key=lambda c: obj(L + [c]))))
+            else:
+                L = list(rng.choice(idx, size=K, replace=False))
+            v = obj(L)
+            for _ in range(iters):                                        # steepest-descent swaps
+                moved = False
+                for s in range(K):
+                    for c in idx:
+                        if c in L:
+                            continue
+                        alt = list(L); alt[s] = int(c)
+                        av = obj(alt)
+                        if av > v + 1e-12:
+                            L, v, moved = alt, av, True
+                if not moved:
+                    break
+            out.append((v, tuple(sorted(int(x) for x in L))))
+            if v > best_v:
+                best, best_v = list(L), v
+        if not n_out:
+            return np.array(sorted(best), dtype=int)
+        seen, keep = set(), []
+        for _, L in sorted(out, reverse=True):
+            if L not in seen:
+                seen.add(L); keep.append(np.array(L, dtype=int))
+        return keep[:n_out]
 
     def game_for(self, pp_field):
         S = self.survival(pp_field)

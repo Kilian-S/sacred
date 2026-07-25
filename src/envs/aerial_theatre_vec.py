@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import numpy as np
 from shapely.geometry import LineString, Point, Polygon
 from shapely.strtree import STRtree
-from shapely.ops import unary_union
+from shapely.ops import nearest_points, unary_union
 
 from src.baselines.interdiction_oracle import InterdictionGame
 
@@ -254,6 +254,94 @@ def _class_parts(th: VecTheatre, cls: str) -> list:
     return [g for g in out if g.area > 0 and g.is_valid]
 
 
+def _snap_into(g, xy, eps_km: float = 0.05):
+    """Nearest point INSIDE polygon g (the boundary point nudged a hair towards the interior, so
+    point-in-polygon classification agrees)."""
+    p = nearest_points(g, Point(float(xy[0]), float(xy[1])))[0]
+    c = g.representative_point()
+    v = np.array([c.x - p.x, c.y - p.y])
+    n = float(np.linalg.norm(v))
+    q = np.array([p.x, p.y]) + (v / n) * min(eps_km, n / 2.0) if n > 1e-12 else np.array([c.x, c.y])
+    return q if g.covers(Point(*q)) else np.array([c.x, c.y])
+
+
+def quota_sites(th: VecTheatre, n_sites: int = 200, spacing_km: float = 2.0,
+                standoff_km: float = 4.0, range_scale: float = 1.0,
+                terrain: dict | None = None, snap_cells: float = 1.0, min_sep_frac: float = 0.25):
+    """Candidate emplacements whose CLASS SHARES match the theatre's terrain composition, on an
+    evenly spaced skeleton (Kilian's scheme, 2026-07-25).
+
+    The plain raster labelled each node by the polygon it landed exactly on, so cover smaller than
+    the grid was never offered: on kaliningrad only 17% of forest patches and 5% of urban patches
+    held a candidate at all. Two fixes had to be combined, because each alone reintroduces the
+    other's bias: snapping every node to nearby cover OVER-represents cover (most nodes in mixed
+    country have some wood within a kilometre), while sampling purely by area CLUMPS lengthwise.
+
+    So: (1) quotas from the whole-map emplaceable area shares, (2) the even grid as the spatial
+    skeleton, (3) each class's quota filled by the grid nodes NEAREST that class, snapped inside
+    the polygon they are assigned to, (4) snaps capped at `snap_cells` grid cells and kept
+    `min_sep_frac` of a cell apart, so a single copse cannot absorb a whole quota. Points that are
+    never reassigned keep the ground they already stand on. Emplaceable classes only, so the
+    shares are renormalised over ground you can actually stand on.
+
+    NOTE a MANPADS needs somewhere to stand, not somewhere to fit its engagement circle: patch
+    AREA is irrelevant to emplaceability and is not used here (an earlier analysis wrongly compared
+    patch area against weapon footprint and is retracted in the ledger)."""
+    terrain = TERRAIN if terrain is None else terrain
+    cell = float(spacing_km)
+    anchors = [np.array([x, y])
+               for x in np.arange(1.0, th.W, cell) for y in np.arange(1.0, th.H, cell)
+               if not (np.linalg.norm(np.array([x, y]) - th.base) < standoff_km
+                       or np.linalg.norm(np.array([x, y]) - th.target) < standoff_km)]
+    empl = [k for k, v in terrain.items() if v["emplace"]]
+    area = {k: float(sum(g.area for g in _class_parts(th, k))) for k in empl}
+    area["open"] = max(th.W * th.H - sum(float(sum(g.area for g in _class_parts(th, k)))
+                                         for k in th.polys), 0.0)          # open = the residual
+    tot = sum(area.get(k, 0.0) for k in empl) or 1.0
+    quota = {k: int(round(n_sites * area.get(k, 0.0) / tot)) for k in empl}
+
+    taken = [False] * len(anchors)
+    placed: dict[str, list] = {k: [] for k in empl}
+    # polygon classes first, rarest quota first: they are the constrained ones, and `open` is the
+    # residual that can be satisfied anywhere
+    for k in sorted([k for k in empl if _class_parts(th, k)], key=lambda k: quota[k]):
+        parts = _class_parts(th, k)
+        tree = STRtree(parts)
+        d = []
+        for i, xy in enumerate(anchors):
+            p = Point(float(xy[0]), float(xy[1]))
+            j = int(tree.nearest(p))
+            d.append((parts[j].distance(p), i, j))
+        for dist, i, j in sorted(d):
+            if len(placed[k]) >= quota[k]:
+                break
+            if taken[i] or dist > snap_cells * cell:
+                continue
+            q = _snap_into(parts[j], anchors[i])
+            if (np.linalg.norm(q - th.base) < standoff_km
+                    or np.linalg.norm(q - th.target) < standoff_km
+                    or th.classify(q) != k):
+                continue
+            if any(np.linalg.norm(q - o) < min_sep_frac * cell for o in placed[k]):
+                continue                                   # one copse cannot absorb a whole quota
+            taken[i] = True
+            placed[k].append(q)
+    for i, xy in enumerate(anchors):                       # leftovers keep the ground they stand on
+        if taken[i]:
+            continue
+        k = th.classify(xy)
+        if terrain[k]["emplace"] and len(placed.get(k, [])) < quota.get(k, 0):
+            placed[k].append(np.asarray(xy, float))
+            taken[i] = True
+
+    coords, rr, pp, cls = [], [], [], []
+    for k, pts in placed.items():
+        for q in pts:
+            coords.append(q); rr.append(terrain[k]["r_km"] * range_scale)
+            pp.append(terrain[k]["p_max"]); cls.append(k)
+    return np.array(coords), np.array(rr), np.array(pp), cls
+
+
 def hazard_sites(th: VecTheatre, spacing_km: float = 2.0, standoff_km: float = 4.0,
                  range_scale: float = 1.0, terrain: dict | None = None,
                  stratified: int = 0, seed: int = 0):
@@ -480,15 +568,21 @@ def build_terrain_menu(th: VecTheatre, coords, rr, pp, R: int = 24, step: float 
 def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain: int = 12,
                        spacing_km: float = 2.0, standoff_km: float = 4.0, los: bool = True,
                        range_scale: float = 1.0, terrain: dict | None = None,
-                       return_cls: bool = False, stratified: int = 0, site_seed: int = 0):
+                       return_cls: bool = False, stratified: int = 0, site_seed: int = 0,
+                       n_sites: int = 0):
     """(InterdictionGame, menu, coords, r_km, p_max, S[R,H], lane_idx) on the continuous polygon
     terrain. The menu carries BOTH geometric LANES (the naive rule's support: direct/exposed) and
     TERRAIN-AWARE routes (the equilibrium's cover-seeking options), so the game measures
     terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes.
     range_scale scales weapon ranges for coverage-fraction comparability across map sizes."""
-    coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km,
-                                       range_scale=range_scale, terrain=terrain,
-                                       stratified=stratified, seed=site_seed)
+    if n_sites:                       # Kilian's quota scheme: fixed budget, composition shares
+        coords, rr, pp, cls = quota_sites(th, n_sites=n_sites, spacing_km=spacing_km,
+                                          standoff_km=standoff_km, range_scale=range_scale,
+                                          terrain=terrain)
+    else:
+        coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km,
+                                           range_scale=range_scale, terrain=terrain,
+                                           stratified=stratified, seed=site_seed)
     own = containing_blockers(th, coords, terrain) if terrain is not None else None
     lanes = build_menu(th, R=n_lanes)
     lane_idx = list(range(len(lanes)))

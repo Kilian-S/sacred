@@ -46,6 +46,7 @@ from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
 from src.envs.aerial_theatre_vec import lateral_width, load_vec_theatre, terrain_v2
 
 OUTDIR = "models/runs/gen39_screen2"
+N_SITES = 200                   # fixed candidate budget; class shares match the map's composition
 HORIZONS = (10, 20, 40, 80)     # mission lengths, free: one backward sweep gives them all
 T_PIN = 40                      # the pinned mission length the gates are read at
 SOFTNESS = (0.0, 0.05, 0.2, 0.5)
@@ -194,7 +195,8 @@ def cell(base, seed, hidden_leth, K, kind, tag, horizons=HORIZONS):
                phi=float(2.0 * np.asarray(base.rr)[L].sum() / lateral_width(base.th)),
                conceal_reach=float(base.terrain["forest"]["r_km"] / base.terrain["open"]["r_km"]),
                n_conceal=int(base.concealed[L].sum()), eq_static=g.eq_static,
-               R=g.R, H=g.H, k_teams=int(len(L)), mean_known=float(g.n_known.mean()),
+               R=g.R, H=g.H, k_teams=int(len(L)), picker=picker,
+               mean_known=float(g.n_known.mean()),
                opt_curve={str(t): v for t, v in opt_p.items()},
                forgetful=out["forgetful"], persistent=out["persistent"],
                rows_forgetful={k: float(v) for k, v in fg.items()},
@@ -221,7 +223,8 @@ def run_block(b, outdir=OUTDIR, quick=False, force=False, check=False):
                        # without blinding it. The symmetric variant is the disclosed sensitivity
                        # row and its numbers live in the *_symforest artefacts, never mixed.
                        terrain=terrain_v2(hidden_leth=1.0, conceal_reach=b["cr"]),
-                       range_scale=sc * b["rm"], spacing_km=2.0 * sc, standoff_km=4.0 * sc)
+                       range_scale=sc * b["rm"], spacing_km=2.0 * sc, standoff_km=4.0 * sc,
+                       n_sites=N_SITES)
     print(f"[b{b['i']:02d} {b['map']} x{b['rm']} cr{b['cr']}] scale={sc * b['rm']:.2f} R={base.R} "
           f"H={base.H} lanes={len(base.lane_idx)} concealed={int(base.concealed.sum())} "
           f"build={time.time() - t0:.0f}s", flush=True)
