@@ -44,7 +44,11 @@ DOCTRINE = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)
 TAU, W = 0.10, 2
 FIELDS = (5100, 5101, 5102)
 
-HIDDEN_LETH = (0.4, 0.6, 0.8, 1.0)      # concealed-class lethality as a share of visible
+# concealed-class lethality MULTIPLIER on the table's pinned 0.55. The two >1 points (added
+# 2026-07-26 BEFORE the third run, disclosed) put effective forest lethality 0.70 and 0.90 in the
+# grid, so the screen itself settles the raise-lethality question the v2 cost table opened; the
+# four pre-registered points are unchanged.
+HIDDEN_LETH = (0.4, 0.6, 0.8, 1.0, 1.27, 1.64)
 RANGE_MULT = (0.7, 1.0, 1.3)            # on top of each map's comparability scale
 TEAMS = (1, 2, 3, 4, 6)                 # emplaced teams (the enemy commits to ground)
 CONCEAL_REACH = (0.43, 0.65, 0.85)      # forest reach as a fraction of open reach

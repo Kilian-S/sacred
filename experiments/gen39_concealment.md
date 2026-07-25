@@ -780,3 +780,18 @@ cells, with the honest two-picker force selection) = 8.4 min serial, run to a SC
 (no head start on the real outdir). Full 36-block grid at 10 workers: **roughly 30-50 min**
 (was 139-165 min at 8 workers; the paired-memory hoists and cheap builds pay for the costlier
 picker). The re-run itself still waits on the lethality decision.
+
+### STEP-1 THIRD-RUN LAUNCH RECORD (2026-07-26, Kilian: "rerun step 1"; pinned BEFORE launch)
+
+Code state: the repaired screen (`choose_force`, spot-where-it-fires, quota sampler,
+asymmetric forest), SHA at this commit. **One disclosed grid change, decided before launch:
+the hidden-lethality axis gains two points, 1.27 and 1.64 x the pinned 0.55 (= effective forest
+lethality 0.70 and 0.90), so the operating-point pick can settle the raise-lethality question
+the v2 cost table opened; the four pre-registered points are unchanged and the decision rule is
+unchanged.** Grid: 4 maps x 3 range multipliers x 3 concealed reaches x 5 team counts x 4
+archetypes x **6** lethality settings x 3 fields = 12,960 cells, both defender memories per
+cell. The stale partial run found in the default outdir (8 blocks, 21:05-21:07 on 25-07, the
+mid-session stop on the biased sampler) is archived as
+`models/runs/gen39_screen2_stopped_biased_sampler`, never mixed. Launch: `--launch --workers
+10`, detached, thread pools capped per process. Read-outs + operating-point pick follow the
+standing scripts; the pick script now derives the lethality axis from the data.

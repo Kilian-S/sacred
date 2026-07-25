@@ -3,12 +3,13 @@ rows=json.load(open('models/runs/gen39_screen2.json'))
 P=lambda r:r['persistent']; med=lambda v: float(np.median(v)) if len(v) else float('nan')
 mp=lambda r: r['tag'].split('x')[0]
 def rmof(r): return float(r['tag'].split('x')[1].split('cr')[0])
+HL=sorted({r['hidden_leth'] for r in rows})   # derived from the data, never hardcoded
 out=[]
 for m in ('kgd_gvardeysk','ukraine','narva','fulda'):
     for K in (1,2,3,4,6):
         for cr in (0.43,0.65,0.85):
             for rm in (0.7,1.0,1.3):
-                for hl in (0.4,0.6,0.8,1.0):
+                for hl in HL:
                     s=[r for r in rows if mp(r)==m and r['K']==K and r['hidden_leth']==hl
                        and abs(r['conceal_reach']-cr)<1e-6 and abs(rmof(r)-rm)<1e-9]
                     if len(s)<12: continue
