@@ -303,3 +303,42 @@ seed extension is a NEW pinned decision, never a response to the first three.
 Step 2 (the three composers) needs no SSH and no tunnel: contrary to the HANDOVER note, the
 workbench gateway on port 8080 is now reachable directly from the Mac (verified 2026-07-25,
 both `llama-3.3-70b` and `qwen3-27b` answering `/v1/models`). Kilian's go for w05 is on record.
+
+### YARDSTICK CORRECTION + STEP-3 SIZE, PINNED BEFORE LAUNCH (2026-07-25, Kilian's call)
+
+**Yardstick (no environment change, an analysis re-cut only).** The screen used ONE denominator,
+the omniscient optimum, for two different questions, and that silently made the concealment
+mechanic unmeasurable: concealment's whole value is not being located, and the reference defender
+was handed every emplacement before the run. Measured consequence, from the step-1b grid: hidden
+laydowns scored 0.00-0.50 of open laydowns against the omniscient optimum, and the hidden-lethality
+axis was inert (G2 3.39 vs 3.45 across 0.4-1.0). Two questions, two comparisons, from here on:
+
+- **"Is there room for a learned policy?"** denominator = the omniscient optimum. UNCHANGED and
+  unaffected by this correction: simple rules leave 3-4x (G1 ~4.0, G2 ~3.4) across maps, team
+  counts, reach and lethality.
+- **"Does concealment do anything, and should the enemy use it?"** compare the SAME defender with
+  and without the exposure channel, and score the enemy's laydown choice against a defender that
+  must observe. Measured: the channel is worth **1.24-1.70x** to the defender on open laydowns,
+  **1.38-1.70x** on mixed, and **exactly 1.00x on hidden** (the mechanic, with an internal
+  control: same map, same rules, only the ground changes). Under that scoring hiding rises from
+  ~0 to **0.59-0.80 of open ground**: competitive, not yet preferred.
+
+**Wording rule (binding).** Concealment is "competitive, not preferred" at this defender skill.
+It pays only insofar as being seen costs the enemy, which depends on how well the defender
+exploits a sighting; our observing defender is the best SIMPLE rule, so these are a FLOOR on
+concealment's value, never a ceiling. The crossover is a SACRED-dependent quantity and is not
+claimed from oracle rows.
+
+**Rejected alternative, recorded with its reason.** A belief-MDP yardstick (enemy draws from a
+shortlist of laydowns, defender holds the consistent subset) was proposed and rejected by Kilian:
+it is an oracle construct, SACRED does not reason over beliefs, so it would have changed the
+scorekeeper and not the agent. The yardstick re-cut above achieves the measurement with no code
+change.
+
+**Step 3 size: TWELVE runs (was nine).** 3 curricula x 3 seeds, PLUS a blinded arm (exposure
+channel zeroed) at 3 seeds on the arm carrying the primary claim. The blinded arm was already a
+standing reported row; it now also carries the concealment claim, because sighted-vs-blind IS the
+measurement of what the channel is worth to a TRAINED policy, and therefore of whether hiding
+becomes the enemy's better choice against a good defender. Not blinded across all three curricula
+(18 runs): that would answer a second-order question we have no reason to ask. Local, detached,
+8000 sorties; measured local rate 42 min/1000 sorties at 9-way => **~7.5 h at 12-way**.
