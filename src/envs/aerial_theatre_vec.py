@@ -55,7 +55,13 @@ PRIORITY = ["water", "sea", "urban", "alpine", "forest", "field"]
 TERRAIN_V2 = {
     "open":   dict(emplace=True,  r_km=3.5, p_max=0.90, los=False, reveal=True),
     "field":  dict(emplace=True,  r_km=2.5, p_max=0.85, los=False, reveal=True),
-    "forest": dict(emplace=True,  r_km=1.5, p_max=0.55, los=True,  reveal=False),
+    # forest HIDES but does not BLIND (Kilian 2026-07-25): canopy conceals a ground team from an
+    # aircraft looking down, but with modern radar-cued sights it does not stop that team engaging
+    # an aircraft flying above the treeline. So reveal=False (the concealment) and los=False (no
+    # sight-line mask). The symmetric variant that blocks both is kept reachable via
+    # terrain_v2(forest_los=True) as a disclosed sensitivity row: it is what killed narva and
+    # fulda (66% wooded -> 79% of sight lines masked -> nothing at stake), measured in the ledger.
+    "forest": dict(emplace=True,  r_km=1.5, p_max=0.55, los=False, reveal=False),
     "urban":  dict(emplace=True,  r_km=1.0, p_max=0.45, los=True,  reveal=False),
     "water":  dict(emplace=False, r_km=0.0, p_max=0.00, los=False, reveal=True),
     "sea":    dict(emplace=False, r_km=0.0, p_max=0.00, los=False, reveal=True),
@@ -63,7 +69,7 @@ TERRAIN_V2 = {
 }
 
 
-def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = True,
+def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = False,
                conceal_reach: float | None = None) -> dict:
     """TERRAIN_V2 with the screen knobs applied (gen39 step 1).
 
@@ -75,7 +81,9 @@ def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = True,
       pinned table is 1.5/3.5 = 0.43. This is the second half of the same trade: cover costs
       REACH as well as lethality, and reach is what decides whether a concealed force can cover
       the corridor at all. Swept, not chosen (Kilian 2026-07-25: ranges are ours to set).
-    forest_los: the pre-registered sensitivity row (does woodland mask engagements across it).
+    forest_los: the disclosed sensitivity row. DEFAULT False since 2026-07-25: woodland hides the
+      team without blinding it (see TERRAIN_V2). Setting it True restores the symmetric rule and
+      is a DIFFERENT GAME whose numbers may never be mixed with the default's (rule 8).
     """
     t = {k: dict(v) for k, v in TERRAIN_V2.items()}
     for k in ("forest", "urban"):

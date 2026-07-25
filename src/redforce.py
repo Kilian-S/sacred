@@ -76,21 +76,36 @@ def terrain_composition(th, n=44) -> dict:
     return {k: 100.0 * v / tot for k, v in sorted(cnt.items(), key=lambda kv: -kv[1])}
 
 
-def _physics_table_text(range_scale: float) -> str:
+def _physics_table_text(range_scale: float, terrain: dict | None = None) -> str:
+    """The ground truth handed to the model. HIDING and SIGHT-BLOCKING are stated SEPARATELY.
+
+    gen33's brief conflated them ("it conceals you (blocks line of sight)") off the single `los`
+    flag, which (a) described a concealment mechanic the simulator did not implement and (b) is
+    not what either flag means under v2. `reveal` is whether engaging gives your position away;
+    `los` is whether the ground masks sight lines crossing it. Woodland now does the first and
+    not the second. Disclosed in the gen33 ledger's terrain-mismatch appendix."""
     rows = []
-    for k, v in TERRAIN.items():
+    for k, v in (terrain or TERRAIN).items():
+        hides = v.get("reveal", True) is False
         if v["emplace"]:
+            tail = (" You stay HIDDEN here: engaging does not give your position away."
+                    if hides else " Engaging here GIVES YOUR POSITION AWAY to the drones.")
+            if v["los"]:
+                tail += " This ground also masks sight lines crossing it."
             rows.append(f"  - {k}: your weapons reach {v['r_km'] * range_scale:.1f} km, "
-                        f"lethality {v['p_max']:.2f} at the centre"
-                        f"{', and it conceals you (blocks line of sight)' if v['los'] else ''}.")
+                        f"lethality {v['p_max']:.2f} at the centre.{tail}")
         else:
-            note = "blocks line of sight (cover for the drones)" if v["los"] else "open, no cover"
+            note = "masks sight lines crossing it" if v["los"] else "open, no cover"
             rows.append(f"  - {k}: you CANNOT emplace here ({note}).")
     return "\n".join(rows)
 
 
-def serialise_theatre(th, phase: str = "single", K: int = 1, range_scale: float = 1.0) -> tuple:
-    """Return (system, user) messages briefing the LLM to design the red force. Physics shown."""
+def serialise_theatre(th, phase: str = "single", K: int = 1, range_scale: float = 1.0,
+                      terrain: dict | None = None) -> tuple:
+    """Return (system, user) messages briefing the LLM to design the red force. Physics shown.
+
+    terrain: the table actually in force. Defaults to v1 so gen33's briefs reproduce verbatim;
+    gen39 passes terrain_v2(...) so the model is briefed on the world it is playing in."""
     comp = terrain_composition(th)
     comp_txt = ", ".join(f"{k} {v:.0f}%" for k, v in comp.items())
     coordinated = phase == "coordinated"
@@ -106,7 +121,7 @@ to target ({th.target[0]:.0f},{th.target[1]:.0f} km). Their mission FAILS if you
 drone. Terrain along the corridor: {comp_txt}.
 
 YOUR WEAPONS (fixed by the ground you sit on; you do not choose their power):
-{_physics_table_text(range_scale)}
+{_physics_table_text(range_scale, terrain)}
 
 THE CONTEST IS DYNAMIC. The enemy watches nothing you place, but it reacts to its own recent
 routes: it is a habitual flier that also breaks its habit in the obvious way. A single fixed

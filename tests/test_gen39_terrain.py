@@ -1,10 +1,11 @@
 """gen39_concealment: terrain table v2 contracts.
 
-Guards the four things the act depends on: (i) v1 is untouched and remains the default, so
-gen31/gen32/gen33 reproduce byte-identically; (ii) forest actually blocks line of sight under v2
-(v1 declared the flag and only the LLM brief ever read it); (iii) urban is emplaceable AND not
+Guards the five things the act depends on: (i) v1 is untouched and remains the default, so
+gen31/gen32/gen33 reproduce byte-identically; (ii) the forest sight-line flag is honoured when it
+is set (v1 declared it and only the LLM brief ever read it); (iii) urban is emplaceable AND not
 self-masked (without the own-polygon exemption every urban site is dead); (iv) the reveal trigger
-is EXPOSURE with line of sight, not a kill.
+is EXPOSURE with line of sight, not a kill; (v) forest HIDES WITHOUT BLINDING under the v2 default
+(Kilian 2026-07-25), which is the asymmetry the whole concealment claim rests on.
 """
 import numpy as np
 from shapely.geometry import LineString
@@ -144,3 +145,39 @@ def test_hidden_lethality_knob_scales_only_the_concealed_classes():
     assert t["open"]["p_max"] == TERRAIN_V2["open"]["p_max"]
     assert t["field"]["p_max"] == TERRAIN_V2["field"]["p_max"]
     assert t["open"]["r_km"] > t["field"]["r_km"] > t["forest"]["r_km"] > t["urban"]["r_km"]
+
+
+# --- (v) forest HIDES without BLINDING (the v2 default since 2026-07-25) -----------------------
+
+def test_forest_hides_but_does_not_blind_by_default():
+    """The asymmetry the concealment claim rests on: canopy conceals a ground team from an aircraft
+    looking down, but modern radar-cued sights still engage an aircraft above the treeline. Urban
+    keeps BOTH, because buildings are true vertical obstacles."""
+    t = terrain_v2()
+    assert t["forest"]["reveal"] is False and t["forest"]["los"] is False   # hidden, not blind
+    assert t["urban"]["reveal"] is False and t["urban"]["los"] is True      # hidden AND blocking
+    assert t["open"]["reveal"] is True and t["field"]["reveal"] is True
+
+
+def test_default_blocker_excludes_forest_and_the_symmetric_variant_is_still_reachable():
+    """Woodland must not enter the sight-line mask by default; setting forest_los=True restores the
+    old symmetric rule (a DIFFERENT game, kept only as the disclosed sensitivity row)."""
+    default, symmetric = blocker_union(TH, terrain_v2()), blocker_union(TH, terrain_v2(forest_los=True))
+    assert symmetric.area > default.area
+    assert default.equals(blocker_union(TH, {k: dict(v, los=(k in ("urban", "alpine")))
+                                             for k, v in TERRAIN_V2.items()}))
+
+
+def test_brief_states_hiding_and_sight_blocking_separately():
+    """gen33's brief derived 'it conceals you (blocks line of sight)' from the single `los` flag,
+    describing a mechanic the simulator did not implement. The two facts must now be stated apart,
+    and woodland must be briefed as hiding without blocking."""
+    from src.redforce import _physics_table_text
+    txt = _physics_table_text(1.0, terrain_v2())
+    assert "conceals you (blocks line of sight)" not in txt
+    forest = next(l for l in txt.splitlines() if l.strip().startswith("- forest"))
+    assert "stay HIDDEN" in forest and "masks sight lines" not in forest
+    urban = next(l for l in txt.splitlines() if l.strip().startswith("- urban"))
+    assert "stay HIDDEN" in urban and "masks sight lines" in urban
+    open_ = next(l for l in txt.splitlines() if l.strip().startswith("- open"))
+    assert "GIVES YOUR POSITION AWAY" in open_

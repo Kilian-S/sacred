@@ -217,7 +217,10 @@ def run_block(b, outdir=OUTDIR, quick=False, force=False, check=False):
     sc = map_scale(b["map"], ref_lat)
     t0 = time.time()
     base = ConcealBase(PATH % b["map"],
-                       terrain=terrain_v2(hidden_leth=1.0, forest_los=True, conceal_reach=b["cr"]),
+                       # forest_los left at the v2 DEFAULT (False): woodland hides the team
+                       # without blinding it. The symmetric variant is the disclosed sensitivity
+                       # row and its numbers live in the *_symforest artefacts, never mixed.
+                       terrain=terrain_v2(hidden_leth=1.0, conceal_reach=b["cr"]),
                        range_scale=sc * b["rm"], spacing_km=2.0 * sc, standoff_km=4.0 * sc)
     print(f"[b{b['i']:02d} {b['map']} x{b['rm']} cr{b['cr']}] scale={sc * b['rm']:.2f} R={base.R} "
           f"H={base.H} lanes={len(base.lane_idx)} concealed={int(base.concealed.sum())} "

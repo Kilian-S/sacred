@@ -59,15 +59,20 @@ for lab,f in (('omniscient optimum',lambda r:(F(r)['opt'],P(r)['opt'])),
     a=[f(r)[0] for r in pk]; b=[f(r)[1] for r in pk]
     print(f'  {lab:22s} window {med(a):7.4f} -> whole-mission {med(b):7.4f}  ({med(b)/med(a):.2f}x)')
 
-print('\n=== 6. CROSS-CHECK vs the independent serial screen (step 1a, forgetful arm) ===')
-s1=json.load(open('models/runs/gen39_screen.json'))
-key=lambda r:(r['tag'],r['seed'],r['hidden_leth'],r['K'],r['kind'])
-m1={key(r):r for r in s1}
-n=d=0; worst=0.0
-for r in rows:
-    o=m1.get(key(r))
-    if o is None: continue
-    n+=1
-    for a,b in ((o['opt'],F(r)['opt']),(o['cap'],F(r)['cap']),(o['blind'],F(r)['blind']),(o['revealed'],F(r)['revealed'])):
-        worst=max(worst,abs(a-b)); d+= (a!=b)
-print(f'  {n} cells overlap; {d} value mismatches; largest absolute difference {worst:.2e}')
+print('\n=== 6. CROSS-CHECK: the SYMMETRIC-FOREST pair (archived; a property of those artefacts) ===')
+try:
+    a2=json.load(open('models/runs/gen39_screen2_symforest.json'))
+    s1=json.load(open('models/runs/gen39_screen_symforest.json'))
+    key=lambda r:(r['tag'],r['seed'],r['hidden_leth'],r['K'],r['kind'])
+    m1={key(r):r for r in s1}
+    n=d=0; worst=0.0
+    for r in a2:
+        o=m1.get(key(r))
+        if o is None: continue
+        n+=1
+        for x,y in ((o['opt'],r['forgetful']['opt']),(o['cap'],r['forgetful']['cap']),
+                    (o['blind'],r['forgetful']['blind']),(o['revealed'],r['forgetful']['revealed'])):
+            worst=max(worst,abs(x-y)); d+=(x!=y)
+    print(f'  {n} cells overlap; {d} value mismatches; largest absolute difference {worst:.2e}')
+except FileNotFoundError:
+    print('  (archived symmetric-forest artefacts not present)')
