@@ -535,3 +535,55 @@ construction, so what separates them at this point IS the information channel an
 Range multiplier 1.0 (no range inflation was needed, unlike the voided symmetric pick at 1.3).
 Physical reading: a concealed team engages nearly as far (2.98 km vs 3.5 km) at roughly a quarter
 the kill probability (0.22 vs 0.90), and those two effects cancel against a knowing defender.
+
+### THE CROSSOVER WAS AN ARTEFACT: the concentration leaked across terrain (2026-07-25, Kilian's catch)
+
+Kilian asked whether a team told to sit in woodland could end up delivering its effect from
+neighbouring grassland. It could, and it dominated the result.
+
+The engagement concentration (sigma = 1.5 x the team's own reach, i.e. ~4.5 km on kaliningrad
+against a 2 km site grid) was spread over EVERY nearby candidate site regardless of ground, while
+`reveal` reads only the team's OWN site. Measured share of a team's effect delivered from its own
+ground class (`scratch/gen39_leak_probe.py`):
+
+| team on | kgd own-ground share | ukraine |
+|---|---|---|
+| open | 55% | 60% |
+| field | 42% | 54% |
+| **forest** | **20%** | **7%** |
+| **urban** | **16%** | **21%** |
+
+**A "concealed" team drew 60-65% of its reach and lethality from OPEN ground while keeping
+woodland's invisibility.** That diluted the price of concealment roughly fivefold and inflated
+every hide-vs-open number in the block above.
+
+**With the leak removed (`same_class=True`, now the DEFAULT), the crossover disappears entirely.**
+At the (now void) pinned point, K=3, 3 fields:
+
+| map | | hidden/open, omniscient | hidden/open, observing |
+|---|---|---|---|
+| kgd | leaked -> masked | 1.16 -> **0.00** | 1.62 -> **0.13** |
+| ukraine | leaked -> masked | 0.77 -> **0.02** | 0.81 -> **0.12** |
+
+**And no setting rescues it** (`scratch/gen39_conceal_rescue_probe.py`, kgd, K in {3,6},
+concealed reach up to **1.00** i.e. equal to open, lethality multiplier up to 1.0): the omniscient
+optimum against an all-concealed force is **0.0000 in all 12 cells**, and the observing ratio peaks
+at **0.87**, still below parity, at the most generous setting we can write down.
+
+**The mechanism, and it is a real finding rather than a bug.** Woodland occupies 38 of 200
+candidate positions on kaliningrad and is patchy: **cover does not span the corridor.** A force
+confined to cover therefore always leaves a lane, and a defender that finds the lane takes zero
+damage. Concealment cannot buy interdiction on real terrain when the cover is fragmented, however
+generous its weapons. This bounds the mechanic by geography, not by the lethality/reach trade we
+had been sweeping.
+
+**Consequences, stated before the re-run lands.** Everything in "STEP 1 RESULTS, RE-RUN UNDER THE
+ASYMMETRIC FOREST RULE" was measured with the leak and is superseded; the operating point pinned
+there is VOID for the second time. Leaked artefacts archived as `*_leaked*`. The claims most at
+risk are the crossover (expected to die outright) and any hide-vs-open row; the claims expected to
+survive are the room-for-a-learned-policy gates and the information-channel control (sight worth
+~1.6x against a revealing force and exactly 1.00x against a concealed one), since neither depends
+on the concealed force being competitive. **The better-posed question the re-run must answer is not
+all-open vs all-concealed but the MIX**: whether a force that blocks the corridor with open teams
+while keeping concealed teams for persistence beats both pure designs. That is also precisely the
+composition judgement step 2 asks the model to make. Suite 235 -> 240 green; re-run launched.

@@ -123,7 +123,7 @@ class ConcealDyn:
     """One (field, doctrine, operating point) cell, exact on the window MDP."""
 
     def __init__(self, base: ConcealBase, pp_field, laydown, w=2, tau=0.10,
-                 q_rep=0.6, q_flee=0.2, q_ar=0.3, sigma_r=1.5):
+                 q_rep=0.6, q_flee=0.2, q_ar=0.3, sigma_r=1.5, same_class=True):
         """laydown: the site indices the enemy has EMPLACED on.
 
         Semantics are gen33's, which were regression-tested to reproduce the gen32 dynamic game
@@ -152,6 +152,17 @@ class ConcealDyn:
         d2 = ((base.coords[None, :, :] - base.coords[self.L][:, None, :]) ** 2).sum(-1)
         sig = (sigma_r * np.asarray(base.rr)[self.L])[:, None]           # [k, 1]
         bump = np.exp(-d2 / (2.0 * np.clip(sig, 1e-6, None) ** 2))       # [k, H]
+        if same_class:
+            # A team manoeuvres within ITS OWN ground, not out of it. Without this the smear
+            # leaks across terrain classes and the emplacement choice stops binding: measured on
+            # kaliningrad 2026-07-25, a "forest" team delivered only 20% of its effect from
+            # forest and 60% from OPEN ground, i.e. it drew open-ground reach and lethality while
+            # keeping forest's invisibility (reveal is decided by the team's own site). That
+            # diluted the price of concealment about fivefold and inflated every hide-vs-open
+            # comparison. Masking to the own class removes the leak; an isolated patch collapses
+            # the weight back onto the site itself, which is the right limit.
+            cls = np.asarray(base.cls)
+            bump = bump * (cls[None, :] == cls[self.L][:, None])
         self.prior_j = bump / np.clip(bump.sum(axis=1, keepdims=True), 1e-300, None)
         self.prior = self.prior_j.mean(axis=0)                           # [H]
         self.dmg_j = self.prior_j @ self.dmg.T                           # [k, R] threat per team

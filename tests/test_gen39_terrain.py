@@ -181,3 +181,40 @@ def test_brief_states_hiding_and_sight_blocking_separately():
     assert "stay HIDDEN" in urban and "masks sight lines" in urban
     open_ = next(l for l in txt.splitlines() if l.strip().startswith("- open"))
     assert "GIVES YOUR POSITION AWAY" in open_
+
+
+# --- (vi) the concentration must not leak across terrain classes -------------------------------
+
+def test_engagement_concentration_stays_on_the_teams_own_ground():
+    """Kilian's catch, 2026-07-25. The smear used to spread a team's effect over every nearby
+    candidate site regardless of ground, so a team nominally in woodland drew most of its reach and
+    lethality from OPEN sites while keeping woodland's invisibility (reveal reads the team's own
+    site). That made the emplacement choice non-binding and inflated every hide-vs-open number."""
+    import collections
+    from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
+    base = ConcealBase(KGD, terrain=terrain_v2(hidden_leth=0.4, conceal_reach=0.85),
+                       range_scale=1.0)
+    pp = base.lethality(resample_field(base.coords, 5100), hidden_leth=0.4)
+    for c in ("open", "field", "forest", "urban"):
+        pool = [i for i, x in enumerate(base.cls) if x == c]
+        if not pool:
+            continue
+        L = np.array(pool[:1])
+        for same_class, floor in ((True, 1.0 - 1e-12), (False, 0.0)):
+            g = ConcealDyn(base, pp, L, w=2, same_class=same_class)
+            share = collections.defaultdict(float)
+            for i, x in enumerate(base.cls):
+                share[x] += g.prior_j[0][i]
+            assert share[c] >= floor, (c, same_class, share[c])
+        # and the leak was real, not hypothetical: cover leaked the most
+        leaked = ConcealDyn(base, pp, L, w=2, same_class=False)
+        own = sum(w for i, w in enumerate(leaked.prior_j[0]) if base.cls[i] == c)
+        if c in ("forest", "urban"):
+            assert own < 0.35, f"{c} used to leak most of its effect; guard is stale"
+
+
+def test_same_class_default_is_the_non_leaking_one():
+    import inspect
+
+    from src.envs.aerial_conceal import ConcealDyn
+    assert inspect.signature(ConcealDyn.__init__).parameters["same_class"].default is True
