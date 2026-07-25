@@ -473,3 +473,65 @@ tests pin the asymmetry, the default blocker set and the brief wording; suite 23
 **Re-run launched** (same grid, same harness, ~2.5 h). Prediction to be checked against it, on
 record before the numbers land: narva and fulda should become playable, since the mechanism was
 measured at 13.3x on fulda and 3.2x on narva, while ukraine (12% wooded, 1.0x) should barely move.
+
+### STEP 1 RESULTS, RE-RUN UNDER THE ASYMMETRIC FOREST RULE (2026-07-25; supersedes the block above)
+
+Same grid, same harness, 8640 cells, 139 min on 8 workers. `models/runs/gen39_screen2.json`.
+**The prediction recorded before launch was borne out**, which is the reason to trust the
+mechanism rather than the story: narva and fulda revive, ukraine barely moves.
+
+| map | wooded | a real game, symmetric -> asymmetric | G1 | G2 |
+|---|---|---|---|---|
+| kgd_gvardeysk | 26% | 89% -> **91%** | 4.21 | 2.84 |
+| ukraine | 12% | 84% -> **91%** | 5.07 | 3.88 |
+| narva | 64% | 32% -> **66%** | 3.77 | 3.33 |
+| fulda | 66% | **0% -> 81%** | 1.85 | 2.18 |
+| ALL | | 51% -> **82%** | 3.95 | 3.26 |
+
+Gates pass on 78% of real cells, i.e. **64% of the whole grid** (was 45%). All four theatres are
+scored; the symmetric-forest scoping negative is retired as a property of that table, not of the
+maps, and is kept as the disclosed sensitivity row.
+
+**The mechanic, unchanged by the repair and still with its internal control** (same map, same
+rules, only the ground the enemy sits on changes): sight is worth **1.58x** to the defender against
+an open force, **1.59x** against a mixed one, and **exactly 1.00x** against a concealed one.
+
+**The crossover is now general rather than marginal.** Hidden-laydown damage as a share of
+open-laydown damage, all cells (degenerate included):
+
+| concealed reach | vs an omniscient defender | vs a defender that must observe |
+|---|---|---|
+| 0.43 | 0.23 | **1.02** |
+| 0.65 | 0.54 | **1.10** |
+| 0.85 | 0.71 | **1.13** |
+
+Per map (honest form, all cells): kgd 1.42/1.66/1.41 and narva 1.42/1.37/1.37 cross at every
+reach; **ukraine does not (0.65/0.72/0.73)** and it is the least wooded theatre at 12%, so the
+scarcity of cover is itself the explanation. The split is reported, never pooled away.
+
+**Memory** (paired, same cell): optimum 0.99x, blind rule 1.02x, observing rule 1.08x, G2 **1.09x**.
+Slightly larger than under the symmetric table but still small; the whole-mission form is kept
+because it is the correct model, not because it moved the numbers.
+
+**OPERATING POINT (pinned for steps 2-4, replacing the voided one):
+`kgd_gvardeysk, K=3 teams, concealed reach 0.85, range multiplier 1.0, hidden lethality 0.4`.**
+Detail in `scratch/gen39_pinned_cell.py`; selected by `scratch/gen39_pick_operating_point.py` from
+720 candidate cells on: >=90% of laydowns a real game, G1>=2, G2>=2, sight >=1.4x, then ranked by
+closeness of the omniscient hidden/open ratio to 1.00 (matched firepower) against the size of the
+observing ratio (the information gap).
+
+| | value |
+|---|---|
+| laydowns that are a real game | 100% (12/12) |
+| G1 (static cap / optimum) | 4.53 |
+| G2 (best simple rule / optimum) | 3.58 |
+| sight worth to the defender | 1.74x |
+| hidden vs open, omniscient defender | **1.02** |
+| hidden vs open, observing defender | **1.61** |
+
+The two force designs are within 2% of equally dangerous to a defender that already knows where
+they are, and hiding is 61% better against one that must find out. **Firepower is matched by
+construction, so what separates them at this point IS the information channel and nothing else.**
+Range multiplier 1.0 (no range inflation was needed, unlike the voided symmetric pick at 1.3).
+Physical reading: a concealed team engages nearly as far (2.98 km vs 3.5 km) at roughly a quarter
+the kill probability (0.22 vs 0.90), and those two effects cancel against a knowing defender.
