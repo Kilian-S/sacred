@@ -410,3 +410,37 @@ so everything that separates the two designs at this point IS the information ch
 the pre-registered rule that ranges are pinned as ratios with the absolute difficulty set by the
 screen. Alternative recorded, for a stricter physical story on reach (forest at 0.65 of open):
 cr 0.65 / rm 1.3 / hl 0.6, omniscient 0.93 and observing 1.47.
+
+### CORRECTION TO THE STEP-1 SCOPING NEGATIVE (2026-07-25, same day, before any step-2 launch)
+
+**The mechanism stated above for narva/fulda ("the route menu spans more ground than <=6
+concentrations can threaten and the defender always finds a free lane") is WRONG.** It was inferred
+from the coverage fraction, not measured. Measured: on fulda only **1 of 25 routes** is genuinely
+free, so the defender is not walking around the force.
+
+**The real cause is the forest line-of-sight rule interacting with how wooded the theatre is.**
+Table v2 makes forest opaque (Kilian's 2026-07-25 call, "for forest, implement it"). Same map, same
+laydowns, forest opaque vs transparent, best optimum over 6 laydowns (`scratch/gen39_why_dead.py`):
+
+| map | concealable ground | forest opaque | forest transparent | ratio | sight lines blocked |
+|---|---|---|---|---|---|
+| kgd_gvardeysk | 26% | 0.07033 | 0.15144 | 2.2x | - |
+| ukraine | 12% | 0.04430 | 0.04627 | **1.0x** | 31% |
+| narva | 64% | 0.00898 | 0.02836 | 3.2x | 47% |
+| fulda | 66% | 0.00173 | 0.02311 | **13.3x** | **79%** |
+
+Ukraine (12% wooded) does not move; fulda (66% wooded) moves 13-fold. On fulda the single most
+dangerous route in the theatre costs 6% of the fleet where kaliningrad's costs 53%: there is
+nothing at stake, which is why the team-count row is flat (K=1 0.00032 -> K=6 0.00059). **Deadness
+tracks wooded fraction, not map size or team budget.** The playability boundary sits between 26%
+(plays) and 64% (does not).
+
+**Open design question for Kilian, not decided here.** The v2 rule blocks sight SYMMETRICALLY:
+a team in woodland is invisible AND blind. The physical asymmetry is that canopy hides a ground
+team from an aircraft looking down but does not hide an aircraft above the treeline from a team
+looking up. An asymmetric forest rule (hides the team, does not blind it; urban unchanged, since
+buildings are true vertical obstacles) would revive narva and fulda, make concealment purely an
+information-channel mechanic (which is what this act claims), and stop penalising cover twice.
+It is a DIFFERENT GAME: nothing measured under symmetric forest may be mixed with it (rule 8).
+Until Kilian decides, the scored theatres remain kgd (primary) + ukraine (held out) and the
+operating point above stands.
