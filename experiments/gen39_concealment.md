@@ -631,3 +631,52 @@ must carry that row.
 It compared patch AREA against weapon FOOTPRINT, which are unrelated quantities: a MANPADS needs
 somewhere to stand, not somewhere to fit its engagement circle (Kilian). Patch area plays no part
 in the current sampler and no part in this result.
+
+### SAMPLER BUG (scan-order ties) + WHAT CONCEALMENT COSTS (2026-07-25; VOIDS the block above)
+
+**Bug, found by inspecting the site figures Kilian asked for.** In `quota_sites` every anchor
+standing INSIDE a patch ties at distance zero, and the tie broke on anchor index, i.e. raster scan
+order. Result: **every kaliningrad candidate sat in the left 27 km of a 45 km theatre** (open
+x-span 1.0-13.2, forest 7.1-26.7, nothing beyond x=27). Fixed by farthest-point selection among
+each class's eligible anchors; all four maps now span their full extent. The anchor grid also
+sizes itself from the budget: fulda's 11.6 km grid gave only 87 anchors against a 200-point quota,
+so OPEN GROUND received ZERO points despite being 23% of that theatre.
+
+**The verification block above is VOID: it was measured on a candidate set confined to half the
+map.** With the repair the concealment verdict is a near-miss, not a death.
+`scratch/gen39_conceal_cost.py`; full output `results/gen39_conceal_cost.txt`; figures
+`assets/gen39_sites_<map>.png` (`scratch/gen39_site_map.py`).
+
+Share of what an OPEN force achieves, against a defender that must observe:
+
+| concealed force given back | KGD K=3 | KGD K=6 | UKR K=3 | UKR K=6 |
+|---|---|---|---|---|
+| nothing (table as pinned) | **58%** | **65%** | 28% | 37% |
+| open REACH | 68% | 75% | 29% | 59% |
+| open LETHALITY | **87%** | **95%** | 45% | 68% |
+| both | 98% | 112% | 55% | 89% |
+| *control: OPEN force, same few positions* | *80%* | *84%* | *87%* | *84%* |
+
+**On kgd the ~40% cost splits into two separable halves.** (a) WEAPONS ~22 points, within which
+**lethality is the expensive charge and reach the cheap one**: paying reach back alone buys 10
+points, lethality alone buys 29. (b) CHOICE ~20 points, isolated by the control row: an OPEN force
+cut to 53 positions loses 20 points by itself, so half the penalty is that there is less cover to
+choose from and has nothing to do with cover being worse. Ukraine splits the other way (control
+84-87%, so weapons dominate); it holds 26 concealed positions across 46 x 90 km.
+
+**Break-even sweep (share of the open force, observing defender), kgd K=3:**
+
+| concealed reach | leth 0.55 | 0.70 | 0.90 |
+|---|---|---|---|
+| 0.85 of open | 58% | 73% | 87% |
+| 1.00 | 68% | 84% | **98%** |
+| 1.20 | 84% | 93% | **104%** |
+| 1.50 | **100%** | 126% | 147% |
+
+**RECOMMENDATION, recorded but NOT applied (awaiting Kilian): raise concealed LETHALITY, keep the
+reach penalty.** Equal reach at lethality 0.70 gives 84% (K=3) and 94% (K=6): near parity, so the
+enemy's choice stays genuinely open. Handing back both (98-112%) makes hiding weakly dominant and
+deletes the decision the act exists to study. The physical story fits that shape: an unseen team
+shoots first with an unspoiled firing solution, so surprise buys KILL PROBABILITY while clutter
+costs ENGAGEMENT ENVELOPE. Ukraine breaks even at no swept setting (best 80% at K=3), which is a
+map-dependent finding rather than a knob.

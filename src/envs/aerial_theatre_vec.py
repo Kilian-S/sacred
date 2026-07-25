@@ -265,9 +265,10 @@ def _snap_into(g, xy, eps_km: float = 0.05):
     return q if g.covers(Point(*q)) else np.array([c.x, c.y])
 
 
-def quota_sites(th: VecTheatre, n_sites: int = 200, spacing_km: float = 2.0,
+def quota_sites(th: VecTheatre, n_sites: int = 200, spacing_km: float = 0.0,
                 standoff_km: float = 4.0, range_scale: float = 1.0,
-                terrain: dict | None = None, snap_cells: float = 1.0, min_sep_frac: float = 0.25):
+                terrain: dict | None = None, snap_cells: float = 1.0, min_sep_frac: float = 0.25,
+                anchor_mult: float = 3.0):
     """Candidate emplacements whose CLASS SHARES match the theatre's terrain composition, on an
     evenly spaced skeleton (Kilian's scheme, 2026-07-25).
 
@@ -288,7 +289,13 @@ def quota_sites(th: VecTheatre, n_sites: int = 200, spacing_km: float = 2.0,
     AREA is irrelevant to emplaceability and is not used here (an earlier analysis wrongly compared
     patch area against weapon footprint and is retracted in the ledger)."""
     terrain = TERRAIN if terrain is None else terrain
-    cell = float(spacing_km)
+    # The anchor grid SIZES ITSELF from the budget: ~anchor_mult x n_sites nodes, so every class
+    # quota can actually be filled and the assignment has room to choose. Passing a fixed spacing
+    # instead caps the anchors at whatever the map size gives (fulda's 11.6 km grid yielded 87
+    # anchors against a 200-point budget, so open ground received ZERO points despite being 23% of
+    # the theatre; measured 2026-07-25).
+    cell = float(spacing_km) if spacing_km else float(
+        np.sqrt(th.W * th.H / max(anchor_mult * n_sites, 1.0)))
     anchors = [np.array([x, y])
                for x in np.arange(1.0, th.W, cell) for y in np.arange(1.0, th.H, cell)
                if not (np.linalg.norm(np.array([x, y]) - th.base) < standoff_km
@@ -300,39 +307,63 @@ def quota_sites(th: VecTheatre, n_sites: int = 200, spacing_km: float = 2.0,
     tot = sum(area.get(k, 0.0) for k in empl) or 1.0
     quota = {k: int(round(n_sites * area.get(k, 0.0) / tot)) for k in empl}
 
-    taken = [False] * len(anchors)
+    A = np.asarray(anchors, float)
+    taken = np.zeros(len(anchors), bool)
     placed: dict[str, list] = {k: [] for k in empl}
+
+    def spread(pool_idx, n):
+        """Farthest-point selection: pick n anchors from pool_idx that are as far apart as
+        possible. Without this the quota is filled in raster scan order, because every anchor
+        standing INSIDE a patch ties at distance zero and the tie broke on index: measured
+        2026-07-25, that put every kgd candidate in the left 27 km of a 45 km theatre."""
+        pool_idx = np.asarray(pool_idx, int)
+        if len(pool_idx) <= n:
+            return list(pool_idx)
+        seed_i = int(pool_idx[np.argmin(np.linalg.norm(A[pool_idx] - A[pool_idx].mean(0), axis=1))])
+        sel = [seed_i]
+        d = np.linalg.norm(A[pool_idx] - A[seed_i], axis=1)
+        while len(sel) < n:
+            j = int(np.argmax(d))
+            sel.append(int(pool_idx[j]))
+            d = np.minimum(d, np.linalg.norm(A[pool_idx] - A[pool_idx[j]], axis=1))
+        return sel
+
     # polygon classes first, rarest quota first: they are the constrained ones, and `open` is the
     # residual that can be satisfied anywhere
     for k in sorted([k for k in empl if _class_parts(th, k)], key=lambda k: quota[k]):
         parts = _class_parts(th, k)
         tree = STRtree(parts)
-        d = []
+        near = {}
         for i, xy in enumerate(anchors):
             p = Point(float(xy[0]), float(xy[1]))
             j = int(tree.nearest(p))
-            d.append((parts[j].distance(p), i, j))
-        for dist, i, j in sorted(d):
+            if parts[j].distance(p) <= snap_cells * cell:
+                near[i] = j
+        order = spread([i for i in near if not taken[i]], quota[k])
+        rest = [i for i in near if not taken[i] and i not in set(order)]
+        for i in list(order) + rest:                     # top up if a snap is rejected
             if len(placed[k]) >= quota[k]:
                 break
-            if taken[i] or dist > snap_cells * cell:
+            if taken[i]:
                 continue
-            q = _snap_into(parts[j], anchors[i])
+            q = _snap_into(parts[near[i]], anchors[i])
             if (np.linalg.norm(q - th.base) < standoff_km
                     or np.linalg.norm(q - th.target) < standoff_km
                     or th.classify(q) != k):
                 continue
             if any(np.linalg.norm(q - o) < min_sep_frac * cell for o in placed[k]):
-                continue                                   # one copse cannot absorb a whole quota
+                continue                                 # one copse cannot absorb a whole quota
             taken[i] = True
             placed[k].append(q)
-    for i, xy in enumerate(anchors):                       # leftovers keep the ground they stand on
-        if taken[i]:
+    for k in empl:                                       # the residual classes, spread likewise
+        want = quota.get(k, 0) - len(placed.get(k, []))
+        if want <= 0:
             continue
-        k = th.classify(xy)
-        if terrain[k]["emplace"] and len(placed.get(k, [])) < quota.get(k, 0):
-            placed[k].append(np.asarray(xy, float))
+        pool_idx = [i for i, xy in enumerate(anchors)
+                    if not taken[i] and th.classify(xy) == k and terrain[k]["emplace"]]
+        for i in spread(pool_idx, want):
             taken[i] = True
+            placed[k].append(np.asarray(anchors[i], float))
 
     coords, rr, pp, cls = [], [], [], []
     for k, pts in placed.items():
@@ -576,9 +607,8 @@ def build_theatre_game(th: VecTheatre, K: int = 1, n_lanes: int = 14, n_terrain:
     terrain-smart mixing vs naive lane play. lane_idx = the menu indices of the geometric lanes.
     range_scale scales weapon ranges for coverage-fraction comparability across map sizes."""
     if n_sites:                       # Kilian's quota scheme: fixed budget, composition shares
-        coords, rr, pp, cls = quota_sites(th, n_sites=n_sites, spacing_km=spacing_km,
-                                          standoff_km=standoff_km, range_scale=range_scale,
-                                          terrain=terrain)
+        coords, rr, pp, cls = quota_sites(th, n_sites=n_sites, standoff_km=standoff_km,
+                                          range_scale=range_scale, terrain=terrain)
     else:
         coords, rr, pp, cls = hazard_sites(th, spacing_km=spacing_km, standoff_km=standoff_km,
                                            range_scale=range_scale, terrain=terrain,
