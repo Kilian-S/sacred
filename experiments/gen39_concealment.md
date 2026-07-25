@@ -587,3 +587,47 @@ on the concealed force being competitive. **The better-posed question the re-run
 all-open vs all-concealed but the MIX**: whether a force that blocks the corridor with open teams
 while keeping concealed teams for persistence beats both pure designs. That is also precisely the
 composition judgement step 2 asks the model to make. Suite 235 -> 240 green; re-run launched.
+
+### VERIFICATION WITH ALL THREE REPAIRS (2026-07-25; `scratch/gen39_verify_fixes.py`, no screen re-run)
+
+Repairs in force: (1) the engagement concentration stays on the team's own ground; (2) candidate
+class shares match the theatre's composition on a fixed 200-point budget (Kilian's quota scheme,
+whole-map shares); (3) the force is the best COMBINATION of K positions, with the old
+K-best-points picker kept as a competing candidate and both scored exactly.
+
+| map | K | force | vs perfect play | blind rule | observing rule | sight worth |
+|---|---|---|---|---|---|---|
+| kgd | 3 | open | 0.0968 | 0.5015 | 0.4564 | 1.10x |
+| kgd | 3 | concealed | 0.0123 | 0.0622 | 0.0622 | **1.00x** |
+| kgd | 6 | open | 0.0980 | 0.3763 | 0.2340 | 1.61x |
+| kgd | 6 | concealed | 0.0080 | 0.0975 | 0.0975 | **1.00x** |
+| ukraine | 3 | open | 0.0627 | 0.2315 | 0.1785 | 1.30x |
+| ukraine | 3 | concealed | 0.0027 | 0.0741 | 0.0741 | **1.00x** |
+| ukraine | 6 | open | 0.0626 | 0.2394 | 0.1730 | 1.38x |
+| ukraine | 6 | concealed | 0.0024 | 0.0747 | 0.0747 | **1.00x** |
+
+**THE CONCEALMENT HEADLINE IS DEAD, and now on defensible methodology.** Concealed forces reach
+0.04-0.14 of an open force against perfect play and 0.14-0.43 against a defender that must observe.
+There is no crossover at any team count on either scored theatre. Decisively: a force search given
+a FREE choice over all four terrain classes ("mixed" rows) returns an all-open force on every map
+and every K, matching the open row to four decimals. **Given the choice, the best force our search
+can find never uses cover at all.**
+
+**What survives, and it is the mechanism rather than the headline.** The information-channel
+control is unaffected and remains exact: sight is worth **1.10-1.61x** to the defender against a
+force on revealing ground and **exactly 1.00x** against a concealed one, on every map and team
+count. Concealment does precisely what it was designed to do (it shuts the channel completely); it
+simply is not worth its price in reach and lethality on real terrain.
+
+**Disclosed limitation, because it cuts the other way.** Under proportional sampling both classes
+get the same points-per-km2, which is fair, but cover is a small share of the ground, so a
+concealed force chooses from ~34 options on kgd where an open force chooses from ~76. A
+higher-density sensitivity run (stratified top-up, ~146 forest sites) moved the K=6 observing ratio
+from 0.42 to 0.87, i.e. **the concealed force's quality is sampling-limited in a way the open
+force's is not, and the gap narrows with density without closing.** Any write-up of this negative
+must carry that row.
+
+**RETRACTED with it:** the "cover does not span the corridor / ukraine's cover is dust" mechanism.
+It compared patch AREA against weapon FOOTPRINT, which are unrelated quantities: a MANPADS needs
+somewhere to stand, not somewhere to fit its engagement circle (Kilian). Patch area plays no part
+in the current sampler and no part in this result.
