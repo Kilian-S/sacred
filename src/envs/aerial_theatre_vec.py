@@ -63,18 +63,26 @@ TERRAIN_V2 = {
 }
 
 
-def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = True) -> dict:
-    """TERRAIN_V2 with the two screen knobs applied (gen39 step 1).
+def terrain_v2(hidden_leth: float = 1.0, forest_los: bool = True,
+               conceal_reach: float | None = None) -> dict:
+    """TERRAIN_V2 with the screen knobs applied (gen39 step 1).
 
-    hidden_leth: multiplier on the CONCEALED classes' lethality (forest, urban). This is the
-      screened ratio "how much of the visible classes' killing power does cover retain": too low
-      and the two-line avoid-revealed rule wins because hidden teams cannot hurt, too high and
-      hiding dominates and the game collapses onto one terrain class.
+    hidden_leth: multiplier on the CONCEALED classes' lethality (forest, urban). The screened
+      ratio "how much of the visible classes' killing power does cover retain": too low and the
+      two-line avoid-revealed rule wins because hidden teams cannot hurt, too high and hiding
+      dominates and the game collapses onto one terrain class.
+    conceal_reach: forest reach AS A FRACTION OF OPEN reach (urban keeps 70% of forest's). The
+      pinned table is 1.5/3.5 = 0.43. This is the second half of the same trade: cover costs
+      REACH as well as lethality, and reach is what decides whether a concealed force can cover
+      the corridor at all. Swept, not chosen (Kilian 2026-07-25: ranges are ours to set).
     forest_los: the pre-registered sensitivity row (does woodland mask engagements across it).
     """
     t = {k: dict(v) for k, v in TERRAIN_V2.items()}
     for k in ("forest", "urban"):
         t[k]["p_max"] = float(np.clip(t[k]["p_max"] * hidden_leth, 0.0, 0.999))
+    if conceal_reach is not None:
+        t["forest"]["r_km"] = float(conceal_reach * t["open"]["r_km"])
+        t["urban"]["r_km"] = float(0.7 * t["forest"]["r_km"])
     t["forest"]["los"] = bool(forest_los)
     return t
 
