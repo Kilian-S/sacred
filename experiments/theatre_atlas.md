@@ -10,7 +10,7 @@
 | kgd_gvardeysk | 45 x 20 | KALININGRAD -> GVARDEYSK, 35.5 km | 28.2 km | 1.00 | 200 | **26%** |
 | ukraine | 46 x 90 | DNIPRO -> ZAPORIZHZHIA, 69.9 km | 57.5 km | 2.04 | 946 | **12%** |
 | narva | 107 x 61 | KOHTLA-JARVE -> KINGISEPP, 75.6 km | 64.0 km | 2.27 | 1,160 | **61%** |
-| fulda | 124 x 112 | POINT ALPHA -> FRANKFURT, 109.9 km | 163.1 km | 5.79 | 3,431 | **51%** |
+| fulda | 124 x 112 | RHEIN-MAIN SW -> POINT ALPHA, 121.9 km | 163.1 km | 5.79 | 3,428 | **51%** |
 
 *Range scale* is the weapon-range multiplier the game applies so that the fraction of the corridor a team covers is comparable across maps, taken relative to Kaliningrad (lateral width 28.2 km). A 2.5 km system on Kaliningrad and a 14.5 km system on Fulda contest the same share of the width.
 
@@ -28,7 +28,7 @@ Kaliningrad -> Gvardeysk along the Pregolya. The reference theatre: a short, nar
 | corridor length | 35.5 km |
 | lateral width | 28.2 km |
 | range scale | 1.00 (Kaliningrad = 1.00) |
-| load time | 0.0 s |
+| load time | 0.1 s |
 
 **Terrain by area** (59778 samples at 0.12 km, priority order as the game classifies):
 
@@ -61,7 +61,7 @@ Dnipro -> Zaporizhzhia along the river. A long north-south corridor, farmland do
 | corridor length | 69.9 km |
 | lateral width | 57.5 km |
 | range scale | 2.04 (Kaliningrad = 1.00) |
-| load time | 0.3 s |
+| load time | 0.4 s |
 
 **Terrain by area** (60200 samples at 0.26 km, priority order as the game classifies):
 
@@ -120,15 +120,15 @@ Point Alpha -> Frankfurt, the Fulda Gap. The Cold War invasion axis, flanked by 
 
 | property | value |
 |---|---|
-| base | POINT ALPHA at (105.8, 87.7) km |
-| target | FRANKFURT at (16.8, 23.3) km |
+| base | RHEIN-MAIN SW at (7.0, 16.2) km |
+| target | POINT ALPHA at (105.8, 87.7) km |
 | box | 123.882 x 111.733 km (13842 km2) |
 | bounding box (lon/lat) | W 8.450, S 49.900, E 10.200, N 50.900 |
 | projection | EPSG:32632 |
-| corridor length | 109.9 km |
+| corridor length | 121.9 km |
 | lateral width | 163.1 km |
 | range scale | 5.79 (Kaliningrad = 1.00) |
-| load time | 4.2 s |
+| load time | 4.6 s |
 
 **Terrain by area** (60114 samples at 0.48 km, priority order as the game classifies):
 
@@ -145,8 +145,8 @@ Point Alpha -> Frankfurt, the Fulda Gap. The Cold War invasion axis, flanked by 
 
 | table | total | by class |
 |---|---|---|
-| v1 (banked) | 3159 | field 853, forest 1487, open 819 |
-| v2 (gen39) | 3431 | field 853, forest 1487, open 819, urban 272 |
+| v1 (banked) | 3150 | field 853, forest 1482, open 815 |
+| v2 (gen39) | 3428 | field 853, forest 1482, open 815, urban 278 |
 
 ## Notes for the terrain review
 
