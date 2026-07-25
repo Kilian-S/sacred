@@ -213,6 +213,87 @@ class ConcealDyn:
         denom = np.clip(self.n_known, 1, None)[:, None]
         self.perceived = (kf @ self.dmg_j) / denom                       # [Sn, R]
 
+    # --- persistent memory: the faithful form of "concealment buys persistence" -----------------
+    #
+    # With window memory a team that gives itself away is forgotten w serials later, so being
+    # located costs an open-ground team almost nothing and hiding is under-rewarded. Here the
+    # defender remembers every team it has seen for the whole mission, which is what the mechanic
+    # is supposed to mean. The state gains the set of teams seen (2^k of them, k <= 6), and since
+    # that set only ever GROWS, a long-run average would wash out exactly the phase of interest:
+    # the measure becomes an EPISODIC one, expected damage over a T-serial mission starting from
+    # complete ignorance, computed exactly by backward induction.
+
+    def _memory_tables(self):
+        """expose[r] = bitmask of revealable teams route r gives away; perceived_mask[m, r] = the
+        route's threat as judged from the teams in mask m (uniform over what is known)."""
+        if getattr(self, "_mem", None) is None:
+            k = len(self.L)
+            revealable = self.base.expo[:, self.L] & self.base.reveal[self.L][None, :]
+            bits = (1 << np.arange(k))
+            expose = (revealable * bits[None, :]).sum(axis=1).astype(int)      # [R]
+            masks = np.arange(1 << k)
+            memb = ((masks[:, None] & bits[None, :]) > 0).astype(float)        # [2^k, k]
+            cnt = np.clip(memb.sum(axis=1, keepdims=True), 1.0, None)
+            self._mem = (expose, (memb @ self.dmg_j) / cnt, memb.sum(axis=1))
+        return self._mem
+
+    def episodic(self, T=40, rule=None, start_mask=0):
+        """Mean per-serial damage over a T-serial mission with PERSISTENT memory.
+
+        rule=None returns the exact optimum for a defender that knows the laydown (backward
+        induction). Otherwise rule(state_index, mask) -> [R] route distribution is evaluated.
+        The start is averaged over track windows with nothing known, so no opening move is
+        privileged."""
+        expose, perceived, _ = self._memory_tables()
+        Sn, R, M = len(self.states), self.R, 1 << len(self.L)
+        nxt_m = np.bitwise_or(np.arange(M)[:, None], expose[None, :])          # [M, R]
+        V = np.zeros((Sn, M))
+        for _ in range(T):
+            Q = self.stepdmg[:, None, :] + V[self.succ[:, None, :], nxt_m[None, :, :]]  # [Sn,M,R]
+            if rule is None:
+                V = Q.min(axis=2)
+            else:
+                W = np.stack([rule(np.arange(Sn), m, perceived[m]) for m in range(M)], axis=1)
+                V = (W * Q).sum(axis=2)
+        return float(V[:, start_mask].mean() / T)
+
+    def _topm_row(self, perc, m):
+        """Uniform over the m routes that look safest given what is known: the rule a practitioner
+        actually writes ("avoid the worst few, pick at random among the rest"). Unlike a softmax
+        it keeps a flat, genuinely random spread, which is what a repetition-punishing enemy is
+        hardest to exploit by."""
+        row = np.zeros(self.R)
+        row[np.argsort(perc)[:max(1, min(m, self.R))]] = 1.0
+        return row / row.sum()
+
+    def episodic_rule(self, fallback, anti_repeat=False, softness=0.0, T=40, topm=0):
+        """The avoid-revealed rule under persistent memory: fly the route that looks safest given
+        every team seen so far this mission, falling back to the blind rule while nothing is
+        known."""
+        base_m = self._anti(fallback) if anti_repeat else np.broadcast_to(
+            fallback, (len(self.states), self.R)).copy()
+        base_m = np.array(base_m, dtype=float)
+
+        def rule(idx, m, perc):
+            if m == 0:
+                return base_m
+            if topm:
+                out = np.broadcast_to(self._topm_row(perc, topm), (len(idx), self.R)).copy()
+            elif softness > 0:
+                L = -(perc - perc.min()) / softness
+                E = np.exp(L - L.max())
+                row = E / max(E.sum(), 1e-300)
+                out = np.broadcast_to(row, (len(idx), self.R)).copy()
+            else:
+                out = np.zeros((len(idx), self.R))
+                out[:, int(np.argmin(perc))] = 1.0
+            if anti_repeat:
+                out = np.where(self.in_window, 0.0, out)
+                s = out.sum(axis=1, keepdims=True)
+                out = np.where(s > 1e-12, out / np.where(s > 1e-12, s, 1.0), base_m)
+            return out
+        return self.episodic(T=T, rule=rule)
+
     # --- exact evaluators (gen32 verbatim) ------------------------------------------------------
 
     def history_opt(self, iters=6000, tol=1e-12):
