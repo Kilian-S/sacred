@@ -1,29 +1,30 @@
 #!/bin/bash
-# gen39 step 3: the 12-run batch (3 curricula x 3 seeds + blinded llm arm x 3 seeds), LOCAL M4,
-# detached, full capacity (12 processes, threads=1 each, all maths pools capped: the standing
-# multi-process dogma). Launch record in experiments/gen39_concealment.md; Kilian's launch
-# authority for steps 1-3 granted in-conversation 2026-07-26.
+# gen39 step 3: the 12-run batch in TWO WAVES OF SIX (restaged 2026-07-26). The 12-way launch
+# thrashed: ~1.2-3.3 GB per process on a 24 GB machine drove 16 GB of swap and the paging showed
+# up as ~60-67% SYSTEM time (measured; the wait-policy env alone did not cure it). Six runs fit
+# in RAM with headroom and 10 cores stay under-committed, so each wave runs at full speed.
+# Same seeds, same shared oracle cache, same pinned bars: the restage changes nothing scientific.
 cd "$(dirname "$0")/.." || exit 1
 OUT=models/runs/gen39_step3
 mkdir -p "$OUT"
 PY=../sacred/.venv/bin/python
-# OMP_WAIT_POLICY=PASSIVE + KMP_BLOCKTIME=0: idle pool threads SLEEP instead of spin-waiting.
-# The first launch omitted them and 12 procs x 7 threads of active spin showed up as ~67% SYSTEM
-# time (the 2026-07-16 dogma's failure mode at larger scale). Launches staggered 45 s so the
-# shapely-heavy pool builds do not storm the allocator together.
 ENV="PYTHONPATH=. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_WAIT_POLICY=PASSIVE KMP_BLOCKTIME=0"
+
+run_one () {  # ARM SEED EXTRA TAG
+  eval "$ENV nohup $PY scripts/train_gen39_conceal.py --arm $1 --seed $2 $3 --threads 1 \
+    --json-out $OUT/$4_seed$2.json --ckpt-dir $OUT/$4_seed$2_ckpts \
+    > $OUT/$4_seed$2.log 2>&1 &"
+}
+
+echo "[wave 1] llm/random/heuristic seeds 0,1"
 for ARM in llm random heuristic; do
-  for S in 0 1 2; do
-    eval "$ENV nohup $PY scripts/train_gen39_conceal.py --arm $ARM --seed $S --threads 1 \
-      --json-out $OUT/${ARM}_seed$S.json --ckpt-dir $OUT/${ARM}_seed${S}_ckpts \
-      > $OUT/${ARM}_seed$S.log 2>&1 &"
-    sleep 45
-  done
+  for S in 0 1; do run_one $ARM $S "" $ARM; sleep 20; done
 done
-for S in 0 1 2; do
-  eval "$ENV nohup $PY scripts/train_gen39_conceal.py --arm llm --blind --seed $S --threads 1 \
-    --json-out $OUT/llmblind_seed$S.json --ckpt-dir $OUT/llmblind_seed${S}_ckpts \
-    > $OUT/llmblind_seed$S.log 2>&1 &"
-  sleep 45
+wait
+echo "[wave 1] done, launching wave 2"
+for ARM in llm random heuristic; do
+  run_one $ARM 2 "" $ARM; sleep 20
 done
-echo "launched 12 runs (staggered), logs under $OUT/"
+for S in 0 1 2; do run_one llm $S "--blind" llmblind; sleep 20; done
+wait
+echo "[all 12 runs complete]"
