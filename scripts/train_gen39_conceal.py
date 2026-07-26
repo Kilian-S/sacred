@@ -269,11 +269,36 @@ def policy_value(prot, inst, env, blind=False):
     return float(g.episodic(rule=lambda idx, m, p: dists[:, m, :], T=S_EP))
 
 
+def save_full_state(prot, rng, sortie, hist, path):
+    """LOSSLESS run state: nets + optimisers + alpha + replay buffer + every RNG. Featurization
+    caches are stripped before pickling (they are large and rebuild deterministically), so
+    run-then-resume reproduces an unbroken run exactly (tested)."""
+    import random as _rnd
+    for tr in prot.replay_buffer.buffer:
+        tr.feature_cache = {}
+    _P(path).parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"prot": prot, "rng": rng.bit_generator.state, "np": np.random.get_state(),
+                "py": _rnd.getstate(), "torch": torch.get_rng_state(),
+                "sortie": sortie, "hist": hist}, path)
+
+
+def load_full_state(path):
+    import random as _rnd
+    st = torch.load(path, weights_only=False)
+    np.random.set_state(st["np"])
+    _rnd.setstate(st["py"])
+    torch.set_rng_state(st["torch"])
+    return st
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--arm", choices=("llm", "random", "heuristic"), required=True)
     p.add_argument("--forces", default="models/runs/gen39_compose/forces_llm.json")
     p.add_argument("--sorties", type=int, default=8000)
+    p.add_argument("--resume", default="", help="full-state file; continues the run losslessly")
+    p.add_argument("--state-out", default="", help="where the final full state lands "
+                   "(default: <json-out>.state.pt)")
     p.add_argument("--eval-every", type=int, default=1000)
     p.add_argument("--batch-size", type=int, default=32)
     p.add_argument("--seed", type=int, default=0)
@@ -315,20 +340,30 @@ def main():
             print(f"    {it.name}: cap={it.cap:.4f} blind={it.blind_ref:.4f} "
                   f"obs={it.obs_ref:.4f} opt={it.opt:.4f}", flush=True)
 
-    prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=64, num_layers=2, heads=4,
-                          reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0,
-                          device="cpu", role_alpha=True, lr_alpha=5e-3,
-                          alpha_floor=args.alpha_floor)
-    for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
-        net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-        net.route_feat_w = torch.nn.Parameter(torch.zeros(3))   # [public, recency, known]
-        net.route_feats = None
-    prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w]})
-    prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w],
-                                          "lr": args.head_term_lr})
-    prot.critic_optimizer.add_param_group({"params": [prot.q1.follow_w, prot.q2.follow_w]})
-    prot.critic_optimizer.add_param_group({"params": [prot.q1.route_feat_w, prot.q2.route_feat_w],
-                                           "lr": args.head_term_lr})
+    start_sortie, hist = 0, []
+    if args.resume and _P(args.resume).exists():
+        st = load_full_state(args.resume)
+        prot = st["prot"]
+        rng = np.random.default_rng()
+        rng.bit_generator.state = st["rng"]
+        start_sortie, hist = st["sortie"], st["hist"]
+        print(f"[gen39-t] RESUMED at sortie {start_sortie} from {args.resume}", flush=True)
+    else:
+        prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=64, num_layers=2, heads=4,
+                              reward_scale=1.0, lr_actor=3e-4, autotune_alpha=True, alpha_init=1.0,
+                              device="cpu", role_alpha=True, lr_alpha=5e-3,
+                              alpha_floor=args.alpha_floor)
+        for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
+            net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
+            net.route_feat_w = torch.nn.Parameter(torch.zeros(3))   # [public, recency, known]
+            net.route_feats = None
+        prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w]})
+        prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w],
+                                              "lr": args.head_term_lr})
+        prot.critic_optimizer.add_param_group({"params": [prot.q1.follow_w, prot.q2.follow_w]})
+        prot.critic_optimizer.add_param_group({"params": [prot.q1.route_feat_w,
+                                                          prot.q2.route_feat_w],
+                                               "lr": args.head_term_lr})
 
     def test_rows():
         rows = {}
@@ -343,8 +378,7 @@ def main():
         print(f"[gen39-t] UNTRAINED cells: " + " ".join(f"{c:.4f}" for c in cells), flush=True)
         return
 
-    hist = []
-    sortie = 0
+    sortie = start_sortie
     t0 = time.time()
     while sortie < args.sorties:
         it = train[int(rng.integers(len(train)))]
@@ -431,6 +465,10 @@ def main():
             {"arm": args.arm, "seed": args.seed, "blind": args.blind, "refs": refs,
              "history": hist}, indent=1))
         print(f"  [written] {args.json_out}", flush=True)
+    state_out = args.state_out or (args.json_out + ".state.pt" if args.json_out else "")
+    if state_out:
+        save_full_state(prot, rng, sortie, hist, state_out)
+        print(f"  [state] {state_out}", flush=True)
 
 
 if __name__ == "__main__":

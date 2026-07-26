@@ -919,6 +919,33 @@ enemies on fields 3000-3003, all arms alike).
 > "curriculum composition does not transfer at this scale" (answers gen33's open metric 2);
 > llm worse = reported plainly.
 
+### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
+### "add resume and restart at 5000")
+
+The first three launch attempts never produced a checkpoint (thread-pool thrash at 12-way; the
+151k-forwards eval defect, repaired above; then the `nice` band confining runs to efficiency
+cores at ~7.6 s/sortie measured vs the historical 2.5). Changes, all pinned before results:
+
+1. **Budget 8000 -> 5000 sorties**, with a PRE-REGISTERED extension rule: any arm whose
+   VALIDATION curve is still improving at 5000 is extended to 8000 by LOSSLESS RESUME; the
+   extension decision reads the validation curve only, never the test cells.
+2. **Resume machinery** (`--resume` / final full-state save: nets, optimisers, alpha,
+   replay buffer, all four RNG states; featurization caches stripped, they rebuild
+   deterministically). **Equivalence smoke result, disclosed plainly: the split run does NOT
+   reproduce the straight run bitwise, because the trainer itself is not run-reproducible -
+   two byte-identical invocations (same seed, same PYTHONHASHSEED, same everything) diverge
+   (VAL 3.79 vs 4.67 at sortie 160). This is inherited from the gen32-class machinery and was
+   never previously tested; gen31/32's claims rest on multi-seed confirmations, not per-seed
+   reproduction.** The resume is therefore STATE-COMPLETE (everything defining the process is
+   restored; the continuation is a stochastic realisation of the same training process, exactly
+   as an unbroken run's tail is). The extension rule stands unchanged: validation-curve-only
+   decision, extension = more training of the same restored state.
+3. **Launch at default priority** (no nice: it cost ~3x on the P/E-core split), waves of six,
+   caps + passive waiting kept, stagger kept. The only learning-relevant signal so far, from the
+   crawled first checkpoints at sortie 1000 (llm arm, discarded run): rw[known-threat] trained
+   to -6.4/-6.9 and held-out damage fell ~25-35% below untrained: the reveal channel drives
+   behaviour, as designed. Those numbers are context only; the restarted runs are the record.
+
 ### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
 
 **Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden

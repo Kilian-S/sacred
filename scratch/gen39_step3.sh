@@ -11,12 +11,12 @@ PY=../sacred/.venv/bin/python
 ENV="PYTHONPATH=. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_WAIT_POLICY=PASSIVE KMP_BLOCKTIME=0"
 
 run_one () {  # ARM SEED EXTRA TAG
-  # nice -n 10 = the RECORDED recipe (gen28 v2.2 launch record: caps + nice -> 1.4% system time;
-  # un-niced default-QoS hogs get migrated between P- and E-cores constantly and the switching
-  # books as system time). Kilian's no-nice full-capacity rule applies to short oracle probes,
-  # not multi-hour training batches.
-  eval "$ENV nohup nice -n 10 $PY scripts/train_gen39_conceal.py --arm $1 --seed $2 $3 --threads 1 \
-    --json-out $OUT/$4_seed$2.json --ckpt-dir $OUT/$4_seed$2_ckpts \
+  # NO nice: measured 2026-07-26, the nice band parked runs on efficiency cores at ~3x the
+  # wall-clock (7.6 s/sortie at sortie 1000 vs the historical 2.5). Default priority; caps +
+  # passive waiting + waves of six carry the load discipline. Budget 5000 per the pre-registered
+  # amendment (extension to 8000 by lossless --resume on a still-improving VALIDATION curve).
+  eval "$ENV nohup $PY scripts/train_gen39_conceal.py --arm $1 --seed $2 $3 --threads 1 \
+    --sorties 5000 --json-out $OUT/$4_seed$2.json --ckpt-dir $OUT/$4_seed$2_ckpts \
     > $OUT/$4_seed$2.log 2>&1 &"
 }
 
