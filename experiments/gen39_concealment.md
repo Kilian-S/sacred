@@ -862,6 +862,38 @@ hl 1.64 (effective 0.90): real 92%, G1 4.52, G2 4.25, sight 1.61, omni 0.33, obs
 - **Fields** = the cell's own 5100-5102; pristine 61xx reserved for step-3 held-out tests.
   Call budget 32; scoring pool-parallel; results to `models/runs/gen39_compose/`.
 
+### STEP 2 RESULTS (2026-07-26; 32/32 live calls valid, generation 1.6 min, scoring
+### pool-parallel; `models/runs/gen39_compose/`; bars as pre-registered)
+
+| arm | n | vs OBSERVING (primary) | vs omniscient | coverage |
+|---|---|---|---|---|
+| oracle-searched ceiling | 3 | **0.0964** | 0.0217 | 1.00 |
+| **llm: llama-3.3-70b** | 8 | **0.0747** | 0.0018 | 0.96 |
+| **llm: qwen3-27b** | 8 | **0.0613** | 0.0006 | 0.96 |
+| heuristic (gen32 doctrine) | 1 | 0.0603 | 0.0191 | 1.00 |
+| random | 20 | 0.0123 | 0.0001 | 0.77 |
+| relabel control: llama | 8 | **0.0059** | 0.0005 | 0.85 |
+| relabel control: qwen | 8 | **0.0057** | 0.0004 | 0.85 |
+
+**BAR, per model:** llama-3.3-70b beats the heuristic on 2/3 fields AND pooled AND sits above
+the random mean: **PASS on every clause.** qwen3-27b: pooled PASS (0.0613 vs 0.0603, thin) and
+above-random PASS, but 1/3 fields: **the per-field clause FAILS; qwen = partial**, reported
+per-model, never pooled.
+
+**The binding relabel control PASSES for both models, decisively.** Under the swapped brief
+(forest described as long-reach/revealing, open as short/hidden) both models' compositions
+change materially (llama forest share 54% -> 33%, open 13% -> 33%; qwen forest 71% -> 42%) and
+their forces, resolved on the TRUE table, collapse to 0.0059/0.0057 (a 10-13x drop): the
+composition follows the briefed physics, not the labels. **The terrain-reasoning claim is
+LICENSED - the first time in the LLM arc** (gen33's control failed; the repair that made the
+brief match the implemented mechanics is the plausible cause, as its ledger predicted).
+
+**Reading.** The models play the information channel deliberately: their forces are
+concealment-heavy (54-71% forest posture), nearly worthless against an omniscient defender
+(0.0006-0.0018) yet the strongest non-oracle arms against one that must observe - the
+bait/block/anchor structure the act's design predicted. Random composition captures none of it
+(0.0123): structure needs the model here, unlike gen37's curation register.
+
 ### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
 
 **Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden
