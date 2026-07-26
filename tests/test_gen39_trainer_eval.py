@@ -15,6 +15,31 @@ from src.envs.aerial_theatre_vec import terrain_v2
 KGD = "data/maps/theatre_kgd_gvardeysk_vec.json"
 
 
+def test_shared_field_graph_equals_per_transition_featurization():
+    """The pre-attached shared graph must equal what the update path's lambda would build for a
+    transition on that field (the memory-crawl fix must not change a single tensor)."""
+    from scripts.train_gen39_conceal import Inst, TheatreEnv, N
+    base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
+    S_pub = base.survival(base.pp_base)
+    from scripts.train_gen39_conceal import _mm
+    base.expo_pub = _mm((1.0 - S_pub ** N).max(axis=1))
+    pp = base.lethality(resample_field(base.coords, 5100))
+    inst = Inst(base, "t", 5100, sites=np.where(~base.concealed)[0][:3])
+    env = TheatreEnv(base.menu, inst.g.game, inst.S_field, N=N)
+    env.reset()
+    shared = {ci: featurize_state(env.observe(), ci) for ci in range(N)}
+    env.reset()
+    for ci in range(N):
+        obs = env.observe()
+        obs["menu_route_feats"] = inst.feats((0, 1), 0)     # the per-serial extras ride along
+        obs["target_entropy"] = 1.0
+        rebuilt = featurize_state(obs, ci)
+        assert torch.equal(shared[ci].x, rebuilt.x)
+        assert torch.equal(shared[ci].edge_index, rebuilt.edge_index)
+        assert torch.equal(shared[ci].edge_attr, rebuilt.edge_attr)
+        env.route_convoy_by_index(0)
+
+
 def test_closed_form_policy_eval_matches_the_head_loop():
     from scripts.train_gen39_conceal import Inst, TheatreEnv, N
     base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)

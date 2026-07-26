@@ -270,12 +270,11 @@ def policy_value(prot, inst, env, blind=False):
 
 
 def save_full_state(prot, rng, sortie, hist, path):
-    """LOSSLESS run state: nets + optimisers + alpha + replay buffer + every RNG. Featurization
-    caches are stripped before pickling (they are large and rebuild deterministically), so
-    run-then-resume reproduces an unbroken run exactly (tested)."""
+    """STATE-COMPLETE run state: nets + optimisers + alpha + replay buffer + every RNG. The
+    buffered transitions' featurization caches are SHARED per-field graphs, which pickle once
+    per unique object, so they stay in the save (stripping them would regrow private copies
+    after resume: the measured memory crawl)."""
     import random as _rnd
-    for tr in prot.replay_buffer.buffer:
-        tr.feature_cache = {}
     _P(path).parent.mkdir(parents=True, exist_ok=True)
     torch.save({"prot": prot, "rng": rng.bit_generator.state, "np": np.random.get_state(),
                 "py": _rnd.getstate(), "torch": torch.get_rng_state(),
@@ -333,6 +332,18 @@ def main():
         if it.field not in envs:
             envs[it.field] = TheatreEnv(base.menu, it.g.game, it.S_field, N=N)
         del it.S_field
+    # ONE shared featurized graph per (field, convoy): the graph is identical for every
+    # transition on a field (route feats ride separately at the head), but the update path
+    # memoises a PRIVATE copy on each transition, which grew ~1 GB per run as the buffer filled
+    # and pinned the machine at the memory-compression threshold (measured 2026-07-26: the
+    # 7 s/sortie crawl at every priority). Pre-attaching the shared graph at push time stores
+    # each tensor once; exactness pinned by test_gen39_trainer_eval.
+    pyg_cache = {}
+    for f, env_ in envs.items():
+        env_.reset()
+        obs_ = env_.observe()
+        for ci in range(N):
+            pyg_cache[(f, ci)] = featurize_state(obs_, ci).to("cpu")
     print(f"[gen39-t] pool in {time.time() - t0:.0f}s: {len(train)} train games, "
           f"{len(val)} val, {len(test)} test cells x {len(test[0])} enemies", flush=True)
     for cell in test:
@@ -428,10 +439,14 @@ def main():
                 nstate = dict(nobs)
                 nstate["active_truck"] = nci
                 nstate["allowed_destinations"] = {"protagonist": {nci: list(nmask[nci])}}
-            prot.replay_buffer.push(SMDPTransition(
+            tr = SMDPTransition(
                 agent="protagonist", state=obs, action={ci: act}, reward=rew,
                 next_state=nstate, done=bool(done), elapsed_ticks=dt,
-                action_mask={"protagonist": amask}, info={}))
+                action_mask={"protagonist": amask}, info={})
+            tr.feature_cache = {"state": pyg_cache[(it.field, ci)]}
+            if nstate:
+                tr.feature_cache["next"] = pyg_cache[(it.field, nstate["active_truck"])]
+            prot.replay_buffer.push(tr)
         for _ in range(S_EP):
             prot.update(args.batch_size)
 

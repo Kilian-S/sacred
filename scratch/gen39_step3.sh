@@ -1,34 +1,28 @@
 #!/bin/bash
-# gen39 step 3: the 12-run batch in TWO WAVES OF SIX (restaged 2026-07-26). The 12-way launch
-# thrashed: ~1.2-3.3 GB per process on a 24 GB machine drove 16 GB of swap and the paging showed
-# up as ~60-67% SYSTEM time (measured; the wait-policy env alone did not cure it). Six runs fit
-# in RAM with headroom and 10 cores stay under-committed, so each wave runs at full speed.
-# Same seeds, same shared oracle cache, same pinned bars: the restage changes nothing scientific.
+# gen39 step 3: 12 runs in THREE WAVES OF FOUR (final staging, 2026-07-26).
+# Measured on the repaired trainer: 1.81 s/sortie SOLO (362 s / 200 sorties), footprint ~3.1 GB
+# RSS/run and stable. Four concurrent keeps the machine clear of the memory-compression
+# threshold that caused every earlier crawl; 5000 sorties/run per the pre-registered amendment.
+# Wave 1 deliberately carries ALL THREE ARMS at seed 0 (plus llm seed 1), so a first cross-arm
+# comparison is readable after wave 1 rather than at the very end.
 cd "$(dirname "$0")/.." || exit 1
 OUT=models/runs/gen39_step3
 mkdir -p "$OUT"
 PY=../sacred/.venv/bin/python
 ENV="PYTHONPATH=. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_WAIT_POLICY=PASSIVE KMP_BLOCKTIME=0"
-
 run_one () {  # ARM SEED EXTRA TAG
-  # NO nice: measured 2026-07-26, the nice band parked runs on efficiency cores at ~3x the
-  # wall-clock (7.6 s/sortie at sortie 1000 vs the historical 2.5). Default priority; caps +
-  # passive waiting + waves of six carry the load discipline. Budget 5000 per the pre-registered
-  # amendment (extension to 8000 by lossless --resume on a still-improving VALIDATION curve).
   eval "$ENV nohup $PY scripts/train_gen39_conceal.py --arm $1 --seed $2 $3 --threads 1 \
     --sorties 5000 --json-out $OUT/$4_seed$2.json --ckpt-dir $OUT/$4_seed$2_ckpts \
     > $OUT/$4_seed$2.log 2>&1 &"
+  sleep 20
 }
-
-echo "[wave 1] llm/random/heuristic seeds 0,1"
-for ARM in llm random heuristic; do
-  for S in 0 1; do run_one $ARM $S "" $ARM; sleep 20; done
-done
+echo "[wave 1] llm/random/heuristic seed 0 + llm seed 1"
+run_one llm 0 "" llm; run_one random 0 "" random; run_one heuristic 0 "" heuristic; run_one llm 1 "" llm
 wait
-echo "[wave 1] done, launching wave 2"
-for ARM in llm random heuristic; do
-  run_one $ARM 2 "" $ARM; sleep 20
-done
-for S in 0 1 2; do run_one llm $S "--blind" llmblind; sleep 20; done
+echo "[wave 2] random/heuristic seed 1 + llm/random seed 2"
+run_one random 1 "" random; run_one heuristic 1 "" heuristic; run_one llm 2 "" llm; run_one random 2 "" random
+wait
+echo "[wave 3] heuristic seed 2 + the three blinded runs"
+run_one heuristic 2 "" heuristic; run_one llm 0 "--blind" llmblind; run_one llm 1 "--blind" llmblind; run_one llm 2 "--blind" llmblind
 wait
 echo "[all 12 runs complete]"
