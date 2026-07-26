@@ -121,9 +121,10 @@ class Inst:
                             dtype=torch.float32)
 
 
-def build_pools(base, arm, forces_path, rng):
-    """Training population per arm + the common val/test structure. Returns (train, val, test);
-    train entries = Inst without refs (cheap); val/test = Inst with refs."""
+CACHE = "models/runs/gen39_step3/pool_cache.json"
+
+
+def _llm_split(forces_path):
     llm_all = []
     if forces_path and _P(forces_path).exists():
         for r in json.load(open(forces_path)):
@@ -131,59 +132,102 @@ def build_pools(base, arm, forces_path, rng):
                     len(r["force"].get("agents", [])) == K:
                 llm_all.append((f"{r['model']}#{r['j']}", r["force"]))
     n_hold = max(2, len(llm_all) // 4)
-    llm_train, llm_test = llm_all[:-n_hold] if llm_all else [], llm_all[-n_hold:] if llm_all else []
+    return (llm_all[:-n_hold], llm_all[-n_hold:]) if llm_all else ([], [])
 
-    def rnd_force(seed):
-        from scratch.gen39_compose import random_force
-        return random_force(np.random.default_rng(seed))
 
-    train = []
+def _rnd_force(seed):
+    from scratch.gen39_compose import random_force
+    return random_force(np.random.default_rng(seed))
+
+
+def prep_cache(base, forces_path, cache=CACHE):
+    """The expensive shared prep, run ONCE before the batch: heuristic laydowns (choose_force per
+    field x archetype), the common val set, the held-out test cells and every oracle ref. All 12
+    runs load this; the yardsticks are byte-identical across arms and seeds by construction."""
+    _, llm_test = _llm_split(forces_path)
+    out = {"heur_train": {}, "val": [], "test": []}
     for f in TRAIN_FIELDS:
-        if arm == "heuristic":
-            for kind in ("open", "hidden", "mixed"):
-                train.append(("arch", f, kind, None))
-        elif arm == "llm":
-            for i in range(min(4, len(llm_train))):
-                nm, fo = llm_train[(f + i) % len(llm_train)]
-                train.append(("force", f, nm, fo))
-        else:                                            # random
-            for i in range(3):
-                train.append(("force", f, f"rnd{f}-{i}", rnd_force(7000 + 10 * f + i)))
-    built_train = []
-    pp_cache = {}
-    for kind, f, nm, fo in train:
-        if kind == "arch":
-            it = Inst(base, f"tr{f}-{nm}", f, archetype=nm)
-        else:
-            pp = pp_cache.setdefault(f, base.lethality(resample_field(base.coords, f),
-                                                       hidden_leth=1.0))
-            it = Inst(base, f"tr{f}-{nm}", f, sites=place(fo, base, pp),
-                      doctrines=doctrines_of(fo))
-        built_train.append(it.slim())
-
-    val = [Inst(base, f"val{f}", f, archetype="mixed").refs().slim() for f in VAL_FIELDS]
-
-    test = []
+        pp = base.lethality(resample_field(base.coords, f), hidden_leth=1.0)
+        out["heur_train"][str(f)] = {
+            kind: [int(x) for x in choose_force(base, pp, kind, K, np.random.default_rng(f),
+                                                w=W, tau=TAU, doctrine=DOC32)[0]]
+            for kind in ("open", "hidden", "mixed")}
+        print(f"  [prep] train field {f} done", flush=True)
+    for f in VAL_FIELDS:
+        it = Inst(base, f"val{f}", f, archetype="mixed").refs()
+        out["val"].append(dict(name=it.name, field=f, sites=[int(x) for x in it.g.L],
+                               doctrines=None, cap=it.cap, blind=it.blind_ref,
+                               obs=it.obs_ref, opt=it.opt))
+        print(f"  [prep] val field {f} done", flush=True)
     for f in TEST_FIELDS:
         pp = base.lethality(resample_field(base.coords, f), hidden_leth=1.0)
         cell = []
         if llm_test:
             nm, fo = llm_test[f % len(llm_test)]
-            cell.append(Inst(base, f"te{f}-llm({nm})", f, sites=place(fo, base, pp),
-                             doctrines=doctrines_of(fo)))
-        cell.append(Inst(base, f"te{f}-rnd", f,
-                         sites=place(rnd_force(8000 + f), base, pp),
-                         doctrines=doctrines_of(rnd_force(8000 + f))))
-        cell.append(Inst(base, f"te{f}-heur", f, archetype="mixed"))
+            cell.append((f"te{f}-llm({nm})", place(fo, base, pp), doctrines_of(fo)))
+        rf = _rnd_force(8000 + f)
+        cell.append((f"te{f}-rnd", place(rf, base, pp), doctrines_of(rf)))
         best = None
         for kind in ("open", "hidden", "mixed"):
             it = Inst(base, f"te{f}-oracle({kind})", f, archetype=kind)
             v = it.g.episodic(T=S_EP)
             if best is None or v > best[0]:
-                best = (v, it)
-        cell.append(best[1])
-        test.append([it.refs().slim() for it in cell])
-    return built_train, val, test
+                best = (v, it, kind)
+        rows = []
+        for nm, sites, doc in cell:
+            it = Inst(base, nm, f, sites=sites, doctrines=doc).refs()
+            rows.append(dict(name=nm, field=f, sites=[int(x) for x in np.asarray(sites)],
+                             doctrines=doc, cap=it.cap, blind=it.blind_ref, obs=it.obs_ref,
+                             opt=it.opt))
+        heur = Inst(base, f"te{f}-heur", f, archetype="mixed").refs()
+        rows.append(dict(name=heur.name, field=f, sites=[int(x) for x in heur.g.L],
+                         doctrines=None, cap=heur.cap, blind=heur.blind_ref,
+                         obs=heur.obs_ref, opt=heur.opt))
+        orc = best[1].refs()
+        rows.append(dict(name=f"te{f}-oracle({best[2]})", field=f,
+                         sites=[int(x) for x in orc.g.L], doctrines=None, cap=orc.cap,
+                         blind=orc.blind_ref, obs=orc.obs_ref, opt=orc.opt))
+        out["test"].append(rows)
+        print(f"  [prep] test field {f} done ({len(rows)} enemies)", flush=True)
+    _P(cache).parent.mkdir(parents=True, exist_ok=True)
+    _P(cache).write_text(json.dumps(out))
+    print(f"[prep] cache written: {cache}", flush=True)
+
+
+def _from_cache(base, rec):
+    it = Inst(base, rec["name"], rec["field"], sites=rec["sites"], doctrines=rec["doctrines"])
+    it.cap, it.blind_ref, it.obs_ref, it.opt = rec["cap"], rec["blind"], rec["obs"], rec["opt"]
+    return it.slim()
+
+
+def build_pools(base, arm, forces_path, cache=CACHE):
+    """Training population per arm + the SHARED cached val/test structure."""
+    c = json.loads(_P(cache).read_text())
+    llm_train, _ = _llm_split(forces_path)
+    train = []
+    pp_cache = {}
+    for f in TRAIN_FIELDS:
+        if arm == "heuristic":
+            for kind in ("open", "hidden", "mixed"):
+                train.append(Inst(base, f"tr{f}-{kind}", f,
+                                  sites=c["heur_train"][str(f)][kind]).slim())
+        elif arm == "llm":
+            for i in range(min(4, len(llm_train))):
+                nm, fo = llm_train[(f + i) % len(llm_train)]
+                pp = pp_cache.setdefault(f, base.lethality(
+                    resample_field(base.coords, f), hidden_leth=1.0))
+                train.append(Inst(base, f"tr{f}-{nm}", f, sites=place(fo, base, pp),
+                                  doctrines=doctrines_of(fo)).slim())
+        else:
+            for i in range(3):
+                fo = _rnd_force(7000 + 10 * f + i)
+                pp = pp_cache.setdefault(f, base.lethality(
+                    resample_field(base.coords, f), hidden_leth=1.0))
+                train.append(Inst(base, f"tr{f}-rnd{i}", f, sites=place(fo, base, pp),
+                                  doctrines=doctrines_of(fo)).slim())
+    val = [_from_cache(base, r) for r in c["val"]]
+    test = [[_from_cache(base, r) for r in rows] for rows in c["test"]]
+    return train, val, test
 
 
 # --- exact policy eval -------------------------------------------------------------------------
@@ -229,6 +273,7 @@ def main():
     p.add_argument("--interception-loss", type=float, default=10.0)
     p.add_argument("--threads", type=int, default=1)
     p.add_argument("--blind", action="store_true")
+    p.add_argument("--prep", action="store_true", help="build the shared oracle cache and exit")
     p.add_argument("--json-out", default="")
     p.add_argument("--ckpt-dir", default="")
     args = p.parse_args()
@@ -244,7 +289,10 @@ def main():
     print(f"[gen39-t] building pools (arm={args.arm}, blind={args.blind})...", flush=True)
     t0 = time.time()
     base = narva_base()
-    train, val, test = build_pools(base, args.arm, args.forces, rng)
+    if args.prep:
+        prep_cache(base, args.forces)
+        return
+    train, val, test = build_pools(base, args.arm, args.forces)
     envs = {}
     for it in train + val + [x for cell in test for x in cell]:
         if it.field not in envs:

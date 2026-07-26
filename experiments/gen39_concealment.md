@@ -894,6 +894,31 @@ concealment-heavy (54-71% forest posture), nearly worthless against an omniscien
 bait/block/anchor structure the act's design predicted. Random composition captures none of it
 (0.0123): structure needs the model here, unlike gen37's curation register.
 
+### STEP-3 LAUNCH RECORD (2026-07-26; bars PINNED here BEFORE launch; Kilian's launch authority
+### for steps 1-3 granted in-conversation, with his monitoring instruction: check at +30 min
+### then hourly, REPORT ONLY, the stop decision is his)
+
+**Trainer** `scripts/train_gen39_conceal.py` (gen32 machinery; state = (w=2 track window,
+whole-mission seen-mask); head columns [public terrain exposure, recency, spotted-team threat];
+`--blind` zeroes the spotted-team column). **12 runs, LOCAL M4, detached, threads=1 each, pools
+capped:** {llm, random, heuristic} x seeds {0,1,2} + llm-BLIND x seeds {0,1,2}; 8000 sorties,
+eval every 1000, per-eval checkpoints. Shared oracle cache (`--prep`) so every run scores
+against byte-identical yardsticks. **llm training population = all 16 valid step-2 forces (both
+models pooled for the curriculum, disclosed; per-model claims stay in step 2), 12 train / 4
+held out.** Held-out test = 6 pristine fields (6100-6105) x 4 enemies each (held-out llm force,
+fresh random force, heuristic-family force, oracle-searched best force); cell value = mean over
+the cell's 4 enemies at the validation-selected checkpoint (common validation = heuristic-family
+enemies on fields 3000-3003, all arms alike).
+
+> **PRIMARY (as pre-registered above, instantiated):** the llm-trained defender is BELOW both
+> control arms (random-trained, heuristic-trained) on >= 4/6 held-out cells AND pooled, on
+> >= 2/3 seeds, at the validation-selected checkpoint. **REPORTED (ungated):** untrained
+> context row; the blinded llm arm (sighted-vs-blind IS the concealment channel's worth to a
+> trained policy, the arm's second duty); per-cell values beside cap/observing-rule/optimum
+> refs; final-iterate drift. **Fail branches, all writable:** arms indistinguishable =
+> "curriculum composition does not transfer at this scale" (answers gen33's open metric 2);
+> llm worse = reported plainly.
+
 ### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
 
 **Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden
