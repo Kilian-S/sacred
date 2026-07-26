@@ -835,6 +835,33 @@ hl 1.64 (effective 0.90): real 92%, G1 4.52, G2 4.25, sight 1.61, omni 0.33, obs
   "weaker-but-invisible vs stronger-but-seen" (omni 0.33), and the table is raised to make
   the primary map work: the knob the design principle warns against.
 
+### STEP-2 IMPLEMENTATION PINS (2026-07-26, BEFORE any live model call; harness
+### `scratch/gen39_compose.py`, dry-validated offline; Kilian's launch authority for steps 1-3
+### granted in-conversation)
+
+- **Primary scorer** = damage against the best OBSERVING defender (the avoid-revealed rule
+  family under persistent memory, T=40): the matchup composition-with-concealment exists for.
+  Omniscient optimum, blind value and implied coverage (share of menu routes engageable by any
+  team's zone) reported beside it. Oracle ceiling = `choose_force` over the three archetypes
+  with the single gen32 doctrine.
+- **One placer for every arm**: highest-threat unused site of the team's stated terrain in its
+  stated region (thirds along the axis); terrain fallback then any-unused; no site reused.
+- **Doctrine map**: punish_pattern -> q_rep, anticipate_flight -> q_flee, hold_static -> q_hold
+  (normalised); tau by decisiveness bin (0.05/0.10/0.20); memory clamped to the game's w=2.
+  Per-team doctrines via the ConcealDyn extension whose identical-doctrine path reproduces the
+  screen's enemy exactly (the tested regression anchor).
+- **Heuristic arm** = the gen32 doctrine (0.6/0.2/0.3, tau 0.10, w 2) replicated over 3 teams,
+  reach posture (open), regions spread across the three thirds. **Random arm** = 20
+  compositions, doctrine simplex-uniform, postures uniform. **LLM arms** = 8 forces per model
+  (llama-3.3-70b, qwen3-27b), temperature 0.8, guided JSON (v2 schema: urban choosable), exactly
+  K=3 agents enforced.
+- **Relabel control (binding)** = 8 more calls per model under a brief whose FOREST and OPEN
+  rows swap characteristics (reach, lethality, reveal, LOS) in the text only; placement and
+  scoring stay on the true table. The terrain-choice distribution must materially change or the
+  terrain-reasoning claim is not licensed (the gen33 re-scope).
+- **Fields** = the cell's own 5100-5102; pristine 61xx reserved for step-3 held-out tests.
+  Call budget 32; scoring pool-parallel; results to `models/runs/gen39_compose/`.
+
 ### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
 
 **Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden

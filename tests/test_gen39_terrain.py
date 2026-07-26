@@ -252,6 +252,29 @@ def test_spotting_follows_the_fire_and_hidden_teams_never_reveal():
     assert g.revealable[:, :2].sum() >= old[:, :2].sum()
 
 
+def test_per_team_doctrines_identical_reproduce_the_single_doctrine_game():
+    """The step-2 regression anchor: a force whose teams all carry the pinned gen32 doctrine must
+    be numerically the SAME enemy as the single-doctrine game the screen ran; differing doctrines
+    must change the aim; hold_static must bias toward track-independence."""
+    from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
+    base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
+    pp = base.lethality(resample_field(base.coords, 5100))
+    L = np.where(~base.concealed)[0][:3]
+    g0 = ConcealDyn(base, pp, L, w=2, tau=0.10, q_rep=0.6, q_flee=0.2, q_ar=0.3)
+    same = [dict(q_rep=0.6, q_flee=0.2, q_ar=0.3, tau=0.10, w=2)] * 3
+    g1 = ConcealDyn(base, pp, L, w=2, tau=0.10, doctrines=same)
+    assert np.allclose(g0.aim, g1.aim, atol=1e-12) and np.allclose(g0.stepdmg, g1.stepdmg,
+                                                                   atol=1e-12)
+    mixed = [dict(q_rep=1.0, tau=0.05, w=1), dict(q_hold=1.0, tau=0.10),
+             dict(q_flee=0.7, q_ar=0.3, tau=0.20, w=2)]
+    g2 = ConcealDyn(base, pp, L, w=2, tau=0.10, doctrines=mixed)
+    assert not np.allclose(g0.stepdmg, g2.stepdmg, atol=1e-6)
+    hold_only = [dict(q_hold=1.0, tau=0.10)] * 3
+    g3 = ConcealDyn(base, pp, L, w=2, tau=0.10, doctrines=hold_only)
+    spread = np.abs(g3.stepdmg - g3.stepdmg.mean(axis=0, keepdims=True)).max()
+    assert spread < np.abs(g0.stepdmg - g0.stepdmg.mean(axis=0, keepdims=True)).max()
+
+
 def test_force_schema_follows_the_table_in_force():
     from src.redforce import FORCE_SCHEMA, force_schema
     path = lambda s: s["properties"]["agents"]["items"]["properties"]["emplacement_zone"][  # noqa: E731

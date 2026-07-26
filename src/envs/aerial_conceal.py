@@ -187,7 +187,8 @@ class ConcealDyn:
     """One (field, doctrine, operating point) cell, exact on the window MDP."""
 
     def __init__(self, base: ConcealBase, pp_field, laydown, w=2, tau=0.10,
-                 q_rep=0.6, q_flee=0.2, q_ar=0.3, sigma_r=1.5, same_class=True):
+                 q_rep=0.6, q_flee=0.2, q_ar=0.3, sigma_r=1.5, same_class=True,
+                 doctrines=None):
         """laydown: the site indices the enemy has EMPLACED on.
 
         Semantics are gen33's, which were regression-tested to reproduce the gen32 dynamic game
@@ -257,17 +258,45 @@ class ConcealDyn:
 
         # --- the enemy doctrine (gen31/gen32 form: punish the track, pre-aim at the obvious
         # escape, pre-aim at a naive spreader) ---------------------------------------------------
-        Vw = self.dmg[self.states].mean(axis=1)                          # vs the recent track
-        Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tau
-        Ar = np.exp(Zr); Ar /= Ar.sum(axis=1, keepdims=True)
-        rflee = (Ar @ self.dmg.T).argmin(axis=1)                         # the obvious escape
-        ar = (~self.in_window).astype(float)
-        ar /= np.clip(ar.sum(axis=1, keepdims=True), 1e-12, None)
-        Var = ar @ self.dmg                                              # vs a naive spreader
-        Z = q_rep * Vw + q_flee * self.dmg[rflee] + q_ar * Var
-        Zs = (Z - Z.max(axis=1, keepdims=True)) / tau
-        A = np.exp(Zs) * self.prior[None, :]          # doctrine, weighted by where the enemy IS
-        A /= np.clip(A.sum(axis=1, keepdims=True), 1e-300, None)
+        if doctrines is None:
+            Vw = self.dmg[self.states].mean(axis=1)                      # vs the recent track
+            Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tau
+            Ar = np.exp(Zr); Ar /= Ar.sum(axis=1, keepdims=True)
+            rflee = (Ar @ self.dmg.T).argmin(axis=1)                     # the obvious escape
+            ar = (~self.in_window).astype(float)
+            ar /= np.clip(ar.sum(axis=1, keepdims=True), 1e-12, None)
+            Var = ar @ self.dmg                                          # vs a naive spreader
+            Z = q_rep * Vw + q_flee * self.dmg[rflee] + q_ar * Var
+            Zs = (Z - Z.max(axis=1, keepdims=True)) / tau
+            A = np.exp(Zs) * self.prior[None, :]      # doctrine, weighted by where the enemy IS
+            A /= np.clip(A.sum(axis=1, keepdims=True), 1e-300, None)
+        else:
+            # PER-TEAM doctrines (gen39 step 2: the composers write doctrine per team). Each team
+            # j contributes unit-peak eagerness over ITS OWN zone shaped by ITS OWN doctrine;
+            # one joint normalisation allocates the serial's engagement across the force. With
+            # identical doctrines this reproduces the single-doctrine game exactly (sum of
+            # priors vs their mean cancels in the normalisation: the regression anchor). Extra
+            # component q_hold = sit on the zone's best ground regardless of the track (the
+            # brief's hold_static); teams may have shorter memories w_j <= w (reading the most
+            # recent w_j of the window; longer memories than w are clamped, disclosed).
+            assert len(doctrines) == len(self.L)
+            ar = (~self.in_window).astype(float)
+            ar /= np.clip(ar.sum(axis=1, keepdims=True), 1e-12, None)
+            Var = ar @ self.dmg
+            hold = self.dmg.max(axis=0)[None, :]                         # site value, track-free
+            U = np.zeros((len(self.states), self.H))
+            for j, d in enumerate(doctrines):
+                wj = int(np.clip(d.get("w", w), 1, w))
+                tj = float(d.get("tau", tau))
+                Vw = self.dmg[self.states[:, self.w - wj:]].mean(axis=1)
+                Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tj
+                Arj = np.exp(Zr); Arj /= Arj.sum(axis=1, keepdims=True)
+                rflee = (Arj @ self.dmg.T).argmin(axis=1)
+                Z = (d.get("q_rep", 0.0) * Vw + d.get("q_flee", 0.0) * self.dmg[rflee]
+                     + d.get("q_ar", 0.0) * Var + d.get("q_hold", 0.0) * hold)
+                Zs = (Z - Z.max(axis=1, keepdims=True)) / tj
+                U += np.exp(Zs) * self.prior_j[j][None, :]
+            A = U / np.clip(U.sum(axis=1, keepdims=True), 1e-300, None)
         self.aim = A                                                     # [Sn, H]
         self.stepdmg = A @ self.dmg.T                                    # [Sn, R]
 
