@@ -946,6 +946,27 @@ cores at ~7.6 s/sortie measured vs the historical 2.5). Changes, all pinned befo
    to -6.4/-6.9 and held-out damage fell ~25-35% below untrained: the reveal channel drives
    behaviour, as designed. Those numbers are context only; the restarted runs are the record.
 
+### STEP-3 THROUGHPUT REPAIR, MEASURED (2026-07-26 evening; solo smoke, machine otherwise clear)
+
+The four launch attempts that produced no result were all one defect: **every stored transition
+memoised its OWN copy of the field's featurized graph**, so a run's footprint grew ~1 GB as the
+buffer filled, several runs pinned the machine at the memory-compression threshold, and the
+paging showed up as 40-67% SYSTEM time (misdiagnosed twice as thread-pool spin and as the
+scheduler's P/E-core split; both fixes were real but not the cause). Repaired by attaching ONE
+shared per-field graph at push time; tensor-exactness pinned by `tests/test_gen39_trainer_eval.py`.
+
+| flight | cumulative | segment rate | RSS |
+|---|---|---|---|
+| 200 | 368 s | 1.84 s/flight | 3.1 GB |
+| 400 | 731 s | 1.82 s/flight | 3.1 GB |
+| 600 | 1098 s | 1.84 s/flight | 3.1 GB |
+
+**Flat**, where the pre-fix code went 2.07 s/flight solo -> 7.2 s/flight by flight 1000 at 6-way.
+Footprint 3.1 GB/run sets the concurrency: **four runs per wave** (12.4 GB, clear of the
+threshold), three waves. Also disclosed: an hour of this session's diagnosis was invalid because
+`pkill -f <pattern>` matched the very shell issuing it, so "batch stopped" was reported while
+four trainers still ran; kills now exclude self and are verified.
+
 ### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
 
 **Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden
