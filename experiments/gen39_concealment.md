@@ -834,3 +834,16 @@ hl 1.64 (effective 0.90): real 92%, G1 4.52, G2 4.25, sight 1.61, omni 0.33, obs
   ceiling): continuity with the gen32/33 Kaliningrad exhibits, but the story changes to
   "weaker-but-invisible vs stronger-but-seen" (omni 0.33), and the table is raised to make
   the primary map work: the knob the design principle warns against.
+
+### OPERATING POINT PINNED FOR STEPS 2-4 (2026-07-26, Kilian's decision: option A, all four maps)
+
+**Primary theatre: NARVA. Cell: K=3 teams, concealed reach 0.85, range multiplier 0.7, hidden
+lethality 1.0 x the PINNED table (no weapons knob turned).** At this cell: 92% of laydowns a
+real game, G1 3.65, G2 4.36, sight worth 2.08x, hidden/open 1.07 vs an omniscient defender
+(firepower matched by construction) and 2.66 vs a defender that must observe: everything that
+separates the two force designs IS the information channel. Absolute weapon characteristics on
+narva (range_scale = 2.27 x 0.7): open 5.6 km / 0.90; field 4.0 km / 0.85; forest 4.7 km /
+0.55 (hidden); urban 3.3 km / 0.45 (hidden). **HELD OUT: kgd_gvardeysk, ukraine AND fulda
+(Kilian: all four maps in the act).** The lethality-raise question DISSOLVES: the pinned table
+stands (0.70/0.90 rows remain measured context in the cost table and the screen grid). The two
+earlier voided kgd pins remain visible above with their void reasons.
