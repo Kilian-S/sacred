@@ -89,6 +89,10 @@ class Inst:
         self.M = 1 << len(g.L)
         self.expo_pub = base.expo_pub
         self.S_field = g.S                              # field-level, shared per field
+        Sn = len(g.states)
+        self.wf = np.zeros((Sn, self.R))                # window-frequency column per state
+        for k in range(W):
+            np.add.at(self.wf, (np.arange(Sn), g.states[:, k]), 1.0 / W)
 
     def refs(self):
         g = self.g
@@ -233,6 +237,12 @@ def build_pools(base, arm, forces_path, cache=CACHE):
 # --- exact policy eval -------------------------------------------------------------------------
 
 def policy_value(prot, inst, env, blind=False):
+    """EXACT policy value in ONE head call. The head applies route_feats as a pure additive
+    logit shift (`logit shift = feats @ w`, networks.py): for the fixed graph encoding,
+    probs(window, mask) = softmax(log p0 + F(window, mask) @ w) where p0 is the head's output
+    with route_feats zeroed. The first version looped Sn x M head calls (151k forwards per
+    eval); it ground the whole batch to a halt and is replaced by this closed form, verified
+    numerically identical (tests/test_gen39_trainer_eval.py)."""
     env.reset()
     obs = env.observe()
     pyg = featurize_state(obs, 0).to(prot.device)
@@ -243,19 +253,19 @@ def policy_value(prot, inst, env, blind=False):
     prot.actor.menu_routes = obs["menu_route_node_idx"]
     prot.actor.eval()
     g, R = inst.g, inst.R
-    Sn = len(g.states)
-    dists = np.zeros((Sn, inst.M, R))
     with torch.no_grad():
         h = prot.actor.encoder(pyg.x, pyg.edge_index, pyg.edge_attr)
-        for m in range(inst.M):
-            for i, wstate in enumerate(g.states):
-                fe = inst.feats(wstate, m)
-                if blind:
-                    fe = fe.clone(); fe[:, 2] = 0.0
-                prot.actor.route_feats = fe
-                probs, _ = prot.actor.head(h, active, list(range(R)), torch.zeros(R))
-                dists[i, m] = probs.cpu().numpy()
+        prot.actor.route_feats = torch.zeros(R, 3)
+        p0, _ = prot.actor.head(h, active, list(range(R)), torch.zeros(R))
+        wvec = prot.actor.route_feat_w.detach().cpu().numpy().astype(float)
     prot.actor.train()
+    logp0 = np.log(np.clip(p0.cpu().numpy().astype(float), 1e-300, None))
+    kw = 0.0 if blind else wvec[2]
+    L = (logp0[None, None, :] + wvec[0] * inst.expo_pub[None, None, :]
+         + wvec[1] * inst.wf[:, None, :] + kw * inst.known_cols[None, :, :])
+    L -= L.max(axis=2, keepdims=True)
+    dists = np.exp(L)
+    dists /= dists.sum(axis=2, keepdims=True)
     return float(g.episodic(rule=lambda idx, m, p: dists[:, m, :], T=S_EP))
 
 
