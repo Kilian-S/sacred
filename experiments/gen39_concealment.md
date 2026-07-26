@@ -795,3 +795,42 @@ mid-session stop on the biased sampler) is archived as
 `models/runs/gen39_screen2_stopped_biased_sampler`, never mixed. Launch: `--launch --workers
 10`, detached, thread pools capped per process. Read-outs + operating-point pick follow the
 standing scripts; the pick script now derives the lethality axis from the data.
+
+### STEP 1 RESULTS, THIRD RUN (2026-07-26; 12,960 cells, 36/36 blocks ok, 220 min at 10
+### workers; `models/runs/gen39_screen2.json`; the FIRST run on fully repaired code)
+
+**Timing disclosure:** the pre-launch ~30-50 min estimate was WRONG by ~5x (it extrapolated
+from a kgd block; the wooded-map K=6 blocks dominate). Actual: 220 min.
+
+**G1. Room for a learned policy: PASSES on every map** (persistent arm; medians over real
+cells): kgd 83% real, G1 3.17, G2 3.21; ukraine 67%, 4.28, 3.25; narva 79%, 3.95, 3.58;
+fulda 91%, 2.91, 2.55. Gates (G1>=2, G2>=1.25) pass on 86% of real cells = 69% of the grid.
+
+**G2. The mechanic, with its internal control, on the repaired game:** sight is worth 1.29x
+(open laydowns), 1.37x (mixed), 1.26x (random) and **exactly 1.00x (concealed)**.
+
+**Memory now matters (the spot-where-it-fires consequence):** whole-mission memory improves
+the observing defender 0.89x vs the forgetful window (was ~1.08x under the old trigger);
+optimum and blind rules unmoved (0.99-1.00x). The faithful memory form finally carries value,
+as the mechanic intended.
+
+**OPERATING-POINT SHORTLIST (pre-registered filter: >=90% real, G1>=2, G2>=2, sight>=1.4;
+ranked by matched-omniscient-firepower vs observing-gap): every qualifying cell is on the
+WOODED maps.** Top: **narva, K=3, concealed reach 0.85, range multiplier 0.7, hidden lethality
+1.0 x the PINNED table** - real 92%, G1 3.65, G2 4.36, sight 2.08x, hidden/open 1.07 vs an
+omniscient defender (firepower matched) and **2.66 vs one that must observe**. No kgd cell
+passes the filter: on kgd the hidden force is 0.23-0.40x of open vs perfect play at EVERY
+setting (cover is not where the corridor is), while still 1.7-1.8x better vs an observing
+defender at raised lethality; kgd's best cell by the same ranking is K=3, cr 0.85, rm 0.7,
+hl 1.64 (effective 0.90): real 92%, G1 4.52, G2 4.25, sight 1.61, omni 0.33, obs 1.78.
+
+**THE DECISION THIS PUTS TO KILIAN (not taken autonomously; it moves the theatre convention):**
+- **(A) RECOMMENDED: primary moves to NARVA at the pinned table** (K=3, cr 0.85, rm 0.7,
+  hl 1.0; kgd + ukraine become held-out). Honours the act's own design principle that no
+  range or lethality is chosen to produce a result: the terrain does the work, the lethality
+  question dissolves (keep 0.55), firepower is matched by construction and everything that
+  separates the two force designs IS the information channel, at the largest measured gap.
+- **(B) Keep kgd primary at concealed lethality 0.90** (the surprise-buys-kill-probability
+  ceiling): continuity with the gen32/33 Kaliningrad exhibits, but the story changes to
+  "weaker-but-invisible vs stronger-but-seen" (omni 0.33), and the table is raised to make
+  the primary map work: the knob the design principle warns against.
