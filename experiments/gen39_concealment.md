@@ -1043,6 +1043,53 @@ still be a materially weaker curriculum than the tuned doctrine, so it cannot ov
 step-3 verdict. Pre-registered as NOT worth running on those grounds, before any seed was
 spent.**
 
+### PHASE 1C (2026-07-27; Kilian's call: "make the LLM stronger"): THREE INTERVENTIONS, ALL
+### MEASURED, ALL SHORT OF THE BAR (`scratch/gen39_phase1c.py`, `models/runs/gen39_phase1c.json`;
+### 3.4 min of calls + oracle scoring, no training)
+
+Bar fixed before the calls: an arm justifies a Phase-2 training run only by reaching the
+heuristic curriculum's **0.0215 median irreducible threat** (damage against a defender that knows
+where every team is).
+
+| arm | n | median irreducible | best | % of bar | cover share |
+|---|---|---|---|---|---|
+| step-2 / 1b population (baseline) | 61 | 0.00115 | 0.0091 | 5% | 83% |
+| **robust brief** (one added constraint: stay dangerous when KNOWN) | 16 | 0.00097 | 0.0075 | **5%** | **54%** |
+| **iterative** round 0 / 1 / 2 (compose -> exact score -> revise) | 6 | 0.00147 / 0.00063 / 0.00173 | 0.0062 | 7% / 3% / **8%** | 50-56% |
+| **curated** (best-of-N over the 61 by irreducible threat) | 12 | **0.00427** | 0.0091 | **20%** | 94% |
+
+**Reading, and it is a capability boundary rather than a briefing failure.** The robustness
+constraint DID change what the model does: cover share halves (83% -> 54%), so it understood the
+instruction and complied. Its forces did not become more dangerous to a knowing defender. Three
+rounds of feedback carrying the model's own two yardstick numbers and the reference bar produced
+no trend (7% -> 3% -> 8%). Only ORACLE CURATION lifts the population materially (5% -> 20%), and
+even the single best force in 61+16+18 reaches 0.0091, **2.4x below the bar**.
+
+**Mechanism (consistent with the whole LLM arc).** The model's action space is terrain class +
+corridor region + doctrine mix. Irreducible danger on this map is GEOMETRIC: it requires the
+particular combination of positions that denies every lane, which the exact combination search
+finds and a posture statement cannot express. Phase 1a already showed the same: giving LLM
+postures oracle placement leaves them at 0.0004. gen33 measured the other end (an LLM choosing
+coordinates directly is indistinguishable from random). **So the LLM adds value where the
+judgement is verbal-strategic (composition against a searching defender: step 2, where it beats
+the tuned doctrine) and cannot supply value where it is combinatorial-geometric (a force that
+survives contact with a knowing defender), no matter how it is briefed or how much feedback it
+gets.**
+
+**BINDING CONSEQUENCE: Phase 2 (a llama-only / robust / curated curriculum) is NOT RUN.** No LLM
+force family reaches a curriculum strength that could overturn step 3, and that is measured
+rather than assumed. The one arm that moves the needle, oracle curation, is by construction the
+"LLM proposes, algorithm selects" pattern gen38 already banks.
+
+**What Kilian's challenge earned (recorded, since the challenge was right to make):** the
+per-yardstick split is now explicit and both halves are true. Against a defender that must
+SEARCH, the LLM's forces beat the tuned doctrine (step 2, 0.0747 vs 0.0603, like-for-like
+placement) and inflict more damage than it (Phase 1a, 0.0805 vs 0.0688). Against a defender that
+KNOWS, and against every TRAINED defender, they are 2.5-7x weaker (step-3 test rows: heuristic
+forces 0.1118-0.2445 damage vs LLM forces 0.0177-0.0537). **The concealment gambit beats a
+searcher and loses to a learner - the SACRED-dependent crossover the act was built to find, and
+the one quantity the standing wording rule says may never be claimed from oracle rows.**
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
