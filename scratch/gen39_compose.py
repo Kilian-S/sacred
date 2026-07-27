@@ -53,6 +53,7 @@ W, TAU = 2, 0.10
 DOC32 = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3, tau=TAU, w=W)
 MODELS = ("llama-3.3-70b", "qwen3-27b")
 N_LLM, N_RANDOM = 8, 20
+N_LLM_BIG = 32          # Phase 1b: a richer population, per model, for the curriculum question
 BASE_URL, KEY = "http://100.88.32.88:8080/v1", "iits-local-key"
 OUTDIR = Path("models/runs/gen39_compose")
 
@@ -315,6 +316,7 @@ def main():
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--score", action="store_true")
+    ap.add_argument("--big", action="store_true", help="Phase 1b: 32 forces per model")
     a = ap.parse_args()
     if a.dry:
         OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -323,6 +325,11 @@ def main():
                 for m in MODELS for j in range(2)]
         (OUTDIR / "forces_llm.json").write_text(json.dumps(recs, indent=1))
         score_all()
+        return
+    if a.big:                       # Phase 1b: 32 per model, no relabel arm (already banked)
+        t0 = time.time()
+        generate_llm("big", N_LLM_BIG)
+        print(f"[big] generation done in {(time.time() - t0) / 60:.1f} min")
         return
     if a.live:
         t0 = time.time()
@@ -334,7 +341,7 @@ def main():
     if a.score:
         score_all()
         return
-    ap.error("give --dry / --live / --score")
+    ap.error("give --dry / --live / --big / --score")
 
 
 if __name__ == "__main__":

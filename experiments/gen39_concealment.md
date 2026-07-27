@@ -984,6 +984,65 @@ recorded as the follow-up (Phase 2 below), not as a rescue attempt: the primary 
 5000 (best checkpoints at 1000-5000 scattered, VAL flat within noise), so the 8000-sortie
 extension is not warranted.
 
+### PHASE 1 (2026-07-27, oracle-only, free): WHY the llm curriculum lost, measured
+
+Two probes, run after step 3 closed, to explain the result rather than rescue it.
+`scratch/gen39_phase1_confound.py`, `scratch/gen39_phase1b_score.py`;
+artefacts `models/runs/gen39_phase1_confound.json`, `gen39_phase1b_scores.json`.
+
+**1a. The disclosed placement confound is REAL BUT SMALL, and it points the OTHER WAY.** Each
+arm's actual training opponents scored on one yardstick (median over 8 training fields):
+
+| opponent family | vs PERFECT play | vs the observing rule |
+|---|---|---|
+| gen32 doctrine + ORACLE placement (the heuristic arm's) | **0.0215** | 0.0688 |
+| gen32 doctrine + rule placement | 0.0105 | 0.0608 |
+| **LLM doctrine + rule placement (the llm arm's)** | **0.0007** | **0.0805** |
+| LLM doctrine + oracle placement (the proposed matched-placement fix) | 0.0004 | 0.0835 |
+| random doctrine + rule placement (the random arm's) | 0.0000 | 0.0068 |
+
+Placement is worth 1.13x with doctrine held fixed. **The llm arm trained against opponents that
+were 1.17x STRONGER than the heuristic arm's on the observing-rule yardstick and still produced
+a worse defender, so the confound does not explain the step-3 result and the matched-placement
+re-run is NOT worth its compute** (llm+oracle stays at 0.0004 vs perfect play). Recorded and
+dropped.
+
+**THE MECHANISM (the finding this phase earns).** Curriculum value tracks the opponent's threat
+against a defender that ALREADY KNOWS where it is - its irreducible danger - not its threat
+against the defender you have:
+
+| curriculum | opponent vs PERFECT play | resulting defender (held-out, pooled) |
+|---|---|---|
+| heuristic | 0.0215 | **0.0915** |
+| llm | 0.0007 | 0.1079 |
+| random | 0.0000 | 0.1520 |
+
+Monotone across all three arms. **Mechanism: the LLM composes CONCEALMENT-HEAVY forces (54-71%
+cover in step 2; 81-84% in the Phase-1b population), and concealed forces are by construction
+strong against a defender that must observe and near-harmless against one that knows (step-1
+rows: hidden/open 0.23-0.71 omniscient vs 1.02-1.13 observing). A defender trained against them
+learns the narrow skill "locate, then walk around", which does not transfer; a defender trained
+against irreducibly dangerous forces must learn real play.** The act's own mechanic therefore
+explains its own curriculum negative, which is why the two halves belong in one ledger.
+
+**1b. A richer population does not change the picture** (61 valid forces, 32 requested per
+model, 3.7 min of calls; scored on both yardsticks):
+
+| model | n | vs PERFECT play (median) | vs observing rule | cover share |
+|---|---|---|---|---|
+| llama-3.3-70b | 29 | 0.00194 | 0.0707 | 84% |
+| qwen3-27b | 32 | 0.00078 | 0.0643 | 81% |
+
+llama composes forces ~2.5x more irreducibly dangerous than qwen (consistent with step 2's
+per-model split, where llama passed every clause and qwen was partial), but **the best force in
+61 reaches 0.0091 against perfect play, still 2.4x below the heuristic curriculum's 0.0215, and
+only 4/61 clear 0.005.** Cover share correlates POSITIVELY with irreducible threat within the
+population (+0.38), i.e. the model is not simply over-hiding; the ceiling is the composition
+space it explores. **Consequence for any Phase 2: a llama-only or best-of-N curriculum would
+still be a materially weaker curriculum than the tuned doctrine, so it cannot overturn the
+step-3 verdict. Pre-registered as NOT worth running on those grounds, before any seed was
+spent.**
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
