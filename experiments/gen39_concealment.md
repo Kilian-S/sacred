@@ -1090,6 +1090,67 @@ forces 0.1118-0.2445 damage vs LLM forces 0.0177-0.0537). **The concealment gamb
 searcher and loses to a learner - the SACRED-dependent crossover the act was built to find, and
 the one quantity the standing wording rule says may never be claimed from oracle rows.**
 
+### MATCHED-EFFORT LADDER + A RETRACTION OF THE STEP-2 HEADLINE (2026-07-27, Kilian's
+### question: "what if we take the iteration away from the gen32 doctrine?";
+### `scratch/gen39_fairfight.py`, `models/runs/gen39_fairfight.json`; oracle-only)
+
+Crossing doctrine {TUNED gen32, three UNTUNED first guesses} x placement {oracle search, rule},
+8 training fields, three postures each:
+
+| force family | IRREDUCIBLE (vs a knowing defender) | vs the searching rule |
+|---|---|---|
+| TUNED + oracle (the step-3 control) | **0.02152** | 0.0688 |
+| TUNED + rule | 0.01081 | 0.0608 |
+| UNTUNED hold + oracle | 0.01459 | 0.0310 |
+| UNTUNED uniform + oracle | 0.00992 | 0.0321 |
+| **UNTUNED naive_repeat + rule** ("shoot where they just flew", one line) | 0.00528 | **0.0877** |
+| UNTUNED uniform + rule | 0.00409 | 0.0489 |
+| UNTUNED hold + rule | 0.00331 | 0.0277 |
+| *LLM zero-shot / iterated / curated (same scorer)* | *0.00115 / 0.00173 / 0.00427* | *0.0805* |
+
+**Answer to the question asked: removing the tuning does NOT open a gap for the LLM, it closes
+the one we thought we had.** Tuning is worth 2.05x on irreducible threat (doctrine alone) and
+4.08x with the placement search, but on the SEARCHING-defender yardstick the tuned doctrine is
+WORSE than a one-line naive doctrine (0.0608 vs 0.0877): gen32's tuning traded raw damage for
+robustness, because it was tuned to be a hard SPARRING PARTNER, not a maximum-damage force. At
+matched effort (untuned doctrine + rule placer) the naive first guess beats the LLM on BOTH
+yardsticks (0.0877 vs 0.0805 searching; 0.00528 vs 0.00115 irreducible).
+
+**RETRACTION (binding, and it costs the act its step-2 headline).** Doctrine isolated as the only
+variable, on step 2's OWN fields and its OWN force geometry:
+
+| doctrine, identical geometry + placer | irreducible | vs the searching rule |
+|---|---|---|
+| gen32 TUNED (step 2's comparator) | 0.01907 | 0.0603 |
+| **naive_repeat, one line** | 0.00518 | **0.1228** |
+| uniform, one line | 0.00907 | 0.0232 |
+| *llama / qwen (step 2 banked)* | - | *0.0747 / 0.0613* |
+
+**A one-line doctrine inflicts 0.1228 where the LLM's best model reaches 0.0747 and the
+oracle-searched force reaches 0.0964. The step-2 comparator was not the strongest simple doctrine
+on the yardstick step 2 scored.** Therefore: *"the LLM's forces beat the hand-tuned doctrine"*
+survives only in the literal, uninteresting sense (it beat THAT doctrine); **the implied claim
+that LLM composition beats what a practitioner would write is FALSE and is retracted here.** This
+is the project's baseline-completeness dogma firing for the fifth time, and it was found by
+following Kilian's own challenge rather than by an examiner.
+
+**What survives step 2 intact:** (i) the BINDING RELABEL CONTROL - swapping forest and open in the
+brief materially changes the model's compositions and collapses their value 10-13x, so the
+terrain-reasoning claim is licensed and is independent of any comparator; (ii) LLM composition
+beats RANDOM composition decisively, on both yardsticks and in the trained register (step 3,
+29% better defender, 3/3 seeds); (iii) the per-model split (llama > qwen) reproduces on every
+measurement made since.
+
+**What the act now claims about LLMs, stated at exactly the evidence:** *a strong open-weight
+model composes enemy forces that are far better than random and worse than a one-line
+practitioner doctrine on the deployed yardstick, and an order of magnitude short of any
+doctrine on the irreducible-threat yardstick; briefing it for robustness changes its
+compositions (cover 83% -> 54%) without changing their value, and three rounds of exact
+numerical feedback move nothing. The value the model demonstrably adds in this act is
+terrain-grounded verbal composition relative to noise, not superiority over engineered
+baselines.* Consistent with gen37 (curation rejected), gen33 (placement ~ random) and B2
+(calibration failure); the arc's single positive remains gen38 (language -> doctrine identity).
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
