@@ -953,13 +953,26 @@ sentence may attribute its margin to composition alone.** The matched-placement 
 recorded as the follow-up (Phase 2 below), not as a rescue attempt: the primary stands failed.
 
 **REPORTED ROWS.**
-- **Blinded arm (the concealment channel to a trained policy):** sighted beats blind on 5/6,
-  5/6, 3/6 cells, pooled 0.1079 vs 0.1134 (1.05x). Seed-0 is the clean case (1.40x); seeds 1-2
-  reverse in the pooled mean while still winning most cells. **Honest reading: the exposure
-  channel is worth little to the TRAINED policy on this test set, far less than the 1.6-2.1x it
-  is worth to the simple observing rules (step-1 oracle rows). Blind validation ratios are much
-  worse (1.48-2.69 vs 0.98-1.17), so the channel helps where the enemy is on revealing ground
-  and the test set is deliberately half-concealed.**
+- **Blinded arm (the concealment channel to a trained policy):** pooled 0.1079 sighted vs
+  0.1134 blind (1.05x). **Broken down BY ENEMY TYPE (the decisive cut, 2026-07-27):**
+
+  | held-out enemy | sighted | blinded | channel |
+  |---|---|---|---|
+  | oracle(open) = a REVEALING force (the channel can fire) | 0.2412 | 0.2267 | **0.94x** |
+  | oracle(hidden) = a CONCEALED force (nothing is ever revealed) | 0.1370 | 0.1779 | 1.30x |
+  | llm / random / heuristic forces (mixed ground) | 0.0751 | 0.0810 | 1.08x |
+
+  **Binding reading, and it CORRECTS the first draft of this row: the trained policy converts
+  the exposure channel into NOTHING where the channel actually fires (0.94x against revealing
+  forces, marginally negative). The 1.30x on concealed forces cannot be the channel (it never
+  fires there) and is a difference between two differently-trained policies, not information
+  use.** This is the third sighting of the project's channel-does-not-carry pattern (gen29
+  coordination, gen34 type, now gen39 exposure) and the sharpest, because here the same channel
+  is worth 1.26-1.37x to the SIMPLE observing rules on the same games (step-1 rows). The
+  earlier draft sentence ("the channel helps where the enemy is on revealing ground") is
+  measured FALSE and is retracted here rather than amended.
+  Blind validation ratios are nonetheless much worse (1.48-2.69 vs 0.98-1.17): the blind arm is
+  a worse policy overall, it simply is not worse for the reason the channel would predict.
 - **Against the oracle rows:** no arm beats the best OBSERVING rule on any cell (0/6 everywhere;
   best arm 1.64x it), and only the heuristic arm dips below the static cap on more than one cell
   (2/6). **Binding: gen39 licenses NO "trained policy beats the simple rules" sentence in this
