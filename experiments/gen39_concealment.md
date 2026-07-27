@@ -1231,6 +1231,55 @@ while local search keeps grinding. That is the same shape as Phase 1d/1e (good f
 refinement) and it points at the obvious hybrid, recorded as future work and NOT run here: LLM
 proposes the neighbourhood, local search refines inside it.
 
+### STEP 5 PRE-REGISTRATION (2026-07-27, BEFORE any code that touches it; Kilian's go for
+### 2 seeds): DOES A STRONG CURRICULUM FIX THE STEP-3 NEGATIVE?
+
+**Why this is a test and not a rescue.** Phase 1 measured a mechanism: curriculum value tracks
+the enemy's IRREDUCIBLE THREAT (damage against a defender that knows the laydown), monotone
+across the three step-3 arms. Step 3's llm arm failed with 0.0007-threat enemies against the
+tuned doctrine's 0.0215. Phase 1f/free-gate then produced LLM-proposed enemies at 0.030-0.049
+with only 16 exact evaluations. **The mechanism therefore PREDICTS the llm arm should now win.**
+That prediction is falsifiable, is written here before the runs, and the fail branches below are
+written with it.
+
+**FROZEN DESIGN (all arms identical except the curriculum's source).**
+- Theatre narva, the pinned cell (K=3, cr 0.85, rm 0.7, table lethality); 5000 sorties;
+  validation-selected checkpoint; the step-3 trainer unchanged.
+- **DOCTRINE FROZEN to gen32 (0.6/0.2/0.3) in EVERY arm.** Free-gate Part A measured LLM-written
+  doctrine on the same positions at 0.53-0.75x the tuned recipe on all four maps, so an
+  LLM-doctrine arm is excluded on evidence, not preference; the LLM's contribution under test is
+  POSITIONS ONLY.
+- **Matched budget: every search curriculum gets 16 exact evaluations per field.** Without this,
+  "llm wins" is indistinguishable from "any search wins".
+
+**ARMS (4 x 2 seeds = 8 runs, ~6 h local).** `llm16` (llama-proposed, 16 evals), `local16`
+(steepest-descent swaps, 16 evals), `random16` (uniform triples, 16 evals), `tuned` (the step-3
+control, unchanged: `choose_force` + gen32).
+
+**TEST SET (binding, and different from step 3's).** Six pristine fields x FOUR enemy families,
+all built STRONG by the same 16-eval recipe: llm16, local16, random16, tuned, plus the
+oracle-searched force as the ceiling row. Step 3's test set was mostly WEAK enemies (0.02-0.05
+damage), where a free-lane shortcut suffices and arms are indistinguishable; that is disclosed
+there and repaired here.
+
+> **PRIMARY: the llm16-trained defender is below the tuned-trained defender on >= 4/6 held-out
+> cells AND pooled, on >= 2/2 seeds.**
+> **SECONDARY (the control that decides what the claim may say): llm16 vs local16 and vs
+> random16 on the same clauses.** If llm16 beats `tuned` but ties the search controls, the
+> licensed sentence is "a STRONG curriculum fixes the step-3 negative; the LLM is one
+> sample-efficient way to author one", NOT "the LLM curriculum is best".
+> **STAGED SEEDS (pinned now, so it can never be a rescue): n=2 first. A THIRD seed is added if
+> and only if the arm ordering is AMBIGUOUS - any pair of arms within 10% pooled, or a 1-1 seed
+> split - never because a particular arm lost.**
+> **Fail branches, all writable:** (a) all strong arms tie the tuned arm = the curriculum-strength
+> curve SATURATES above ~0.02, which locates its knee and is a real finding; (b) llm16 below the
+> controls = the step-3 negative was not curriculum strength and the mechanism is wrong, stated
+> plainly; (c) llm16 wins only where free-gate said it should (narva/ukraine/fulda, not kgd) =
+> the map-dependence becomes the result.
+> **DISCLOSED IN ADVANCE:** on kgd_gvardeysk the free gate measured RANDOM search beating the
+> LLM (0.0647 vs 0.0494); kgd is therefore a pre-declared negative cell for the LLM edge, and the
+> zero-shot map rows must report it.
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
