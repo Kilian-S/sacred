@@ -1139,6 +1139,55 @@ NOT uniformly the more dangerous one - **it loses to the LLM force on 2 of 6 hel
 (6100, 6101) and wins on 4** - so every "the heuristic force is 2.5-7x more dangerous" sentence
 must carry "on average, with the LLM force ahead on a third of fields".
 
+### PHASE 1E (2026-07-27): A GROUNDED ACTION SPACE + A FAIR CEILING - the grounding problem is
+### FIXED, and what remains is measured (`scratch/gen39_phase1e.py`, `models/runs/gen39_phase1e.json`)
+
+Phase 1d diagnosed grounding at 12-40%: the model chose in a vocabulary (class + region) whose
+geometric consequences it had never been shown. Phase 1e removes the guess with a SLOT
+CATALOGUE - every (class, region) slot that exists on the map, each annotated with the routes a
+team there would threaten, its reach, its lethality and whether it reveals itself. Descriptive
+only: the catalogue never says which combination to pick. **The fair ceiling is computed
+exhaustively over all 165 three-slot combinations of the SAME catalogue**, so the model is no
+longer scored against a search with a hundred times more freedom.
+
+| | value |
+|---|---|
+| restricted ceiling (best of 165 slot combinations) | **0.0278** |
+| median slot combination (= choosing at random) | 0.0055 |
+| the heuristic curriculum's `choose_force` laydown (context) | 0.0215 |
+
+| arm | n | median | % of ceiling | best | % | grounding | free lanes |
+|---|---|---|---|---|---|---|---|
+| qwen3-27b | 8 | 0.0071 | **26%** | **0.0113** | **41%** | 92% | **0.5** |
+| llama-3.3-70b | 8 | 0.0007 | 3% | 0.0061 | 22% | 90% | 4.5 |
+| ALL | 16 | 0.0038 | 14% | 0.0113 | 41% | **91%** | 2.5 |
+| round 0 -> round 1 (one feedback round) | | 9% -> **20%** of ceiling | | | | | 3.2 -> 1.8 |
+
+**G (grounding >= 80%): PASS - 12-40% -> 91%.** The interface fix worked exactly as predicted:
+given a catalogue it can read, the model knows what its own force covers.
+**C2 (beat a random slot choice): PASS** - best 0.0113 vs 0.0055, so it is genuinely choosing.
+**C1 (>= 60% of ceiling): FAIL at 14% median / 41% best.**
+
+**What this settles, and it is the sharpest statement of the LLM arc.** The failure was NEVER
+briefing (Phase 1c), and it is no longer grounding (fixed here). With a readable action space and
+full diagnostic feedback the model still recovers only ~2x random and ~40% of the best available
+choice: **what remains is combinatorial SEARCH over its own options.** The gap is now attributable
+to one named capability rather than to prompt quality, and the fix is architectural (let the model
+propose, let a search select: the gen38 pattern) rather than linguistic.
+
+**Two things worth banking beside it.** (i) **A model reversal:** qwen3-27b is far better here
+(26% vs 3% median; 0.5 vs 4.5 free lanes), the opposite of step 2's ordering where llama led -
+the per-model rule earns its keep, and no "LLMs" sentence is licensed. (ii) **Feedback works
+where the model can act:** one round of the catalogue-grounded report doubled the median
+(9% -> 20% of ceiling) and halved the free lanes, replicating Phase 1d's pattern with the
+grounding confound removed.
+
+**Methodological catch, disclosed:** the restricted ceiling (0.0278) EXCEEDS the heuristic
+curriculum's own laydown (0.0215), i.e. `choose_force`'s surrogate search is itself suboptimal
+and a better enemy than the one we trained against exists inside a 165-option menu. The step-3
+heuristic control is therefore a strong-but-not-optimal opponent, and its label in every table
+should read "the tuned-doctrine curriculum", never "the best possible curriculum".
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
