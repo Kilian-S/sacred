@@ -919,6 +919,58 @@ enemies on fields 3000-3003, all arms alike).
 > "curriculum composition does not transfer at this scale" (answers gen33's open metric 2);
 > llm worse = reported plainly.
 
+### STEP 3 RESULTS (2026-07-27; 12 runs complete, 5000 sorties each, validation-selected
+### checkpoints; `models/runs/gen39_step3/*.json`, scorer `scratch/gen39_step3_score.py`)
+
+**PRIMARY FAILS, 0/3 seeds, per the pre-written branch. Reported plainly.**
+
+| arm (curriculum) | seed 0 | seed 1 | seed 2 | pooled |
+|---|---|---|---|---|
+| heuristic (single gen32 doctrine) | 0.0872 | 0.0985 | 0.0888 | **0.0915** |
+| **llm-composed population** | 0.0878 | 0.1166 | 0.1194 | **0.1079** |
+| llm-composed, BLINDED | 0.1232 | 0.1135 | 0.1034 | 0.1134 |
+| random compositions | 0.1619 | 0.1271 | 0.1672 | **0.1520** |
+
+**What the bar asked and what happened:** the llm-trained defender had to be below BOTH controls
+on >=4/6 held-out cells and pooled, on >=2/3 seeds. It beats the RANDOM-composition control
+decisively (6/6, 4/6, 5/6 cells; pooled 0.108 vs 0.152, ~29% better, all three seeds) but is
+beaten by the HEURISTIC control on 5/6, 6/6, 6/6 cells. **Verdict: 0/3.**
+
+**The measured finding (the fail branch, written before the run):** *what a defender practises
+against matters, and structure beats noise: an LLM-composed enemy population produces a ~29%
+better defender than random compositions on unseen enemies, on every seed. But a single
+well-tuned coherent doctrine, sited by an exact optimiser, remains the better curriculum. The
+LLM's value in this act is at COMPOSITION (step 2, where its forces beat the same doctrine),
+not as a training curriculum.*
+
+**DISCLOSED CONFOUND (found during analysis, before the numbers were read into any claim): the
+arms did not face equally SITED enemies.** The heuristic arm's laydowns come from
+`choose_force` (the exact combination optimiser); the llm and random arms' come from the
+step-2 rule placer. So part of the heuristic arm's margin is better placement, not better
+composition. **The llm-vs-random comparison is CLEAN (identical placer, composition is the only
+difference) and carries the finding above; the llm-vs-heuristic comparison is CONFOUNDED and no
+sentence may attribute its margin to composition alone.** The matched-placement re-run is
+recorded as the follow-up (Phase 2 below), not as a rescue attempt: the primary stands failed.
+
+**REPORTED ROWS.**
+- **Blinded arm (the concealment channel to a trained policy):** sighted beats blind on 5/6,
+  5/6, 3/6 cells, pooled 0.1079 vs 0.1134 (1.05x). Seed-0 is the clean case (1.40x); seeds 1-2
+  reverse in the pooled mean while still winning most cells. **Honest reading: the exposure
+  channel is worth little to the TRAINED policy on this test set, far less than the 1.6-2.1x it
+  is worth to the simple observing rules (step-1 oracle rows). Blind validation ratios are much
+  worse (1.48-2.69 vs 0.98-1.17), so the channel helps where the enemy is on revealing ground
+  and the test set is deliberately half-concealed.**
+- **Against the oracle rows:** no arm beats the best OBSERVING rule on any cell (0/6 everywhere;
+  best arm 1.64x it), and only the heuristic arm dips below the static cap on more than one cell
+  (2/6). **Binding: gen39 licenses NO "trained policy beats the simple rules" sentence in this
+  register.** The act's positive is step 2 (composition) plus the step-1 mechanism rows.
+- Per-cell values, per-seed selection points and the reference rows (cap / observing rule /
+  exact optimum) are in the scorer output; nothing is averaged away.
+
+**Pre-registered extension rule NOT triggered:** no arm's validation curve was still improving at
+5000 (best checkpoints at 1000-5000 scattered, VAL flat within noise), so the 8000-sortie
+extension is not warranted.
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
