@@ -1188,6 +1188,49 @@ and a better enemy than the one we trained against exists inside a 165-option me
 heuristic control is therefore a strong-but-not-optimal opponent, and its label in every table
 should read "the tuned-doctrine curriculum", never "the best possible curriculum".
 
+### PHASE 1F (2026-07-27): SAMPLE EFFICIENCY IN AN UNENUMERABLE SPACE - the honest place for an
+### LLM to earn its keep (`scratch/gen39_phase1f.py`, `models/runs/gen39_phase1f.json`)
+
+Phase 1e showed the residual gap on a 165-option menu is combinatorial search, where brute force
+is free and no model can earn its place. Phase 1f moves to the space that actually exists:
+**200 sites = 1,313,400 three-team forces**, nobody enumerates that. Every arm gets the SAME
+budget of 96 EXACT EVALUATIONS (the operational currency: one full mission solve each), the SAME
+fields, and the SAME fixed doctrine, so only the SEARCH differs. Model calls are reported but not
+charged to the budget: the question is "fewer simulations", not "fewer tokens".
+
+**Best force found vs evaluation budget:**
+
+| arm | @8 | @16 | @32 | @48 | final (96) |
+|---|---|---|---|---|---|
+| random triples | 0.0110 | 0.0267 | 0.0385 | 0.0385 | 0.0385 |
+| greedy top-K by site threat | 0.0374 | 0.0394 | 0.0394 | 0.0394 | 0.0404 |
+| local search (seed + steepest-descent swaps) | 0.0345 | 0.0345 | 0.0410 | 0.0410 | **0.0485** |
+| **llm: llama-3.3-70b** | **0.0394** | **0.0408** | 0.0408 | 0.0408 | 0.0433 |
+| **llm: qwen3-27b** | 0.0309 | 0.0316 | **0.0426** | **0.0426** | 0.0426 |
+
+Context lines: the tuned-doctrine curriculum sits at **0.0215**, the 165-slot restricted ceiling
+at **0.0278**. **Every search arm in the full space beats both**, which is the first thing to say
+plainly: the step-3 heuristic control was never near the best available enemy.
+
+**S1 (beat random): PASS** (0.0433 vs 0.0385). **S3 (reach the tuned doctrine's 0.0215): PASS,
+2.0x it.** **S2 (beat local search): FAIL** - local reaches 0.0485, ~12% above the best LLM arm.
+
+**The honest reading, and it is a genuine LLM positive with a named boundary.** At SMALL budgets
+the LLM arms lead everything: at 8 evaluations llama is at 0.0394 where local search is at 0.0345
+and random at 0.0110, i.e. **reading the map in words gets a good force in a handful of
+simulations**, which is exactly the operational regime (an intelligence cell that can afford a
+few full assessments, not a hundred). By 96 evaluations local search overtakes: **given enough
+simulations, blind hill-climbing wins.** The crossover sits between ~32 and ~96 evaluations on
+this map. So the claim the act licenses is a SAMPLE-EFFICIENCY one, bounded: *language-guided
+proposal dominates blind search in the low-budget regime and is overtaken once the budget grows*
+- never "the LLM finds better forces".
+
+**Also measured:** both models plateau early (llama flat from evaluation 23 to 61, qwen from 34),
+i.e. they propose a strong first neighbourhood and then stop improving on their own leaderboard,
+while local search keeps grinding. That is the same shape as Phase 1d/1e (good first move, weak
+refinement) and it points at the obvious hybrid, recorded as future work and NOT run here: LLM
+proposes the neighbourhood, local search refines inside it.
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
