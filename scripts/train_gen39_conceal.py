@@ -204,6 +204,36 @@ def _from_cache(base, rec):
     return it.slim()
 
 
+def build_pools_step5(base, arm, curricula, cache=CACHE):
+    """Step 5: every arm's training population is ITS OWN 16-evaluation search results (top-3 per
+    field), doctrine FROZEN to gen32; the test set is the SAME strong four-family set for every
+    arm (llm16/local16/random16/tuned best force per field + the oracle ceiling), so no defender
+    is tested only on the kind of enemy it was raised against."""
+    cur = json.loads(_P(curricula).read_text())
+    train = []
+    for f in TRAIN_FIELDS:
+        for sites, _v in cur[arm][str(f)]:
+            train.append(Inst(base, f"tr{f}-{arm}", f, sites=sites).slim())
+    c = json.loads(_P(cache).read_text())
+    val = [_from_cache(base, r) for r in c["val"]]
+    test = []
+    for f in TEST_FIELDS:
+        cell = []
+        for fam in ("llm16", "local16", "random16", "tuned"):
+            sites = cur[fam][str(f)][0][0]
+            cell.append(Inst(base, f"te{f}-{fam}", f, sites=sites).refs().slim())
+        pp = base.lethality(resample_field(base.coords, f), hidden_leth=1.0)
+        best = None
+        for kind in ("open", "hidden", "mixed"):
+            it = Inst(base, f"te{f}-oracle({kind})", f, archetype=kind)
+            v = it.g.episodic(T=S_EP)
+            if best is None or v > best[0]:
+                best = (v, it)
+        cell.append(best[1].refs().slim())
+        test.append(cell)
+    return train, val, test
+
+
 def build_pools(base, arm, forces_path, cache=CACHE):
     """Training population per arm + the SHARED cached val/test structure."""
     c = json.loads(_P(cache).read_text())
@@ -292,7 +322,11 @@ def load_full_state(path):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--arm", choices=("llm", "random", "heuristic"), required=True)
+    p.add_argument("--arm", choices=("llm", "random", "heuristic",
+                                "llm16", "local16", "random16", "tuned"),
+               required=True)
+    p.add_argument("--curricula", default="models/runs/gen39_step5/curricula.json",
+                   help="step-5 strong curricula (arm -> field -> [[sites, threat]])")
     p.add_argument("--forces", default="models/runs/gen39_compose/forces_llm.json")
     p.add_argument("--sorties", type=int, default=8000)
     p.add_argument("--resume", default="", help="full-state file; continues the run losslessly")
@@ -326,7 +360,10 @@ def main():
     if args.prep:
         prep_cache(base, args.forces)
         return
-    train, val, test = build_pools(base, args.arm, args.forces)
+    if args.arm in ("llm16", "local16", "random16", "tuned"):
+        train, val, test = build_pools_step5(base, args.arm, args.curricula)
+    else:
+        train, val, test = build_pools(base, args.arm, args.forces)
     envs = {}
     for it in train + val + [x for cell in test for x in cell]:
         if it.field not in envs:
