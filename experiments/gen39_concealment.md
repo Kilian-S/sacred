@@ -1,5 +1,15 @@
 # Generation: gen39_concealment (the terrain redesign: concealment buys persistence, and the LLM composes doctrine)
 
+> **READER'S SUMMARY (2026-07-28; the act is COMPLETE through step 5 + zero-shot rows).**
+> Results are appended in chronological order and superseded blocks are left visible with their
+> reasons (there are nine). If you want the state rather than the history, read
+> `../HANDOVER_AERIAL_28-07-26.md`, then these blocks in this order:
+> **STEP 1 RESULTS, THIRD RUN** (the mechanic + operating point) -> **STEP 2 RESULTS** (the LLM
+> composition positive + the terrain control) -> **STEP 3 RESULTS** (the curriculum negative) ->
+> **PHASE 1 / 1C / 1D / 1E / 1F** (why it failed, and where an LLM does earn its place) ->
+> **STEP 5 PRE-REGISTRATION / RESULTS / n=3 / ZERO-SHOT** (the negative, fixed and transferred).
+> Everything above the first RESULTS line is the original pre-registration and is unchanged.
+
 **status: PRE-REGISTERED 2026-07-25.** Mandate: Kilian's 2026-07-24/25 direction, in-conversation.
 The act has two halves that share one environment change: (i) a terrain table in which the enemy
 faces a real reach-versus-cover trade, and (ii) a re-aimed gen33 in which the language model

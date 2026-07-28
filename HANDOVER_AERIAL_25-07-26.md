@@ -1,5 +1,11 @@
 # HANDOVER AERIAL, session of 2026-07-25 (gen39 concealment)
 
+> **SUPERSEDED 2026-07-28 by `HANDOVER_AERIAL_28-07-26.md`. READ THAT FIRST.** Everything below
+> describes a state in which the step-1 screen was void and nothing had run; all of it has since
+> been done (steps 1-5 complete, including zero-shot rows on four theatres). This file is kept as
+> the record of the seven faults found on 2026-07-25 and the decisions taken then; its "immediate
+> next actions" and "the decision that blocks the re-run" are HISTORY and must not be acted on.
+
 > **ADDENDUM 2026-07-25 late (critic session): read the ledger's "CODE REPAIRS BEFORE THE STEP-1
 > RE-RUN" block before acting on this file.** The re-run command below would have crashed
 > (`gen39_screen2.py` recorded an undefined `picker`, and the finding-6 force wiring was absent:
