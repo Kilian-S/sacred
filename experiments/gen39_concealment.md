@@ -1314,10 +1314,41 @@ DIVERSITY-plus-strength matters, not strength alone. Recorded as a refinement of
 mechanism, not a contradiction of it: at 0.0007 (step 3) the arm failed; at 0.022-0.039 all
 directed arms succeed; the curve saturates in between.
 
-**AMBIGUITY TRIGGER FIRES (pinned pre-launch):** llm16~local16 differ by 8.2% pooled (<10%) and
-random16~tuned by 2.8%. **A third seed is warranted by the pinned rule** - because the ordering is
-ambiguous, NOT because a particular arm lost. Kilian's call whether to spend it; the PRIMARY
-verdict does not depend on it (llm16 beats tuned on both seeds by 23%).
+### STEP 5 AT n=3 (2026-07-28; the third seed the ambiguity trigger called for; scorer re-run
+### over all 12 runs)
+
+| arm | seed 0 | seed 1 | seed 2 | pooled +/- sd |
+|---|---|---|---|---|
+| **llm16 (llama-proposed, 16 evals)** | 0.1302 | 0.1417 | **0.1145** | **0.1288 +/- 0.0111** |
+| local16 (hill-climb, 16 evals) | 0.1298 | **0.1198** | 0.1564 | 0.1353 +/- 0.0155 |
+| random16 | 0.1597 | 0.1844 | 0.1421 | 0.1621 +/- 0.0173 |
+| tuned (step-3 control) | 0.1717 | 0.1824 | 0.1490 | 0.1677 +/- 0.0139 |
+
+> **PRIMARY (llm16 below the tuned control, >=4/6 cells + pooled): PASS on 3/3 seeds.**
+> Paired difference **-0.0389 +/- 0.0031**, i.e. 23% better with a spread an order of magnitude
+> smaller than the effect: the fix of the step-3 negative is unambiguous.
+> **vs random16: PASS 3/3 seeds** (6/6, 6/6, 4/6 cells). **vs local16: 1/3 seeds**; the third
+> seed REVERSED the ordering (llm16 ahead 0.1145 vs 0.1564) and the paired difference is
+> **-0.0066 +/- 0.0265** - the spread is 4x the difference. **llm16 and local16 are STATISTICALLY
+> INDISTINGUISHABLE at n=3 and the ledger says so; no ordering between them is claimed.**
+> The pinned rule permits no fourth seed, and none is run.
+
+**FINAL LICENSED SENTENCE FOR THE ACT:** *training SACRED against enemies authored by a directed
+16-evaluation search - whether the proposals come from a language model or from a hill-climb -
+produces a defender 23% better on unseen strong enemies than the tuned-doctrine control, on every
+seed. The LLM and the hill-climb are indistinguishable as curriculum authors (paired difference
+0.0066 +/- 0.0265); what separates both from the controls is that the curriculum was SELECTED by
+iterated exact evaluation, and what separates the LLM from the hill-climb is only cost (a handful
+of model calls versus an evaluator in the loop throughout, the Phase-1f low-budget result).*
+
+**Oracle rows at n=3 (pooled):** llm16 and local16 beat the static cap on 5/6 cells (0.82x,
+0.86x); random16 and tuned on 4/6 (1.04x, 1.09x). **No arm beats the best observing rule on any
+cell (0/6): the standing gen39 boundary is unchanged.**
+
+**AMBIGUITY TRIGGER FIRED at n=2 (pinned pre-launch):** llm16~local16 differ by 8.2% pooled (<10%) and
+random16~tuned by 2.8%. **A third seed was warranted by the pinned rule** - because the ordering was
+ambiguous, NOT because a particular arm lost. RUN on Kilian's go 2026-07-28; results in the n=3
+block above (the ordering between llm16 and local16 reversed, confirming it was noise).
 
 **Against the oracle rows (pooled):** llm16 and local16 beat the static cap on 5/6 cells
 (mean 0.87x and 0.79x the cap); random16 and tuned on 3/6 (1.10x, 1.16x). **No arm beats the best

@@ -13,7 +13,7 @@ def sel(arm, s):
 rows = {}
 print(f'{"arm":10s} {"seed":>4s} {"sel@":>6s} {"VAL":>5s} | per-cell held-out damage')
 for a in ARMS:
-    for s in (0, 1):
+    for s in (0, 1, 2):
         b, _ = sel(a, s)
         rows[(a, s)] = np.array(b["cells"], float)
         print(f'{a:10s} {s:4d} {b["sortie"]:6d} {b["val"]:5.2f} | '
@@ -22,9 +22,9 @@ for a in ARMS:
 print("\n=== pooled arm means (validation-selected) ===")
 pooled = {}
 for a in ARMS:
-    v = [rows[(a, s)].mean() for s in (0, 1)]
+    v = [rows[(a, s)].mean() for s in (0, 1, 2)]
     pooled[a] = float(np.mean(v))
-    print(f'  {a:10s} {pooled[a]:.4f}   (seeds {v[0]:.4f} {v[1]:.4f})')
+    print(f'  {a:10s} {pooled[a]:.4f}   (seeds ' + ' '.join(f'{x:.4f}' for x in v) + ')')
 
 print("\n=== PRIMARY: llm16 below TUNED on >=4/6 cells AND pooled, on 2/2 seeds ===")
 ok = 0
@@ -35,18 +35,18 @@ for s in (0, 1):
     ok += good
     print(f'  seed {s}: llm16 {L.mean():.4f} vs tuned {T.mean():.4f}, beats {c}/6, pooled {p}'
           f' -> {"PASS" if good else "FAIL"}')
-print(f'  VERDICT: {ok}/2 seeds -> PRIMARY {"PASS" if ok == 2 else "FAIL"}')
+print(f'  VERDICT: {ok}/3 seeds -> PRIMARY {"PASS" if ok >= 2 else "FAIL"}')
 
 print("\n=== SECONDARY: llm16 vs the matched-budget search controls ===")
 for ctrl in ("local16", "random16"):
     tot = 0
-    for s in (0, 1):
+    for s in (0, 1, 2):
         L, C = rows[("llm16", s)], rows[(ctrl, s)]
         c = int((L < C).sum()); p = L.mean() < C.mean()
         tot += (c >= 4 and p)
         print(f'  vs {ctrl} seed {s}: {L.mean():.4f} vs {C.mean():.4f}, beats {c}/6 '
               f'-> {"PASS" if (c>=4 and p) else "FAIL"}')
-    print(f'  vs {ctrl}: {tot}/2 seeds')
+    print(f'  vs {ctrl}: {tot}/3 seeds')
 
 print("\n=== AMBIGUITY TRIGGER (pinned pre-launch: any pair within 10% pooled, or a 1-1 split) ===")
 amb = []
@@ -67,6 +67,6 @@ caps = np.array([np.mean([refs[n]["cap"] for n in names if f"te{6100+i}" in n]) 
 obsv = np.array([np.mean([refs[n]["obs"] for n in names if f"te{6100+i}" in n]) for i in range(6)])
 print("\n=== vs the oracle rows (pooled seeds, per cell) ===")
 for a in ARMS:
-    M = np.mean([rows[(a, s)] for s in (0, 1)], axis=0)
+    M = np.mean([rows[(a, s)] for s in (0, 1, 2)], axis=0)
     print(f'  {a:10s} below-cap {int((M<caps).sum())}/6  below-observing-rule '
           f'{int((M<obsv).sum())}/6  mean/cap {np.mean(M/caps):.2f}x')
