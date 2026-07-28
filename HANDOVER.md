@@ -1,5 +1,40 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-19; Phase-1 addendum 2026-07-23)
 
+> **★★★★★★★★★ 2026-07-28: gen39 (AERIAL CONCEALMENT + THE LLM CURRICULUM ARC) IS COMPLETE.
+> A fresh agent working on the aerial branch should read `../sacred-aerial/
+> HANDOVER_AERIAL_28-07-26.md` FIRST** (it supersedes the 25-07 aerial handover entirely), then
+> `../sacred-aerial/experiments/gen39_concealment.md` (nine superseded blocks, deliberately
+> visible; a reader's summary sits at its top). **What gen39 banks:**
+> 1. **The concealment mechanic, measured with an internal control:** sight is worth 1.26-1.37x to
+>    the defender against a force on revealing ground and **exactly 1.00x** against a concealed
+>    one (same map, same rules, only the ground changes). Operating point: narva, K=3, at the
+>    UNTOUCHED weapons table; kgd/ukraine/fulda held out.
+> 2. **An LLM composition positive with its terrain control PASSING** (step 2): llama-3.3-70b's
+>    forces beat the hand-tuned gen32 doctrine against the best simple defender (0.0747 vs
+>    0.0603, every clause; qwen partial at 0.0613), and relabelling forest/open in the brief
+>    changes both models' compositions and collapses their forces 10-13x. **The first licensed
+>    terrain-reasoning claim of the whole LLM arc** (gen33's equivalent control had failed).
+> 3. **A curriculum negative, diagnosed, then FIXED.** Step 3: training against LLM-composed
+>    enemies FAILED 0/3 seeds (beat random composition by 29%, lost to the tuned doctrine).
+>    Diagnosis (Phase 1, oracle-only): **curriculum value tracks the enemy's IRREDUCIBLE THREAT**
+>    (its damage against a defender that already knows where it is); LLM forces were concealment
+>    gambits at 0.0007 vs the doctrine's 0.0215. Step 5 rebuilt every curriculum with a matched
+>    16-evaluation search: **PRIMARY PASS 3/3 seeds, llm16 0.1288 vs the tuned control 0.1677
+>    (23% better, paired -0.0389 +/- 0.0031), and it TRANSFERS zero-shot to all three unseen
+>    theatres (3/3 seeds each).**
+> 4. **Where an LLM does and does not earn its place** (Phases 1c-1f, all oracle-only): briefing
+>    is not the problem; **grounding was** (12-40% -> 91% once given a readable slot catalogue);
+>    the residual gap is combinatorial **search**; and in a 1.3M-force space at equal simulation
+>    budget the LLM **leads every method at 8-16 evaluations and is overtaken by hill-climbing by
+>    96** - a bounded SAMPLE-EFFICIENCY claim, which is the honest one.
+> **BINDING BOUNDARIES (unchanged by any of the above): no arm beats the best simple OBSERVING
+> RULE on any cell on any of the four maps, so gen39 licenses NO "trained policy beats the rules"
+> sentence; llm16 and local16 are statistically indistinguishable in-distribution (paired
+> -0.0066 +/- 0.0265, only the SIGN is consistent out of distribution), so NO "the LLM curriculum
+> is best" sentence; everything is PER-MODEL and the models REVERSE between tasks (llama leads at
+> composition, qwen at the grounded slot task).** Chronicle entry 34. The banner stack below is
+> the prior state and remains the orientation for everything that is not gen39.
+
 > **★★★★★★★★ ADDENDUM 2026-07-23: PHASE-1 FRONTIER HARDENING IS THE ACTIVE FRONT (Kilian:
 > deadlines set aside; "make the frontier more complex without damaging banked claims, then
 > complete the LLM experiments").** Three acts PRE-REGISTERED this session, all launches

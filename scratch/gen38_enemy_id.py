@@ -95,9 +95,10 @@ def main():
     test = sample_instances(6, N, K, BAND, KX, 0, city="gdansk")
     apps = {}
     for it in test:
-        apps[it.name] = instance_apparatus(it.env)
-        print(f"[apparatus] {it.city} {it.od}: blind_cap {apps[it.name]['blind_cap']:.4f} "
-              f"omni_cap {apps[it.name]['omni_cap']:.4f}", flush=True)
+        key = f"{it.city}:{it.od[0]}-{it.od[1]}"
+        apps[key] = instance_apparatus(it.env)
+        print(f"[apparatus] {key}: blind_cap {apps[key]['blind_cap']:.4f} "
+              f"omni_cap {apps[key]['omni_cap']:.4f}", flush=True)
 
     labelled = all_labelled()  # (type, idx, narrative)
 
