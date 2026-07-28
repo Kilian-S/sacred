@@ -1280,6 +1280,57 @@ there and repaired here.
 > LLM (0.0647 vs 0.0494); kgd is therefore a pre-declared negative cell for the LLM edge, and the
 > zero-shot map rows must report it.
 
+### STEP 5 RESULTS (2026-07-28; 8 runs, 4 arms x 2 seeds, 5000 sorties, validation-selected;
+### `models/runs/gen39_step5/*.json`, scorer `scratch/gen39_step5_score.py`)
+
+**PRIMARY PASSES 2/2 SEEDS. The step-3 negative is fixed, and the mechanism's prediction held.**
+
+| arm (how the enemy's POSITIONS were chosen; doctrine frozen to gen32 everywhere) | seed 0 | seed 1 | pooled |
+|---|---|---|---|
+| local16 (hill-climbing, 16 evals) | 0.1298 | 0.1198 | **0.1248** |
+| **llm16 (llama-proposed, 16 evals)** | 0.1302 | 0.1417 | **0.1359** |
+| random16 (uniform triples, 16 evals) | 0.1597 | 0.1844 | 0.1720 |
+| tuned (`choose_force` optimiser: the step-3 control) | 0.1717 | 0.1824 | 0.1771 |
+
+> **PRIMARY (llm16 below the tuned control on >=4/6 cells AND pooled, 2/2 seeds): PASS** -
+> beats it 5/6 and 5/6, pooled 0.1359 vs 0.1771 (**23% better**), both seeds.
+> **SECONDARY vs random16: PASS 2/2** (6/6 cells both seeds). **SECONDARY vs local16: FAIL 0/2**
+> (beats it 3/6 and 1/6; local16 pooled 0.1248 is 8% BETTER than llm16).
+
+**THE LICENSED SENTENCE, and it is exactly the one the pre-registration reserved:** *a STRONG
+curriculum fixes the step-3 negative - training against enemies with high irreducible threat
+produces a defender ~23% better on unseen strong enemies than the tuned-doctrine control, on
+every seed - and the LLM is ONE sample-efficient way to author such a curriculum, not the best
+one. A 16-evaluation hill-climb authors a slightly better curriculum still.* No sentence claiming
+the LLM curriculum is superior is licensed.
+
+**The mechanism is confirmed quantitatively.** Curriculum irreducible threat -> resulting defender:
+llm16 0.0393 -> 0.1359, local16 0.0222 -> 0.1248, random16 0.0286 -> 0.1720, tuned 0.0278 ->
+0.1771. The two arms whose curricula were built by a DIRECTED search (llm16, local16) produce the
+two best defenders; the two built by undirected or surrogate search do not. **Threat alone does
+not order the arms** (llm16 has the strongest curriculum but is second): what the strong arms
+share is that their enemies were selected by iterated exact evaluation, i.e. the curriculum's
+DIVERSITY-plus-strength matters, not strength alone. Recorded as a refinement of the Phase-1
+mechanism, not a contradiction of it: at 0.0007 (step 3) the arm failed; at 0.022-0.039 all
+directed arms succeed; the curve saturates in between.
+
+**AMBIGUITY TRIGGER FIRES (pinned pre-launch):** llm16~local16 differ by 8.2% pooled (<10%) and
+random16~tuned by 2.8%. **A third seed is warranted by the pinned rule** - because the ordering is
+ambiguous, NOT because a particular arm lost. Kilian's call whether to spend it; the PRIMARY
+verdict does not depend on it (llm16 beats tuned on both seeds by 23%).
+
+**Against the oracle rows (pooled):** llm16 and local16 beat the static cap on 5/6 cells
+(mean 0.87x and 0.79x the cap); random16 and tuned on 3/6 (1.10x, 1.16x). **No arm beats the best
+OBSERVING RULE on any cell (0/6 everywhere)** - the standing gen39 boundary is unchanged and no
+"trained policy beats the simple rules" sentence is licensed by this act.
+
+**Disclosed limitations.** (i) The validation set is inherited from step 3 and is built from
+TUNED-family enemies, so the tuned arm's validation numbers (0.78-0.79) are not comparable to the
+strong arms' (1.14-1.54); every arm is selected by the same rule, but the strong arms may be
+losing their best checkpoints to a mismatched validation family. Fixing this is a rebuild of the
+validation cache, recorded as future work. (ii) `tuned` is a poor label - it means "positions from
+our own optimiser, tuned doctrine"; all four arms share the gen32 doctrine.
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
