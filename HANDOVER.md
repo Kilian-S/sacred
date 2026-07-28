@@ -1,5 +1,15 @@
 # HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-16 NIGHT)
 
+> **★★★★★★★★★ 2026-07-28 (fresh agent on THIS worktree: read this first).** This copy of
+> `HANDOVER.md` is FROZEN AT 2026-07-16 and is missing everything from gen26 onward. The current
+> master state lives in the main worktree: **`../sacred/HANDOVER.md`** (top banner). If you are
+> working on the AERIAL branch, the file you actually need is
+> **`HANDOVER_AERIAL_28-07-26.md`** in this directory: gen39 (concealment + the LLM curriculum
+> arc) is COMPLETE through step 5 with zero-shot rows on four theatres, and that handover is its
+> authoritative map. The gen29 worktree's equivalent pointer is its own `experiments/
+> gen29_multiod.md` plus `../sacred/HANDOVER.md`.
+
+
 > **★★★★★★ 2026-07-16 NIGHT (fresh agent: START HERE; this banner supersedes the stack below).**
 > Today's session (the Block R rescue programme, Kilian's full autonomous launch authority)
 > changed what the thesis claims and where its positive results live. Read in this order:
