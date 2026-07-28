@@ -175,3 +175,26 @@ M4. (c) **Commit critique artefacts in the session that produces them** — the 
 disjoint-baseline finding survived only as a dangling memory line and had to be re-derived. (d)
 **An LP's degenerate optima are not process-stable** (HiGHS vertex choice wobbles iid_eq ~1-2%):
 score each seed against its own stored refs and disclose.
+
+**DOGMAS EARNED 2026-07-25/28 (the gen39 arc; details in `../sacred-aerial/experiments/
+gen39_concealment.md` and `HANDOVER_AERIAL_28-07-26.md`):**
+(a) **A curriculum is only as good as its opponent's IRREDUCIBLE threat** - what the enemy can do
+to a defender that already knows where it is. Sparring partners that win only by being unfound
+teach a shortcut ("find the free lane") that does not transfer. Screen curricula by that number,
+not by how well the enemy beats your current defender.
+(b) **Matched-budget controls for anything that consumes evaluations.** "The LLM curriculum wins"
+is indistinguishable from "any 16-evaluation search wins" unless the search controls get the same
+budget. This is the first control an examiner reaches for.
+(c) **Judge a model on the task you actually gave it.** Before concluding a capability boundary,
+check the interface: gen39 spent two phases blaming reasoning for what was a GROUNDING failure
+(the model could not see the consequences of its own vocabulary; 12-40% -> 91% once shown a
+readable catalogue). Ask "could it know?" before "can it think?".
+(d) **`pkill -f <pattern>` matches the shell issuing it.** Three times this arc a kill reported
+success while the runs were still alive, invalidating an hour of diagnosis. Kill by explicit PID
+with a self-excluding pattern and verify over 30 seconds.
+(e) **Profile before blaming the launcher.** A "40-67% system time" crawl was mis-diagnosed twice
+(thread-pool spin, then core scheduling) before measurement found the real cause: duplicate
+per-transition graph copies in the replay buffer, ~1 GB per run, driving the machine into memory
+compression. RAM before cores: size a batch so it FITS.
+(f) **A prediction made must be reported even when it fails.** gen39 pre-declared kgd a negative
+cell for the LLM arm; kgd turned out to be its strongest map, and the ledger says so.
