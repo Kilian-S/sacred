@@ -1023,3 +1023,49 @@ to their supersession notes.)*
   conditioning-capacity wall). Where-LLMs-help is now a measured map, not an opinion.
 - **State:** suites green both worktrees; all ledgers folded and committed; the one open
   computational thread = the cheap gen37 restriction follow-up (future work).
+
+## 34. gen39: the concealment act, and the LLM arc's most complete answer  (2026-07-25 -> 28 · branch `gen28-aerial`, worktree `../sacred-aerial` · `experiments/gen39_concealment.md`; handover `HANDOVER_AERIAL_28-07-26.md`; trainer `scripts/train_gen39_conceal.py`)
+
+- **Goal (prospective):** give concealment a MEANING (a defender that must locate the enemy), then
+  ask the two questions the LLM arc had left open: can a language model COMPOSE a better enemy
+  force than a hand-tuned doctrine, and does training SACRED against LLM-composed enemies produce
+  a better defender?
+- **Headline results.** (i) **The mechanic works, with an internal control:** sight is worth
+  1.26-1.37x to the defender against a force on revealing ground and **exactly 1.00x** against a
+  concealed one, same map, same rules. Operating point pinned on narva at the untouched weapons
+  table (kgd/ukraine/fulda held out); the four-map screen (12,960 cells) passes both gates on 86%
+  of real cells. (ii) **Step 2 is an LLM POSITIVE with its binding control passing:** llama's
+  forces beat the gen32 doctrine against the best simple defender (0.0747 vs 0.0603, every
+  clause; qwen partial 0.0613), and relabelling forest/open in the brief changes both models'
+  compositions and collapses their forces 10-13x - **the first licensed terrain-reasoning claim
+  of the LLM arc**, where gen33's equivalent had failed. (iii) **Step 3 FAILED 0/3 seeds** (the
+  llm curriculum beat random composition by 29% but lost to the tuned doctrine). (iv) **Phase 1
+  diagnosed it, oracle-only: curriculum value tracks the enemy's IRREDUCIBLE THREAT** - its damage
+  against a defender that already knows where it is - and LLM forces were concealment gambits
+  (0.0007 vs the doctrine's 0.0215). (v) **Step 5 fixed it:** every curriculum rebuilt by a
+  matched 16-evaluation search, **PRIMARY PASS 3/3 seeds (llm16 0.1288 vs tuned control 0.1677,
+  23% better, paired -0.0389 +/- 0.0031), and it TRANSFERS zero-shot to all three unseen theatres
+  (3/3 seeds each; llm16 also leads local16 on 9/9 map-seed pairs).**
+- **What we learned about where LLMs help (Phases 1c-1f, all oracle-only, ~1 h of calls).**
+  Briefing is not the constraint (a robustness clause changed the model's behaviour without
+  changing its outcome); **grounding was** (its declared coverage matched reality 12-40% of the
+  time, rising to 91% once given a readable slot catalogue); what remains is **combinatorial
+  search**; and in a 1,313,400-force space at equal simulation budget the LLM **leads every method
+  at 8-16 evaluations and is overtaken by hill-climbing by 96** - a bounded SAMPLE-EFFICIENCY
+  claim, which is the honest one and the operationally relevant regime.
+- **Boundaries that survive everything (binding):** **no arm beats the best simple OBSERVING RULE
+  on any cell on any of the four maps**, so gen39 licenses no "trained policy beats the rules"
+  sentence; llm16 and local16 are statistically indistinguishable in-distribution (paired -0.0066
+  +/- 0.0265); everything is per-model and the models REVERSE between tasks (llama leads at
+  composition, qwen at the grounded slot task).
+- **Method notes worth inheriting.** Nine result blocks in the ledger are superseded and left
+  visible with their reasons. Four corrections were made mid-arc and disclosed rather than
+  quietly fixed: an eval defect (151k network calls per checkpoint, now closed-form and tested),
+  duplicate per-transition graphs in replay (~1 GB/run, the true cause of every "system time"
+  crawl after two mis-diagnoses), a single-field test that produced a PASS which was a
+  field-selection artefact, and a **pre-declared prediction that FAILED** (kgd was pre-declared a
+  negative cell for the llm arm; it turned out to be its strongest map, recorded as made-and-wrong).
+- **Thesis fit:** the aerial act gains a concealment/information-channel mechanic with an internal
+  control (Obj-2/Obj-1); the LLM arc gains its clearest positive (composition, terrain-grounded)
+  AND its clearest bounded claim (sample efficiency), completing the where-LLMs-help map begun in
+  B2/gen33/gen37/gen38; Obj-5's comparative discipline gains the matched-budget-control pattern.
