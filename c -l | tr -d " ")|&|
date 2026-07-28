@@ -1,0 +1,1 @@
+   grep -v curricula | grep -v curricula | wc -l | tr -d ' ')
