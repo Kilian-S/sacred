@@ -1362,6 +1362,46 @@ losing their best checkpoints to a mismatched validation family. Fixing this is 
 validation cache, recorded as future work. (ii) `tuned` is a poor label - it means "positions from
 our own optimiser, tuned doctrine"; all four arms share the gen32 doctrine.
 
+### STEP 5 ZERO-SHOT ROWS (2026-07-28; `scratch/gen39_zeroshot.py`,
+### `models/runs/gen39_zeroshot.json`): the Narva-trained defenders on three unseen theatres
+
+All twelve validation-selected checkpoints scored on kgd_gvardeysk, ukraine and fulda. Each map
+gets its OWN strong test set, built exactly as Narva's: four enemy families each authored by its
+own 16-evaluation search at the matched budget, plus the oracle ceiling; doctrine frozen to gen32.
+Nothing retrained. **HARNESS SELF-CHECK: rebuilding Narva's test set through this harness
+reproduces the step-5 run log to 0.00000 on all six cells**, so the map rows rest on a verified
+pipeline.
+
+| map (unseen) | llm16 | local16 | random16 | tuned | llm16 beats tuned | beats local16 |
+|---|---|---|---|---|---|---|
+| kgd_gvardeysk | **0.3522** | 0.3688 | 0.3720 | 0.4117 | **3/3 seeds** | **3/3 seeds** |
+| ukraine | **0.2192** | 0.2390 | 0.2351 | 0.2654 | **3/3 seeds** | **3/3 seeds** |
+| fulda | **0.1042** | 0.1108 | 0.1160 | 0.1099 | **3/3 seeds** | 2/3 seeds |
+
+**The step-5 result TRANSFERS, and on the unseen maps it is cleaner than at home.** llm16 beats
+the tuned control on 3/3 seeds on all three theatres (paired -0.0595 +/- 0.0082 on kgd,
+-0.0461 +/- 0.0160 on ukraine, -0.0056 +/- 0.0042 on fulda: on kgd and ukraine the effect is
+5-7x its own spread). llm16 is also ahead of local16 on every map (3/3, 3/3, 2/3 seeds), which
+Narva at n=3 could not separate: **the ordering that was statistically indistinguishable in
+distribution becomes consistent out of distribution.** No sentence claims a large llm16-local16
+margin - the paired differences (-0.017, -0.020, -0.007) remain within a spread of similar size -
+but the SIGN is now the same on nine of nine map-seed pairs, which the Narva rows alone did not
+support.
+
+**THE PRE-DECLARED KGD PREDICTION FAILED, and that is disclosed prominently.** The free gate
+measured RANDOM search beating the LLM proposer at authoring kgd forces (0.0647 vs 0.0494), and
+the step-5 pre-registration therefore pre-declared kgd a negative cell for the llm16 arm. In the
+event, kgd is the arm's STRONGEST map (paired -0.0595 +/- 0.0082, the largest margin of the
+three). **Reading, stated plainly: curriculum-authoring strength on a map does not predict the
+transferred defender's quality on that map - the two quantities came apart, and the free gate's
+per-map ordering does not license a per-map prediction about the trained policy.** The prediction
+is recorded as made and as wrong rather than quietly dropped.
+
+**Oracle rows (pooled): llm16 beats the static cap on 6/6 cells on ALL THREE unseen maps** (cap
+0.441 / 0.429 / 0.155 vs llm16 0.352 / 0.219 / 0.104). **No arm beats the best observing rule on
+any cell on any map (0/6 everywhere)**: the standing gen39 boundary survives transfer unchanged,
+and no "trained policy beats the simple rules" sentence is licensed anywhere in this act.
+
 ### STEP-3 AMENDMENT (2026-07-26 afternoon, BEFORE any result is read; Kilian's instruction:
 ### "add resume and restart at 5000")
 
