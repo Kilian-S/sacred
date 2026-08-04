@@ -75,4 +75,7 @@ a self-excluding pattern and verify over 30 seconds.
 This worktree's stale copies of the shared documentation (frozen around 2026-07-16), the two
 dated aerial handovers and the 2026-07-28 doc register live in `docs/archive/` (see its
 `INDEX.md`). The chronicle lives on the roads worktree; this tree's `SACRED_PROGRESS.md` is a
-pointer stub, with the old stale copy (which carried entry 34) archived.
+pointer stub, with the old stale copy (which carried entry 34) archived. The ledgers shared
+across worktrees (`b2_llm_benchmark`, `gen19_b1lite1`, `gen27_dynamic_generalist`,
+`regime_decision_table` and the gen01-gen25 set) were reconciled to one canonical version on
+2026-08-04; if you amend a shared ledger, mirror the change on all trees in the same session.
