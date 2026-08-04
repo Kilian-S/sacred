@@ -1,28 +1,28 @@
 # SACRED
 
-**SACRED** (Soft Actor-Critic Robust Evolutionary Deep RL) is an MSc thesis project (Imperial College
-London) framing contested convoy routing as an adversarial security game: a SAC dispatcher routes
-convoys base -> FOB while a hidden, committing interdictor places ambushes, and the only defence is
-anticipation + unpredictable (mixed-strategy) routing, validated against a computable minimax
-equilibrium.
+**SACRED** (Soft Actor-Critic Robust Evolutionary Deep RL) is an MSc thesis project (Imperial
+College London, 2026) that asks **where learning pays in contested logistics routing**, and
+answers it with a measured boundary map. A SAC dispatcher routes convoys against hidden,
+committing interdictors on real city graphs (and against air-defence fields on real terrain in
+the aerial branch), always scored against computable optima. Below a measured boundary a
+two-line heuristic is near-optimal and the thesis proves it; learning pays where the
+interdiction budget approaches the min-cut and against adaptive pattern-of-life adversaries;
+above both sits a measured conditioning-capacity wall. An LLM arc maps where language models
+help the pipeline and where they do not.
 
-**Numbers policy (2026-07-10): citable numbers live ONLY in the `experiments/` ledgers.** Prose
-documents (this file, HANDOVER, SYSTEM, ROADMAP, the storyline docs) carry pointers, not values;
-the standing headline numbers changed twice in 48 hours during the node-ordering-fix arc and any
-value quoted outside a ledger should be treated as potentially stale.
+This is the ROADS worktree (branch `gen08-interdiction`) and the master documentation home. The
+sibling worktrees are `../sacred-aerial` (branch `gen28-aerial`) and `../sacred-gen29` (branch
+`gen29-multiod`). The shareable restructured repo with the Mission Control web app is
+`../imperial-sacred`.
 
-**Current standing results (pointers):**
-- Single-convoy headline: `experiments/gen10_postfix.md` (gen10-SC, post-fix, supersedes B2-P3 in
-  `experiments/gen08_interdiction.md`).
-- Multi-convoy headline: `experiments/gen09_multiconvoy.md` best-checkpoint as EXACTLY re-evaluated
-  in `experiments/gen10_postfix.md` (pre-fix, caveat disclosed there); post-fix reproduction and
-  the plateau decomposition: `experiments/gen10_postfix.md` + `experiments/gen11_menuhead.md`.
-- Obj-4 SBO demonstrator: `experiments/f3_sbo_demonstrator.md`.
-- Disruption sweeps (K / N / held-out OD): `experiments/gen12_sweeps.md`.
-- The three critiques that shaped the final arc: `CRITIQUE.md` (2026-07-02),
-  `CRITIQUE_INTERDICTION.md` (2026-07-09, the node-ordering bug), `CRITIQUE_PREFREEZE.md`
-  (2026-07-10, the two-headline asymmetry + ranked programme).
+**Start here.** `CLAUDE.md` (identity, house rules, project map) then `HANDOVER.md` (the
+current state and the claims register) then `SYSTEM.md` (operating dogmas).
+`SACRED_PROGRESS.md` is the 34-entry chronicle.
 
-Start here: `HANDOVER.md` (new-agent read order at the top). Full progression:
-`SACRED_PROGRESS.md` (chronicle). Historical campaign record: `CONTEXT.md`,
-`experiments/gen0[1-7]*.md`.
+**Numbers policy.** Citable numbers live ONLY in the `experiments/` ledgers; prose documents
+carry pointers. Historical direction documents and the critique series live in `docs/archive/`
+(one-line descriptions in its `INDEX.md`).
+
+**Running things.** Python via the repo venv, `PYTHONPATH=. .venv/bin/python`; test suite
+`PYTHONPATH=. .venv/bin/python -m pytest tests/`. Training is CPU-only on the M4 and every
+launch needs Kilian's explicit go.

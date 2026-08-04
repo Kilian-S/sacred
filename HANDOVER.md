@@ -1,726 +1,177 @@
-# HANDOVER.md: master state & onboarding for the incoming agent (2026-07-07, refreshed 2026-07-19; Phase-1 addendum 2026-07-23)
+# HANDOVER.md: the master state of the SACRED project
 
-> **★★★★★★★★★ 2026-07-28: gen39 (AERIAL CONCEALMENT + THE LLM CURRICULUM ARC) IS COMPLETE.
-> A fresh agent working on the aerial branch should read `../sacred-aerial/
-> HANDOVER_AERIAL_28-07-26.md` FIRST** (it supersedes the 25-07 aerial handover entirely), then
-> `../sacred-aerial/experiments/gen39_concealment.md` (nine superseded blocks, deliberately
-> visible; a reader's summary sits at its top). **What gen39 banks:**
-> 1. **The concealment mechanic, measured with an internal control:** sight is worth 1.26-1.37x to
->    the defender against a force on revealing ground and **exactly 1.00x** against a concealed
->    one (same map, same rules, only the ground changes). Operating point: narva, K=3, at the
->    UNTOUCHED weapons table; kgd/ukraine/fulda held out.
-> 2. **An LLM composition positive with its terrain control PASSING** (step 2): llama-3.3-70b's
->    forces beat the hand-tuned gen32 doctrine against the best simple defender (0.0747 vs
->    0.0603, every clause; qwen partial at 0.0613), and relabelling forest/open in the brief
->    changes both models' compositions and collapses their forces 10-13x. **The first licensed
->    terrain-reasoning claim of the whole LLM arc** (gen33's equivalent control had failed).
-> 3. **A curriculum negative, diagnosed, then FIXED.** Step 3: training against LLM-composed
->    enemies FAILED 0/3 seeds (beat random composition by 29%, lost to the tuned doctrine).
->    Diagnosis (Phase 1, oracle-only): **curriculum value tracks the enemy's IRREDUCIBLE THREAT**
->    (its damage against a defender that already knows where it is); LLM forces were concealment
->    gambits at 0.0007 vs the doctrine's 0.0215. Step 5 rebuilt every curriculum with a matched
->    16-evaluation search: **PRIMARY PASS 3/3 seeds, llm16 0.1288 vs the tuned control 0.1677
->    (23% better, paired -0.0389 +/- 0.0031), and it TRANSFERS zero-shot to all three unseen
->    theatres (3/3 seeds each).**
-> 4. **Where an LLM does and does not earn its place** (Phases 1c-1f, all oracle-only): briefing
->    is not the problem; **grounding was** (12-40% -> 91% once given a readable slot catalogue);
->    the residual gap is combinatorial **search**; and in a 1.3M-force space at equal simulation
->    budget the LLM **leads every method at 8-16 evaluations and is overtaken by hill-climbing by
->    96** - a bounded SAMPLE-EFFICIENCY claim, which is the honest one.
-> **BINDING BOUNDARIES (unchanged by any of the above): no arm beats the best simple OBSERVING
-> RULE on any cell on any of the four maps, so gen39 licenses NO "trained policy beats the rules"
-> sentence; llm16 and local16 are statistically indistinguishable in-distribution (paired
-> -0.0066 +/- 0.0265, only the SIGN is consistent out of distribution), so NO "the LLM curriculum
-> is best" sentence; everything is PER-MODEL and the models REVERSE between tasks (llama leads at
-> composition, qwen at the grounded slot task).** Chronicle entry 34. The banner stack below is
-> the prior state and remains the orientation for everything that is not gen39.
+> Rewritten from scratch on 2026-08-04, replacing the 727-line reverse-chronological banner
+> stack that had accumulated since 2026-07-07. The old file is preserved verbatim at
+> `docs/archive/HANDOVER_STACK_2026-07-28.md`. Nothing scientific changed in the rewrite. Every
+> claim below carries its ledger pointer, and the ledgers remain the sole source of citable
+> numbers. Read `CLAUDE.md` first if you have not (identity, house rules, project map).
 
-> **★★★★★★★★ ADDENDUM 2026-07-23: PHASE-1 FRONTIER HARDENING IS THE ACTIVE FRONT (Kilian:
-> deadlines set aside; "make the frontier more complex without damaging banked claims, then
-> complete the LLM experiments").** Three acts PRE-REGISTERED this session, all launches
-> awaiting Kilian's explicit go: **gen34** (hidden adversary-TYPE family; beat the exact
-> type-blind cap; `experiments/gen34_hidden_adversary.md`), **gen35** (dynamic K=2/3 corner on
-> 71-33; the first pre-registerable beats-every-two-line-rule bar;
-> `experiments/gen35_dyn_kboundary.md`), **gen36** (gen29's pre-committed distillation control +
-> the one dense-credit re-aim, B gated on A;
-> `../sacred-gen29/experiments/gen36_multiod_rescue.md`). En route, a MATERIAL REPAIR: the
-> roads-side dynamic-optimum yardstick (`oracle_refs` undamped RVI) was WRONG on every cell
-> tested; exact truth = Karp min-mean-cycle (`scratch/dyn_exact.py`); corrected-yardstick
-> appendices are in the gen19/gen27 ledgers (PRIMARY claims unaffected; gen19's STRONG retired;
-> the aerial branch had fixed the same bug in `dbf385d` and the fix never crossed back).
-> Chronicle entry 31 is the narrative. After Phase 1: complete gen33 (metric-2 full re-run +
-> stronger K=3 anchors) per the agreed plan. The 2026-07-19 banner below remains the
-> orientation stack for everything else.
+## The state in one paragraph (2026-08-04)
 
-> **★★★★★★★ 2026-07-19 REFRESH (fresh agent: START HERE; this banner supersedes every
-> OPERATIONAL item in the stack below, which is preserved as history).** The experimental
-> campaign is COMPLETE on all three fronts and **WRITING is now the critical path** (FAR
-> hard-due 30 July; freeze 3 Aug; thesis + poster 10:00, 28 Aug). The thesis spine is Kilian's
-> binding 2026-07-18 decision: **the BOUNDARY MAP** ("where does learning pay in contested
-> routing?") — gen27 the flagship positive, gen26 the boundary companion, gen03-06 the
-> motivating negative, gen28/gen29 the closing cells. The project now spans THREE worktrees:
->
-> 1. **This branch (`gen08-interdiction`): roads.** gen26 CLOSED (the boundary map; K=6 is a
->    TIE with the best naive stack, no superiority cell). gen27 CLOSED = the flagship
->    (PRIMARY+STRONG 3/3, no-window causal control clean, `e439394`). **B2 COMPLETE** (both
->    models, three registers, two instances; the knowledge/application dissociation;
->    `experiments/b2_llm_benchmark.md` + `experiments/regime_decision_table.md`) — the
->    2026-07-16 "B2 is LIVE, do not touch" banners below are OBSOLETE (the workbench
->    connection details remain valid for reuse). Also here: the coordination-gap probes
->    (`738ddd1`, `e6c29e2`); the gen29 build brief `GEN29_MULTIOD_HANDOFF.md` now lives ON the
->    gen29 branch (moved there by the implementer; original in history at `e898f07`).
->    Suite 167+ green.
-> 2. **`../sacred-aerial` (branch `gen28-aerial`): the aerial act, CLOSED for trained claims**
->    (`experiments/gen28_aerial.md`; read its 2026-07-19 BASELINE-COMPLETENESS APPENDIX
->    FIRST). v2.2 (menu-N=1 saturating bandit), v2.3 (walker credit starvation) and v4.0-dyn
->    (the corridor-collapse information-boundary finding) are measured negatives; the
->    v3.0-3.2 fleet "Tier-1 positive" is RETIRED by the appendix (the act's own tabular-FP
->    row 0.555 and a best-5-route stack 0.600 beat SACRED's 0.734-0.746; a TIE with the
->    naive frontier, the gen26 K=6 pattern). Surviving trained claim: zero-shot
->    frontier-MATCHING (vs-naive 1.01-1.05, the amortisation row). The 2026-07-16 banner's
->    item 5 ("trained aerial result = MUST-HAVE, go build") is SUPERSEDED — do NOT reopen;
->    its hope that "the aerial continuous axis is where a cleaner separation may live" is
->    measured FALSE. The vector-THEATRE env (real-map NATO-style ops exhibit = the project's
->    strongest Obj-2 asset) sits at Kilian's REVIEW GATE with DRAFT bars; per the appendix,
->    its lanes-only naive rows (1.63x) deflate to 1.26x (payoff-blind) / 1.07x (oracle-fit)
->    under the complete family, which MUST be gated in before any bar is pinned. Suite 209.
-> 3. **`../sacred-gen29` (branch `gen29-multiod`): the CLOSING EXPERIMENT** (three-stream
->    coordination; `experiments/gen29_multiod.md`). The ORACLE half is the project's only gap
->    that survives a complete hostile baseline family (median 31% vs the oracle-fitted cap
->    over 55 cells; prevalence figure banked). The TRAINED half FAILED both tiers (0/3 seeds;
->    blinded ~ sighted = the coordination channel carried nothing; the gen18 boundary
->    replicating in the final register); single-instance diagnostic: self-play beats the cap
->    on one instance (1.41x eq) but floors and oscillates; the generalist was density-starved
->    (~375 sorties/instance vs ~7000 needed). **OPEN DECISION (Kilian's; the last
->    computational call of the project): the one pre-committed re-aim (dense per-stream
->    credit) and/or the DISTILLATION control — framed strictly as "locating the wall"
->    (dynamics vs capacity), never as "SACRED works" — or close as the final boundary cell.**
->    Suite 173.
->
-> **New direction interest (supervisor, 2026-07-19): facility/depot location.** The
-> pre-freeze-feasible act is oracle-only "security-aware facility location": the
-> (cost, exploitability) design frontier, the connectivity exchange rate from the gen26
-> boundary map, and depot-overlap redundancy priced by the gen29 correlation gap; randomised
-> basing and the displacement game are the future-work registers. Shortlist recorded in the
-> 2026-07-19 session + agent memory (`gen29-closing-experiment`).
->
-> **ADDENDUM 2026-07-21: gen32 — the aerial positive REPRODUCED ON THE REAL KALININGRAD MAP
-> and rendered as the operations map** (branch `gen28-aerial`, `experiments/gen32_theatre_dyn.md`,
-> commits `5683ee8..5e45a69`; Kilian's 2026-07-20 mandate). The gen31 dynamic register transplanted
-> onto the committed vec-theatre (Kaliningrad->Gvardeysk, real OSM terrain, LOS-masked AD).
-> Corridor-hunt fix for the real corridor's higher field variance: a 3rd doctrine component
-> (anti-repeat anticipation) + w=3 (the gen27 rotation-breaker). Confirmation on six PRISTINE
-> gated threat-laydowns with fresh seeds + blinded control: **6/6 beats-static-cap on 3/3 seeds
-> (18/18 cells, pooled 0.451x cap), 1.30x the exact dynamic optimum (TIGHTER than gen31's 1.74x
-> on the synthetic lattice), blinded control 1.28x cap 0/6 (causal), blind family beaten 15/18,
-> worst-case 1.36x; ONE attempt.** The abstract lattice did NOT do the work. New:
-> `src/envs/aerial_theatre_env.py` (any vec-theatre now SAC-trainable). Deliverable = the dynamic
-> ops map (`scratch/gen32_ops_map.html`, published artifact) showing the AD re-aiming and SACRED
-> threading around it. Chronicle entry 30. The gen28 "no aerial trained-positive" / "synthetic
-> only" caveats are SUPERSEDED (gen28 static/v4.0 negatives stand as history).
->
-> **ADDENDUM 2026-07-20: gen31 (the gen27 conversion) PASSED CONFIRMATION — the aerial
-> trained positive is BANKED** (branch `gen28-aerial`, `experiments/gen31_aerial_dyn.md`,
-> commits `490f4b1..0200767`; Kilian's 2026-07-19 reopening mandate). The anticipatory mixed
-> doctrine + the doctrine head column recreate gen27's preconditions in the air
-> (corridor-hunt-verified); confirmation on six pristine gated layouts with fresh seeds:
-> 6/6 beats-static-cap on 3/3 seeds (pooled 0.515x cap), 2.06x the exact optimum, blinded
-> control 1.21x cap 0/6 (causal), blind dynamic family beaten 17/18, worst-case premium
-> 1.22x; ONE attempt, no re-rolls. Chronicle entry 29. The gen28 "no aerial trained-positive"
-> sentences are SUPERSEDED for the gen31 register (the gen28 static/v4.0 negatives stand as
-> history). Fitted doctrine rules remain ~1.4x ahead, disclosed.
->
-> **ADDENDUM 2026-07-19 (later the same day): gen30_secure_flp is DONE and committed** — the
-> supervisor-direction facility-location act ran entirely oracle-only under the standing free-probe
-> rule (pre-registered ledger `experiments/gen30_secure_flp.md` BEFORE analysis code; anchor
-> reproduces the gen29 headline exactly; ~4 min of compute). What it banks: the exact (cost,
-> security) depot frontier (premium 0-206% across six seeded draws, knee recovers it for 3-7%
-> cost, ranking deployment-robust at Spearman 0.87-0.92); the headline **redundancy-coordination
-> complementarity** (dual-servability that classical FLP prunes is worth median 25%/max 61% at the
-> coordinated optimum on the primary instance but median -10% under napkin deployment there: the
-> gen29 moat at the strategic tier, 46% median gap-vs-cap on redundant designs); the Gdansk
-> mandatory-corridor demand floor (0.330, mechanically verified); and the Obj-4 metamodel row
-> (held-out Spearman 0.870, bar met). Figures `assets/gen30_*.png`; chronicle entry 28; no
-> training anywhere; both pre-written fail branches fired partially and are reported per-draw.
->
-> **Read order for a fresh agent NOW:** this banner -> `../sacred-gen29/experiments/
-> gen29_multiod.md` -> `../sacred-aerial/experiments/gen28_aerial.md` (appendix first) ->
-> `CRITIQUE_16-07-26.md` -> `NEXT_STEPS_MASTER.md` (Block R, now closed-out) -> the gen26/
-> gen27/B2 ledgers + `experiments/regime_decision_table.md` -> `SACRED_PROGRESS.md` entries
-> 22-27. House rules UNCHANGED (never launch training without Kilian's explicit go; ledgers
-> before CPU; numbers live only in ledgers; baseline completeness pre-registered, screens by
-> heuristic-gap; commit critique artefacts in-session; cap all thread pools). The stack below
-> is the historical record.
+The experimental campaign is COMPLETE across all three worktrees (34 chronicle entries,
+gen01-gen39). Nothing is running, no launch decision is pending, and all three trees are clean
+and committed. The Final Activities Report deadline (30 July) and the self-imposed experimental
+freeze (3 August) are past. **Writing is the critical path.** The thesis and poster are due
+10:00, Friday 28 August 2026 (12,000 words excluding appendices). In the thesis repo the
+Methodology chapter and its proofs appendix are drafted and being Kilianised, the Results
+chapter is substantially drafted on the five-act structure agreed 2026-08-03, and the
+introduction, literature, conclusions and abstract are the thin remaining ends.
 
-> **★★★★★★ 2026-07-16 NIGHT (superseded by the 2026-07-19 banner above; preserved as history).**
-> Today's session (the Block R rescue programme, Kilian's full autonomous launch authority)
-> changed what the thesis claims and where its positive results live. Read in this order:
-> 1. **`CRITIQUE_16-07-26.md`** — the disjoint-baseline finding (a 2-line max-flow heuristic
->    matches/beats every trained static K=1 number; the old ladders' "uniform" anchors were
->    padded-menu strawmen). VERIFIED, folded into all seven affected ledgers with binding
->    wording rules (R0a appendices). Never cite an Obj-5/ZST comparative claim without them.
-> 2. **`NEXT_STEPS_MASTER.md` Block R** — the active programme + its PROGRESS ticks.
-> 3. **`experiments/gen26_kboundary.md`** — the K-to-min-cut act, COMPLETE: at K = m-1 SACRED
->    beats both max-flow heuristic variants on the exact yardstick (K=3 n=3: 0.664 +/- 0.018 vs
->    0.737/0.738, eq 0.604); past the exact wall (71-33 m=6, certified greedy yardstick,
->    fidelity <= 1.8%): K=5 = 0.667 +/- 0.016 < uniform-disjoint 0.705 (STRONG < 0.638 not met);
->    K=6 n=3 = 0.733 +/- 0.015 TIES the best naive full-menu-stack 0.739 (the seed-0 0.718 was the
->    favourable tail). **gen26's honest verdict: NO single cell licenses 'deep RL beats every naive
->    baseline'; the result is the BOUNDARY MAP SHAPE** (`assets/k_boundary_map.png`) — learning's
->    value grows monotonically with coverage fraction (pointless at K<<m; beats the DISJOINT
->    variants at K=m-1 exact but a full-menu-stack ties there too; within-noise of the best naive at
->    K=m), in the regime where exact solvers are also infeasible. A tabular-FP+greedy-BR learner also
->    works, so 'learning is required, deep RL is one sufficient method'. The sharper superiority
->    sentence is RETIRED. gen28-aerial's continuous coverage axis is where a cleaner separation may live.
-> 4. **`experiments/gen27_dynamic_generalist.md`** — the rescued ZST act, PRIMARY + STRONG
->    PASSED 3/3 seeds: one history-aware policy, trained on 3 cities, ZERO-SHOT on Gdansk beats
->    the static cap at **0.639 +/- 0.025** (every static object beaten by MEASUREMENT incl. the
->    local static optimum; full-menu anti-repeat fails at 1.37x; the composed
->    disjoint+anti-repeat rule 0.50-0.61 bounds below; worst-case premium 1.57x = the
->    regime-conditional scope sentence). NO-WINDOW causal control TRAINING OVERNIGHT
->    (`models/runs/gen27_dyn_generalist/seed0_nowin.*`): fold its result + tick the ledger when
->    it lands (expected ~iid_eq, as gen19's control).
-> 5. **`AERIAL_BRANCH_HANDOFF.md`** — if you are the AERIAL instance: the complete build brief
->    for the free-flight act (Kilian 2026-07-16: TRAINED aerial result = MUST-HAVE). Work on a
->    new branch per the brief; do not disturb this branch's running jobs.
-> 6. **B2 (the LLM benchmark) is LIVE and stays in the ORIGINAL conversation** (design
->    finalised: llama-3.3-70b + qwen3-27b, unhinted, 3 instances; first live transcript
->    `scratch/b2_livetest_llama_transcript.txt`; gateway now DIRECTLY reachable at
->    http://100.88.32.88:8080/v1, key iits-local-key; qwen start needs Kilian's ssh). Do not
->    re-run B2 from a fresh session while that conversation is active.
-> **New operating dogmas earned today (also in SYSTEM.md):** (a) BASELINE COMPLETENESS is
-> pre-registered like metrics — every ladder carries the strongest naive baseline a
-> practitioner could write (max-flow/disjoint variants; composed rules in dynamic games);
-> (b) multi-process launches cap ALL thread pools (OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 +
-> torch threads), not just torch's — uncapped pools showed up as 36% system time; (c) commit
-> critique artefacts IN the session that produces them (the lost-15-07-file lesson); (d) screens
-> select instances by the HEURISTIC-gap, not det/eq. House rules otherwise unchanged (ledgers
-> before CPU; prose docs carry pointers, numbers live in ledgers; never compare across SHAs;
-> no multiple-choice prompts to Kilian). Suite 167 green. FAR hard-due 30 July; freeze 3 Aug;
-> thesis 28 Aug. The banner stack below is the historical state.
+## Deadlines, rubric and objectives
 
-> **★★★★★ UPDATE 2026-07-16: B2 IS UNBLOCKED — a local LLM workbench exists (Prof. Angeloudis's
-> box), no API keys or spend needed.** The one open computational item (B2, the agentic-LLM
-> exploitability benchmark) was blocked on commercial API keys; it no longer is. Prof. Angeloudis
-> provided an SSH-reachable GPU server hosting an OpenAI-compatible LLM stack. Full connection +
-> inventory details below; the essentials:
-> - **Host `cv-iits-w05`**, reached over Tailscale. **SSH: `ssh killian@100.88.32.88`** (NOTE: the
->   username is `killian`, DOUBLE-L, not `kilian`; password `tsl2026`). Instructions file:
->   `../../Connecting to local LLM workbench.txt`.
-> - **The gateway on port 8080 is NOT directly reachable from Kilian's Mac** (the box is a *shared*
->   Tailscale node from the prof's tailnet; its own IP is `100.73.116.67`, the Mac sees it as
->   `100.88.32.88`, and the tailnet ACL allows SSH but not 8080). **Workaround (verified working):**
->   an SSH tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88`, then hit
->   `http://localhost:18080/v1`. (Alternative: ask the prof to open 8080 in the ACL / `tailscale serve`.)
-> - **OpenAI-compatible gateway**, API key `iits-local-key` (`Authorization: Bearer iits-local-key`).
->   Every request+response is auto-logged to `/home/llm/vllm-server/audit/YYYY-MM-DD.jsonl` (the B2
->   transcript record, for free; note the log is shared/readable by the `llm` group = pan, leo).
-> - **Live model: `llama-3.3-70b`** (AWQ-INT4, 32K ctx) — tested end-to-end, generates. Three more
->   defined-but-disabled: `qwen3-27b` (27B, 64K ctx; fits alongside the 70B per the VRAM budget,
->   one `./start.sh start qwen3-27b`), `qwen3-coder-30b`, `qwen3-coder-next` (80B MoE). 2x RTX A6000
->   (96 GB VRAM), 251 GB RAM, Ubuntu 24.04. Config is `models.json` (single source of truth);
->   operate via `/home/llm/vllm-server/start.sh {start|stop|status}`. Full README at
->   `/home/llm/README.md`. Kilian's account is in groups `sudo, docker, llm` (can start/stop/edit).
-> - **Why it matters:** this is arguably BETTER than the pre-registered commercial-API design: pinned
->   open-weight models (reproducible), no tools available (exactly the informative no-tools register
->   the B2 pre-registration argues for), free, and on the supervisor's own hardware. **B2 is ready to
->   run** the moment Kilian says go: point `scratch/b2_llm_benchmark.py` at the tunnelled endpoint
->   (`--base http://localhost:18080/v1 --key iits-local-key --model llama-3.3-70b`), then enable and
->   run Qwen3-27B as the second model. NOTE: the harness currently supports `--provider anthropic|
->   openai|dry`; add a generic OpenAI-compatible base-url path (trivial: the OpenAI branch already
->   posts to `/v1/chat/completions`, just parameterise the URL) before the live run.
-> - **Operational rule respected:** no benchmark was fired at the shared GPU box without Kilian's go;
->   only read-only survey + three tiny test generations (~60 tokens total) were run.
->
-> **★★★★★ HANDOVER 2026-07-15 (fresh agent: START HERE).** State is STABLE and fully committed
-> (working tree clean at `5cd1e02`; test suite green; branch `gen08-interdiction`). NOTHING is
-> mid-flight and nothing should be launched. **Reading order:** this banner stack top-down, then
-> `NEXT_STEPS_MASTER.md` (the active checklist), then its §0 onboarding order
-> (`CRITIQUE_12-07-26.md` -> `CRITIQUE_EXAMINER.md` -> `NEXT_STEPS_11-07-26.md` -> the `experiments/`
-> ledgers). **Where things stand:** Blocks A + B of `NEXT_STEPS_MASTER.md` (the entire 2026-07-12/13
-> claims-defence + differentiator programme) are COMPLETE; the SOLE open computational item is
-> **B2's live-LLM benchmark, blocked on API keys + Kilian's spend decision** (harness built and
-> dry-run-validated, `experiments/b2_llm_benchmark.md`). **Block C (chronicle/doc-hygiene, the FAR,
-> the interactive exhibit, and the THESIS_STORYLINE four-act rewrite = NEXT_STEPS item 7) is NOT
-> started, deliberately paused on Kilian's standing instruction that writing stays off the table.**
-> The one EXTERNAL deadline that binds regardless is the **Final Activities Report, hard-due 30 July**
-> (content freeze 3 Aug). **So a new agent's correct default is:** do not launch training; await
-> Kilian's explicit go before opening Block C (FAR / storyline) or unblocking B2; do not re-open the
-> settled gates (gen17/C4, gen18/C2, gen23/C1) or the pre-deferred A4 K=5 cell. Everything a claim
-> rests on lives in an `experiments/` ledger; cite numbers only from there. The dated banners below
-> are the full state this rests on, newest first.
->
-> **★★★★ ACTIVE PLAN AS OF 2026-07-12 = `NEXT_STEPS_MASTER.md` (read it FIRST, then this banner
-> stack).** Agreed Kilian + the outgoing Fable instance on Fable's last day: an ordered checklist
-> merging the two 2026-07-12 critiques (`CRITIQUE_12-07-26.md`, `CRITIQUE_EXAMINER.md`), with
-> Kilian's ordering decision: computational claims-defence and differentiator experiments FIRST;
-> the FAR (hard external deadline 30 July), the interactive exhibit and the THESIS_STORYLINE
-> rewrite at the BACK. House rules unchanged (no training without Kilian's explicit go;
-> pre-registered ledger per item; numbers only in ledgers). The banners below are the project
-> state that plan operates on.
->
-> **UPDATE 2026-07-13 (the autonomous claims-defence run, Kilian's launch authority): BLOCKS A
-> AND B ARE COMPLETE** (sole exception: B2's live LLM runs await API keys; the harness is built
-> and dry-run-validated). The progress ticks + one-line results live at the top of
-> `NEXT_STEPS_MASTER.md`; the four claim-changing findings (distillation/retrieval match the
-> generalist where labels exist; per-edge map-reading is not the transfer mechanism; the
-> gap-closure ladder decays 0.90 -> 0.04; d3-Gdansk's 0.109 was seed-specific) carry BINDING
-> wording rules recorded in their ledgers (`gen24_distill`, `zst_map_robustness`,
-> `a6_a7_a8_completions`, `d3_gdansk`) and in memory (`zst-act-rescope-2026-07-12`). The
-> completed positives: prevalence figure, risk-aversion three-regime law, multi-OD gap 14.4%,
-> integration gap (joint = safe default), vanilla n=3 + DR causal control (best-response
-> pressure is the causal transfer ingredient, `gen25_dr_control`). Block C (chronicle, FAR,
-> exhibit, storyline rewrite) is NOT started, paused on Kilian's instruction; the FAR's 30 July
-> deadline binds regardless.
->
-> **★★★ EXPANSION PROGRAMME COMPLETE (2026-07-11; NEXT_STEPS list all done bar the deferred A4).**
-> The 2026-07-11 experiment list is banked. **gen20/F2 PASSED = Obj-1's antagonist AGENT closed
-> POSITIVE:** a LEARNED interdictor co-evolves to **0.81x the oracle's strength** and its defender
-> lands at 0.330 (within 0.074 of the oracle-trained 0.256, beats ALNS) - and the campaign REVERSAL
-> (the learned adversary that could not learn congestion CAN learn to interdict) validates the
-> Act-III pivot (`experiments/gen20_f2_learned.md`). **gen21 vanilla control: transfers 2.34x =
-> WORSE than random-init 1.99x** -> adversarial training is CAUSAL for ZST (Obj-5 transfer control,
-> measured not inferred). **gen22 Istanbul rotation PASSED (1.880 < random 2.30):** two rotation
-> points now (Gdansk 1.68, Istanbul 1.88) = transfer holds to whichever city is held out.
-> **Zero-shot K/N rows:** the hedge SURVIVES budget shift (K=2 1.29x) and fleet shift (N=5 1.79x).
-> **Whole-Kyiv (6083n):** 1.88x, beats random - the scale axis. **D3-on-Gdansk (poster exhibit):**
-> the composite on a never-trained city (policy-vs-oracle design corr 0.109 vs 0.768 in-dist = the
-> ZST-vs-LP backbone). **gen23/C1: ERB-from-ALNS HURTS** (deterministic metaheuristic demos bias a
-> mixed-strategy learner toward exploitable determinism - Obj-3 closed with a mechanism). Doc
-> hygiene done (chronicle entries 19-21, dual-selection folded in, select-on-train default). **A4
-> K=5 cell DEFERRED** (drop-first, hedged scaling claim, trainer-refactor risk; verified core
-> stands). Suite 161. **All five objectives now have trained evidence in demonstrated-or-better
-> form; ZST realised at OD/city/scale with rotation + K/N robustness; SBO is a full stack; the two
-> failed gates (gen17/18) and one negative (C1) are measured boundaries.** NEXT (Kilian's call):
-> the storyline compression + self-critique (NEXT_STEPS item 7); writing was kept off the table.
-> The banner below is the prior state.
->
-> **★★ EXPANSION PROGRAMME: ZST + C-CHAIN COMPLETE (2026-07-11 morning).** **gen16 PASSED = the
-> first cross-CITY zero-shot transfer** (train Kaliningrad+East London+Istanbul, held-out GDANSK
-> 1.677 +/- 0.072x its equilibria, beats loss_det 17/18; A2-RESCUE confirmed: 1.90 vs random 2.43
-> on the graph where single-source tied random; `experiments/gen16_multicity.md`). Transfer ladder:
-> in-graph OD 1.59 (gen15) -> held-out city 1.68 (gen16) -> single-source cross-graph ~random (A2).
-> **gen17/C4 FAILED the hold-the-tail bar** (annealed smoothing delays, does not prevent, the
-> drift; 4 failed attempts across 2 instances/eras -> the transient finding is INHERENT;
-> best-checkpoint discipline is FINAL; hard gate closed). **gen18/C2 FAILED** (follow_w trained to
-> 2.93 - the lr fix worked - yet followers still collapse to fixed routes, stack 0.08: the
-> structural-stacking caveat is a REAL boundary, cleanly measured post-fix; future work is
-> exploration-side). Maps: gdansk/east_london/istanbul in `data/maps/` (length-repaired;
-> `scripts/extract_city.py` fixed). Remaining optional list items: A4 large-K training cells,
-> B1-lite-2, B1(full, adds demand-S), B3, C1, F2, B5. The banner below is the prior state.
->
-> **★★ B1-lite-1 (gen19) PASSED = the D restored + solved (2026-07-11).** First SACRED game with
-> WITHIN-EPISODE dynamism (pattern-of-life interdictor softmax-BRs to the defender's realised
-> routes over a 3-sortie window). Oracle screen: static_det 0.613 >> iid_eq 0.147 > history_opt
-> 0.049 (dynamism pays, exact optimum). SACRED history-aware **0.050 +/- 0.001 ~ history_opt
-> 0.049** (PRIMARY/STRONG 3/3); NO-WINDOW causal control 0.148 = iid_eq (gain IS the window
-> conditioning); worst-case row: policy marginal 0.219 ~ eq 0.206 (no fragility vs a non-adaptive
-> attacker). `experiments/gen19_b1lite1.md`. On S vs D: the headline has stochastic OUTCOMES
-> (Bernoulli interception + risk objective) + strategic uncertainty, and now within-episode D
-> (gen19); it does NOT have demand-side S (Poisson arrivals) - that is full B1, scoped.
->
-> **★ EXPANSION PROGRAMME: KEYSTONE ARC COMPLETE (2026-07-10 evening; `DIRECTION_EXPANSION.md`).**
-> Kilian: "disregard thesis writing"; full launch authority. **DONE:** C3 (gen14: both headlines
-> n=10 CIs - MC 0.256 [0.246,0.266], SC paired dD 0.175 [0.137,0.213] excl 0; the stats weak point
-> is closed); **A1 (gen15) PASSED** = first TRAINED zero-shot transfer (held-out mean ratio 1.59
-> +/- 0.10, beats loss_det 17/18 cells; `experiments/gen15_generalist.md`); D1 SBO loop PASS+STRONG
-> (Obj-4 proper); A3 amortisation (honest: wall-clock does not favour the policy; ZST+D3 carry the
-> scaling story); **D3 composite PASS** (surrogate over the TRAINED policy Spearman 0.959; policy-vs-
-> oracle design-target corr 0.768 = designing against the real policy differs from the equilibrium);
-> B4, B0, A4-core, D2 all DONE. **KEY FINDING (`experiments/a2_graph_transfer.md`): a single-source-
-> graph generalist transfers across OD PAIRS but NOT across GRAPHS (ties random on a different
-> graph)** -> cross-CITY ZST needs a MULTI-GRAPH generalist (train on N cities, hold one out), not
-> single-source transfer; the 2nd-city (Kyiv+) plan is reframed accordingly (Kilian sourcing
-> cities). Suite 161. NEXT: multi-city generalist once city graphs exist; C4 (bounded last-iterate
-> attempt on 35-159); C2 (learned-follower redo post-fix). All ledgers under `experiments/`.
+- **Thesis + poster due 10:00, Friday 28 August 2026.** Maximum 12,000 words excluding
+  appendices and references. The thesis is 70% of the project mark, the poster 5% (the assessed
+  literature review was the other 25%).
+- **Rubric weights.** Methodology, Analysis & Discussion 50%; Structure & Presentation 20%;
+  Abstract 10%; Introduction & Problem Definition 10%; Conclusions 10%. The conclusions chapter
+  must revisit each objective and confirm whether it was met.
+- **AI acknowledgement is mandatory** (tool name and version, publisher, description of use,
+  confirmation the work is Kilian's own). Fabricated or unverified references are treated as
+  plagiarism. Full detail in the guidance PDF (`../../MSc Transport - Research Project Guidance
+  2025-2026.pdf`).
+- **The objectives were reworked to FOUR on 2026-07-27** (supervisor approved): ERB dropped,
+  the SBO objective dropped, the LLM work moved into Obj-3, the mission-control application
+  into Obj-2. The assessed survey's original five-objective wording is historical context, not
+  the current contract.
+- **Game framing is Nash, not Stackelberg**, everywhere in the thesis (binding decision,
+  2026-07-31, with the commitment-coincidence remark carrying the equivalence).
 
-> **★★★★★★★ BOTH HEADLINES POST-FIX (2026-07-10 morning, gen13-lock PASSED). READ
-> `NIGHT_REPORT_2026-07-10.md` + `experiments/gen13_lock.md` FIRST; numbers live ONLY in ledgers.**
-> **Multi-convoy headline = gen13-lock (35-159, held-out-screened instance, honest
-> representations): the LOCKED ladder is in `experiments/gen13_lock.md`; the pre-fix 62-97 number
-> retires to the methods narrative.** Single-convoy headline = gen10-SC
-> (`experiments/gen10_postfix.md`, confirmed). The two-headline pre-fix/post-fix asymmetry is
-> RETIRED. Obj-4 MET in reduced form (`experiments/f3_sbo_demonstrator.md`); Obj-5 disruption
-> curves banked, SACRED < ALNS 10/10 cells (`experiments/gen12_sweeps.md`); gen11/gen11b menu-head
-> decomposition in `experiments/gen11_menuhead.md`; ZST step 0 = pre-registered scoping negative,
-> B2-S closed (`experiments/zst_step0.md`); oracle-scaling re-measured
-> (`scratch/oracle_scaling_output_v2.txt`, gen09 ledger update note). Chronicle:
-> `SACRED_PROGRESS.md` entries 16-21 (the chronicle now spans the audit, the expansion programme,
-> the ZST city-scale arc and the boundary gates). NEXT: thesis writing on the two post-fix headlines; optional
-> remaining experiments (ZST step 1, F2 demo) per the night report's decision list.
+## The thesis argument in one paragraph (the boundary map)
 
-> **★★★★★ AUDIT + NODE-ORDERING FIX + gen10 RE-RUNS (2026-07-09 late, fix SHA `e9acb56`). READ
-> THIS FIRST; it amends the banners below.** An examiner-grade audit (`CRITIQUE_INTERDICTION.md`)
-> found a project-wide representation bug (featurize_state sorts node ids; every consumer indexed
-> by dict insertion order -> every net ever trained read a fixed permutation of the wrong nodes'
-> embeddings). Fixed (`node_index_map` + 3 regression tests, suite 149 green) together with a
-> role-alpha Bellman-target fix and EXACT fleet-route evaluation. Pre-registered re-runs
-> (`experiments/gen10_postfix.md`, Kilian's explicit go):
-> - **Single-convoy gen10-SC: PASSED every clause, pooled sacred TAP 0.276 vs vanilla 0.480**
->   (banked B2-P3: 0.362/0.477): ~44% of the residual equilibrium gap was the bug. RECOMMENDED to
->   supersede 0.362 as the single-convoy headline (Kilian to confirm).
-> - **Multi-convoy gen10-MC: REGRESSED to best-ckpt TAP 0.447 +/- 0.029** (exact estimator;
->   prediction violated, reported as measured; Obj-5 ordering still holds: 0.447 << ALNS 0.699 <<
->   post-fix vanilla 0.859). The citable multi-convoy number stays the banked pre-fix best-ckpt,
->   now correctly stated as the EXACT re-evaluated **0.295 +/- 0.024** (SHA `ad70a9c`; the MC 0.283
->   carried a min-selection-on-noise bias), caveat disclosed. **gen10-MC2 diagnostic (2026-07-10,
->   Kilian's go, SHA `1ff5526`): NO recovery: 0.447 +/- 0.008, identical with the role-alpha fix
->   reverted and a doubled horizon -> the regression is the menu head losing discriminability once
->   embeddings are correct (the pre-fix permutation was an accidental route-identity hash). Next
->   step = a DESIGN change (gen11 proposal: undiluted per-route cost+vulnerability features at the
->   menu head, the lever-2 pattern; also the ZST enabler), pre-registered separately, launch =
->   Kilian's go. Kilian 2026-07-10: the single-convoy supersession (0.362 -> gen10-SC 0.276) is
->   CONFIRMED.** The critique also scores all five objectives (Obj-4 SBO unmet: the F3
->   demonstrator is an afternoon; ZST doubly blocked pre-fix, now needs an edge-vulnerability
->   feature), and ranks the pre-freeze programme (§8). `SACRED_PROGRESS.md` entry 17 is the
->   narrative; all banked numbers below stand at their pinned SHAs with the caveat disclosed.
+The thesis asks where learning pays in contested routing, and answers it with a measured map.
+Below a measurable boundary it does not pay, because a two-line rule is near-optimal wherever
+it has somewhere safe to go. This is proven three ways, by the negative campaign (gen03-06,
+congestion adversaries have a flat attack landscape), by the disjoint-baseline finding (a
+max-flow stack matches every trained static K=1 number), and by the aerial baseline-completeness
+appendix. Learning pays where the cheap escape is closed, at interdiction budgets approaching
+the min-cut (gen26, gen35) and against adaptive pattern-of-life adversaries (gen19, gen27,
+gen31, gen32), always scored against computable optima. Above both sits a harder wall,
+conditioning capacity, where a channel is present and visible yet the policy cannot convert it
+(gen29 coordination, gen34 hidden type, gen39 exposure). The LLM arc adds a measured map of
+where a language model helps this pipeline (doctrine identification from prose, terrain-grounded
+force composition, sample-efficient curriculum authoring) and where it is useless to harmful
+(numeric mixtures, combinatorial curation).
 
-> **NEW-AGENT READ ORDER (2026-07-09; the banners below are a reverse-chronological stack = current
-> state first, then how we got here). The project has TWO banked, pre-registered headlines, both
-> scored against a computable minimax equilibrium; the experimental work is essentially DONE and the
-> next phase is THESIS WRITING.**
-> 1. **This top banner** (the current state: multi-convoy headline LOCKED at best-checkpoint TAP
->    0.283 +/- 0.021; single-convoy B2-P3 0.362 the other headline).
-> 2. **`experiments/gen09_multiconvoy.md`** - the AUTHORITATIVE multi-convoy record: the locked
->    headline + ladder + fairness rows, the gen09-STAB-1/2/3 stabilisation arc, and the oracle-scaling
->    "why not just solve the LP" probe.
-> 3. **`REDESIGN_INTERDICTION.md`** (the north star: why interdiction; §10 = multi-convoy) ->
->    **`THESIS_STORYLINE.md`** (the 4-act argument, Act IV realised) -> **`SACRED_PROGRESS.md`**
->    entries 12-16 (the narrative chronicle) -> **`ROADMAP.md`** Phase M (the plan, findings, future work).
-> 4. **`experiments/gen08_interdiction.md`** - the single-convoy interdiction ledger through the banked
->    B2-P3 pass, plus the Phase M sections (superseded-for-the-number by gen09).
-> 5. Then the campaign history as needed: **`SACRED_PROGRESS.md`** 1-11, the **`experiments/gen0[1-7]*.md`**
->    ledgers, **`CONTEXT.md`** / **`DIRECTION.md`** / **`CRITIQUE.md`** / **`PROBLEM_REDESIGN.md`**
->    (all banner-marked historical), and **`SYSTEM.md`** (operating dogmas - read before running anything).
-> **Operating rules (HARD): never launch training without Kilian's explicit in-conversation go; no
-> multiple-choice prompts (prose + a firm recommendation); plan-first; oracle/screen probes are free.
-> Thesis + poster due 10:00, 28 Aug 2026 (12k words); experimental freeze Aug 3.** Thesis planner brief:
-> `../../thesis/THESIS_PLANNER_HANDOFF.md`.
+## The claims register
 
-> **★★★★ MULTI-CONVOY PHASE M COMPLETE - HEADLINE LOCKED (2026-07-09). READ THIS FIRST.**
-> Phase M (multi-convoy interdiction, Fork A) is DONE. The LOCKED multi-convoy headline is the
-> **fleet-route best-checkpoint on 62-97 k_extra=8** (shared-edge, 12-route menu, N=3, K=1, soft,
-> mission; definitive 3-seed saved run gen09-HEADLINE, SHA `ad70a9c`, ledger
-> `experiments/gen09_multiconvoy.md`): **best-checkpoint TAP 0.283 +/- 0.021** (3 seeds), ladder
-> shortest 0.973 > vanilla ~0.945 > ALNS-forced-stack 0.912 > ALNS 0.699 > **SACRED 0.283** >
-> equilibrium 0.216 - Obj-5 met (beats the SOTA metaheuristic AND the non-adversarial control).
-> **The leader over-trains toward uniform after the best-checkpoint (inherent last-iterate FP cycling;
-> resolved the standard single-convoy way = BEST-CHECKPOINT selection, drift saved + disclosed; three
-> "hold-the-tail" stabilisation attempts gen09-STAB-1/2/3 are on record and failed, establishing the
-> equilibrium is a reproducible transient).** The old 0.257 was an unsaved transient best-checkpoint,
-> superseded by the locked 0.283 +/- 0.021. Single-convoy B2-P3 (0.362) stays the OTHER banked
-> headline. **CAVEAT (honest, in the ledger): the fleet stacking is STRUCTURAL (followers copy the
-> leader by construction), not learned.**
->
-> **The learned-follower arc (6 attempts, the mechanistic SECONDARY result).** We tried to make the
-> followers LEARN to copy the leader (genuine emergent coordination). Blocker = a chicken-and-egg:
-> under independent exploration the convoys stack only at the ~2% random-coincidence rate, so the
-> CRITIC never experiences the reward for following and the followers collapse onto fixed routes. Fix
-> chain: (1) explicit route-correlation signal; (2) menu-select route-index action (shared-edge, NO
-> walk trie); (3) two role-alphas (leader high entropy / follower ~0); (4) forced-copy warmup with a
-> FROZEN mixing leader (demonstration bootstrapping / Obj-3 ERB); (5) LEVER 2 = a LEARNED, undiluted
-> per-route "taken" term at the policy head AND the critic Q head; (6) prioritised replay of stacks +
-> a steadier/softer smooth-FP attacker (switch_every 200, fp-tau 0.15). **THE BREAKTHROUGH: `follow_w`
-> (the learned critic-side correlation weight) CLIMBS monotonically (attempts 4-6, 1.0 -> 1.25) = proof
-> the critic CAN be made to value emergent coordination (the four-attempt blocker, fixed by the
-> critic-side lever 2); the learned-coordination TIME-AVERAGE 0.482 beats ALNS (+0.217) and vanilla
-> (+0.463).** BUT coordination SATURATED weak (tail stack ~0.18, follow_w plateaued 1.25) so 0.482 is
-> WORSE than the structural fallback's 0.257 (full stacking > partial). Per the pre-committed exit
-> criterion the FALLBACK is the headline; the learned bootstrap is a genuine-but-weaker Obj-3 result.
-> Coordination-dynamics work is CLOSED (diminishing returns; fp-tau was the last reserved lever).
->
-> **STRUCTURAL FINDING (`scratch/multiconvoy_instance_screen.py`, oracle only, NO training): DISJOINT
-> route sets are ALWAYS near-uniform-leader (H/lnR >= 0.97 over 72 OD pairs) -> flat FP landscape ->
-> the 33->71 leader failure is STRUCTURAL, not instance-specific. A non-uniform leader (asymmetry = an
-> FP gradient) REQUIRES shared edges. 62-97 k8 was screened for asymmetry (leader H/lnR 0.63) + margin
-> (ALNS/eq 3.2x) + high stack mass (0.97).** New dogmas: on a joint/correlated objective the
-> coordination signal must be explicit AND reach the scoring head UNDILUTED, AND the CRITIC must value
-> coordination (follow_w climbing is the diagnostic) - the actor cannot follow what the critic won't
-> rank; disjoint routes give structurally uniform leader equilibria (asymmetry needs shared edges);
-> zero-sum FP cycles by construction, judge on the stationary-tail TIME-AVERAGE, not per-eval play.
->
-> **CODE/REPO STATE (branch `gen08-interdiction`, suite 146 green, COMMITTED through `908de0f`,
-> tree clean, nothing running; gen09 ledger `experiments/gen09_multiconvoy.md` is authoritative):**
-> `scripts/train_multiconvoy.py` (all machinery: menu-select, two-alpha, route-correlation, lever-2
-> follow_w on actor+critic, forced-copy / frozen-leader bootstrap, prioritised replay `--stack-dup`,
-> `--fp-tau`); `src/agents/sac.py` + `networks.py` (menu head + follow_w + role-alpha + per-sample
-> target_entropy; featurize col 14 = route-correlation); `src/envs/multiconvoy_interdiction.py`
-> (menu_select + route-index routing + taken_node_frac + absolute_vuln_norm); `scratch/
-> multiconvoy_instance_screen.py`. All additive/flag-gated; the campaign path is byte-identical (14th
-> feature col sliced off by `_clip_x`; follow_w exists only in menu+adversarial mode; +4 tests updated
-> for the col-14 width bump). COMMITTED through `7bcb499` (2026-07-09). **NEXT: (1) DONE = MULTI-CONVOY
-> HEADLINE LOCKED (best-checkpoint TAP 0.283 +/- 0.021, 3-seed saved run gen09-HEADLINE SHA `ad70a9c`,
-> `experiments/gen09_multiconvoy.md`; the leader-stabilisation chase gen09-STAB-1/2/3 is closed - the
-> leader over-trains toward uniform, resolved via best-checkpoint selection + disclosed drift, standard
-> minimax discipline; leader-alpha floor + per-eval checkpoint saving + ALNS-forced-stack fairness row
-> all landed). NO more leader experimentation (Kilian). (2) THESIS WRITING on the two banked headlines
-> (single-convoy B2-P3 0.362; multi-convoy fleet-route best-checkpoint 0.283 +/- 0.021 << ALNS 0.699)
-> - thesis planner brief `../../thesis/THESIS_PLANNER_HANDOFF.md`; (3) OPTIONAL future (each launch is
-> Kilian's explicit go, only if runway before the freeze): the scaling tier (N / K / connectivity
-> curves); learned coordination stays the banked Obj-3 secondary.**
-> Operating rules UNCHANGED (never launch training without Kilian's in-conversation go; no
-> multiple-choice prompts, prose + firm recommendation; plan-first; oracle/screen probes are free).
-> The M3 SMOKE banner below is SUPERSEDED by this; `REDESIGN_INTERDICTION.md` §10 and the gen08
-> ledger Phase M section carry the full detail; `SACRED_PROGRESS.md` entry 15 is the narrative.
+Citable numbers live only in the ledgers named here. Worktree prefixes: (R) roads `sacred`,
+(A) `sacred-aerial`, (M) `sacred-gen29`.
 
-> **★★★ M3 SMOKE UPDATE (2026-07-08): the multi-convoy trainer WORKS but needs CORRELATION. READ
-> THIS FIRST.** Phase M: M0 (oracle proof), M1 (env+oracle, G-M1 gate), M2 (ALNS baseline reaching
-> loss_det) are DONE and committed (HEAD 596708f); M3 (`scripts/train_multiconvoy.py`) is BUILT and
-> smoked (1000 sorties, 110->135 N=3 K=1, latest-FP, seed 0). Suite 146 green.
-> - **Timing (measured):** ~0.368 s/sortie STEADY (flat 367-368ms, no drift over 1000 sorties);
->   warm-up first ~11 sorties faster (replay buffer < batch); eval 2.7 s / 250 sorties. Full run
->   (3000 sorties/arm, vanilla+sacred, 3 seeds): **~50 min at 3-parallel `--threads 3`** (9 <= 10
->   cores), ~1.9 h serial. (Default 4 threads oversubscribes at 3-parallel = ~1.7 h; don't.)
-> - **Result (ladder, 1000 sorties):** shortest_path 1.000 > ALNS 0.904 (optimal deterministic) >
->   vanilla 0.700 (TAP) ~ sacred 0.645 (TAP) >> equilibrium 0.328. **SACRED BEATS the optimal
->   classical planner (ALNS) = the Obj-5 metaheuristic win, and is STABLE (no collapse; occupancy-
->   entropy ~2.0 throughout, unlike the symmetric single-convoy).**
-> - **THE OPEN PROBLEM (the crux to solve next): sacred ~ vanilla and both far from 0.328 because
->   the policy routes the convoys ~INDEPENDENTLY, not the CORRELATED stack-and-randomise optimum.**
->   The equilibrium puts ALL mass on "all 3 convoys on ONE random route" ([3,0,0]/[0,3,0]/[0,0,3]);
->   sacred's occupancy dist instead spreads over [2,1,0]0.20/[1,1,1]0.20/[1,2,0]0.15/... (independent
->   mixing), which cannot reach 0.328, and vanilla mixes incidentally to ~0.68 so the sacred-vs-
->   vanilla gap is inside the noise. The env EXPOSES earlier convoys' routes (via truck positions)
->   but the policy under-weights the signal.
-> - **NEXT STEP (Kilian was deciding at session pause, confirm it first):** RECOMMENDED = make
->   correlation learnable: add an explicit "convoys-committed-so-far per route" feature to the
->   per-convoy observation so convoys 1,2 learn to FOLLOW convoy 0; re-smoke (expect sacred ->
->   toward 0.328 + a clean vanilla gap); THEN the full 3-seed launch + pre-register a gen09 ledger.
->   ALTERNATIVE: launch the primary (beats ALNS) as-is and treat correlation as the refinement.
-> - Config: multi-convoy reward = -interception_loss(10)*mission_failure (sacred) / normalised travel
->   (vanilla); N-step sortie episode (terminal reward on the LAST convoy, bootstrap through the
->   fleet); FP attacker = oracle BR to the empirical OCCUPANCY play. Interactive Kaliningrad view:
->   `scratch/build_multiconvoy_view.py` (classical 90.4% vs SACRED 32.8% at the equilibrium).
-> The MULTI-CONVOY PIVOT banner below is the strategic context; read it next.
->
-> **★★ LATEST DIRECTION (2026-07-07 evening): THE MULTI-CONVOY PIVOT. Read THIS banner first, then
-> the B2-P3 START HERE banner below.** After B2-P3 banked the single-convoy shared-edge headline we
-> tried to broaden it (F1: the wave A/C sweeps) and hit two walls that redirected the programme:
-> 1. **F1 launched then KILLED.** The single-convoy SYMMETRIC K-sweep (wave A, 33->71 disjoint) is
->    the ANTI-GOAL: uniform == equilibrium at every K, so vanilla mixes incidentally near-optimally
->    and adversarial training is a LIABILITY, sacred DESTABILISES under long training (A-K1 sacred
->    TAP 0.38 / 1.00 / 0.40 vs vanilla ~0.31; seed 1 FULLY collapsed with alpha runaway, the
->    flat-landscape SAC instability from the early campaign). Dropped from the deliverable.
-> 2. **Obj-5's metaheuristic clause cannot be met by single-convoy.** One convoy on one route makes
->    a "SOTA adaptive metaheuristic" (ALNS) degenerate to shortest-path, so there is no non-trivial
->    classical opponent to beat.
-> Under Kilian's **"make SACRED work"** mandate (HARD invariants: SAC, adversarial training, deep RL,
-> robust routing; everything else fluid) the direction is now **MULTI-CONVOY interdiction**, which
-> the ORACLE proves (three stress-test probes `scratch/multiconvoy_{probe,scan,spectrum,cost}.py`,
-> NO training) both makes SACRED win AND fixes Obj-5, in the realistic regime of **SOFT
-> (probabilistic) interception + a LOSS-AVERSE (mission-failure, P(>=1 convoy lost)) objective**:
-> - GENERALISES: 20 random high-connectivity OD pairs, N=2 mission gap median **0.48** (80% > 0.30,
->   80% deterministic-coordination non-degenerate); N=3 median 0.58 -> the gap GROWS with fleet size.
-> - REAL METAHEURISTIC: the deterministic coordinator trades travel-cost vs interception risk (a
->   genuine ALNS problem -> Obj-5 non-degenerate); SACRED dominates its cost-security frontier.
-> - THE TRAP: a RISK-NEUTRAL (expected-fraction) objective dilutes the gap to ~0 (deterministic
->   spreading substitutes for mixing) -> the loss-averse objective is REQUIRED and also the realistic
->   one. Boundary: K < #routes (else the interdictor saturates coverage).
-> - **ALL FIVE objectives now met** (Obj-5 metaheuristic FIXED; Obj-4 gains fleet composition; closer
->   to SDVRP). Confirmed against Kilian's "confirm all five or ask" gate.
-> **Single-convoy B2-P3 (shared-edge, smooth-FP) stays the BANKED, proven headline; multi-convoy is
-> the EXTENSION that meets the full objective set and wins bigger.** STATE: oracle proof DONE
-> (positive, oracle-level only); the BUILD is next (multi-convoy env + mission-failure reward + ALNS
-> baseline + training). Design: `REDESIGN_INTERDICTION.md` §10. Plan: `ROADMAP.md` (new phase).
-> Record: `experiments/gen08_interdiction.md` (multi-convoy pivot section) + `SACRED_PROGRESS.md`
-> entry 14. **Operating rules UNCHANGED: never launch training without Kilian's explicit
-> in-conversation go (F1 itself was killed on his call); oracle probes are free; plan-first; no
-> multiple-choice prompts; new dogma: on a symmetric/flat game adversarial training DESTABILISES,
-> pick instances where vanilla provably cannot imitate the equilibrium.**
->
-> **★ START HERE (new agent, 2026-07-07 end-of-session; the previous instance signed off after
-> the B2-P3 PASS). READ ORDER for exact parity:**
-> 1. **`REDESIGN_INTERDICTION.md`**: the north star: why the pivot was necessary (§0.5 full
->    evidence chain) + the equilibrium proof (§1).
-> 2. **`experiments/gen08_interdiction.md`**: THE live ledger: every gate, pre-registration,
->    result and pinned SHA of the interdiction programme (G1/G2 PASSED; I3 wave 1 FAILED with
->    mechanism; B2-P/B2-P2 FAILED with mechanism; **B2-P3 PASSED: the citable headline**).
-> 3. **`ROADMAP.md` Phase I**: findings to date + future work (short/mid/long term).
-> 4. **`THESIS_STORYLINE.md`** (4-act arc, Act IV updated) and `SACRED_PROGRESS.md` entry 13
->    (the gen08 narrative in one entry).
-> 5. Then history as needed: `DIRECTION.md`, `experiments/gen07_contested_matrix.md`,
->    `SACRED_PROGRESS.md` 1-12, `SYSTEM.md` (dogmas, updated), §1-5 of this file (the campaign).
->
-> **RESULT STATE (branch `gen08-interdiction`, suite 131 green, tree clean, nothing running):**
-> **THE PRE-REGISTERED HEADLINE IS BANKED (B2-P3, 2026-07-07, SHA `874d3f3`, ledger `ccb168e`):
-> on the shared-edge instance (33->71, 11 routes, hidden K=1 interdictor) the exploitability
-> ladder is shortest_path 1.000 > vanilla 0.477 > uniform 0.455 > SACRED 0.362 >> equilibrium
-> 0.167 (TAP metric, 3/3 seeds + pooled, every pre-registered clause).** Adversarial training
-> beats the deterministic default ~2.8x, the non-adversarial SAC control ~1.32x, and naive
-> noise; vanilla sits ABOVE uniform (cost-calibrated mixing = predictability with extra steps,
-> exactly as the oracle bound predicted). Strong form NOT met (distance-to-equilibrium
-> 0.163-0.239): reported plainly in the ledger. The road there was three pre-registered
-> dynamics iterations (pure-BR cycles / stale-mixture parks / smooth-FP passes): a measured
-> fictitious-play dynamics study that is itself thesis material. **Dynamics work is CLOSED by
-> Kilian's pre-committed exit criterion: do NOT reopen it.**
-> Key gotchas paid for: SAC `reward_scale` default 0.001 far too small (use ~1.0 with
-> interception_loss ~10); smokes validate plumbing, NOT slow-timescale dynamics (use the
-> 1000-sortie drift signature); TAP (trailing-averaged policy) is the deployable estimator for
-> FP learners; the walk trie is REQUIRED when candidate routes share first hops.
-> **Operating rules (hard, learned the hard way this session): NEVER launch any training run
-> without Kilian's explicit go in that conversation (a launch made under a briefly-broad mandate
-> was killed mid-run); no AskUserQuestion multiple-choice prompts: prose + firm recommendation;
-> plan-first; oracle-only probes (seconds, no training) are free.** Kilian's decisions on
-> record: Kaliningrad graph; single convoy first; fallback-vs-upgrade exit criterion (upgrade
-> achieved); freeze Aug 3 HARD; thesis + poster due 10:00, 28 Aug 2026.
->
-> **⚠️⚠️ CURRENT DIRECTION (2026-07-06, latest): THE INTERDICTION-GAME REDESIGN.**
-> Read **`REDESIGN_INTERDICTION.md` FIRST**: it is the north star. Short version: the campaign
-> (gen03-06) and the exploitability follow-up (gen07) established that adversarial RL cannot win
-> with a *congestion* adversary, because congestion is observable/reroutable/reversible, giving a
-> reactive-dominated, FLAT attack landscape (proven: the corrected best-response gate lands at
-> 0.35× random; every block is equally damaging). The fix is to change the ADVERSARY, not tune the
-> old one: model Application 1's real threat, **interdiction/ambush** (hidden, irreversible,
-> pre-committed), which is a **Stackelberg security game** where a deterministic router is
-> maximally exploitable and the minimax **mixed strategy** (which SAC's entropy produces) provably
-> cuts interception. **Proven at the equilibrium level on the real Kaliningrad graph: deterministic
-> routing 100% intercepted → mixed 17-33%** (`scratch/interdiction_game_probe.py`). Decisions
-> (Kilian 2026-07-06): Kaliningrad graph, single convoy first. **Read order now:**
-> `REDESIGN_INTERDICTION.md` → `ROADMAP.md` (build plan) → `THESIS_STORYLINE.md` (4-act arc) →
-> `experiments/gen08_interdiction.md` (forward pre-reg) → then the history below +
-> `DIRECTION.md`/`experiments/gen07_contested_matrix.md` (why the exploitability path was
-> necessary and where it hit the wall).
->
-> **⚠️ (Superseded) REDIRECTION banner (2026-07-06, evening):** the exploitability reframe in a
-> contested-resupply framing. Right instinct (minimax → worst-case robustness), but its
-> destination-arena / learned-BR *realization* hit the flat-landscape wall; it has crystallised
-> into the interdiction game above. `DIRECTION.md` records the reasoning bridge; `ROADMAP.md` is
-> the active plan (interdiction phases). The campaign record below stands unchanged.
+### Banked positives
 
-You are **Kilian Schwarz's SWE/planner agent on the SACRED MSc thesis** (Imperial College London,
-supervisor Dr. Panagiotis Angeloudis). A prior Fable instance ran the project from the 2026-07-01
-handover through the complete experimental campaign. **The campaign is finished.** Your job is to
-support what comes next: thesis writing, the supervisor conversation, small follow-up
-experiments only if Kilian asks: while preserving the standards that made the results
-trustworthy. Everything below is verifiable in the repo; never cite numbers from anywhere but the
-`experiments/` ledgers.
+| claim | ledger |
+|---|---|
+| **gen27, the flagship.** One history-aware policy, trained on three cities, zero-shot on Gdansk beats the static cap (PRIMARY + STRONG 3/3, pooled 0.639x cap); no-window control causal. Corrected exact-optimum ratio 1.97x (yardstick-repair appendix) | (R) `experiments/gen27_dynamic_generalist.md` |
+| **gen35.** Dynamic K-boundary on 71-33 m=6; K=3 beats EVERY two-line rule 3/3 seeds (-8.6%), K=2 ties; the programme's first pre-registered beats-every-naive-rule cell; tabular window-Q at matched budget fails | (R) `experiments/gen35_dyn_kboundary.md` |
+| **gen19.** Single-instance pattern-of-life register; history-aware SACRED far below the static cap with causal no-window control (its STRONG "reaches the optimum" clause retired by the yardstick repair; rotation attains the exact optimum on m=4) | (R) `experiments/gen19_b1lite1.md` |
+| **gen26.** The K-to-min-cut boundary map; SACRED beats both max-flow heuristics at K=m-1 exact; ties the best naive full-menu stack at K=m; tabular FP with the same greedy oracle also works, so the licensed sentence is "learning is required, deep RL is one sufficient method" | (R) `experiments/gen26_kboundary.md` |
+| **gen31 + gen32.** The aerial dynamic positives, synthetic then REAL Kaliningrad terrain; 6/6 beats-static-cap on 3/3 fresh seeds each, blinded controls causal, one attempt each; gen32 pooled 0.451x cap, 1.30x the exact optimum; ops-map exhibit `scratch/gen32_ops_map.html` | (A) `experiments/gen31_aerial_dyn.md`, `gen32_theatre_dyn.md` |
+| **gen39.** The concealment mechanic with an internal control (sight worth 1.26-1.37x vs exactly 1.00x concealed); the LLM composition positive with the terrain-relabel control PASSING (the LLM arc's first licensed terrain-reasoning claim); the curriculum negative diagnosed (irreducible threat) and FIXED at step 5 (llm16 23% better than the tuned control 3/3, zero-shot to three unseen theatres) | (A) `experiments/gen39_concealment.md` |
+| **gen38.** LLM enemy identification; V1 reads intel prose, classifies five doctrines at 100%, crosses the gen34 type-blind wall 6/6; V2 trained type-conditioned SACRED crosses 3/3 seeds at 0.664x the blind cap, LLM-supplied type indistinguishable from truth | (R) `experiments/gen38_llm_enemy_id.md` |
+| **gen30.** Security-aware facility location, oracle-only; the (cost, security) depot frontier; redundancy-coordination complementarity (median 25% at the coordinated optimum, negative under napkin play); surrogate Spearman 0.870 | (R) `experiments/gen30_secure_flp.md` |
+| **gen16 + gen15.** The static ZST arc (cross-city transfer with causal controls); wording bound by the disjoint-baseline rules below | (R) `experiments/gen16_multicity.md`, `gen15_generalist.md` |
+| **gen20.** A learned interdictor co-evolves to 0.81x the oracle's strength (the campaign reversal) | (R) `experiments/gen20_f2_learned.md` |
+| **The negative campaign.** Adversarial co-training against congestion confers no robustness and worsens it, with a complete mechanism chain; the motivating negative of the whole thesis | (R) `experiments/gen03_robustness_dynassign.md` through `gen06_dynassign_matrix.md`, `gen07_contested_matrix.md` |
 
----
+### Boundaries and negatives (equally load-bearing)
 
-## 1. The finding (what the campaign established)
+| finding | record |
+|---|---|
+| **The disjoint-baseline finding.** A two-line max-flow stack matches or beats every trained static K=1 number, including zero-shot at 1.13x eq; the old "uniform" anchors were padded-menu strawmen | `docs/archive/CRITIQUE_16-07-26.md` + R0a appendices in seven (R) ledgers |
+| **The coordination wall.** The three-stream oracle moat is real (median 31% vs the fitted cap over 55 cells) and survives a complete hostile family; the trained half failed both tiers with the blinded control equal to sighted; gen36 separated the mechanism as CONDITIONING CAPACITY, not training dynamics | (M) `experiments/gen29_multiod.md`, `gen36_multiod_rescue.md` |
+| **The hidden-type wall.** No type inference from realised-attack observations (pooled 1.373x the type-blind cap, 0/18); the channel is causally useful short of inference | (R) `experiments/gen34_hidden_adversary.md` |
+| **FP transience + coordination.** The equilibrium is a reproducible transient of last-iterate smooth FP (best-checkpoint discipline is the resolution); independent followers never learn to stack | (R) `experiments/gen17_lastiterate.md`, `gen18_learnedfollower.md` |
+| **Aerial static register.** The fleet Tier-1 "positive" is RETIRED (tie with the naive frontier); the surviving zero-shot claim is payoff-blind-frontier MATCHING only, and the permuted-field row must run before any "on sight" sentence | (A) `experiments/gen28_aerial.md` (2026-07-19 appendix first) |
+| **LLM negatives.** Neither open-weight model calibrates a mixed strategy (B2, the knowledge/application dissociation); gen33's terrain control failed; gen37 route curation is worse than random at every prune size | (R) `experiments/b2_llm_benchmark.md`; (A) `gen33_llm_adversary.md`; (M) `gen37_reasoning_curation.md` |
+| **gen39 boundary.** No arm beats the best simple OBSERVING rule on any cell of any of the four maps | (A) `experiments/gen39_concealment.md` |
+| **Yardstick repair.** The roads dynamic-optimum yardstick (`oracle_refs` undamped RVI) was wrong on every cell tested; exact truth is Karp min-mean-cycle, `scratch/dyn_exact.py`; corrected appendices in the gen19/gen27 ledgers | (R) chronicle entry 31 |
 
-**Adversarial co-training, as naturally formulated for the stochastic-dynamic VRP, does not
-confer robustness: and measurably worsens it.** The evidence chain, all pre-registered:
+### The where-LLMs-help map (per-model, never pooled)
 
-1. **gen03** (`experiments/gen03_robustness_dynassign.md`): ATLA co-evolution vs an identical
-   vanilla-SAC control: no robustness delta (dD ≈ −250…−290 ± ~300–500, n.s.). Mechanism found:
-   the **learned adversary attacks worse than uniform-random blocking** (D ≈ 0.6–1.9k vs random
-   ≈ 1.7–2.1k), while a 40-line scripted heuristic hits 3–6× harder (≈ 4.9–5.9k).
-2. **gen04** (`gen04_antag_gate.md`): after giving the adversary full motion observability (edge
-   occupancy features), a retrained best-response attacker is *still* ≈ random (ratio 0.84 vs the
-   pre-registered 1.25). Diagnosis: **entropy pinning** (max-entropy SAC over ~120 flat options
-   with drowned advantages is mandated to play near-uniform) + reward SNR + γ-myopia.
-3. **gen05** (`gen05_hybrid_matrix.md`): the matrix in the rich hybrid arena was
-   **competence-void**: neither arm learned the task (clean W ≈ 5.6× greedy), and degradation
-   near the saturation ceiling is compressed (**weak policies fake robustness**: an identified
-   evaluation pitfall). One nugget: against a *competent* victim (greedy), the seeing learned
-   attacker became the strongest attacker in the portfolio (+1667 > scripted's +1154/+714) -
-   learned adversaries work where the reach mask aims for them and the victim is predictable.
-4. **gen06** (`gen06_dynassign_matrix.md`): **the definitive result.** Competence gate PASSED
-   (all six arms within +5.5–7.0% of greedy clean; gen03's band replicated). Primary
-   **significantly reversed**: pooled `dD_targeted = −881 ± 284` (n=90, 0/3 pairings positive);
-   the adversarially-trained arm is worse even under **its own training attacker**
-   (dD_pathrand = −775 ± 244); dead even under random attack; zero clean cost. Robustness
-   ranking: **greedy (4921) > vanilla (5196–5882) > adversarially-trained (6361–6575)**: the
-   reactive classical dispatcher is the most robust policy measured (consistent with Ritzinger
-   et al. 2015, cited in the literature review).
+Useless to harmful at the quantitative registers (numeric mixtures B2, terrain-grounded
+composition gen33, combinatorial curation gen37). Decisively valuable at the language-to-decision
+register (gen38 doctrine ID) and at composition once the mechanics were real (gen39 step 2,
+terrain control passing). Its distinctive advantage is SAMPLE EFFICIENCY at small evaluation
+budgets (leads every method at 8-16 evaluations in a 1.3M-force space, overtaken by
+hill-climbing by 96). The two models reverse between tasks (llama leads composition, qwen the
+grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
 
-**Unifying mechanism:** the zero-sum latency reward (−queue/tick) buries each agent's
-controllable contribution under a large uncontrollable shared baseline. The attacker's critic
-can't resolve which blocks worked (→ pinned at ~uniform); the defender trained under attack gets
-several-fold worse return SNR for the same sample budget (→ learns *less*, and the deficit
-surfaces exactly where queue compounding amplifies policy quality: aimed attacks).
+## Binding wording rules (consolidated; each earned by a named finding)
 
-**Constructive contributions:** (a) four named preconditions for adversarial training to work in
-this domain: a real coping channel in the action space, attacks with learnable structure, a
-competence-first curriculum, variance-reduced (counterfactual-baselined) rewards; (b) the
-evaluation methodology: pre-registration, competence gates, held-out attack portfolios,
-per-policy best responses, paired instances, stochastic evaluation of max-entropy policies -
-each earned by a specific documented failure (the static-3b retraction, gen05's ceiling trap).
+1. No comparative claim without the complete baseline family beside it; the simple-rule
+   concession is stated FIRST, on our terms.
+2. Never "only self-play can train there"; the licensed form is "only best-response-oracle
+   methods" (tabular FP with the same oracle also works).
+3. Claims are per-register and regime-conditional; the regime decision table is the map.
+4. LLM claims are per-model, never pooled; no "the LLM curriculum is best" (llm16 and local16
+   are indistinguishable in-distribution); no "trained policy beats the rules" sentence from
+   gen39.
+5. Never mix game versions, pre-fix and post-fix ladders, or differently-sampled variants in
+   one figure or table.
+6. ZST wording: adversarial training's transfer value is label-free and self-stopping, NOT
+   superior transfer (distillation with validation stopping beats the generalist); the hedge is
+   "geometry-informed and threat-robust", per-edge map-reading is not the mechanism; gap
+   closure decays 0.90 to 0.04 across transfer distance and any transfer figure shows it.
+7. ALNS is never called "SOTA" unqualified; its defence is that it provably attains loss_det,
+   the optimum of the whole deterministic class.
+8. Dynamic optimum yardsticks come from `scratch/dyn_exact.py` (Karp), never from the old
+   `oracle_refs` history_opt.
+9. Nash framing throughout the thesis; no Stackelberg anywhere.
+10. n=3 results say "mean +/- population std, per-seed values shown"; no significance language
+    from pooled dependent cells.
 
-## 2. Read in this order
+## Open threads (all small, none blocking writing)
 
-1. **This file.**
-2. **`SACRED_PROGRESS.md`**: the chronological run chronicle (10 entries, entry template at the
-   top; Kilian wants every significant future run family appended there).
-3. **`CRITIQUE.md`**: the 2026-07-02 critique that reframed the thesis; §5's skeptical-examiner
-   questions still shape the writing.
-4. **Ledgers** `experiments/gen02…gen06*.md`: pre-registered metrics + all citable numbers
-   (+ portfolio JSONs beside them).
-5. **`CONTEXT.md`** (banner explains what's historical), **`PROBLEM_REDESIGN.md`** (the pivot's
-   design rationale), **`SYSTEM.md`** (operating dogmas: read fully before running anything),
-   **`TASK.md`** (banner = plan state; body historical), **`docs/archive/`** (retired docs).
-6. PDFs (extract with `.venv/bin/python` + pypdf):
-   `../../MT_Literature_Survey_Kilian_Schwarz_split.pdf` (the assessed lit review; §2 =
-   the five research objectives) and `../../MSc Transport - Research Project Guidance
-   2025-2026.pdf` (deadlines/rubric: the thesis planner's first read).
-7. Figures: `scratch/hybrid_geometry.png`, `scratch/chokepoints.png`, `assets/kaliningrad_*.png`,
-   `scratch/dynassign_demo.gif`; probe scripts in `scratch/` are the reproducibility record.
-8. Code (in this order): `src/env/smdp_wrapper.py` + `src/env/graph_env.py` (physics, SMDP
-   events, antagonist reach/budget, hybrid state machine), `src/agents/networks.py`
-   (featurization: 13 node / 4 edge dims incl. goal + motion columns; width-slicing back-compat),
-   `src/agents/sac.py` (SAC math; `infer_node_in_dim`/`infer_edge_in_dim`; `_clip_x`/`_clip_ea`),
-   `src/agents/sacred_atla.py` (trainer modes: atla · vanilla · antagonist_only ·
-   scripted_adversary; `--update-every`), `src/baselines/greedy_dispatch.py` + `attackers.py`
-   (random/targeted/pathrand/mask-first "gateway"), `scripts/train_sacred.py` (all flags),
-   `scripts/evaluate_portfolio.py` (the robustness harness: paired W/D/dD, `--select-best
-   --select-attacker`, held-out seed bases 10_000_019/20_000_019), `scripts/run_generation.py`
-   (recipes + ledger discipline).
+1. **gen39 validation-cache rebuild** (cheap): step 5's validation cache is inherited from step
+   3 and built from tuned-family enemies; a rebuild would tighten every step-5 number.
+2. **The aerial permuted-field row** (eval-only, minutes): must run before the thesis cites the
+   aerial amortisation sentence.
+3. **Diverged ledger copies**: `b2_llm_benchmark`, `gen19_b1lite1`, `gen27_dynamic_generalist`
+   and `regime_decision_table` differ between worktrees; the ROADS copies carry the
+   corrected-yardstick appendices and are authoritative; cite from roads.
+4. **gen37 restriction follow-up**: recorded future work only.
+5. **imperial-sacred** carries uncommitted Story/UX work dated 2026-08-04; Kilian has parked it
+   ("done for now").
 
-## 3. Evaluation vocabulary (fixed: use exactly this)
+## The project map
 
-`W(arm, attack)` = mean total delivery latency (total_wait), lower better. `D(arm, a) = W(a) −
-W(none)`, paired per instance. `dD = D(vanilla, a) − D(other, a)`; positive = the other arm is
-more robust. Decision metrics are fixed in the ledger BEFORE looking; ≥3 seeds; paired instances;
-CIs always; competence gate before interpreting any robustness comparison.
+Three sacred worktrees (see `CLAUDE.md` for the table): roads `gen08-interdiction` (this tree,
+master docs, suite last recorded 224), aerial `gen28-aerial` (suite last recorded 240+), multi-OD
+`gen29-multiod` (closed, suite last recorded 173). Branches `main` and `gen07-contested` are
+frozen history at the gen07 close. Only `gen08-interdiction` has a remote (`origin`).
 
-## 4. State of the machinery
+**imperial-sacred** (`code/imperial-sacred`, branch `expansion-gen26-39`, unpushed) is the
+shareable restructured repo: engine package `sacred/`, historical harnesses `training/`, the
+Mission Control web app (`api/` + `web/`), record synced to gen39 with Theatre, Playbook, Basing
+and LLM surfaces. Entry points `README.md`, `AGENTS.md`, `docs/notes/HANDOVER.md`. Its anchor
+tests (0.699/0.206 on 35-159) must never move.
 
-- **Suite:** 83 tests green on the frozen campaign record; **131 green on `gen08-interdiction`**
-  (`PYTHONPATH=. pytest tests/`: run after touching agents/env, paste raw output). All five
-  problem rungs runnable: `--problem {osm,stage0,assign,dynassign,hybrid}`.
-- **Selected checkpoints (gen06):** vanilla ep750/ep100/ep100, scripted ep450/ep200/ep600 under
-  `models/runs/gen06_dynassign_matrix/*/snapshots/`; BR actors under `.../br_*_s0_seed0/`.
-  gen05's analogues under `models/runs/gen05_hybrid_matrix/`.
-- **Back-compat:** checkpoints of any feature-width era stay evaluable: agents slice features to
-  their trained width; loaders infer widths from the checkpoint (`infer_*_in_dim`).
-- **Hardware/ops:** M4 CPU-only (MPS 2.4–4× slower, settled), 4 torch threads solo / 3×3
-  parallel; ~18–55 s/ep depending on rung; eval is cheap (~0.2–0.6 s/ep: don't over-estimate).
-  Long jobs: `nohup … & disown` in their own session (harness-managed background tasks got reaped
-  once and killed the children: documented in the gen05 ledger recovery note). Pause/resume:
-  `pkill -STOP/-CONT -f train_sacred.py`. Kilian sometimes forbids scheduled wakeups: ask/obey.
-- **Never** train without a ledger (pre-registered metric + pinned SHA), never compare across git
-  states, never argmax-eval a max-entropy policy, gate multi-hour runs on cheap probes.
+**The thesis repo** (`Thesis/thesis/`, Overleaf-synced) is where all writing happens; this repo
+is its read-only evidence base. Its own briefs are `THESIS_FRAME.md` (the spine) and
+`THESIS_PLANNER_HANDOFF.md`. Current chapter state is summarised in the state paragraph above;
+`SESSION_REPORT_methodology_2026-07-31.md` records the methodology draft.
 
-## 5. Open decisions & outlook (Kilian owns all of these)
+**External references.** The guidance PDF and the assessed literature survey sit two directories
+above the repo root (`../../`). The LLM workbench (Prof Angeloudis's box `cv-iits-w05`) is
+reachable directly at `http://100.88.32.88:8080/v1`, key `iits-local-key`, models
+`llama-3.3-70b` and `qwen3-27b`; SSH `killian@100.88.32.88` (double-L, password `tsl2026`);
+every call is audit-logged on the box. Any use of it needs Kilian's go (shared hardware).
 
-1. **Freeze-and-write vs the option-(b) stretch.** Recommendation on record: freeze on gen06
-   (defensible, complete); option (b): make the hybrid learnable (tighter corridor slack vs the
-   slack-1.4× detour tension, γ↑, ERB warm-start from greedy demos = Obj-3 material): is now a
-   test of the four preconditions and belongs in future work unless Kilian wants one more swing
-   before ~Jul 16–18 (the campaign freeze target).
-2. **Supervisor conversation (the old "D4").** Agenda: the gen06 finding + framing ("when and why
-   adversarial VRP training fails, with conditions for success"), and descoping of ERB
-   (inconclusive n=1), SBO (untouched), rolling-ALNS baseline, and ZST (options: a small transfer
-   test *of the diagnosis* on a held-out geometry, or descope).
-3. **Thesis writing.** A separate planner instance is briefed at
-   `/Users/kilian/Kilian/ICL/Thesis/thesis/THESIS_PLANNER_HANDOFF.md` (launch = open Fable in
-   `thesis/`, say "read THESIS_PLANNER_HANDOFF.md and begin"). That repo (Overleaf-synced) is
-   where all report writing happens; this code repo is its read-only evidence base. Figure/
-   experiment requests flow back here as a precise list.
-4. **Back-pocket register** (recorded options, not scheduled): ATLA rider arm in a
-   competent-protagonist matrix (motivated by gen05's +1667 finding); gen04b antagonist
-   entropy-target re-gate (~2 h, tests the pinning hypothesis directly); option-(b) as above.
-5. **Deferred chores:** `src/env/` vs `src/envs/` merge (mechanical, post-freeze, suite-guarded -
-   TASK.md banner TODO 2); visualiser dims touch-up (`spar_visual*.py` builds 11-dim agents) if
-   thesis figures need old-checkpoint rendering.
+## Machine and operations facts (measured, not guessed)
 
-## 6. How to work with Kilian
+M4 Mac, 10 cores (4P + 6E), 24 GB RAM. Training is CPU-locked (MPS 2.4-4x slower, settled).
+4 torch threads solo; cap ALL thread pools on multi-process launches (`OMP_NUM_THREADS=1
+VECLIB_MAXIMUM_THREADS=1` plus torch caps). Do not `nice` training runs (3x efficiency-core
+penalty). RAM before cores (a duplicate-graph replay bug once drove the machine into memory
+compression). Aerial trainer ~1.83 s/flight solo, ~3.1 GB per run, four concurrent is the safe
+shape. Kill by explicit PID with a self-excluding pattern, never bare `pkill -f`, and verify
+over 30 seconds. Run everything through `.venv/bin/python` with `PYTHONPATH=.`.
 
-Single `&&`-chained shell commands; his Mac never sleeps; he pauses runs for heat/noise; he
-decides CPU spend and design changes: always present options with a recommendation and wait;
-report honestly including self-corrections (this project retracted a headline claim once and is
-stronger for it); ask questions when direction is genuinely his to choose, otherwise act.
-Persistent memory for this repo path exists (`~/.claude/projects/-Users-kilian-Kilian-ICL-Thesis-
-code-sacred/memory/`): read `MEMORY.md` there at session start; keep it and
-`SACRED_PROGRESS.md` current as work proceeds.
+## The archive
+
+Everything that used to clutter the top level lives in `docs/archive/` with one-line
+descriptions in `docs/archive/INDEX.md`: the seven-critique series, the direction and redesign
+documents, the superseded plans and checklists, the old banner-stack HANDOVER and SYSTEM, and
+the historical build briefs. Older ledgers and chronicle entries reference these files by their
+old top-level names; nothing in the archive is current guidance, but the critiques remain the
+record of what each claim survived.
