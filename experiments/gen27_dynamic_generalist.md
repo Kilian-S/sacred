@@ -193,3 +193,34 @@ beating the cap 6/6·5/6·5/6.
 > given the window, it learns the history-dependent hedge and beats the cap zero-shot on a
 > never-seen city. **gen27 is closed: PRIMARY + STRONG passed 3/3, causal control clean, worst-case
 > row honest, discovery evidence measured. The flagship positive act of the storyline.**
+
+### CORRECTED-YARDSTICK APPENDIX (2026-07-23; oracle-exact; `scratch/dyn_exact.py`,
+### `models/runs/dyn_yardstick_repair.json`; instance identity verified per row)
+
+**Every `history_opt` reference in this act was computed with the defective undamped RVI**
+(see the gen19 ledger's 2026-07-23 appendix for the mechanism; the aerial branch fixed the same
+defect in `dbf385d` and the fix never reached `oracle_refs`). All 24 instances' stored refs were
+identity-matched (buggy value reproduced to 1e-9; iid_eq within LP-degeneracy wobble) before
+restating. Buggy/exact scatter is BOTH-SIDED: 0.71x-1.40x across the pools.
+
+**UNAFFECTED (no RVI anywhere in these):** the PRIMARY (pooled held-out ratio-to-iid_eq-cap
+0.639 +/- 0.025, beats-cap 6/6-5/6-5/6), the STRONG clause, the no-window causal control
+(1.434), the worst-case row, and the discovery evidence. The act's verdict stands as banked.
+
+**Restated reported rows (vs the EXACT optimum, Karp = damped RVI):**
+
+| row | as reported | corrected |
+|---|---|---|
+| held-out ratio-to-optimum, per seed (select-on-train) | 1.657 / 1.758 / 1.810 | **1.868 / 1.991 / 2.060** |
+| pooled | "~1.74x history_opt" | **1.973x the exact optimum** |
+| composed disjoint+anti-repeat rule, per held-out OD | (quoted vs cap) | **1.63-1.85x the exact optimum** |
+| rotation, per held-out OD | fails (m=3 <= w) | **2.75-3.16x the exact optimum** |
+
+**Reading (binding for any storyline use):** the correction does not reorder anything - the
+composed rule remains AHEAD of the trained policy (as this ledger already conceded) and both
+remain WELL ABOVE the exact optimum. What it adds: on these m=3 pools the exact optimum
+(~0.065-0.072 per OD) sits FAR below the best two-line rule (~1.6-1.9x), i.e. there is real,
+unclaimed dynamic headroom that neither the composed family nor the current policy captures -
+the optimal window cycles are non-trivial. That headroom motivates the gen35 pre-registration
+(high-K dynamic corner, where the same gap widens to 1.3-1.6x on m=6 and naive rules degrade
+further with K).

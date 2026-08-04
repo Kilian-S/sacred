@@ -30,8 +30,9 @@ causal control. The boundary map closes with a measured edge.
   documentation are in `docs/archive/` (see its `INDEX.md`).
 - The chronicle lives on the roads worktree (`../sacred/SACRED_PROGRESS.md`, entries 27, 32,
   33 cover this branch); this tree's `SACRED_PROGRESS.md` is a pointer stub.
-- The `b2_llm_benchmark`, `gen19`, `gen27` and `regime_decision_table` ledger copies here are
-  DIVERGED from the roads copies, which carry the corrected-yardstick appendices and are
-  authoritative; cite from roads.
+- The shared ledger copies here (`b2_llm_benchmark`, `gen19_b1lite1`,
+  `gen27_dynamic_generalist`, `regime_decision_table`) were reconciled to the canonical
+  versions on 2026-08-04 and are byte-identical with the roads copies; if you amend a shared
+  ledger, mirror the change on all trees in the same session.
 - Suite last recorded 173 green. Any new work on this branch would start from the master
   HANDOVER, not from here.

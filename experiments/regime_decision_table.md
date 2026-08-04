@@ -25,3 +25,22 @@ recommended cell — reg-(b) 0.52-0.60, worse than the heuristic and naive stack
 understanding the structure; in-context feedback (reg-c) partially recovers via emergent
 anti-repeat but stays short of the trained policy. Calibrated randomisation is the capability
 they lack unaided.
+
+**GEN39 ROWS (2026-07-28; the aerial concealment act, `../sacred-aerial/experiments/
+gen39_concealment.md`).** Two additions to the practical picture, both per-model and both bounded:
+
+- **Designing the THREAT (not the routing).** Asked to compose an air-defence force, a strong
+  open-weight model beats a hand-tuned doctrine against a defender that must SEARCH (llama 0.0747
+  vs 0.0603; qwen partial), and its choices are terrain-grounded (relabelling the terrain in the
+  brief collapses its forces 10-13x). But the same forces are 2.5-7x WEAKER against a defender
+  that KNOWS where they are, because the model composes concealment gambits: **hiding beats a
+  searcher and loses to a learner.** Choose the yardstick that matches your defender.
+- **Authoring a CURRICULUM.** Training against enemies from a directed 16-evaluation search -
+  LLM-proposed or hill-climbed, they are indistinguishable - produces a defender 23% better on
+  unseen strong enemies than the tuned-doctrine control, on every seed, and it transfers to three
+  unseen theatres. What matters is not who proposes but that the curriculum is SELECTED by
+  iterated exact evaluation. **The LLM's specific advantage is cost:** at 8-16 exact simulations
+  it leads every search method; by 96 simulations blind hill-climbing overtakes it.
+- **Unchanged boundary:** in this register no trained policy beats the best simple observing rule
+  on any cell on any of four maps. The regime table's "use the two-line rule" advice therefore
+  extends to the aerial concealment game as well.
