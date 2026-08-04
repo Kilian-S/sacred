@@ -55,7 +55,9 @@ force composition, sample-efficient curriculum authoring) and where it is useles
 ## The claims register
 
 Citable numbers live only in the ledgers named here. Worktree prefixes: (R) roads `sacred`,
-(A) `sacred-aerial`, (M) `sacred-gen29`.
+(A) `sacred-aerial`, (M) `sacred-gen29`. Ledgers shared across worktrees were reconciled to one
+canonical version on 2026-08-04 and are byte-identical; if you amend a shared ledger, mirror
+the change to the other trees in the same session.
 
 ### Banked positives
 
@@ -126,11 +128,8 @@ grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
    3 and built from tuned-family enemies; a rebuild would tighten every step-5 number.
 2. **The aerial permuted-field row** (eval-only, minutes): must run before the thesis cites the
    aerial amortisation sentence.
-3. **Diverged ledger copies**: `b2_llm_benchmark`, `gen19_b1lite1`, `gen27_dynamic_generalist`
-   and `regime_decision_table` differ between worktrees; the ROADS copies carry the
-   corrected-yardstick appendices and are authoritative; cite from roads.
-4. **gen37 restriction follow-up**: recorded future work only.
-5. **imperial-sacred** carries uncommitted Story/UX work dated 2026-08-04; Kilian has parked it
+3. **gen37 restriction follow-up**: recorded future work only.
+4. **imperial-sacred** carries uncommitted Story/UX work dated 2026-08-04; Kilian has parked it
    ("done for now").
 
 ## The project map
