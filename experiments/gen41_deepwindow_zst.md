@@ -99,6 +99,74 @@ replacing it with the next-ranked gdansk passer; one-line swap in the artefact.
 **State: pools await Kilian's PNG review; the K=1-vs-K=2 note above awaits his call;
 bars finalise at his go; NOTHING TRAINS until then.**
 
+### PRE-REGISTRATION: the two follow-up screens (2026-08-05, Kilian's direction, BEFORE CPU)
+
+**Tier structure adopted for the rule family (Kilian's like-with-like requirement; final
+sign-off travels with the bars).** Tier 0 knows the map only (statics, corridor rotation,
+FULL-MENU rotation). Tier 1 is told the enemy's mechanism (composed anti-repeat, the
+window-tuned extended rotation). Tier 2 earns its knowledge from outcomes at a matched
+interaction budget (EXP3, avoid-where-ambushed, self-tuning composed; simulation-evaluated,
+reported rows). DRAFT PRIMARY re-scoped: beat every Tier-0 and Tier-2 member zero-shot;
+Tier-1 reported beside with information priced, never dropped (baseline completeness).
+
+**Screen 2a, full-menu rotation on the 24 selected instances (Tier 0 entered the family
+the moment it was named).** Value = best over the natural order plus 20 seeded shuffles
+(rng(0)) of the all-R cycle, exact, at (w=6, K=2). Bar: full-rot/opt_core >= 1.35 per
+instance; any failure is swapped for the next-ranked passer that clears BOTH the original
+bars and this one, with disclosure and a re-rendered sheet.
+
+**Screen 2b, the menu-diversity probe (Kilian's would-SACRED-suffer question).** Three
+instances (klg 23-242, east_london 182-155, gdansk 194-173), each under two menus of
+IDENTICAL R: the standing k-shortest menu, and a DIVERSE menu built by penalised shortest
+paths (corridor edges and each accepted route's edges reweighted x5; same corridor core;
+same padded count; per-edge p_e identical by the absolute vulnerability norm). Per menu:
+overlap anatomy; one-shot value; at w=3 the EXACT full-menu and core optima (the padding
+value), rules and statics; at w=6 the core optimum, Tier-0/Tier-1 rules and statics
+(count-class enumeration). Pre-committed reading: diversity is predicted to RAISE the
+naive rules and statics relative to the optimum (headroom compression, the prop-floor
+mechanism) while its effect on the w=3 padding value is measured, not assumed; both
+directions reported. Scripts `scratch/gen41_fullrot_screen.py`,
+`scratch/gen41_menu_diversity_probe.py`.
+
+### SCREEN 2a RESULT (2026-08-05, 24 s; fields folded into the pool artefact)
+
+**All 24 selected instances PASS with zero swaps.** Full-menu rotation (Tier 0, intel-free)
+sits at 1.38-3.55x the corridor-restricted optimum across the pools (median ~2.5x); the
+one close call is east_london 147-112 at 1.38. Mechanism: cycling through all routes keeps
+the flown route out of the enemy's window but not off its punished SEGMENTS, and forces
+regular use of high-vulnerability padded variants. The Tier-0 family is comfortably
+beatable everywhere on the selected pools.
+
+### SCREEN 2b RESULT (2026-08-05, 50 s; artefact `models/runs/gen41_menu_diversity.json`)
+
+Three instances, standard k-shortest menu vs penalised-diversity menu at identical R and
+identical per-edge threat values. Diversity was achieved (median padded own-edge share
+27-40% -> 66-80%; candidate edges 68-90 -> 219-317).
+
+| quantity (per instance: klg / e-london / gdansk) | STANDARD | DIVERSE |
+|---|---|---|
+| one-shot equilibrium value (K=2) | 0.64 / 0.66 / 0.65 | 0.49 / 0.42 / 0.46 |
+| w=3 exact full-menu optimum | 0.152 / 0.152 / 0.180 | 0.065 / 0.057 / 0.080 |
+| w=3 padding value (core vs full) | 18% / 14% / 12% | 38% / 21% / 26% |
+| w=6 ext-rotation / core-optimum | 2.04 / 1.56 / 2.20 | **0.73 / 1.12 / 0.86** |
+| w=6 full-rotation / core-optimum | 2.44 / 1.89 / 2.67 | **0.89 / 1.24 / 1.18** |
+
+**Reading (the pre-committed prediction fires, and harder than predicted).** Diverse
+padding makes everyone safer in absolute terms (optima improve 2-3x) and DESTROYS the
+act's structure: out-of-window cycling over near-independent routes becomes near-optimal
+or better than ANY corridor-locked object (ext-rotation at 0.73-1.12x and full-rotation at
+0.89-1.24x the corridor-restricted optimum), the corridor-restricted reference stops
+bounding the rule family, the true w=6 optimum is incomputable, and the rule-failure
+headroom the headline needs disappears. This is the prop-floor mechanism at work: grant
+naive spreading enough independence and it is near-optimal. **Binding consequences:**
+(i) the act keeps the standing k-shortest menus; near-duplicate padding is not a defect
+but the structural condition under which learning has anything to buy; (ii) the 13
+screened-out candidates (where ext-rotation beat the core optimum) are now explained:
+pockets of incidental menu diversity; (iii) honest thesis caveat wherever menus are
+discussed: the mission objective carries no travel cost, so long detours are free in-game;
+a latency-priced variant would penalise the diverse menus and is recorded as future work,
+not run.
+
 ### REVIEW ROUND 1 (2026-08-05, Kilian's first pass on the sheets)
 
 1. **Swap APPLIED:** gdansk 70-297 (degenerate geometry) replaced by the next-ranked passer
