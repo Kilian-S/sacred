@@ -126,6 +126,22 @@ OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
 
 ## RESULTS (appended per step; nothing above changes after each step runs)
 
+### RUN STATE: PAUSED ON KILIAN'S INSTRUCTION (2026-08-05 ~21:20)
+
+The four training processes (3 seeds + no-window control, PIDs 196-199) are SIGSTOPPED at
+sortie ~6,500-7,000 of 12,000 with state in memory; all monitoring watchers cancelled.
+Resume = `kill -CONT` on the four PIDs (the batch script's `wait` parent is untouched), at
+which point training continues losslessly; the machine must not reboot while paused. At
+pause: held-out ratios 1.12-1.20 (beats-cap 1-2/6 per seed), train 0.92-1.15, rw[2] at
+-28 to -37 and deepening, alphas 0.19-0.26, control clean (window weight 0.00). Process
+note for the record: the processes carry a positive nice value (STAT flag N), applied by
+the launching shell's background policy, not by any command of ours; renicing upward needs
+privileges, so the pace implication (~30 min per eval cycle) is recorded rather than
+repaired. Tier-2 rows are already banked (`tier2_rows.json`): pooled ratios-to-cap EXP3-menu
+0.995, EXP3-core 1.042, avoid-where-ambushed 1.327, self-tuned composed 0.932 (the gate's
+binding Tier-2 value). Final evaluation runs after Kilian orders the resume and the batch
+completes.
+
 ### SCREEN RESULT (2026-08-05, 357 s, oracle-only; artefact `models/runs/gen41_pool_screen.json`;
 ### contact sheets `assets/gen41_pool/{kaliningrad,east_london,istanbul,gdansk}.png`)
 
