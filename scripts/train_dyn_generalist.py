@@ -30,19 +30,97 @@ import numpy as np
 import torch
 
 from scripts.train_b1lite1 import oracle_refs, route_feats, softmax_br, stacked_L
-from scripts.train_generalist import sample_instances
+from scripts.train_generalist import Instance, sample_instances
 from src.agents.sac import ProtagonistSAC
 from src.env.smdp_wrapper import SMDPTransition
 
 
-def prep_instance(it, tau, w):
+def _karp_mmc(cost, n, R, pw):
+    """Exact minimum mean cycle (scratch/dyn_exact.py's solver, inlined so the trainer stays
+    self-contained; the corrected dynamic-optimum method per binding rule 8)."""
+    v = np.arange(n)
+    heads = v // R
+    U = (np.arange(R)[:, None] * pw) + heads[None, :]
+    A = v % R
+    Cin = cost[U, A[None, :]]
+    d = np.full((n + 1, n), np.inf)
+    d[0] = 0.0
+    for k in range(1, n + 1):
+        d[k] = (d[k - 1][U] + Cin).min(axis=0)
+    ks = np.arange(n)[:, None]
+    with np.errstate(invalid="ignore"):
+        ratios = (d[n][None, :] - d[:n]) / (n - ks)
+    ratios = np.where(np.isfinite(ratios), ratios, -np.inf)
+    per_v = ratios.max(axis=0)
+    per_v = np.where(np.isfinite(d[n]), per_v, np.inf)
+    return float(per_v.min())
+
+
+def fast_refs(L, tau, w, route_edges):
+    """gen41 references for deep windows where oracle_refs' R^w enumeration is infeasible:
+    exact iid_eq by count-class enumeration with multinomial weights, static_det, and the
+    corridor-restricted exact optimum (Karp over the m^w core window graph)."""
+    import itertools as _it
+    import math as _math
+    from src.baselines.multiconvoy_oracle import _row_minimiser as _rm
+    R = L.shape[0]
+    v_eq, eq = _rm(L)
+    sup = np.where(eq > 1e-12)[0]
+    fw = _math.factorial(w)
+    iid = 0.0
+    for multi in _it.combinations_with_replacement(range(len(sup)), w):
+        counts = np.zeros(R)
+        prob = 1.0
+        for j in multi:
+            counts[sup[j]] += 1
+            prob *= eq[sup[j]]
+        denom = 1
+        for j in set(multi):
+            denom *= _math.factorial(multi.count(j))
+        iid += (fw // denom) * prob * float((L @ softmax_br(counts, L, tau)) @ eq)
+    sd = min(float(L[r] @ softmax_br(np.eye(R)[r] * w, L, tau)) for r in range(R))
+    # corridor core (greedy disjoint subset, the standing convention)
+    kept, used = [], set()
+    for i, re_ in enumerate(route_edges):
+        if not (set(re_) & used):
+            kept.append(i)
+            used |= set(re_)
+    m = len(kept)
+    n = m ** w
+    dec = np.empty((n, w), dtype=np.int64)
+    x = np.arange(n)
+    for i in range(w):
+        dec[:, w - 1 - i] = x % m
+        x = x // m
+    cost = np.empty((n, m))
+    for s in range(n):
+        counts = np.zeros(R)
+        for j in range(m):
+            counts[kept[j]] = (dec[s] == j).sum()
+        q = softmax_br(counts, L, tau)
+        cost[s] = (L @ q)[kept]
+    opt_core = _karp_mmc(cost, n, m, m ** (w - 1))
+    return dict(v_eq=v_eq, iid_eq=iid, static_det=sd, opt_core=opt_core)
+
+
+def prep_instance(it, tau, w, fast=False):
     """Attach the dynamic-game apparatus to a pool instance: stacked payoff L, oracle refs
-    (iid_eq / history_opt / static_det via RVI), cached menus."""
+    (iid_eq / history_opt / static_det via RVI; or the gen41 fast refs for deep windows),
+    cached menus."""
     it.L = stacked_L(it.env.game, it.env.config.N)
-    it.refs = oracle_refs(it.L, tau, w)
+    it.refs = fast_refs(it.L, tau, w, it.env.game.route_edges) if fast \
+        else oracle_refs(it.L, tau, w)
     it.menu_idx = [torch.tensor(r, dtype=torch.long) for r in it.env.menu_route_node_idx()]
     it.nR = it.env.game.n_routes
     return it
+
+
+def load_pool_file(path, N, K, band, kx, seed):
+    """gen41 pool injection: {'train': [[city, s, t], ...], 'test': [[city, s, t], ...]}."""
+    spec = json.loads(Path(path).read_text())
+    def build(rows):
+        return [Instance((s, t), N, K, band, kx, seed, city=c) for c, s, t in rows]
+    return build(spec["train"]), build(spec["test"])
 
 
 def build_obs(it, counts, w, no_window=False):
@@ -81,6 +159,11 @@ def main():
     p.add_argument("--holdout-city", default="gdansk")
     p.add_argument("--n-per-city", type=int, default=6); p.add_argument("--n-test", type=int, default=6)
     p.add_argument("--pool-seed", type=int, default=0)
+    p.add_argument("--K", type=int, default=1); p.add_argument("--k-extra", type=int, default=8)
+    p.add_argument("--pool-file", default="", help="gen41: explicit OD pools (json)")
+    p.add_argument("--fast-refs", action="store_true",
+                   help="gen41 deep-window refs (count-class iid_eq + core Karp); required "
+                        "where oracle_refs' R^w enumeration is infeasible")
     p.add_argument("--window", type=int, default=3); p.add_argument("--tau", type=float, default=0.15)
     p.add_argument("--episode-len", type=int, default=40); p.add_argument("--gamma", type=float, default=0.95)
     p.add_argument("--sorties", type=int, default=12000); p.add_argument("--eval-every", type=int, default=500)
@@ -94,22 +177,27 @@ def main():
     args = p.parse_args()
     torch.set_num_threads(args.threads); torch.manual_seed(args.seed); np.random.seed(args.seed)
     rng = np.random.default_rng(args.seed)
-    N, K, BAND, KX = 3, 1, (0.15, 0.95), 8
+    N, K, BAND, KX = 3, args.K, (0.15, 0.95), args.k_extra
     w, tau = args.window, args.tau
 
     cities = args.cities.split(",")
-    train = []
-    for c in cities:
-        train += sample_instances(args.n_per_city, N, K, BAND, KX, args.pool_seed, city=c)
-    test = sample_instances(args.n_test, N, K, BAND, KX, args.pool_seed, city=args.holdout_city)
+    if args.pool_file:
+        train, test = load_pool_file(args.pool_file, N, K, BAND, KX, args.pool_seed)
+    else:
+        train = []
+        for c in cities:
+            train += sample_instances(args.n_per_city, N, K, BAND, KX, args.pool_seed, city=c)
+        test = sample_instances(args.n_test, N, K, BAND, KX, args.pool_seed, city=args.holdout_city)
     for it in train + test:
-        prep_instance(it, tau, w)
-    print(f"[gen27] {len(train)} train ({','.join(cities)}) + {len(test)} held-out "
-          f"({args.holdout_city}); w={w} tau={tau}; per-instance yardsticks:", flush=True)
+        prep_instance(it, tau, w, fast=args.fast_refs)
+    print(f"[gen27] {len(train)} train + {len(test)} held-out; w={w} tau={tau} K={K} "
+          f"kx={KX}; per-instance yardsticks:", flush=True)
     for tag, pool in (("train", train), ("HELD-OUT", test)):
         for it in pool:
+            deep = it.refs.get("history_opt", it.refs.get("opt_core"))
+            deep_name = "history_opt" if "history_opt" in it.refs else "opt_core"
             print(f"    {tag} {it.city} {it.od}: static_det {it.refs['static_det']:.3f} > "
-                  f"iid_eq {it.refs['iid_eq']:.3f} > history_opt {it.refs['history_opt']:.3f}", flush=True)
+                  f"iid_eq {it.refs['iid_eq']:.3f} > {deep_name} {deep:.3f}", flush=True)
 
     prot = ProtagonistSAC(node_in_dim=14, edge_in_dim=5, hidden_dim=64, num_layers=2, heads=4,
                           reward_scale=1.0, lr_actor=3e-4, gamma=args.gamma, autotune_alpha=True,
@@ -179,10 +267,15 @@ def main():
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json_out).write_text(json.dumps(
             {"seed": args.seed, "no_window": args.no_window, "w": w, "tau": tau,
-             "train_refs": [{"city": it.city, "od": it.od, **{kk: it.refs[kk] for kk in
-                             ("static_det", "iid_eq", "history_opt")}} for it in train],
-             "test_refs": [{"city": it.city, "od": it.od, **{kk: it.refs[kk] for kk in
-                            ("static_det", "iid_eq", "history_opt")}} for it in test],
+             "K": args.K, "k_extra": args.k_extra, "pool_file": args.pool_file,
+             "train_refs": [{"city": it.city, "od": it.od,
+                             **{kk: float(it.refs[kk]) for kk in
+                                ("static_det", "iid_eq", "history_opt", "opt_core", "v_eq")
+                                if kk in it.refs}} for it in train],
+             "test_refs": [{"city": it.city, "od": it.od,
+                            **{kk: float(it.refs[kk]) for kk in
+                               ("static_det", "iid_eq", "history_opt", "opt_core", "v_eq")
+                               if kk in it.refs}} for it in test],
              "history": hist,
              "select_on_train": sel, "select_on_test": opt}, indent=2))
         print(f"[written] {args.json_out}")

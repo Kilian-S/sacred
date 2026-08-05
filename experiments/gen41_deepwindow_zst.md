@@ -66,6 +66,64 @@ infeasible; estimator disclosed), oracle references exact.
   light, origin and destination marked, per-panel R and headroom annotations. Script
   `scratch/gen41_pool_screen.py`; artefact `models/runs/gen41_pool_screen.json`.
 
+## BINDING AT LAUNCH (2026-08-05; Kilian's go: K=2 confirmed, tiered primary confirmed,
+## padding stays, full-capacity machine use, 3 seeds + control, autonomous execution)
+
+**Config pinned.** Pools = the 24 reviewed ODs (`models/runs/gen41_pool.json`, built from the
+screen artefact post-swap). w=6, tau=0.15, K=2, kx=12, N=3, band (0.15, 0.95), mission
+objective; 12,000 sorties, episode 40, gamma 0.95, head-term lr 3e-2, batch 32; seeds
+{0, 1, 2} + no-window causal control (seed 0); per-eval checkpoints; select-on-train.
+References per run via `--fast-refs` (count-class exact iid_eq + corridor-core Karp; the
+LP-degeneracy vertex wobble ~1% is disclosed and each run scores against its own refs, the
+gen27 amendment-1 convention). Eval cadence 500; PER-ROUND eval sampling trimmed to 250
+(train) / 600 (held-out) sorties per instance for wall-clock (selection only; DISCLOSED
+deviation from gen27's 400/1000); the FINAL cited numbers come from a separate
+high-precision pass (20,000 rollout sorties per held-out instance at the selected
+checkpoint). Suite green after the trainer changes: **167 passed** (pytest raw tail pasted
+in-session, 2026-08-05; the tests/ tree last changed at gen26's `77fe57f`, so the
+HANDOVER's "224" roads figure is a doc slip to fix, the aerial count).
+
+**Smoke gate: PASSED** (240 sorties, pinned command with `--sorties 240`): pool builds with
+correct refs, training and eval run end-to-end, and the window-column weight rw[2] trained
+to -3.09 within 240 sorties (the gen19/gen27 anti-repeat signature; smokes validate
+plumbing, not dynamics).
+
+**PRIMARY (binding).** At the select-on-train checkpoint, on the 6 held-out Gdansk
+instances: SACRED's pooled mean ratio-to-cap (i) beats the static cap on >= 4/6 ODs,
+(ii) is below EVERY Tier-0 dynamic rule's pooled ratio (corridor rotation, full-menu
+rotation; screen values stand), and (iii) is below EVERY Tier-2 adaptive row's pooled
+GENEROUS score (defined below), all on >= 2/3 seeds.
+**STRONG:** per-sortie loss at or below the corridor-restricted exact optimum on >= 3/6
+held-out ODs (high-precision pass).
+**CAUSAL CONTROL:** the no-window arm lands ~1.0x cap and beats it nowhere.
+**REPORTED (never gating, never dropped):** Tier-1 rows (composed anti-repeat, extended
+rotation; screen values), worst-case one-shot exploitability of the marginal mixture,
+final-iterate drift, per-OD values, select-on-test dual-report.
+
+**Tier-2 adaptive rows (binding definitions; all seeded, simulation where not exact).**
+(i) EXP3 over the full menu and (ii) EXP3 over the corridors: standard EXP3, eta =
+sqrt(ln n_arms / (n_arms T)), T = 12,000 sorties learned IN PLACE on each held-out
+instance, bandit feedback = the analytic expected loss of the chosen route; scored on the
+final-2,000 tail (generous) with the full-horizon mean reported; 5 seeded repetitions.
+(iii) Avoid-where-ambushed: Bernoulli interception outcomes sampled from the committed
+set; uniform over routes without a realised interception in the last h sorties (fallback
+uniform); h in {3, 6, 12}, best taken (generous); 5 repetitions, tail scored.
+(iv) Self-tuned composed rule: composed anti-repeat at defender window w' in {2, 4, 6, 8},
+each EXACT (stationary chain over the max(w', 6)-window core states), best w' taken (the
+self-tuned upper envelope). The gate uses the generous readings throughout.
+
+**Commands (pinned; batch `scratch/gen41_batch.sh`, detached nohup + disown, thread pools
+capped per SYSTEM):**
+```bash
+OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
+  scripts/train_dyn_generalist.py --pool-file models/runs/gen41_pool.json \
+  --K 2 --k-extra 12 --window 6 --fast-refs --sorties 12000 --eval-every 500 \
+  --eval-n 600 --eval-n-train 250 --seed $S --threads 2 \
+  --json-out models/runs/gen41_deepwindow/seed$S.json \
+  --ckpt-dir models/runs/gen41_deepwindow/seed${S}_ckpts
+# control: identical + --no-window --seed 0, paths suffixed _nowin; all four concurrent
+```
+
 ## RESULTS (appended per step; nothing above changes after each step runs)
 
 ### SCREEN RESULT (2026-08-05, 357 s, oracle-only; artefact `models/runs/gen41_pool_screen.json`;
