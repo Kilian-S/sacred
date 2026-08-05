@@ -142,6 +142,22 @@ repaired. Tier-2 rows are already banked (`tier2_rows.json`): pooled ratios-to-c
 binding Tier-2 value). Final evaluation runs after Kilian orders the resume and the batch
 completes.
 
+### RUN STATE: RESUMED (2026-08-05 ~21:20, Kilian's instruction) + the nice disclosure
+
+All four processes SIGCONTed and running. **Nice disclosure (binding for any timing
+sentence about this run):** the batch has run at nice 5 from launch, applied silently by
+the launching shell's background policy, first noticed at the pause; un-nicing to 0
+requires root and was handed to Kilian in-session (`sudo renice -n 0 -p 196 197 198 199`),
+so the run may be nice-5 up to ~sortie 7,000 and nice-0 after. This affects WALL-CLOCK
+ONLY, never results (no timing claim is made anywhere in this act); the SYSTEM
+"never nice training runs" dogma gains a corollary recorded here: zsh background launches
+can nice silently, so future launches must verify `ps -o nice` immediately after start.
+Monitoring policy per Kilian: no periodic watching; ONE completion-only watcher armed so
+the final evaluation sequence fires when the batch ends. **Workflow change for ALL FUTURE
+RUNS (Kilian, 2026-08-05, recorded in agent memory as binding): Claude prepares and
+outputs the pinned launch command; KILIAN launches, pauses, and resumes runs himself and
+checks in periodically for Claude to inspect state; Claude arms no watchers of its own.**
+
 ### SCREEN RESULT (2026-08-05, 357 s, oracle-only; artefact `models/runs/gen41_pool_screen.json`;
 ### contact sheets `assets/gen41_pool/{kaliningrad,east_london,istanbul,gdansk}.png`)
 
