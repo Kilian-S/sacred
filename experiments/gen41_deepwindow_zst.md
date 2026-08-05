@@ -98,3 +98,29 @@ replacing it with the next-ranked gdansk passer; one-line swap in the artefact.
 
 **State: pools await Kilian's PNG review; the K=1-vs-K=2 note above awaits his call;
 bars finalise at his go; NOTHING TRAINS until then.**
+
+### REVIEW ROUND 1 (2026-08-05, Kilian's first pass on the sheets)
+
+1. **Swap APPLIED:** gdansk 70-297 (degenerate geometry) replaced by the next-ranked passer
+   303-15 (R=14; rule/opt 1.62; stat/opt 1.73; ext-rot/opt 1.66); recorded in the artefact's
+   `selection_note`.
+2. **"Not enough padded routes" resolved as a RENDERING artefact, verified numerically:**
+   every selected instance has its full menu (R = 13-15 = 3 corridors + 10-12 padded;
+   R < 15 where the k-shortest generator's near-duplicates dedup). The padded routes share
+   59-100% of their edges with the corridor union (median own-edge share 15-50% per
+   instance; a few padded routes are pure RECOMBINATIONS of corridor segments with zero own
+   edges, still distinct paths), so they draw underneath the bold corridors. Renderer v2
+   (`scratch/gen41_render.py`, first version had an edge-key-format defect fixed and
+   disclosed) gives each padded route its own colour, draws its non-corridor detour edges
+   thick, and annotates each panel with the route count and the median own-edge share.
+   This anatomy is BY CONSTRUCTION (k-shortest padding) and is exactly where the gen40
+   padding value lives: short detours around punished corridor edges.
+3. **Taxonomy clarification (Kilian's question):** the extended rotation is NEITHER an
+   avoid-where-ambushed rule NOR a self-tuning rule. It is a MAP-ONLY told rule
+   (deterministic cycle over 7-8 edge-diverse routes; consumes the menu and map, no
+   outcomes, no tuning, no payoff knowledge), i.e. the same information class as rotation
+   and the composed anti-repeat. The adaptive fair-heuristic tier (EXP3 over corridors and
+   over the menu, avoid-where-ambushed, and the self-tuning composed rule at a matched
+   interaction budget) is a SEPARATE family, deliberately not part of the screen; DRAFT
+   addition to the act: these run as REPORTED rows (not gating), evaluated by seeded
+   simulation, pending Kilian's sign-off with the bars.
