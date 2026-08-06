@@ -142,6 +142,61 @@ repaired. Tier-2 rows are already banked (`tier2_rows.json`): pooled ratios-to-c
 binding Tier-2 value). Final evaluation runs after Kilian orders the resume and the batch
 completes.
 
+### FINAL RESULT (2026-08-06; batch completed overnight; high-precision pass 20,000
+### rollout sorties per held-out instance at the select-on-train checkpoint;
+### artefacts `final_eval_seed{0,1,2,0_nowin}.json`, `tier2_rows.json`)
+
+**PRIMARY: FAIL, 0/3 seeds, on every clause. STRONG: FAIL, 0/6 everywhere.** The verdict
+table (pooled ratio-to-cap over the 6 held-out Gdansk instances):
+
+| object | pooled ratio-to-cap |
+|---|---|
+| corridor-restricted exact optimum | **0.576** |
+| self-tuned composed rule (Tier 2, the binding gate) | 0.932 |
+| composed anti-repeat w'=6 (Tier 1, reported) | 0.941 |
+| EXP3 over the menu (Tier 2) | 0.995 |
+| corridor rotation (Tier 0) | 1.006 |
+| extended rotation (Tier 1, reported) | 1.030 |
+| **SACRED seed 2 / 0 / 1 (select-on-train)** | **1.031 / 1.163 / 1.252** (pooled 1.149) |
+| no-window causal control | 1.278 |
+| avoid-where-ambushed (Tier 2) | 1.327 |
+| full-menu rotation (Tier 0) | 1.363 |
+
+Per-seed: beats the cap on 2/6 ODs each; at-or-below the corridor-locked optimum 0/6
+everywhere; worst-case one-shot premiums 1.32-1.40x. The select-on-test optimistic bounds
+(1.021-1.115) never approached the gate either, so no selection ambiguity exists. The
+window weight trained to -34 to -52 on every sighted seed and 0.00 on the control.
+
+**Reading 1, the causal-control nuance (the sharpest finding).** Unlike gen27 (blind 1.434
+vs sighted 0.639, a 0.8-ratio causal gap), the w=6 window channel bought only 0.03-0.25 of
+pooled ratio (control 1.278 vs 1.031-1.252), with seed 1 statistically at the control's
+level. The recency-frequency column is nearly INERT for collecting deep-window value even
+though the policy leans on it maximally: pure anti-repeat behaviour is worth little at
+w = 2m (every corridor is always punished), and an aggregate frequency column cannot
+express the window-steering cycles the optimum uses. A CHANNEL-CONTENT failure, not a
+training failure; the gen34/gen36 conditioning-capacity wall, met from a new direction.
+
+**Reading 2, the register-wide fact.** At w = 2m EVERY practical object sits at 0.93-1.36x
+the cap while the exact optimum sits at 0.576x: the deep-window value is real, large, and
+uncollected by anything measured, told rules, adaptive no-regret learners, and
+recency-conditioned deep RL alike. Combined with gen40 and gen27, the w-axis map is now
+complete and citable: at w = m-1 rotation is provably optimal and learning is pointless;
+at w = m calibrated history-conditioning wins and transfers (gen27, 0.639x cap zero-shot);
+by w = 2m no tested policy class collects the value. **Learning pays in a window BAND
+around w ~ m, and the band's far edge is a conditioning boundary, not a game boundary.**
+
+**Binding wording.** No sentence may claim SACRED beats any rule tier at w=6; the licensed
+claims are the band map above, the channel-content mechanism (control-attributed), and the
+fairness-tier landscape (Kilian's like-with-like framing survives intact: at the deep
+window the told-rules' advantage evaporates along with everything else). Future work,
+recorded not run: per-lag route-identity window features (sequence, not frequency), or
+short-horizon planning over the window MDP the features already determine.
+
+**Process disclosures.** Run at nice 5 until ~sortie 7,000 (wall-clock only); two
+externally-reaped watchers (no effect on the runs); the 20,000-sortie rollout estimator
+per the pre-registration; suite 167 green at the launch SHA; every bar judged exactly as
+pre-registered, no bar moved.
+
 ### RUN STATE: RESUMED (2026-08-05 ~21:20, Kilian's instruction) + the nice disclosure
 
 All four processes SIGCONTed and running. **Nice disclosure (binding for any timing
