@@ -1575,3 +1575,60 @@ rider (qwen, n=8) unmodified on the corrected brief.
 **Cost estimate:** ~86 nominal thinking-off calls + 8 thinking-on; GPU ~40-70 min summed;
 Mac-side exact scoring interleaved (runs beside the gen41 Act-2 batch; transient spawn pools,
 thread caps exported by the runner).
+
+### REPAIR RE-RUN RESULTS (2026-08-06 21:43-22:13, 30 min end to end; corrected artefacts at
+### the standard paths, defective originals at `*_v1brief.*`; two transient JSON-parse
+### failures surfaced by the new loud handler and recovered by the standing retry; verdicts
+### judged against reading rules R1-R5 exactly as pre-registered)
+
+**Consistency rows, both PASS:** 1c curated reproduces the banked values exactly (median
+0.00427, 20% of bar; clean inputs, so agreement certifies the scoring machinery unchanged),
+and the 1e exhaustive ceiling reproduces exactly (0.0278, same optimal combination): the
+brief is the only thing that moved.
+
+**The defect's fingerprint flips.** On the corrected brief the models choose urban slots in
+8/24 forces (7/16 off, 1/8 on) against 0/24 on the defective brief: the misstated table was
+demonstrably steering slot choice away from a load-bearing class.
+
+**R1 (1c) verdict: the banked conclusion SURVIVES, with its wording softened as measured.**
+Robust arm median 0.00194 (9% of the 0.0215 bar; defective brief 5%), best single force
+0.0126 (59% of bar; defective 0.0091, 42%), cover share 0.67. Iterative rounds 9% -> 13% ->
+3%: still no trend. A truthful brief roughly DOUBLES the median and lifts the best force
+by ~40%, so "briefing is not the constraint" is retired in favour of: briefing quality
+measurably moves force quality but cannot close the gap (every arm stays 5-10x short of the
+bar). The BINDING CONSEQUENCE stands: no arm reaches the bar, Phase 2 stays not-run.
+
+**R2 (1d) verdict: the grounding conclusion SHARPENS.** Grounding on the corrected brief:
+per-round medians 11-18%, overall median 12% (individuals 0-100%, 4 None). The banked
+"12-40%" becomes "~12% median, UNCHANGED by correcting the physics prose": the model's
+inability to predict the geometric consequences of its own verbal choices is not a
+briefing artefact. Irreducible threat 6% -> 11% of bar over six rounds (no approach); free
+lanes fall 6.0 -> 0.0 (B1 pattern reproduced). B3 (vs trained defenders, `_b3.py`) queued
+until the Mac frees; not part of this verdict.
+
+**R3 (1e) verdict: C1 FAIL stands in both modes; the 1e model-reversal sentence is
+REVISED.** Off: llama median 17% of ceiling / best 36%, qwen 19% / 36%; on (rider): 29% /
+42%. C1 (>= 60%) fails everywhere; C2 passes (best 0.0099-0.0115 vs random 0.0055,
+1.8-2.1x). The defective brief had hurt llama far more than qwen (banked 3% vs 26%
+medians; corrected 17% vs 19%, near parity), so the banked "qwen far better here" 1e
+reversal claim is RETIRED; what survives of it is the free-lane gap (llama 5.5 vs qwen
+0.0) and step 2's clean, opposite ordering. New honest caveat: at the MEDIAN both models
+sit at or below the random draw (0.0047/0.0053 vs 0.0055); the choosing signal lives in
+best-of-N.
+
+**R4 (rider) verdict: the probe's conclusions REPRODUCE on the corrected brief.** T1 FAIL
+(median 0.0082 vs bar 0.0107; a 1.55x gain over like-for-like off), T2 FAIL (29% vs 60%),
+T3 PASS (grounding 100%), C2 PASS. The substitutes structure reproduces cleanly:
+thinking-on round 0 already sits at 29%, exactly where thinking-off arrives only AFTER its
+feedback round (5% -> 29% for qwen), and feedback then adds nothing to the thinking arm
+(29% -> 23%). Deliberation and feedback are substitutes; an order of magnitude more
+reasoning still does not close the search gap.
+
+**R5 and the arc sentence.** Nothing outside 1c/1d/1e moves. The diagnostic chain is now
+citable FROM THE CORRECTED ARTEFACTS ONLY, and its final form is: briefing moves the
+number but cannot close the gap (1c), grounding of verbal choices onto geometry is ~12%
+and unimproved by truthful physics (1d), a readable catalogue fixes grounding to 91-100%
+yet both models stop at 17-29% of the ceiling with feedback and thinking as substitutes
+(1e + rider): **what remains is combinatorial search, and the fix is architectural**,
+re-established on honest ground and now carrying its first real stress test (the thinking
+probe) with it.
