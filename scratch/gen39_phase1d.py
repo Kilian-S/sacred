@@ -221,7 +221,7 @@ def main():
     base, terr, sc = narva_base()
     schema = force_schema(terr)
     system, user0 = serialise_theatre(base.th, phase="coordinated", K=K,
-                                      range_scale=sc * 0.7, terrain=None)
+                                      range_scale=sc * 0.7, terrain=terr)
     user0 += GROUND_CLAUSE
     (OUTDIR / "brief_phase1d.txt").write_text(system + "\n\n---\n\n" + user0)
 
@@ -240,7 +240,8 @@ def main():
                     obj = g33._extract_json(txt)
                     if not g33.validate_force(obj) and len(obj.get("agents", [])) == K:
                         return key, obj
-                except Exception:                                      # noqa: BLE001
+                except Exception as e:                                 # noqa: BLE001
+                    print(f"  [1d call FAILED] {key}: {type(e).__name__}: {e}", flush=True)
                     continue
             return key, None
         with ThreadPoolExecutor(max_workers=8) as ex:

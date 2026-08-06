@@ -57,9 +57,9 @@ ground the flight has to cross, not merely ambush from hiding. State in each rat
 team still hurts once it is known."""
 
 
-def brief(base_th, scale, extra=""):
+def brief(base_th, scale, extra="", terrain=None):
     system, user = serialise_theatre(base_th, phase="coordinated", K=K, range_scale=scale,
-                                     terrain=None)
+                                     terrain=terrain)
     return system, user + extra
 
 
@@ -103,7 +103,7 @@ def cover_share(force):
 
 
 def run_robust(base, th, sc):
-    system, user = brief(th, sc, ROBUST_CLAUSE.format(k=K))
+    system, user = brief(th, sc, ROBUST_CLAUSE.format(k=K), terrain=base.terrain)
     (OUTDIR / "brief_robust.txt").write_text(system + "\n\n---\n\n" + user)
     schema = force_schema(base.terrain)
     recs = []
@@ -129,7 +129,7 @@ def run_robust(base, th, sc):
 def run_iter(base, th, sc):
     """Three rounds of compose -> exact score -> feedback -> revise, per model."""
     schema = force_schema(base.terrain)
-    system, user0 = brief(th, sc)
+    system, user0 = brief(th, sc, terrain=base.terrain)
     history = []
     live = {}
     for m in MODELS:

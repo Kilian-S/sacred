@@ -1472,3 +1472,106 @@ narva (range_scale = 2.27 x 0.7): open 5.6 km / 0.90; field 4.0 km / 0.85; fores
 (Kilian: all four maps in the act).** The lethality-raise question DISSOLVES: the pinned table
 stands (0.70/0.90 rows remain measured context in the cost table and the screen grid). The two
 earlier voided kgd pins remain visible above with their void reasons.
+
+### 2026-08-06 SESSION: MODEL IDENTITY, THE UNRECORDED THINKING PROBE, THE v1-BRIEF DEFECT
+### IN PHASES 1C/1D/1E, AND THE PRE-REGISTERED REPAIR RE-RUN (disclosures first; bars fixed
+### BEFORE the re-run fires; nothing banked outside 1c/1d/1e changes regardless of outcome)
+
+**1. Model identity (binding for every per-model table and the thesis AI acknowledgement).**
+The model served as `qwen3-27b` is **Qwen3.6-27B**, established on four independent lines on
+the box (models.json repo field, live process command line, gateway `/v1/models`, quantiser
+`base_model` declaration). Caveat: Qwen3.5-27B and Qwen3.6-27B carry byte-identical
+architecture configs, so identity rests on repo metadata. All thesis text names Qwen3.6-27B
+(served alias `qwen3-27b`). The pair is also vintage-asymmetric (Llama 3.3 late 2024 vs
+Qwen3.6 2026), which sharpens the reversal finding (the older, benchmark-weaker model leads
+at composition) and is disclosed beside any cross-model sentence.
+
+**2. Thinking mode (binding qualifier).** The box's audit log records the thinking flag per
+call: all 213 banked qwen calls of this arc (22-27 July) ran `off(default)`. Mechanism:
+`gen39_compose.py` pins the gateway, the shared caller never sets `chat_template_kwargs`, and
+the gateway injects `enable_thinking: false` where the model default is off. Every banked
+qwen number in this ledger is therefore NON-THINKING mode; llama has no reasoning mode ("on"
+in its audit column means "not overridden"). Wording rule: qwen claims carry "non-thinking
+mode" unless a corrected-brief thinking row says otherwise.
+
+**3. The dead endpoint and the false zero (process disclosure + harness repair).** The pinned
+raw-IP gateway URL (`gen39_compose.py:57`, imported by eight gen39 scripts) went dead for
+Python callers (IPv4 works, default resolution times out), and the first thinking-probe
+attempt reported a CLEAN n=0 because `one()` in 1d/1e swallows every exception
+(`except Exception: continue`), so a dead endpoint was indistinguishable from a model that
+produced nothing usable. REPAIRED 2026-08-06: the pin now uses the MagicDNS name
+(`http://cv-iits-w05.tail5b8d80.ts.net:8080/v1`) and the 1d/1e handlers print the exception
+class and message before retrying. Process rule earned: an n=0 or None-heavy LLM result is a
+TRANSPORT question before it is a capability reading.
+
+**4. The thinking-on probe (2026-08-06, pre-registered in-session BEFORE spend; script
+`scratch/gen39_phase1e_thinking.py`; artefacts `models/runs/gen39_phase1e_thinking*.json`).**
+Instrument identical to Phase 1e (same 11 slots, same catalogue, ceiling 0.0278), qwen only,
+n=8, `chat_template_kwargs.enable_thinking=true`, max_tokens 8000 (forced co-change,
+documented in the script). Against the pre-registered bars: T1 materiality (median >= 0.0107)
+FAIL at 0.0094 (a 1.31x gain over the banked 0.0071); T2 (>= 60% of ceiling) FAIL at 34%;
+T3 grounding (>= 80%) PASS at 100% (from 92%); C2 (best beats random) PASS. Cost 9-10x the
+generation budget (median 6,827 completion tokens vs 456-788; ~125 s vs ~24 s per call; all
+8 calls finish_reason=stop, longest 7,578 of the 8,000 cap). Structural reading: thinking-on
+moves 32% -> 34% across the feedback round while thinking-off moves 19% -> 28%, so
+deliberation and feedback act as SUBSTITUTES; an order of magnitude more reasoning did not
+close the residual gap, supporting 1e's "what remains is combinatorial search". CAVEAT: the
+probe ran on the defective brief of item 5; every probe conclusion is PROVISIONAL until the
+repair below re-establishes it.
+
+**5. THE v1-BRIEF DEFECT (the session's largest finding).** `serialise_theatre` defaults
+`terrain=None` to the v1 table (its documented gen33-compat behaviour); Phases 1c
+(`gen39_phase1c.py:62`), 1d (`gen39_phase1d.py:224`) and 1e (`gen39_phase1e.py:198`) all
+called it with `terrain=None` while every scorer uses the v2 table
+(`terrain_v2(hidden_leth=1.0, conceal_reach=0.85)`). The brief therefore misstated every
+terrain class (forest briefed r=1.2/p=0.92 and position-REVEALING vs the true r=1.5/p=0.55
+and CONCEALED; urban briefed non-emplaceable vs truly emplaceable), and because v1 rows carry
+no `reveal` key the prose declared every class revealing: the concealment mechanic this
+generation exists to study was ABSENT from the prompt. In 1e the defective physics table sat
+beside the CORRECT slot catalogue in one prompt (an internal contradiction). Blast radius,
+measured from the audit log's distinguishable system prompts: 167 calls (85 llama, 82 qwen),
+confined to 1c/1d/1e. CLEAN by construction: step 2 (passes `terrain=table`, relabel control
+included), 1f, step 5, freegate and the zero-shot rows (catalogue/digest path), and 1c's
+curated arm (re-ranks the clean step-2/1b population). Measured consequences on the banked
+diagnostic chain: no model in either thinking mode ever chose an urban slot (0/24 forces)
+though urban sits in the ceiling-defining optimal combination; the reported 1e ceiling 0.0278
+was reachable only at 0.0236 (85%) by a brief-compliant model; rescored against the reachable
+ceiling the probe reads 40% median / 73% best (thinking-on), 30% / 48% (off), llama 3% / 26%;
+and the banked thinking-off median 0.0071 sits marginally BELOW an urban-free random draw
+(0.0074), so 1e's "genuinely choosing" clause survives on best-of-8 only (1.53x) pending the
+repair. SUPERSEDED PENDING REPAIR: 1c's "capability boundary rather than briefing failure",
+1d's grounding 12-40%, 1e's C1 14% / 41% and the "what remains is combinatorial search"
+attribution. UNTOUCHED: every banked step-2, 1f, step-5 and zero-shot claim.
+
+### PRE-REGISTERED REPAIR RE-RUN (2026-08-06, bars fixed HERE before any call fires; runner
+### `scratch/gen39_repair_rerun.sh`; defective originals preserved as `*_v1brief.*`)
+
+**The fix (committed this session):** the three call sites pass the live v2 instance (`terr`
+/ `base.terrain` from `narva_base()`); endpoint and fail-loud repairs per item 3. Instrument
+otherwise UNCHANGED (same models, counts, temperature, catalogue and ceiling machinery):
+like-for-like with the banked runs, qwen thinking OFF, so the brief is the only moved
+variable. Corrected artefacts land at the standard paths.
+
+**Arms:** 1c `--robust --iter --curated` (curated re-ranks unchanged clean inputs, a
+consistency row); 1d `--rounds 6 --n 3`; 1e `--n 4 --rounds 2`; then the 1e thinking-on
+rider (qwen, n=8) unmodified on the corrected brief.
+
+**Reading rules, both branches pre-committed:**
+- R1 (1c). Bars unchanged (irreducible-threat bar 0.0215). If the corrected-brief robust and
+  iterative arms move materially toward the bar, the banked "briefing was never the problem"
+  reading is RETRACTED and rewritten; if they stay short, it survives WITH the defect
+  disclosed. Phase 2 stays not-run unless an arm reaches the bar (the original binding
+  consequence re-applies).
+- R2 (1d). Grounding re-measured; the 12-40% figure is superseded by the corrected number in
+  either direction; the B1/B2/B3 bars are unchanged.
+- R3 (1e). Same 165-combination ceiling machinery; C1 (60%) and C2 bars unchanged; BOTH
+  ceiling bases reported (0.0278 is now compliant-reachable); urban-slot uptake reported
+  (0/24 was the defect's fingerprint).
+- R4 (rider). T1-T3/C2 re-judged at the same bars; the substitutes reading either reproduces
+  on the corrected brief or is downgraded to unconfirmed.
+- R5. No claim outside 1c/1d/1e changes regardless; the thesis may cite the diagnostic chain
+  (including "what remains is combinatorial search") ONLY from the corrected run.
+
+**Cost estimate:** ~86 nominal thinking-off calls + 8 thinking-on; GPU ~40-70 min summed;
+Mac-side exact scoring interleaved (runs beside the gen41 Act-2 batch; transient spawn pools,
+thread caps exported by the runner).
