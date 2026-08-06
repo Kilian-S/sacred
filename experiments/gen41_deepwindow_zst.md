@@ -209,6 +209,40 @@ train = test = that instance), eval cadence 500 at 400/400.
 Only a PASS unlocks the 24-instance transfer act (whose full bars will be finalised then,
 Tier-2 w=3 rows included).
 
+### GATE 2 RESULT (2026-08-06, Kilian-launched, 3 seeds x 8,000 sorties): **PASS 3/3**
+
+Best-checkpoint ratio-to-cap 0.526 / 0.511 / 0.499 (bar 0.645, needed 2/3; the 0.50
+STRETCH touched by seed 2 and near-touched by seed 1); beats-cap 1/1 every seed; mild
+drift (finals 0.511-0.570); select-on-test agrees (0.496-0.526). The trained weights
+reproduce the certified mechanism plus a refinement (freq -23, vuln -4). The rung
+collected most of the certified headroom (class ceiling 0.42 on this instance).
+
+### TIER-2 ROWS AT w=3 (2026-08-06, oracle/sim per the binding definitions; artefact
+### `tier2_rows_w3.json`): pooled ratios-to-cap EXP3-menu 0.984, EXP3-core 1.032,
+### avoid-where-ambushed 1.299, **self-tuned composed 0.822 (the binding Tier-2 gate)**.
+
+## ACT 2 TRANSFER BARS (BINDING AT LAUNCH; both gates passed; Kilian launches per the
+## standing workflow)
+
+Config identical to the Act-1 batch except `--window 3` (pool file, K=2, kx=12, 12,000
+sorties, eval 500 at 250/600, seeds {0,1,2} + no-window control, select-on-train,
+high-precision final pass at 20,000 sorties per held-out instance).
+
+> **PRIMARY: at the select-on-train checkpoint, held-out pooled mean ratio-to-cap
+> (i) beats the cap on >= 4/6 ODs, (ii) is below every Tier-0 pooled value (corridor
+> rotation 1.006; full-menu rotation per the Gate-1 artefact), and (iii) is below every
+> Tier-2 pooled value, binding member the self-tuned composed at 0.822; all on >= 2/3
+> seeds. STRONG: pooled below the Tier-1 composed family's 0.656 AND beats it on >= 4/6
+> instances (the sentence Act 3 of the thesis currently cannot say). REPORTED, never
+> gating: the witness rule at 0.478 (the class ceiling; matching it is the discovery
+> claim), the extended rotation, worst-case one-shot row, final-iterate drift.
+> CAUSAL CONTROL: the no-window arm lands ~1.0x cap.**
+
+Launch command (Kilian; verify nice values via the trailing check):
+```bash
+mkdir -p models/runs/gen41_act2 && for S in 0 1 2; do OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. nohup .venv/bin/python scripts/train_dyn_generalist.py --pool-file models/runs/gen41_pool.json --K 2 --k-extra 12 --window 3 --fast-refs --sorties 12000 --eval-every 500 --eval-n 600 --eval-n-train 250 --seed $S --threads 2 --json-out models/runs/gen41_act2/seed$S.json --ckpt-dir models/runs/gen41_act2/seed${S}_ckpts > models/runs/gen41_act2/seed$S.log 2>&1 & done; OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. nohup .venv/bin/python scripts/train_dyn_generalist.py --pool-file models/runs/gen41_pool.json --K 2 --k-extra 12 --window 3 --fast-refs --sorties 12000 --eval-every 500 --eval-n 600 --eval-n-train 250 --no-window --seed 0 --threads 2 --json-out models/runs/gen41_act2/seed0_nowin.json --ckpt-dir models/runs/gen41_act2/seed0_nowin_ckpts > models/runs/gen41_act2/seed0_nowin.log 2>&1 & sleep 5; ps -o pid,nice -p $(pgrep -f train_dyn_generalist | tr '\n' ',' | sed 's/,$//')
+```
+
 ### FINAL RESULT (2026-08-06; batch completed overnight; high-precision pass 20,000
 ### rollout sorties per held-out instance at the select-on-train checkpoint;
 ### artefacts `final_eval_seed{0,1,2,0_nowin}.json`, `tier2_rows.json`)

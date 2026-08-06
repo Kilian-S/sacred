@@ -12,7 +12,7 @@ against the w=6 enemy (chain over max(w',6)-window corridor states), best w' tak
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
      scratch/gen41_tier2_rows.py
-Writes models/runs/gen41_deepwindow/tier2_rows.json
+Writes models/runs/gen41_deepwindow/tier2_rows_w%d.json" % W if True else "
 """
 from __future__ import annotations
 
@@ -27,7 +27,9 @@ from scripts.train_dyn_generalist import load_pool_file, prep_instance
 from scratch.critique_followup_probes import disjoint_subset
 
 torch.set_num_threads(1)
-W, TAU, K, KX, N, BAND = 6, 0.15, 2, 12, 3, (0.15, 0.95)
+import sys
+W = int(sys.argv[1]) if len(sys.argv) > 1 else 6
+TAU, K, KX, N, BAND = 0.15, 2, 12, 3, (0.15, 0.95)
 T, TAIL, REPS = 12_000, 2_000, 5
 
 
@@ -173,7 +175,7 @@ def main():
               for k in ("exp3_menu_tail", "exp3_core_tail", "avoid_best_h_tail",
                         "composed_selftuned")}
     print("pooled ratios-to-cap:", {k: round(v, 3) for k, v in pooled.items()}, flush=True)
-    with open("models/runs/gen41_deepwindow/tier2_rows.json", "w") as f:
+    with open("models/runs/gen41_deepwindow/tier2_rows_w%d.json" % W, "w") as f:
         json.dump(dict(rows=out, pooled=pooled), f, indent=1)
     print("wrote tier2_rows.json", flush=True)
 
