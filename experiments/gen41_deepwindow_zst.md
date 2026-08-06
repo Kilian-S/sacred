@@ -142,6 +142,73 @@ repaired. Tier-2 rows are already banked (`tier2_rows.json`): pooled ratios-to-c
 binding Tier-2 value). Final evaluation runs after Kilian orders the resume and the batch
 completes.
 
+## ACT 2 (design revision, same generation per Kilian 2026-08-06): the w=3, K=2
+## padding-channel act, GATED. Gate 1 pre-registered here BEFORE any gate CPU.
+
+**Revised operating point:** w=3 (back inside the proven band, where the frequency channel
+demonstrably carries), K=2, kx=12, m=3, same 24 reviewed pools, tau 0.15, N=3. Rationale
+recorded in-session: at (m=3, w=3, K=2) the corridor-locked class is structurally capped
+~1.2x the true optimum (the gen40 padding channel, 14-21%), the true full-menu optimum is
+exactly computable (Karp on R^3), and the winning mechanism is frequency-expressible,
+unlike the w=6 cell that failed. NOTHING TRAINS unless Gate 1 and then the single-instance
+rung (Gate 2) pass.
+
+**GATE 1, the representability certificate (oracle-only, all exact or exact-valued
+witnesses).** Per instance at (w=3, K=2): the full-menu exact optimum (Karp), the
+corridor-restricted optimum, the exact iid_eq, and the complete w=3 rule family re-measured
+(rotation, composed anti-repeat at w' in {1,2,3,4} exact, extended rotation, full-menu
+rotation, statics). Then two witnesses whose values are EXACT (deterministic policies,
+cycle-walk evaluation, multi-start): (a) the LINEAR-FEATURE witness, argmax policies over
+the head's own per-route features [normalised cost, normalised worst-vulnerability,
+window-frequency] on a theta grid with local refinement, a certified SUBSET of the trained
+architecture's policy class; (b) the COUNT-CLASS witness, coordinate descent over
+count-signature-conditioned policies seeded from the exact optimal policy's projection and
+from (a), an upper envelope of the frequency-conditioned family. Disclosed scope: (a)
+proves expressibility inside the architecture; (b) bounds what any frequency-reading
+policy could reach; neither is a training guarantee, both are existence certificates.
+
+> **GATE 1 BARS (binding before results): PASS = the linear-feature witness value beats
+> the best composed-rule variant (w' in {1,2,3,4}) on >= 4/6 held-out instances AND >= 12/18
+> training instances, AND its pooled held-out ratio-to-cap is below the composed family's
+> pooled best. FAIL = the current feature language cannot win at this cell either; the
+> recorded consequence is redirect-to-feature-design, no training anywhere.** The
+> count-class witness and the full-menu optimum are reported beside, never gating.
+
+Script `scratch/gen41_repr_gate.py`; artefact `models/runs/gen41_repr_gate.json`.
+
+### GATE 1 RESULT (2026-08-06, 66 s, oracle-only): **PASS on every clause, 6/6 held-out
+### and 18/18 train**
+
+Pooled held-out ratios-to-cap: full-menu exact optimum **0.439**; count-class witness
+**0.441** (attains the optimum to <1% on every instance: at w=3 frequency information
+SUFFICES); linear-feature witness **0.478** (within ~9% of the optimum everywhere);
+composed-rule family best 0.656; corridor rotation 0.99-1.03. The winning linear weights
+are nearly universal, (cost 0, vuln 0, freq -40) on 19/24 instances: pure
+frequency-avoidance over the FULL menu, exactly the weight the architecture trains, now
+certified to carry the win at this operating point (the precise inversion of the w=6
+channel-content failure).
+
+**Consequences, binding.** (i) The win exists inside the architecture's certified feature
+subset with a 27% pooled margin over the best told rule; training the act is justified.
+(ii) The witness doubles as a NEW two-line rule (in effect a rotation over the corridors
+plus the safest padded route, staying outside the w-window; requires knowing w, hence
+Tier 1): it enters the act's Tier-1 REPORTED family at its measured values (held-out
+pooled 0.478x cap) per baseline completeness, and the act's PRIMARY still gates on Tiers
+0 and 2 only (the like-with-like structure Kilian approved). (iii) Tier-2 adaptive rows
+must be RE-MEASURED at (w=3, K=2) before the act's verdict (the banked values are w=6).
+
+### GATE 2 (pre-registered; the single-instance rung; Kilian launches per the standing
+### workflow)
+
+One training-city instance (kaliningrad 23-242, the reference), 3 seeds, 8,000 sorties,
+gen41 trainer flags with a single-instance pool file (`models/runs/gen41_rung_pool.json`,
+train = test = that instance), eval cadence 500 at 400/400.
+> **BARS: PASS = best-checkpoint ratio-to-cap <= 0.645 (the composed family's value on
+> this instance) on >= 2/3 seeds. STRETCH (reported): <= 0.50 (near the witness/class
+> ceiling). FAIL = the rung result becomes the recorded boundary; no transfer act.**
+Only a PASS unlocks the 24-instance transfer act (whose full bars will be finalised then,
+Tier-2 w=3 rows included).
+
 ### FINAL RESULT (2026-08-06; batch completed overnight; high-precision pass 20,000
 ### rollout sorties per held-out instance at the select-on-train checkpoint;
 ### artefacts `final_eval_seed{0,1,2,0_nowin}.json`, `tier2_rows.json`)
