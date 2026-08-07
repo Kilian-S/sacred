@@ -23,7 +23,7 @@ RUNGS=(
 
 wait_ready() {  # $1 port; up to 20 min
   for i in $(seq 1 120); do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer iits-local-key" \
+    code=$(curl -m 8 -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer iits-local-key" \
       "http://$HOSTN:$1/v1/models" 2>/dev/null || echo 000)
     [ "$code" = "200" ] && return 0
     sleep 10
