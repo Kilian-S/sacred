@@ -268,6 +268,11 @@ def _route_head_terms(net: nn.Module, logits: torch.Tensor, action_mask_indices)
     fw = getattr(net, "route_feat_w", None)
     if feats is not None and fw is not None:
         idx = torch.as_tensor(list(action_mask_indices), dtype=torch.long, device=logits.device)
+        if getattr(net, "head_only", False):
+            # gen41 ACT 3 doctrine-head arm: the policy class is the feature head ALONE (the
+            # encoder pathway is masked from the route scores). Attribute-gated: absent
+            # attribute = byte-identical behaviour, like every term above.
+            logits = torch.zeros_like(logits)
         logits = logits + feats[idx] @ fw
     bias = getattr(net, "route_bias", None)
     if bias is not None:

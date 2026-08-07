@@ -173,6 +173,9 @@ def main():
     p.add_argument("--interception-loss", type=float, default=10.0)
     p.add_argument("--head-term-lr", type=float, default=3e-2); p.add_argument("--threads", type=int, default=3)
     p.add_argument("--no-window", action="store_true", help="causal control: window feature zeroed")
+    p.add_argument("--head-only", action="store_true",
+                   help="gen41 ACT 3 doctrine-head arm: actor scores routes by the feature "
+                        "head alone (encoder pathway masked; attribute-gated in networks)")
     p.add_argument("--json-out", default=""); p.add_argument("--ckpt-dir", default="")
     args = p.parse_args()
     torch.set_num_threads(args.threads); torch.manual_seed(args.seed); np.random.seed(args.seed)
@@ -208,6 +211,8 @@ def main():
     prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w], "lr": args.head_term_lr})
     prot.critic_optimizer.add_param_group(
         {"params": [prot.q1.route_feat_w, prot.q2.route_feat_w], "lr": args.head_term_lr})
+    if args.head_only:
+        prot.actor.head_only = True
 
     hist = []
     k = 0
@@ -268,6 +273,7 @@ def main():
         Path(args.json_out).write_text(json.dumps(
             {"seed": args.seed, "no_window": args.no_window, "w": w, "tau": tau,
              "K": args.K, "k_extra": args.k_extra, "pool_file": args.pool_file,
+             "head_only": args.head_only,
              "train_refs": [{"city": it.city, "od": it.od,
                              **{kk: float(it.refs[kk]) for kk in
                                 ("static_det", "iid_eq", "history_opt", "opt_core", "v_eq")

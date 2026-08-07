@@ -238,6 +238,41 @@ high-precision final pass at 20,000 sorties per held-out instance).
 > claim), the extended rotation, worst-case one-shot row, final-iterate drift.
 > CAUSAL CONTROL: the no-window arm lands ~1.0x cap.**
 
+## ACT 3 (pre-registered 2026-08-07 BEFORE any prep CPU; Kilian's go: "option C, do your
+## prep, doctrine-head rung, then launch C autonomously if the smokes align")
+
+**The arm.** The DOCTRINE-HEAD policy: the identical trainer with the actor's encoder
+pathway masked from the route scores (`--head-only`, attribute-gated in
+`_route_head_terms`, absent = byte-identical; critics keep full capacity). Its policy
+class IS the Gate-1 witness class, whose universal weights transfer at 0.478x cap by
+construction; Act 2 isolated instance-tuned encoder variants as the transfer failure, and
+this arm removes that pathway. Suite after the change: **167 passed** (raw tail pasted
+in-session 2026-08-07).
+
+**Pool expansion (rules binding before the screen runs).** Train pool grows to 12
+instances per city across FOUR cities (kaliningrad, east_london, istanbul from the
+original screen's ranked passers; kyiv freshly screened with the same menu rules, m=3
+core at kx=12, R in [13,15], one-shot value >= 0.05). Every new instance must pass the
+w=3, K=2 requirements: best composed-family value / full-menu exact optimum >= 1.35 AND
+min static / optimum >= 1.8. Gdansk test pool UNCHANGED (the six reviewed instances).
+Contact sheets rendered for Kilian's asynchronous review; the batch does not block on it
+per his delegation.
+
+**Doctrine-head rung (kaliningrad 23-242, 3 seeds, 8,000 sorties, `--head-only`).
+ALIGNMENT CONDITION for the autonomous C launch: best-checkpoint ratio-to-cap <= 0.60 on
+>= 2/3 seeds (witness on this instance 0.42; the full-net rung reached 0.50-0.53) AND the
+frequency weight trained strongly negative. Missed = no launch, report only.**
+
+**The C batch (launches autonomously on alignment).** 3 doctrine-head seeds + 1 causal
+control (`--head-only --no-window`), 48 train + 6 test instances, 24,000 sorties,
+eval-every 1,000 at 150/600 (selection only; high-precision final pass unchanged at
+20,000), threads 2, pools capped. **BARS, identical in structure to Act 2's and judged the
+same way: PRIMARY = cap-beats >= 4/6 AND pooled below every Tier-0 row AND below every
+Tier-2 row (binding 0.822), on >= 2/3 seeds; STRONG = pooled below the composed family's
+0.656 AND beats it on >= 4/6 instances; the witness 0.478 stays the reported ceiling;
+control lands ~1.0x cap.** Scripts: pool builder `scratch/gen41_pool_v2.py`; artefacts
+`models/runs/gen41_pool_v2.json`, run dir `models/runs/gen41_act3/`.
+
 ### ACT 2 TRANSFER RESULT (2026-08-07; Kilian-launched batch, completed overnight;
 ### high-precision pass 20,000 sorties per held-out instance; artefacts
 ### `models/runs/gen41_act2/final_eval_seed*.json`)
