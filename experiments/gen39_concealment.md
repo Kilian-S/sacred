@@ -1603,8 +1603,10 @@ per-round medians 11-18%, overall median 12% (individuals 0-100%, 4 None). The b
 "12-40%" becomes "~12% median, UNCHANGED by correcting the physics prose": the model's
 inability to predict the geometric consequences of its own verbal choices is not a
 briefing artefact. Irreducible threat 6% -> 11% of bar over six rounds (no approach); free
-lanes fall 6.0 -> 0.0 (B1 pattern reproduced). B3 (vs trained defenders, `_b3.py`) queued
-until the Mac frees; not part of this verdict.
+lanes fall 6.0 -> 0.0 (B1 pattern reproduced). B3 (vs trained defenders, `_b3.py`, run
+2026-08-07 morning on the corrected forces, log `gen39_phase1d_b3_repair.log`): FAIL
+stands, evolved pooled 0.0829 vs heuristic 0.1650 (0.50x; banked 0.55x), round-0 0.0699,
+beats the heuristic on 3/6 fields (banked 2/6); feedback still leaves B3 unmoved.
 
 **R3 (1e) verdict: C1 FAIL stands in both modes; the 1e model-reversal sentence is
 REVISED.** Off: llama median 17% of ceiling / best 36%, qwen 19% / 36%; on (rider): 29% /

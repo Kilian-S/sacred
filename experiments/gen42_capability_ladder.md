@@ -85,7 +85,8 @@ is a per-request flag). All swaps are performed by the Opus stagehand agent unde
 checklists; every step additive and reversible; `nvidia-smi` is broken box-wide (NVML
 skew), VRAM telemetry via `torch.cuda.mem_get_info`.
 
-Artefacts: `models/runs/gen42_ladder/<rung>/{compose,slot,eff}.json` + a consolidated
+Artefacts: `models/runs/gen42_ladder/<rung>/{comp,slot,eff}.json` (naming reconciled to the
+driver 2026-08-07, before any battery result existed) + a consolidated
 `models/runs/gen42_ladder/ladder.json`; battery driver `scratch/gen42_battery.py` (wraps
 the three gen39 harnesses with MODELS/OUT rebound per rung, the phase1e_thinking pattern;
 committed before the first battery call).
