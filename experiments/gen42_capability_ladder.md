@@ -113,7 +113,8 @@ committed before the first battery call).
 | B-EFF llm at 8 / 16 / 96 evals | 0.0352 / 0.0352 / 0.0442 | 0.0365 / 0.0365 / 0.0428 |
 | B-EFF baselines | random/greedy/local reproduce the banked curves EXACTLY (seeded) | same |
 
-**Flags, disclosed before any cross-rung reading.** (i) The e1 medians are the compose
+**Flags, disclosed before any cross-rung reading.** *(kept in place; see the full-ladder
+section below for the readings)* (i) The e1 medians are the compose
 scorer's vs-searcher column aggregated median-of-field-medians; this is NOT the banked
 step-2 headline aggregation (which used the best-simple-defender construction and read
 0.0747/0.0613), so the consolidation step must recompute the banked aggregation per rung
@@ -127,3 +128,58 @@ cite one sample. (iv) Thinking mode makes the crown COMPLY with the declaration 
 (5/8 vs 0-2/8 in every off-mode run; grounding 100% where parsable), a per-mode interface
 fact banked beside the scores. (v) Thinking's B-COMP validity dropped to 12/16, exactly
 at bar.
+
+### RUNGS 1-4 + THE LADDER READINGS (2026-08-07; runner take 3 + the supervisor's ops
+### driver; ladder wall clock 10:57-12:04, box restored and verified 12:36; ops record
+### `models/runs/gen42_ladder/OPS_REPORT.md`; zero battery-phase failures)
+
+Per-rung rows (same battery, same corrected-brief instruments; validity bars applied):
+
+| row | 2B | 4B | 9B | 27B (3.5) | crown 3.6 off | crown 3.6 on |
+|---|---|---|---|---|---|---|
+| B-COMP valid llm / relabel (bar 12/16) | **11 / 8 FORMAT-LIMITED** | 16 / 16 | 16 / 16 | 16 / 16 | 16 / 16 | 12 / 13 |
+| B-COMP med e1 llm (vs-searcher) | (0.0922) | 0.0756 | 0.0618 | 0.0726 | 0.0739 | 0.0904 |
+| B-COMP med e0 llm / relabel | (0.0002/0.0032) | 0.0001/0.0011 | 0.0001/0.0000 | 0.0002/0.0002 | 0.0009/0.0003 | 0.0012/0.0005 |
+| B-SLOT valid n (bar 6/8) | **5 FORMAT-LIMITED** | 8 | 7 | 8 | 8 | 8 |
+| B-SLOT median (% of 0.0278 ceiling) | (3%) | 3% | 6% | **15%** | 14% | 14% |
+| B-SLOT best | (47%) | 14% | 22% | 62% | 45% | 46% |
+| B-SLOT declarations / urban forces | 1/8 / 0 | 0/8 / 1 | 0/8 / 4 | 1/8 / 0 | 0/8 / 0 | 5/8 / 1 |
+| B-EFF llm at 8 / 16 / 96 | .0359/.0359/.0364 | .0394/.0394/.0426 | .0193/.0341/.0433 | .0280/.0384/.0479 | .0352/.0352/.0442 | .0365/.0365/.0428 |
+
+**Reading (i), monotonicity in size (valid 3.5 rungs).** B-SLOT climbs monotonically,
+3% -> 6% -> 15% of ceiling (4B -> 9B -> 27B), and B-EFF at the full budget climbs
+monotonically across all four rungs (0.0364 -> 0.0426 -> 0.0433 -> 0.0479). B-COMP is
+NON-monotone, a flat 0.062-0.090 band from 4B to the crown: composition quality does not
+track parameter count in this family. The 2B is FORMAT-LIMITED on both gated phases (the
+smallest rung fails at output discipline before capability can be read).
+
+**Reading (ii), generation vs size at fixed 27B (both thinking off).** Scores are flat
+across the generation step: slot 15% -> 14%, comp e1 0.0726 -> 0.0739, eff@96 0.0479 ->
+0.0442. The generation shows up in CONTROL behaviour instead: the relabel collapse on the
+irreducible metric appears ONLY at the crown (3.6: 3.0x off / 2.4x on; 3.5-27B: none,
+0.0002/0.0002), and thinking-mode format compliance exists only in 3.6. Suggestive, not
+gating: e0 magnitudes are small and the banked step-2 aggregation recomputation (the
+standing flag) must precede any terrain-grounding sentence.
+
+**Reading (iii), the register contrast.** The search-bound register (B-SLOT) climbs with
+size yet stays FAR below its 60% bar everywhere, topping out at 15% median (best single
+force 62% at 27B); no rung, mode or generation approaches the ceiling. The where-LLMs-help
+map's core prediction survives the whole family: scale buys a shallow gradient in the
+search-bound register, not a crossing. Composition, the register LLMs won in gen39, is
+already saturated-flat by 4B. Off-ladder reference: corrected-brief llama-3.3-70b sits at
+17% median on B-SLOT, i.e. the 2024 cross-family 70B lands where the 2026 27Bs land.
+
+**Compliance row (per the amended bar 2):** INTENDED_ROUTES declarations 1/0/0/1 of 8
+across the 3.5 family and 0/8 crown-off: every off-mode cell is PARSE-LIMITED for
+grounding; crown-on (5/8, grounding 100%) remains the only readable cell.
+
+**Ops disclosure (analysis-relevant facts from OPS_REPORT.md).** Rung calls went
+direct-to-port with per-call traces banked (`calls_*.json`) in lieu of the gateway audit
+log. A stale duplicate 2B server on :8005 was removed BEFORE any battery request, so no
+measurement saw split traffic. Three defects in `scratch/gen42_run_rungs.sh` are recorded
+as KNOWN (mount-ssh blocks on healthy starts; pidfile captures the wrapper, not vllm;
+`start.sh`'s 300s health timeout skips the gateway when a big model loads slowly), the
+run was completed by the supervisor's ops driver (`gen42_ops_driver.sh`, archived beside
+the logs) with byte-identical serve flags and battery invocations; fix before any reuse.
+Box end state verified: gateway, llama and qwen all serving, rung ports clear, no sudo,
+no other user's process touched.
