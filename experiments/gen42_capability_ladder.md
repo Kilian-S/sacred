@@ -97,3 +97,33 @@ the three gen39 harnesses with MODELS/OUT rebound per rung, the phase1e_thinking
 committed before the first battery call).
 
 ## RESULTS (appended per rung; nothing above changes after results exist)
+
+### RUNGS 5a/5b, THE CROWN (2026-08-07 morning; Qwen3.6-27B resident, thinking off then on;
+### driver `scratch/gen42_battery.py`; artefacts `models/runs/gen42_ladder/qwen3-27b[_think]/`;
+### off arm 8 min, on arm ~34 min; no phase failures)
+
+| row | crown OFF | crown ON |
+|---|---|---|
+| B-COMP valid forces (bar >= 12/16 per arm) | 16/16 + 16/16 relabel | 12/16 + 13/16 relabel |
+| B-COMP med irreducible (e0) llm / relabel | 0.0009 / 0.0003 (3.0x collapse) | 0.0012 / 0.0005 (2.4x) |
+| B-COMP med vs-searcher (e1) llm / relabel | 0.0739 / 0.0896 (no collapse) | 0.0904 / 0.0918 (no collapse) |
+| B-SLOT median (% of 0.0278 ceiling) | 0.0038 (14%) | 0.0040 (14%) |
+| B-SLOT best / round trajectory | 0.0126 (45%); r0 28% -> r1 7% | 0.0127 (46%); r0 14% -> r1 23% |
+| B-SLOT declarations parsed / urban uptake | 0/8 (PARSE-LIMITED) / 0/8 | 5/8 (grounding 100%) / 1/8 |
+| B-EFF llm at 8 / 16 / 96 evals | 0.0352 / 0.0352 / 0.0442 | 0.0365 / 0.0365 / 0.0428 |
+| B-EFF baselines | random/greedy/local reproduce the banked curves EXACTLY (seeded) | same |
+
+**Flags, disclosed before any cross-rung reading.** (i) The e1 medians are the compose
+scorer's vs-searcher column aggregated median-of-field-medians; this is NOT the banked
+step-2 headline aggregation (which used the best-simple-defender construction and read
+0.0747/0.0613), so the consolidation step must recompute the banked aggregation per rung
+before any comparison to step-2 sentences; e0/e1 are interim battery-internal rows.
+(ii) The relabel control collapses the crown's forces on the irreducible metric (2.4-3.0x)
+but NOT on e1 in either mode in this fresh sample; the banked 10-13x collapse was on the
+banked aggregation. (iii) B-SLOT medians show large n=8 sampling variance against the
+repair-day samples (off 14% here vs 19% then; on 14% here vs 29% then; round trajectories
+disagree in direction), so cross-rung slot readings must pool or interval these, never
+cite one sample. (iv) Thinking mode makes the crown COMPLY with the declaration format
+(5/8 vs 0-2/8 in every off-mode run; grounding 100% where parsable), a per-mode interface
+fact banked beside the scores. (v) Thinking's B-COMP validity dropped to 12/16, exactly
+at bar.
