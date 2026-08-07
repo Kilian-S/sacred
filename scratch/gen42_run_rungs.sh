@@ -50,9 +50,11 @@ for spec in $RUNGS; do
   stop_rung $name
 done
 
-echo "=== RESTORING llama-3.3-70b  $(date) ==="
-ssh $BOX "source $ENVF && setsid nohup \$(cat $PREP/llama_restore_cmdline.txt) > $PREP/serve_llama_restored.log 2>&1 & echo \$! > $PREP/serve_llama_restored.pid"
+echo "=== RESTORING residents (stack: gateway + llama; qwen from captured cmdline)  $(date) ==="
+ssh $BOX "cd /home/llm/vllm-server && ./start.sh start > $PREP/stack_restart.log 2>&1; sleep 5; tail -3 $PREP/stack_restart.log"
+ssh $BOX "source $ENVF && setsid nohup \$(cat $PREP/qwen_restore_cmdline.txt) > $PREP/serve_qwen_restored.log 2>&1 & echo \$! > $PREP/serve_qwen_restored.pid"
 if wait_ready 8002; then echo "llama RESTORED and serving"; else echo "llama RESTORE FAILED - manual attention needed"; fi
+if wait_ready 8001; then echo "qwen RESTORED and serving"; else echo "qwen RESTORE FAILED - manual attention needed"; fi
 ssh $BOX "/home/llm/vllm-env/bin/python -c \"
 import torch
 for i in range(2):
