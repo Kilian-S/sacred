@@ -285,6 +285,18 @@ for Kilian's asynchronous review. **The C batch (3 doctrine-head seeds + head-on
 no-window control, 24,000 sorties, pool v2) LAUNCHED AUTONOMOUSLY per Kilian's 2026-08-07
 conditional go; bars as pre-registered above.**
 
+**Launch incident, disclosed (2026-08-07 12:54-16:55, ~4 h lost).** Two defects in the
+first launches: (i) an inline `$COMMON` variable under zsh does not word-split, so the
+first attempt died on argparse instantly (caught within minutes); (ii) the relaunch died
+two minutes in on `KeyError: 'kyiv'`, because Kyiv had been added to the scratch scripts'
+local registries but never to the canonical `CITY_PATHS` in `scripts/train_generalist.py`
+that the trainer's Instance path reads, and my 20-second health check caught the arms
+during the pre-Kyiv pool build, reporting them healthy right before they died. Fix: kyiv
+added to the canonical registry (one line, additive; suite 167 green, raw tail pasted
+in-session); relaunched 16:55 and verified at the POOL LISTING + first-print level.
+**New verification rule (binding, also added to agent memory): a launch is verified only
+when the pool listing and the first training print appear, never by process existence.**
+
 ### ACT 2 TRANSFER RESULT (2026-08-07; Kilian-launched batch, completed overnight;
 ### high-precision pass 20,000 sorties per held-out instance; artefacts
 ### `models/runs/gen41_act2/final_eval_seed*.json`)

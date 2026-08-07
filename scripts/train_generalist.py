@@ -55,6 +55,7 @@ CITY_PATHS = {
     "gdansk": ("data/maps/gdansk/nodes.geojson", "data/maps/gdansk/edges.geojson"),
     "east_london": ("data/maps/east_london/nodes.geojson", "data/maps/east_london/edges.geojson"),
     "istanbul": ("data/maps/istanbul/nodes.geojson", "data/maps/istanbul/edges.geojson"),
+    "kyiv": ("data/maps/kyiv/nodes.geojson", "data/maps/kyiv/edges.geojson"),
 }
 
 
