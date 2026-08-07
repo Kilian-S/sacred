@@ -23,9 +23,11 @@ from scripts.train_dyn_generalist import (
 from src.agents.sac import ProtagonistSAC
 
 torch.set_num_threads(2)
-W, TAU, K, KX, N, BAND = 6, 0.15, 2, 12, 3, (0.15, 0.95)
+import sys as _sys
+W = int(_sys.argv[2]) if len(_sys.argv) > 2 else 6
+TAU, K, KX, N, BAND = 0.15, 2, 12, 3, (0.15, 0.95)
 T_FINAL = 20_000
-RUN_DIR = Path("models/runs/gen41_deepwindow")
+RUN_DIR = Path(_sys.argv[3]) if len(_sys.argv) > 3 else Path("models/runs/gen41_deepwindow")
 ARMS = [("seed0", False), ("seed1", False), ("seed2", False), ("seed0_nowin", True)]
 
 

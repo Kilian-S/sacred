@@ -238,6 +238,48 @@ high-precision final pass at 20,000 sorties per held-out instance).
 > claim), the extended rotation, worst-case one-shot row, final-iterate drift.
 > CAUSAL CONTROL: the no-window arm lands ~1.0x cap.**
 
+### ACT 2 TRANSFER RESULT (2026-08-07; Kilian-launched batch, completed overnight;
+### high-precision pass 20,000 sorties per held-out instance; artefacts
+### `models/runs/gen41_act2/final_eval_seed*.json`)
+
+**PRIMARY: FAIL 0/3 seeds (clause (i) 3/6 cap-beats everywhere vs the >= 4/6 bar; clause
+(iii) all seeds above the self-tuned composed 0.822). Clause (ii) PASSES 3/3: SACRED beats
+every intel-free Tier-0 rule zero-shot. STRONG: FAIL (beats the composed family on 0-1/6
+instances). Judged exactly as pre-registered; no bar moved.**
+
+| object | pooled ratio-to-cap |
+|---|---|
+| full-menu exact optimum | 0.439 |
+| witness rule (Tier 1, the class ceiling) | 0.478 |
+| composed family best (Tier 1) | 0.656 |
+| self-tuned composed (Tier 2, binding) | 0.822 |
+| **SACRED seeds 0/1/2 (select-on-train, high-precision)** | **0.887 / 0.940 / 1.003** (pooled 0.943 +/- 0.047) |
+| extended rotation (Tier 1) | 0.946 |
+| EXP3 menu / corridors (Tier 2) | 0.984 / 1.032 |
+| corridor rotation / full-menu rotation (Tier 0) | 1.005 / 1.277 |
+| avoid-where-ambushed (Tier 2) | 1.299 |
+| no-window causal control | 1.693 |
+
+Worst-case one-shot premiums 1.30-1.38x; per-OD spread real (0.49-1.25; OD 194-173 hard
+for every seed); select-on-test never below 0.82 either (no selection ambiguity).
+
+**Reading (binding).** (i) The causal channel is fully restored at w=3 in TRANSFER: the
+control at 1.693 vs sighted 0.887-1.003 reproduces the gen27-sized causal gap, so the
+mechanism transfers; what does not transfer at K=2 is enough of its CALIBRATION. (ii) The
+gates worked exactly as designed: the certificate promised in-distribution collectability
+and the rung delivered it (0.50-0.53 vs ceiling 0.42); the NEW boundary is the
+transfer-at-K=2 gap, the policy gives back ~0.4 of ratio between home instances and a
+never-seen city, roughly twice gen27's give-back at K=1. (iii) The universal witness
+weights (0,0,-40) transfer perfectly by construction, yet SAC training converged to
+instance-tuned variants that transfer worse; closing that gap (regularisation towards
+feature-uniform policies, or more training cities) is the recorded future-work sentence.
+(iv) Licensed sentences: zero-shot at K=2 SACRED beats the static cap on 2/3 seeds pooled
+and beats EVERY intel-free rule 3/3, with the window channel causally attributed; NO
+sentence may claim it beats the told-rule tiers or the adaptive composed rule. The gen41
+arc's banked contributions: the three-tier fairness ladder, the certificate-rung-transfer
+gate discipline (both now demonstrated end to end), the w-axis band map, and the two
+measured boundaries (deep-window channel content; K=2 transfer calibration).
+
 Launch command (Kilian; verify nice values via the trailing check):
 ```bash
 mkdir -p models/runs/gen41_act2 && for S in 0 1 2; do OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. nohup .venv/bin/python scripts/train_dyn_generalist.py --pool-file models/runs/gen41_pool.json --K 2 --k-extra 12 --window 3 --fast-refs --sorties 12000 --eval-every 500 --eval-n 600 --eval-n-train 250 --seed $S --threads 2 --json-out models/runs/gen41_act2/seed$S.json --ckpt-dir models/runs/gen41_act2/seed${S}_ckpts > models/runs/gen41_act2/seed$S.log 2>&1 & done; OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. nohup .venv/bin/python scripts/train_dyn_generalist.py --pool-file models/runs/gen41_pool.json --K 2 --k-extra 12 --window 3 --fast-refs --sorties 12000 --eval-every 500 --eval-n 600 --eval-n-train 250 --no-window --seed 0 --threads 2 --json-out models/runs/gen41_act2/seed0_nowin.json --ckpt-dir models/runs/gen41_act2/seed0_nowin_ckpts > models/runs/gen41_act2/seed0_nowin.log 2>&1 & sleep 5; ps -o pid,nice -p $(pgrep -f train_dyn_generalist | tr '\n' ',' | sed 's/,$//')
