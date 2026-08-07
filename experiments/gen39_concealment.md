@@ -1618,6 +1618,12 @@ reversal claim is RETIRED; what survives of it is the free-lane gap (llama 5.5 v
 sit at or below the random draw (0.0047/0.0053 vs 0.0055); the choosing signal lives in
 best-of-N.
 
+**Grounding-parse disclosure (added 2026-08-07, gen42 battery cross-check):** the 1e
+grounding metric parses a declared INTENDED_ROUTES line from the rationale; llama complies
+6/8 but qwen only 1-2/8 in EVERY 1e run (banked, corrected, thinking-on), so every qwen 1e
+grounding figure rests on 1-2 parsable rows and the compliance asymmetry is itself a
+per-model fact. Scores are unaffected (computed from chosen slots, not declarations).
+
 **R4 (rider) verdict: the probe's conclusions REPRODUCE on the corrected brief.** T1 FAIL
 (median 0.0082 vs bar 0.0107; a 1.55x gain over like-for-like off), T2 FAIL (29% vs 60%),
 T3 PASS (grounding 100%), C2 PASS. The substitutes structure reproduces cleanly:

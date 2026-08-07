@@ -66,6 +66,11 @@ Estimated calls per rung ~45 (16 + 16 + 8 + ~5); six rungs (incl. both crown arm
    curves (reported, never dropped).
 2. A B-SLOT cell with grounding < 80% is marked INTERFACE-LIMITED (the gen39 lesson:
    check the interface before concluding capability); its score still plots, flagged.
+   *(Amended 2026-08-07 before any cross-rung comparison, after the crown off-arm run:
+   the grounding metric needs >= 4/8 parsable INTENDED_ROUTES declarations to be read at
+   all; below that the cell is PARSE-LIMITED, a distinct marking, since qwen-family
+   models omit the declaration line in 6-8 of 8 responses across every 1e run to date.
+   Declaration-compliance itself is reported per rung as a row.)*
 3. Pre-committed readings: per-register Spearman of score vs parameter count over the four
    3.5 rungs; the generation delta (3.5-27B vs 3.6-27B, same size) compared against the
    largest size step; the flat-vs-climbing register contrast; the crown on/off delta
