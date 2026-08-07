@@ -273,6 +273,18 @@ Tier-2 row (binding 0.822), on >= 2/3 seeds; STRONG = pooled below the composed 
 control lands ~1.0x cap.** Scripts: pool builder `scratch/gen41_pool_v2.py`; artefacts
 `models/runs/gen41_pool_v2.json`, run dir `models/runs/gen41_act3/`.
 
+### ACT 3 RUNG RESULT + AUTONOMOUS LAUNCH (2026-08-07 ~13:00)
+
+**Doctrine-head rung: ALIGNED, 3/3 seeds** (bar <= 0.60 on >= 2/3): best-checkpoint
+ratio-to-cap 0.542 / 0.530 / 0.539, frequency weights -27 to -32, finals 0.528-0.561
+(negligible drift), select-on-test agrees. The head-only constraint costs ~3-5 points
+against the full-net rung (0.499-0.526) in-distribution, the designed trade. Pool v2
+banked: 48 train instances (12 x 4 cities, all passing the w=3 bars; Kyiv screened fresh)
++ the 6 reviewed Gdansk test instances; contact sheets at `assets/gen41_pool/*_v2p*.png`
+for Kilian's asynchronous review. **The C batch (3 doctrine-head seeds + head-only
+no-window control, 24,000 sorties, pool v2) LAUNCHED AUTONOMOUSLY per Kilian's 2026-08-07
+conditional go; bars as pre-registered above.**
+
 ### ACT 2 TRANSFER RESULT (2026-08-07; Kilian-launched batch, completed overnight;
 ### high-precision pass 20,000 sorties per held-out instance; artefacts
 ### `models/runs/gen41_act2/final_eval_seed*.json`)
