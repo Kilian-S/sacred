@@ -438,3 +438,64 @@ not run.
    interaction budget) is a SEPARATE family, deliberately not part of the screen; DRAFT
    addition to the act: these run as REPORTED rows (not gating), evaluated by seeded
    simulation, pending Kilian's sign-off with the bars.
+
+### ACT 2 FINAL RESULT (2026-08-07; batch completed 04:59, watcher-fired final evaluation
+### done 05:29; high-precision 20,000-sortie pass at the select-on-train checkpoint;
+### artefacts `models/runs/gen41_act2/final_eval.json` + `watch.log`; bars judged exactly
+### as pre-registered, no bar moved)
+
+**PRIMARY: FAIL, 0/3 seeds (on clauses i and iii). STRONG: FAIL everywhere.** The verdict
+table (pooled ratio-to-cap over the 6 held-out Gdansk instances, w=3, K=2):
+
+| object | pooled ratio-to-cap |
+|---|---|
+| full-menu exact optimum | **0.439** |
+| linear-feature witness (Tier 1, the class ceiling) | 0.478 |
+| corridor-restricted exact optimum | 0.497 |
+| composed family best, w' in {1..4} (Tier 1) | 0.656 |
+| **self-tuned composed (Tier 2, the binding gate)** | **0.822** |
+| **SACRED seed 0 / 1 / 2 (select-on-train)** | **0.888 / 0.943 / 1.000** (pooled 0.944) |
+| extended rotation (Tier 1, reported) | 0.946 |
+| EXP3-menu (Tier 2) | 0.984 |
+| corridor rotation (Tier 0) | 1.005 |
+| EXP3-core (Tier 2) | 1.032 |
+| full-menu rotation (Tier 0) | 1.277 |
+| avoid-where-ambushed (Tier 2) | 1.299 |
+| no-window causal control | 1.695 |
+
+Clause verdicts: (i) beats-cap 3/6 per seed on every seed against the 4/6 bar, FAIL;
+(ii) below every Tier-0 pooled value, 3/3 seeds, PASS; (iii) below the binding Tier-2
+0.822 on 0/3 seeds, FAIL. STRONG (pooled below 0.656) fails everywhere, per-instance
+clause moot. Worst-case committing premiums 1.30-1.38x. Drift disclosed: select-on-train
+checkpoints at sorties 8,520 / 10,000 / 11,520; final iterates (low-precision) 0.87 /
+1.20 / 1.21; the select-on-test optimistic bounds (0.82-0.91) do not cross the binding
+gate either, so no selection ambiguity exists.
+
+**Reading 1, the channel restores at w = m (the causal control).** The blind arm lands at
+1.695x cap and beats it nowhere (0/6); the sighted-blind pooled gap is 0.70-0.81, gen27's
+scale (0.8), against Act 1's 0.03-0.25 at w = 2m. The pre-registered "lands ~1.0x cap"
+expectation was wrong in the OTHER direction and is reported so: a window-blind policy
+TRAINED at this operating point transfers worse than the statics (select-on-train lands
+at sortie 2,520; its final iterate reads 1.94). The window channel at w = 3 is causally
+load-bearing, exactly as the band map requires.
+
+**Reading 2, what was and was not collected.** SACRED beats every map-only (Tier-0) rule
+on 3/3 seeds, beats the static cap pooled on 2/3 seeds (3/6 ODs each), sits at the
+extended rotation's level, and on one OD (gdansk 303-15, seed 1) ATTAINS the
+corridor-locked optimum zero-shot (0.986). But the certified padding-channel win (the
+witness at 0.478, which the Gate-2 rung COLLECTED at 0.499-0.526 on its single instance)
+was not collected by the 18-instance generalist (0.888-1.000): the trained weights sit a
+full tier above their own certified single-instance capability. The obvious confound is
+DENSITY, ~667 sorties per training instance here against the rung's 8,000 on one (the
+gen29 density-starvation pattern); recorded as the lever for any future attempt, not
+claimed as a wall.
+
+**Binding wording.** No sentence may claim the w=3 generalist beats the adaptive tier
+(0.822 gates it out). Licensed: the Tier-0 sweep (beats every map-only rule, 3/3 seeds),
+the restored causal channel at w = m completing the band map's mechanism column (0.7-0.8
+vs 0.03-0.25 at w = 2m), the single-cell zero-shot optimum attainment, and the
+rung-vs-generalist density gap as measured future work. The gen41 generation is CLOSED:
+its citable product is the two-axis band map (w-axis: learning pays at w ~ m and dies by
+w = 2m with the channel-content mechanism control-attributed; instance axis: the
+padding-channel win is certified representable and single-instance trainable, uncollected
+zero-shot at this density).
