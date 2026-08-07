@@ -285,6 +285,44 @@ for Kilian's asynchronous review. **The C batch (3 doctrine-head seeds + head-on
 no-window control, 24,000 sorties, pool v2) LAUNCHED AUTONOMOUSLY per Kilian's 2026-08-07
 conditional go; bars as pre-registered above.**
 
+### OOM INCIDENT + CONFIG REVISION (2026-08-07 evening; disclosed in full)
+
+**What happened.** The four-arm C batch OOM-killed Kilian's machine (~60 GB). Root cause
+isolated by measurement (`/tmp/memtest2.py` pattern, numbers below), TWO compounding
+sources, one dominant:
+
+| source | measured |
+|---|---|
+| (A) per-transition deep snapshot of node/edge dicts in every stored observation | 5.70 MB per transition on Kyiv (6,083 nodes) vs 0.30 MB on Kaliningrad |
+| (B) **dominant: one SAC `update()` batches 32 FULL-CITY graphs through the GATv2 encoder** | +4.25 GB peak per arm at Istanbul size (1,266 nodes), **+8.45 GB at Kyiv size** |
+
+Four arms x Kyiv-sized batches ~= 52-60 GB, which is exactly what was observed. Source (B)
+also explains, retrospectively, why Acts 1-2 crawled: 4 arms x ~5 GB sat at ~20 GB on a
+24 GB machine, i.e. permanently at the swap edge (the "nice-5 slowness" was partly this).
+
+**Fixes landed (both additive, suite 171 green: 167 + 4 new memory-contract tests
+`tests/test_replay_memory.py`).** (i) `build_obs` builds each instance's base observation
+ONCE and shares it by reference, giving every transition its own shallow dict carrying
+only the per-route feature matrix that actually varies (the env is reset before every
+observation, so the payload was provably identical and the deep copies were pure waste).
+(ii) `_cached_featurize` memoizes the featurized graph ONCE PER INSTANCE when the
+observation carries a `_graph_key`, instead of once per transition; absent the key every
+historical trainer is byte-identical. Measured effect: stored-transition growth falls to
++0.03 GB per 80 transitions (Istanbul) and +0.00 (Kyiv).
+
+**Config revision, and why it is scientifically better rather than merely cheaper.** The
+48-instance four-city pool is DROPPED and Act 3 runs the EXACT Act-2 configuration (the 24
+reviewed instances of `gen41_pool.json`, three cities, 12,000 sorties, eval 250/600)
+changing ONLY `--head-only`. Reasons, in order: (1) source (B) is unfixable without either
+shrinking the encoder input or changing the recipe, and Kyiv makes it fatal; (2) the pool
+expansion existed to fight ENCODER overfitting, and this arm masks the encoder out of the
+actor, so a three-parameter doctrine head cannot overfit and gains little from extra
+variety; (3) holding pool and budget fixed at Act 2's values turns the act into a clean
+ARCHITECTURE ABLATION against a completed same-recipe run, which is a stronger comparison
+than the expanded-pool version would have been. Bars are UNCHANGED (they were written
+against these same six held-out instances). The pool-v2 artefacts and Kyiv screen stay
+banked as future work; `models/runs/gen41_pool_v2.json` is untouched.
+
 **Launch incident, disclosed (2026-08-07 12:54-16:55, ~4 h lost).** Two defects in the
 first launches: (i) an inline `$COMMON` variable under zsh does not word-split, so the
 first attempt died on argparse instantly (caught within minutes); (ii) the relaunch died

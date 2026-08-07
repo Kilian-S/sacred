@@ -86,13 +86,32 @@ def infer_edge_in_dim(actor_state_dict: Mapping[str, Any], default: int = 4) -> 
     return int(w.shape[1]) if w is not None else default
 
 
+_SHARED_GRAPH_CACHE: dict[Any, Any] = {}
+
+
 def _cached_featurize(trans: Any, key: str, build_fn):
     """Memoize a featurized graph on the transition, building it once via ``build_fn``.
 
     Tolerates transitions deserialized from older pickles (e.g. preseed
     ``data/erb_transitions.pt``) whose ``feature_cache`` slot was never assigned: the
     slot exists on the class, so we lazily initialize it here.
+
+    When the observation carries a ``_graph_key`` (set only by trainers whose per-instance
+    graph features are constant across transitions, e.g. the fleet-route dynamic
+    generalist, whose every observation is taken at env reset), the featurization is
+    memoized ONCE PER INSTANCE in a process-wide cache instead of once per transition.
+    Without it a 6,000-node city costs ~1 MB of tensors per stored transition, which is
+    what OOM-killed the 2026-08-07 four-city batch. Absent key = unchanged behaviour.
     """
+    state = getattr(trans, "state", None)
+    gkey = state.get("_graph_key") if isinstance(state, dict) else None
+    if gkey is not None:
+        ck = (gkey, key)
+        val = _SHARED_GRAPH_CACHE.get(ck)
+        if val is None:
+            val = build_fn()
+            _SHARED_GRAPH_CACHE[ck] = val
+        return val
     fc = getattr(trans, "feature_cache", None)
     if fc is None:
         fc = {}

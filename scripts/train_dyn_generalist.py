@@ -124,12 +124,28 @@ def load_pool_file(path, N, K, band, kx, seed):
 
 
 def build_obs(it, counts, w, no_window=False):
-    it.env.reset()
-    obs = it.env.observe()
+    """Per-transition observation for instance ``it``.
+
+    The env is reset before every observation, so an instance's node/edge/truck payload is
+    IDENTICAL across transitions and only the per-route feature matrix varies. The base
+    payload is therefore built ONCE per instance and shared by reference; each transition
+    gets a fresh shallow dict carrying its own ``menu_route_feats`` (the only varying
+    field, and the one the head reads). Deep-copying it per transition, as observe() does
+    by default for the mutable congestion games, cost ~5.7 MB per stored transition on the
+    6,083-node Kyiv graph and OOM-killed the 2026-08-07 batch. ``_graph_key`` lets the SAC
+    update memoize this instance's featurized graph once instead of once per transition.
+    """
+    base = getattr(it, "_base_obs", None)
+    if base is None:
+        it.env.reset()
+        base = it.env.observe()
+        base["menu_route_node_idx"] = it.menu_idx
+        base["_graph_key"] = f"{it.city}:{it.od[0]}-{it.od[1]}"
+        it._base_obs = base
     f = route_feats(it.env, counts, w)
     if no_window:
         f[:, 2] = 0.0
-    obs["menu_route_node_idx"] = it.menu_idx
+    obs = dict(base)
     obs["menu_route_feats"] = f
     return obs
 
