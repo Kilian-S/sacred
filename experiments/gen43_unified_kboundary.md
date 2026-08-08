@@ -240,3 +240,53 @@ Reported rows artefact: `models/runs/gen43_unified/reported_rows.json`
 
 **Suite after the writer repair:** raw tail "171 passed, 3671 warnings in 16.08s"
 (pre-registration run at `261703c` was "171 passed, 3671 warnings in 17.29s").
+
+### EXTENSION: the dynamic arm to its true wall (pre-registered 2026-08-08 evening, BEFORE
+### any training; Kilian's direction "the dynamic arm should also go to 8, a heuristic if
+### the optimum is infeasible"; probe `scratch/gen43_dyn_highk_probe.py`, artefact
+### `models/runs/gen43_dyn_highk_probe.json`)
+
+**Correction, disclosed.** This ledger's finding 5 stated the exact dynamic game at K=5
+"exists only on the kx=0 core menu". That conflated the gen40 extension sweep's
+pre-committed WORK GUARD (state-x-column <= 6e9, which skipped the K=5 kx=8 cell) with the
+wall itself. The probe computed the exact game at K=5 AND K=6 on the standing kx=8 menu
+directly (Karp = damped RVI to 4 decimals, converged, both cells; the closed-form loss
+matrix L = 1 - (1 - payoff)^N verified against the trainer's stacked_L to 6.7e-16 before
+any number was read). The gen40 tier-E finding is UNTOUCHED and remains binding: heuristic
+adversary proxies change the game, so no proxy is used anywhere; the extension below is the
+EXACT game, paid in compute.
+
+**The exact high-K landscape (new, all exact):**
+
+| K | n_isets | exact optimum | best rule | rule/opt | iid_eq | iid/opt | oracle cost |
+|---|---|---|---|---|---|---|---|
+| 5 | 962,598 | 0.1756 | rotation 0.2743 | **1.562** | 0.3593 | 2.05 | cost matrix 14 s |
+| 6 | 6,096,454 | 0.2121 | rotation 0.3295 | **1.553** | 0.4024 | 1.90 | env 257 s, cost matrix 82 s |
+
+Both cells are ALIVE: the rules leave ~55% on the table (the rule/opt plateau ~1.55 holds
+from K=4 through K=6) while the total value of history declines with coverage (iid/opt 2.25
+-> 2.05 -> 1.90 across K = 4, 5, 6), the dynamic game's slow saturation made visible.
+
+**The measured terminus (K=7/8, extrapolated from the measured per-column cost, recorded
+so).** K=7: L alone 2.8 GB/process, ~11 min per 2000-sortie eval, ~2 h trainer loss-matrix
+build, sequential-seeds-only on 24 GB, ~20 h per cell: excluded on cost, recorded as the
+practical wall. K=8: L 12.4 GB/process exceeds RAM outright with the payoff matrix beside
+it: infeasible. The dynamic axis therefore ends at K=6 for trained cells, with the K=4-6
+exact landscape and the static register's mixing-death at K ~ 8-9 jointly closing the story.
+No heuristic-game cell is run or reported (tier-E rule).
+
+**NEW CELLS: dynamic K=5 and K=6, 3 seeds each, trainer verbatim** (startup at K=6 pays
+~22 min of loss-matrix build and ~4 min of env build per process, accepted in lieu of any
+code change; RAM ~1.5 GB/process at 3-parallel, inside envelope).
+
+> **DECISION METRIC (PRE-REGISTERED, the gen35/K=4 bar form per cell): best-checkpoint
+> stationary per-sortie loss < the best naive rule (0.2743 at K=5; 0.3295 at K=6) on >= 2/3
+> seeds AND pooled.** STRONG: pooled <= 1.15x the exact optimum (<= 0.2019 at K=5;
+> <= 0.2439 at K=6). REPORTED rows post-batch: matched-budget tabular window-Q and the
+> worst-case committing row at both cells (v_eq_oneshot anchors 0.6201 / 0.6865, the
+> stacked-class LP). FAIL branch (writable): the beats-every-rule region's upper edge is
+> located below K=6 and reported as measured; the exact landscape above stands either way.
+
+**Batch `scratch/gen43_dyn_ext_batch.sh`** (K=5 then K=6, 3 seeds 3-parallel each,
+~2.5-3 h + ~4-4.5 h): outputs `models/runs/gen43_unified/dyn_K{5,6}_seed*.{json,log}`.
+Kilian launches; verification at first-print level.
