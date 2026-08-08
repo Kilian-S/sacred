@@ -171,6 +171,38 @@ recomputation flag must be cleared before any step-2 comparison. A powered B-COM
 need a pre-run discrimination check (two known-different composers separated at the chosen
 n) and materially more samples; recorded as the method fix, not run.
 
+**AMENDMENT 2 (2026-08-08, same challenge applied to B-SLOT): the staircase's ENDPOINTS
+survive, its intermediate steps and its top group do NOT.** Bootstrap 95% CIs on each
+arm's slot median (20,000 resamples, rng(0), per-force values as fractions of the 0.0278
+ceiling):
+
+| arm | n | median | best | 95% CI on median |
+|---|---|---|---|---|
+| 4B | 8 | 3% | 14% | [0%, 7%] |
+| 9B | 7 | 6% | 22% | [3%, 13%] |
+| 3.5-27B | 8 | 15% | 62% | [12%, 49%] |
+| crown 3.6 OFF (gen42) | 8 | 14% | 45% | [4%, 35%] |
+| crown 3.6 OFF (gen39 repair) | 8 | 19% | 36% | [1%, 35%] |
+| crown 3.6 ON (gen42) | 8 | 14% | 46% | [5%, 44%] |
+| crown 3.6 ON (gen39 repair) | 8 | 29% | 42% | [9%, 37%] |
+| llama-3.3-70b (gen39 repair, off-ladder) | 8 | 17% | 36% | [0%, 28%] |
+| 2B | 5 | 3% | 47% | [0%, 47%] |
+
+Licensed: **4B vs 3.5-27B separates** ([0,7] vs [12,49], non-overlapping), so "the smallest
+competent rung is genuinely below the largest" stands. NOT licensed: the 4B-to-9B and
+9B-to-27B steps individually (overlapping CIs), and any ordering within the top group
+(3.5-27B, both crown modes, llama-70B all mutually overlapping). **Replication scale,
+measured:** the crown ON arm was run twice on the same instrument and corrected brief and
+returned 29% then 14%, a factor of two, which is the honest noise scale for every single
+n=8 cell in this ledger.
+
+**Crown pooled across its two samples (n=16 per mode) and the thinking test:** OFF median
+16% [8%, 28%], ON median 20% [11%, 37%]; difference +5 points, CI [-12, +25],
+**INDISTINGUISHABLE**. Binding consequence: no score claim may be made for thinking mode
+in either direction. The thinking finding that DOES survive is the format-compliance count
+(declarations 5/8 with thinking vs 0-2/8 without, across every run to date), which is a
+count rather than a noisy median.
+
 **2B FAILURE MODE (measured from `calls_comp.json`, 32 calls per rung): discipline, not
 comprehension.** The 2B returned correctly structured plans with the right fields
 (archetype, emplacement zone, doctrine, rationale); it failed by sending the wrong number
