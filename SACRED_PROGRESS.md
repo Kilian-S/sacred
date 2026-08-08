@@ -1069,3 +1069,56 @@ to their supersession notes.)*
   control (Obj-2/Obj-1); the LLM arc gains its clearest positive (composition, terrain-grounded)
   AND its clearest bounded claim (sample efficiency), completing the where-LLMs-help map begun in
   B2/gen33/gen37/gen38; Obj-5's comparative discipline gains the matched-budget-control pattern.
+
+## 35. gen40 + gen41: the dynamic-register structure laws, the fairness tiers, and the doctrine-head transfer positive  (2026-08-04 -> 08 · branch `gen08-interdiction` · `experiments/gen40_dyn_sensitivity.md`, `experiments/gen41_deepwindow_zst.md`)
+
+- **Goal (prospective):** answer Kilian's Act-3 fairness gripe (the composed rule wins 4.3 only
+  because it is handed both insights; the exact optimum needs the enemy's full model) with
+  measurement, then design and run an experiment where SACRED beats its competition under a
+  like-for-like information discipline.
+- **Headline results:** (i) **gen40 (oracle-only, ~400 exact cells):** the dynamic register's
+  structure laws - rotation is exactly optimal at w = m-1 (K- and R-invariant); rules fail at
+  essentially every other w >= m, deepest at w a multiple of m; rule failure grows with the
+  coverage fraction K/m to the exact wall (K ~ 4-5); menu padding widens rule failure and raises
+  a ceiling only menu-wide play can reach; NO computable adversary extension preserves the game
+  past the wall (the pre-committed negative fired: the wall binds the GAME). Corridor counts
+  m >= 7 exist only in Istanbul; Kyiv's arterial max degree is 6. (ii) **gen41 Act 1 (w=6=2m,
+  K=2): FAIL 0/3 as pre-registered** - every practical object sits 0.93-1.36x the cap while the
+  exact optimum sits at 0.58x; the window channel bought only 0.03-0.25 of ratio (vs gen27's
+  0.8): a CHANNEL-CONTENT failure (aggregate frequency cannot express order-dependent
+  window-steering). The w-axis band map completed: learning pays at w ~ m, nothing tested
+  collects by w = 2m. (iii) **The gate discipline built and validated:** the three-tier fairness
+  ladder (Tier 0 map-only, Tier 1 mechanism-told, Tier 2 outcome-earning); Gate 1 = the
+  representability CERTIFICATE (exact witnesses inside the policy class: at w=3/K=2 the
+  count-conditioned optimum ATTAINS the true optimum and a linear-feature witness reaches 0.478x
+  cap vs the composed rule's 0.656, weights near-universally (0, 0, -40)); Gate 2 = the
+  single-instance rung. (iv) **Act 2 (full net, w=3, K=2): PRIMARY FAIL 0/3** (pooled 0.943;
+  causal gap restored at 0.8 of ratio; the failure isolated to instance-tuned ENCODER variants
+  - the certified universal weights transfer perfectly, SAC did not converge to them).
+  (v) **Act 3 (the doctrine head - identical config, one flag masking the encoder out of the
+  actor): PRIMARY PASS 2/3** (pooled 0.783 +/- 0.032; beats the cap 6/6 on every seed; beats
+  every Tier-0 rule 3/3 and every Tier-2 adaptive learner on 2/3 seeds, seed 0 missing the
+  self-tuned-composed gate by 0.0005, judged FAIL as registered); STRONG FAIL (the told-rules
+  tier at 0.656 stays ahead); control 1.161 at 0/6 (causal). The 0.943 -> 0.783 ablation
+  confirms the Act-2 autopsy BY INTERVENTION. Verification appendix: the trained weights under
+  argmax score 0.6625 (= the composed rule), so the residual gap decomposes measurably into
+  entropy stochasticity (~0.12) and weight calibration (~0.18), both training-efficiency
+  artefacts inside a certified-adequate class.
+- **What we learned:** (i) screens measure OPPORTUNITY and representability gates measure
+  EXPRESSIBILITY, and both belong BEFORE training (the w=6 act would have been killed by a
+  20-line certificate); (ii) the encoder pathway, not the game, was the ZST calibration
+  bottleneck at K=2 - three parameters transfer better than the GNN; (iii) fairness tiering by
+  information consumed resolves the told-rule dispute without dropping baselines; (iv) ops
+  lessons at cost: SAC updates batch 32 FULL-CITY graphs (+8.45 GB/arm at Kyiv size, the OOM),
+  replay observations must share per-instance payloads (fixed, +4 contract tests, suite 171),
+  zsh does not word-split inline flag bundles, and launches are verified at first-print level.
+- **What it means for the thesis:** Act 3's fairness dispute ends in a measured settlement - the
+  like-for-like claim SACRED now owns (beats every rule that is not TOLD the enemy's mechanism,
+  zero-shot, causally attributed) plus the honest concession that told rules remain ahead; the
+  w-band map and the two boundaries (channel content at w=2m; encoder calibration at transfer)
+  bound the flagship's regime from both sides; gen27 remains the flagship, gen41 the mechanism
+  act beside it.
+- **Thesis fit:** Obj-1 (the band map + wall law), Obj-3 (the doctrine head as the
+  entropy-as-mixed-strategy mechanism laid bare: the policy IS three weights), Obj-5 (the
+  three-tier ladder as the comparative discipline's final form), ZST (the rescued like-for-like
+  transfer claim). Ledger pointers only; numbers live in gen40/gen41.

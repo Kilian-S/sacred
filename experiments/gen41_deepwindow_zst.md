@@ -273,6 +273,38 @@ Tier-2 row (binding 0.822), on >= 2/3 seeds; STRONG = pooled below the composed 
 control lands ~1.0x cap.** Scripts: pool builder `scratch/gen41_pool_v2.py`; artefacts
 `models/runs/gen41_pool_v2.json`, run dir `models/runs/gen41_act3/`.
 
+### ACT 3 INDEPENDENT VERIFICATION APPENDIX (Fable, 2026-08-08; recomputed from the raw
+### per-OD artefacts without reference to the section above)
+
+**Every number above CONFIRMS** (pooled 0.7830 +/- 0.0316; per-seed 0.8228 / 0.7456 /
+0.7805; cap-beats 6/6/6; clause verdicts including seed 0's 0.0005 miss judged as FAIL;
+control 1.1605 at 0/6; field values reproduced from the gate and Tier-2 artefacts to four
+decimals; the evaluator's head-only mask verified applied on all four arms in the eval
+logs). Additional rows this verification adds to the record:
+
+1. **Selection is honest:** select-on-test dual-report 0.772 / 0.743 / 0.770 agrees with
+   select-on-train within 0.05 (no flattery); seed 0's optimistic bound would clear the
+   Tier-2 gate but the deployable selection is select-on-train and is judged as
+   pre-registered. Final-iterate drift mild on sighted seeds (0.743-0.855); the CONTROL
+   drifts hard late (1.161 selected -> 1.820 final), disclosed.
+2. **Worst-case premiums improved vs Act 2:** 1.24-1.27x vs 1.30-1.38x; the doctrine head
+   is also the less fragile object against a committing enemy.
+3. **The Act-2 hard instance flipped:** OD 194-173 (unbeaten by any Act-2 seed, 1.06-1.25)
+   is beaten by all three Act-3 seeds (0.80-0.93).
+4. **The learned weights ARE the policy** (the mask leaves nothing else): selected-ckpt
+   vectors (cost, vuln, freq) = (7.6, 2.7, -41.3), (12.7, 3.5, -68.1), (9.8, 5.2, -60.0);
+   frequency dominant and negative as certified; direction universal, magnitudes seed-varying.
+5. **Mechanism decomposition (eval-only diagnostic, measured 2026-08-08, NOT a deployable
+   claim):** all three seeds' trained weight vectors played under deterministic ARGMAX
+   score an IDENTICAL pooled 0.6625 (the argmax choice is invariant across them), i.e.
+   essentially the composed rule's 0.656, while the grid-optimal witness weights score
+   0.478. The residual gap therefore splits into two measured parts: softmax stochasticity
+   (the entropy floor) costs 0.08-0.16 of pooled ratio, and weight calibration
+   (trained direction vs the (0, 0, -40) optimum) costs the remaining ~0.18. Both are
+   training-efficiency artefacts inside a certified-adequate class; the argmax row is a
+   diagnostic only (a deterministic window policy has different worst-case properties and
+   is not the act's object).
+
 ### ACT 3 RUNG RESULT + AUTONOMOUS LAUNCH (2026-08-07 ~13:00)
 
 **Doctrine-head rung: ALIGNED, 3/3 seeds** (bar <= 0.60 on >= 2/3): best-checkpoint

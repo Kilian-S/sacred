@@ -8,9 +8,10 @@
 
 ## The state in one paragraph (2026-08-04)
 
-The experimental campaign is COMPLETE across all three worktrees (34 chronicle entries,
-gen01-gen39). Nothing is running, no launch decision is pending, and all three trees are clean
-and committed. The Final Activities Report deadline (30 July) and the self-imposed experimental
+The experimental campaign is COMPLETE across all three worktrees (35 chronicle entries,
+gen01-gen41; the gen40/gen41 dynamic-register arc of 2026-08-04/08 was a post-freeze
+follow-up on Kilian's instruction, closed with the Act-3 doctrine-head positive). Nothing is
+running, no launch decision is pending, and all three trees are clean and committed. The Final Activities Report deadline (30 July) and the self-imposed experimental
 freeze (3 August) are past. **Writing is the critical path.** The thesis and poster are due
 10:00, Friday 28 August 2026 (12,000 words excluding appendices). In the thesis repo the
 Methodology chapter and its proofs appendix are drafted and being Kilianised, the Results
@@ -65,6 +66,7 @@ the change to the other trees in the same session.
 |---|---|
 | **gen27, the flagship.** One history-aware policy, trained on three cities, zero-shot on Gdansk beats the static cap (PRIMARY + STRONG 3/3, pooled 0.639x cap); no-window control causal. Corrected exact-optimum ratio 1.97x (yardstick-repair appendix) | (R) `experiments/gen27_dynamic_generalist.md` |
 | **gen35.** Dynamic K-boundary on 71-33 m=6; K=3 beats EVERY two-line rule 3/3 seeds (-8.6%), K=2 ties; the programme's first pre-registered beats-every-naive-rule cell; tabular window-Q at matched budget fails | (R) `experiments/gen35_dyn_kboundary.md` |
+| **gen41 Act 3 (2026-08-08).** The doctrine-head transfer positive under the three-tier fairness ladder: zero-shot on Gdansk at K=2, PRIMARY PASS 2/3 (pooled 0.783x cap; beats the cap 6/6 on every seed, every map-only rule 3/3, every outcome-earning adaptive learner 2/3, seed 0 missing by 0.0005); causal control 1.161 at 0/6; the 0.943 -> 0.783 one-flag encoder ablation against Act 2 is the mechanism claim; STRONG FAIL disclosed (mechanism-told rules at 0.656 stay ahead) | (R) `experiments/gen41_deepwindow_zst.md` |
 | **gen19.** Single-instance pattern-of-life register; history-aware SACRED far below the static cap with causal no-window control (its STRONG "reaches the optimum" clause retired by the yardstick repair; rotation attains the exact optimum on m=4) | (R) `experiments/gen19_b1lite1.md` |
 | **gen26.** The K-to-min-cut boundary map; SACRED beats both max-flow heuristics at K=m-1 exact; ties the best naive full-menu stack at K=m; tabular FP with the same greedy oracle also works, so the licensed sentence is "learning is required, deep RL is one sufficient method" | (R) `experiments/gen26_kboundary.md` |
 | **gen31 + gen32.** The aerial dynamic positives, synthetic then REAL Kaliningrad terrain; 6/6 beats-static-cap on 3/3 fresh seeds each, blinded controls causal, one attempt each; gen32 pooled 0.451x cap, 1.30x the exact optimum; ops-map exhibit `scratch/gen32_ops_map.html` | (A) `experiments/gen31_aerial_dyn.md`, `gen32_theatre_dyn.md` |
@@ -87,6 +89,7 @@ the change to the other trees in the same session.
 | **LLM negatives.** Neither open-weight model calibrates a mixed strategy (B2, the knowledge/application dissociation); gen33's terrain control failed; gen37 route curation is worse than random at every prune size | (R) `experiments/b2_llm_benchmark.md`; (A) `gen33_llm_adversary.md`; (M) `gen37_reasoning_curation.md` |
 | **gen39 boundary.** No arm beats the best simple OBSERVING rule on any cell of any of the four maps | (A) `experiments/gen39_concealment.md` |
 | **Yardstick repair.** The roads dynamic-optimum yardstick (`oracle_refs` undamped RVI) was wrong on every cell tested; exact truth is Karp min-mean-cycle, `scratch/dyn_exact.py`; corrected appendices in the gen19/gen27 ledgers | (R) chronicle entry 31 |
+| **The gen40 structure laws + the gen41 boundaries.** Rotation exactly optimal at w = m-1; rules fail deepest at w a multiple of m; rule failure grows with K/m to the exact wall (~K=4-5), past which NO computable adversary preserves the game; at w = 2m nothing tested collects the (real, 0.58x-cap) optimum, a channel-content boundary; at transfer the full net's encoder is the calibration bottleneck (Act 2 FAIL 0/3, fixed by the Act-3 mask) | (R) `experiments/gen40_dyn_sensitivity.md`, `gen41_deepwindow_zst.md`; chronicle entry 35 |
 
 ### The where-LLMs-help map (per-model, never pooled)
 
@@ -135,7 +138,8 @@ grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
 ## The project map
 
 Three sacred worktrees (see `CLAUDE.md` for the table): roads `gen08-interdiction` (this tree,
-master docs, suite last recorded 224), aerial `gen28-aerial` (suite last recorded 240+), multi-OD
+master docs, suite last recorded 171; the "224" previously recorded here was a doc slip, the
+aerial-era count), aerial `gen28-aerial` (suite last recorded 240+), multi-OD
 `gen29-multiod` (closed, suite last recorded 173). Branches `main` and `gen07-contested` are
 frozen history at the gen07 close. Only `gen08-interdiction` has a remote (`origin`).
 
