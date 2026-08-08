@@ -104,11 +104,15 @@ def main():
         beats = sum(int((rows[("qwenthink16", s)] < rows[(ctrl, s)]).sum()) for s in SEEDS
                     if (ctrl, s) in rows and ("qwenthink16", s) in rows)
         n_cells = 6 * len(d)
-        verdict = ("indistinguishable" if abs(d.mean()) <= d.std(ddof=0)
-                   else "separated beyond seed spread")
-        print(f'  vs {ctrl:10s} paired {d.mean():+.4f} +/- {d.std(ddof=0):.4f} '
-              f'(seeds {" ".join(f"{x:+.4f}" for x in d)}), cells won {beats}/{n_cells} '
-              f'-> {verdict}')
+        # A crude |mean| > sd label over-claims at n=3; report the paired t across seeds
+        # (the honest unit of replication) and the cell-level sign count beside it.
+        from scipy import stats
+        p = stats.ttest_1samp(d, 0).pvalue if len(d) > 1 else float("nan")
+        verdict = ("SUGGESTIVE, not established at n=3 seeds" if p >= 0.05
+                   else "separated (paired t across seeds)")
+        print(f'  vs {ctrl:10s} paired {d.mean():+.4f} +/- {d.std(ddof=1):.4f} '
+              f'(seeds {" ".join(f"{x:+.4f}" for x in d)}), cells won {beats}/{n_cells}, '
+              f'paired-t p {p:.3f} -> {verdict}')
 
     cs = curriculum_strength()
     if cs:

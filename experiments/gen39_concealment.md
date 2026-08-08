@@ -1735,3 +1735,60 @@ at the force level on the same map.
 **Scope, binding.** These twelve rows are the BANKED arms only; the three qwenthink16
 defenders join when their training completes and the paired step-5c columns are read then.
 Nothing here pools with the banked zero-shot table, per the pre-registration.
+
+### STEP 5C RESULT (2026-08-08, 3 seeds x 5000 sorties, validation-selected; verdict file
+### `models/runs/gen39_step5/step5c_verdict.txt`): **PRIMARY PASS 3/3, AND MY OWN
+### PRE-REGISTERED NULL PREDICTION FAILED**
+
+**The prediction, stated before the run and now wrong.** The gen42 three-link argument
+predicted ties: all authors converge to the same curriculum strength at 16 evaluations, the
+knee sits ~0.022, defender seed noise swamps the effect. Link one held EXACTLY, curriculum
+strength 0.0377 (qwenthink16) against 0.0386 (llm16), a nine-ten-thousandths gap. **Links two
+and three did not.** Recorded as made-and-wrong per the standing rule, with the same
+prominence the pass would have had.
+
+| arm | curriculum strength | defender (narva, pooled) | seed spread |
+|---|---|---|---|
+| **qwenthink16 (Qwen3.6-27B, thinking ON)** | 0.0377 | **0.1132** | **+/- 0.0004** |
+| llm16 (llama-3.3-70b) | 0.0386 | 0.1288 | +/- 0.0137 |
+| local16 (hill-climb) | 0.0217 | 0.1353 | +/- 0.0189 |
+| random16 | 0.0286 | 0.1621 | +/- 0.0212 |
+| tuned (step-3 control) | 0.0267 | 0.1677 | +/- 0.0171 |
+
+**PRIMARY (below the tuned control on >= 4/6 cells AND pooled, on >= 2/3 seeds): PASS 3/3
+seeds** (beats it 6/6, 5/6, 5/6; paired -0.0545, paired-t p 0.032).
+
+**PAIRED READOUT, judged honestly.** vs llm16 -0.0155 (seeds -0.0171 / -0.0287 / -0.0008),
+all three negative but paired-t p 0.195 at n=3, cells won 12/18; vs local16 -0.0221, p 0.175.
+**In-distribution the advantage is SUGGESTIVE, not established**, and the scorer's first pass
+labelled it "separated beyond seed spread" on a crude |mean| > sd rule, which over-claimed and
+was corrected to the paired t before anything was banked.
+
+**ZERO-SHOT, the leg the pre-registration called the genuinely open readout: UNANIMOUS.**
+On the three unseen theatres, scored on the fresh laydown-saved test sets,
+**qwenthink16 beats llm16, local16 AND tuned on 9/9 map-seed pairs each.**
+
+| map | qwenthink16 | llm16 | local16 | random16 | tuned |
+|---|---|---|---|---|---|
+| fulda | **0.1026** | 0.1182 | 0.1271 | 0.1306 | 0.1223 |
+| kgd_gvardeysk | **0.3643** | 0.3837 | 0.4028 | 0.4002 | 0.4403 |
+| ukraine | **0.1826** | 0.2140 | 0.2327 | 0.2311 | 0.2620 |
+
+**What is and is not licensed.** Licensed: at a MATCHED search budget and a matched curriculum
+strength, a curriculum authored by the stronger-reasoning model trained a defender that
+transfers better to unseen theatres, unanimously across nine map-seed pairs, while the
+in-distribution advantage is suggestive only. NOT licensed: any claim that the effect runs
+through curriculum strength, since the two curricula are equal on that measure to within 2%;
+whatever carries it is a property of the curriculum other than the quantity step 5's mechanism
+table uses, and naming it is future work rather than a result.
+
+**A striking observation, reported not explained.** The qwenthink16 arm's seed spread is
++/- 0.0004, some 30-50x tighter than every other arm (+/- 0.0137 to 0.0212). Three independent
+training runs landed on 0.1131 / 0.1130 / 0.1137. No mechanism is claimed; it is recorded
+because it is the kind of regularity that usually has a cause.
+
+**Consequences for the standing advice.** The gen42-derived recommendation not to run the
+ladder-wide training comparison rested on this predicted null. That prediction has now failed
+once, in the one place it was tested, so the recommendation is WITHDRAWN pending the gen44
+budget sweep, which measures with repeats whether authors differ at any budget. The
+"do-not-extend" chain in the gen42 ledger must be read with this result beside it.
