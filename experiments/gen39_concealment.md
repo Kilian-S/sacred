@@ -1640,3 +1640,52 @@ yet both models stop at 17-29% of the ceiling with feedback and thinking as subs
 (1e + rider): **what remains is combinatorial search, and the fix is architectural**,
 re-established on honest ground and now carrying its first real stress test (the thinking
 probe) with it.
+
+### STEP 5C PRE-REGISTERED (2026-08-08, Kilian's direction: "an additional row in the step-5
+### table, the best qwen model with thinking on"; registered BEFORE any authoring call or
+### training): THE qwenthink16 ARM
+
+**Question.** At the identical matched budget, does a curriculum authored by Qwen3.6-27B with
+thinking ON train a better defender than llama's llm16?
+
+**Predictions on record.** gen42's registered three-link NULL applies (in-distribution ties
+expected: all authors converge to similar curriculum strength at 16 evaluations, the knee sits
+~0.022, defender seed noise ~ the effect); running this arm is what makes that prediction
+judgeable. The genuinely open readout is the zero-shot leg, where authorship separated before
+(llm16 over local16 on 9/9 map-seed pairs at equal curriculum strength).
+
+**FROZEN, step 5 verbatim.** Positions only, DOC32 doctrine frozen, 16 exact evaluations per
+field with top-3 kept, the step-3 trainer unchanged, 5000 sorties, validation-selected
+checkpoint from the SAME inherited step-3 cache (its disclosed tuned-family limitation applies
+equally to the new arm), narva. Seeds {0, 1, 2} directly (the paired columns need all three;
+the staged-seed rule governed the original act's internal orderings, judged and closed).
+Authoring script `scratch/gen39_step5c_prep.py` (the llm16 machinery with the thinking caller,
+max_tokens 8000, fail-loud transport, per the phase1e_thinking precedent). Curriculum file
+`models/runs/gen39_step5/curricula_qwenthink.json` carries the four banked family keys copied
+BYTE-IDENTICALLY plus the new key (the trainer builds the test set from the same file, so the
+banked artefact stays untouched and the test set is preserved exactly); trainer gains the arm
+in choices + dispatch only (flag-gated, suite run after). **Test set UNCHANGED: the narva
+numbers are directly comparable with the banked n=3 table.**
+
+> **PRIMARY: the qwenthink16-trained defender is below the tuned control on >= 4/6 held-out
+> cells AND pooled, on >= 2/3 seeds** (the act's original clause, applied to the new arm).
+> **PAIRED READOUT (the question's target; no superiority bar):** pooled paired difference vs
+> llm16 and vs local16, mean +/- sd across seeds; differences within noise license only
+> "authorship indistinguishable", per the act's standing rule. The mechanism table gains the
+> arm's curriculum-strength row. **ZERO-SHOT (comparability repair pinned here):** the banked
+> per-map test sets are UNRECOVERABLE (the harness saved scores, not laydowns, and the LLM
+> search is stochastic; a defect disclosed here), so the new arm cannot be scored on the banked
+> sets. Plan: rebuild each unseen map's test set ONCE with laydowns SAVED this time, score ALL
+> fifteen checkpoints (12 banked + 3 new) on the fresh sets, and pair ONLY within the fresh
+> table; the banked zero-shot table stays banked and is never mixed with it. kgd remains the
+> pre-declared negative cell for LLM edges.
+
+**Costs, disclosed.** Authoring ~70-90 thinking calls (~2.5-3 h box GPU at ~125 s/call, the
+~9-10x thinking token budget disclosed); training 3 runs x 5000 sorties in parallel on the Mac
+(~3-4 h); scoring plus the fresh zero-shot leg ~1-2 h.
+
+**Consequences pre-committed.** Ties everywhere = the gen42 NULL prediction is CONFIRMED and
+the licensed sentence is "curriculum authorship is insensitive to the author's reasoning
+strength at matched search budget". Zero-shot separation = a composition-style transfer
+finding, stated per-model. No "best author" sentence exists unless it survives the paired
+columns on >= 2/3 seeds.
