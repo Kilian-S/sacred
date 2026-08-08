@@ -8,9 +8,10 @@
 
 ## The state in one paragraph (2026-08-04)
 
-The experimental campaign is COMPLETE across all three worktrees (35 chronicle entries,
-gen01-gen41; the gen40/gen41 dynamic-register arc of 2026-08-04/08 was a post-freeze
-follow-up on Kilian's instruction, closed with the Act-3 doctrine-head positive). Nothing is
+The experimental campaign is COMPLETE across all three worktrees (36 chronicle entries,
+gen01-gen43; the gen40-gen43 arcs of 2026-08-04/08 were post-freeze follow-ups on Kilian's
+instruction: the doctrine-head transfer positive, then the gen43 consolidation of the
+thesis's Act 2 onto one instrument). Nothing is
 running, no launch decision is pending, and all three trees are clean and committed. The Final Activities Report deadline (30 July) and the self-imposed experimental
 freeze (3 August) are past. **Writing is the critical path.** The thesis and poster are due
 10:00, Friday 28 August 2026 (12,000 words excluding appendices). In the thesis repo the
@@ -66,6 +67,7 @@ the change to the other trees in the same session.
 |---|---|
 | **gen27, the flagship.** One history-aware policy, trained on three cities, zero-shot on Gdansk beats the static cap (PRIMARY + STRONG 3/3, pooled 0.639x cap); no-window control causal. Corrected exact-optimum ratio 1.97x (yardstick-repair appendix) | (R) `experiments/gen27_dynamic_generalist.md` |
 | **gen35.** Dynamic K-boundary on 71-33 m=6; K=3 beats EVERY two-line rule 3/3 seeds (-8.6%), K=2 ties; the programme's first pre-registered beats-every-naive-rule cell; tabular window-Q at matched budget fails | (R) `experiments/gen35_dyn_kboundary.md` |
+| **gen43 (2026-08-08).** The consolidated Act-2 instrument: 71-33, both registers, one K-axis. Dynamic K=4 PRIMARY PASS 3/3 (0.182 vs best rule 0.2152, -15.4%; slack collected 43%, widening to the wall; tabular window-Q fails); static SACRED tracks the naive frontier from behind to a tie as mixing itself dies at K~8-9 (det optimal from K=9); exact v* to K=4, inv-vuln stack exactly optimal at K=1; reuse licence + the bit-replay-never-existed finding. The thesis's Act-2 tables rebuild from this ledger | (R) `experiments/gen43_unified_kboundary.md` |
 | **gen41 Act 3 (2026-08-08).** The doctrine-head transfer positive under the three-tier fairness ladder: zero-shot on Gdansk at K=2, PRIMARY PASS 2/3 (pooled 0.783x cap; beats the cap 6/6 on every seed, every map-only rule 3/3, every outcome-earning adaptive learner 2/3, seed 0 missing by 0.0005); causal control 1.161 at 0/6; the 0.943 -> 0.783 one-flag encoder ablation against Act 2 is the mechanism claim; STRONG FAIL disclosed (mechanism-told rules at 0.656 stay ahead) | (R) `experiments/gen41_deepwindow_zst.md` |
 | **gen19.** Single-instance pattern-of-life register; history-aware SACRED far below the static cap with causal no-window control (its STRONG "reaches the optimum" clause retired by the yardstick repair; rotation attains the exact optimum on m=4) | (R) `experiments/gen19_b1lite1.md` |
 | **gen26.** The K-to-min-cut boundary map; SACRED beats both max-flow heuristics at K=m-1 exact; ties the best naive full-menu stack at K=m; tabular FP with the same greedy oracle also works, so the licensed sentence is "learning is required, deep RL is one sufficient method" | (R) `experiments/gen26_kboundary.md` |

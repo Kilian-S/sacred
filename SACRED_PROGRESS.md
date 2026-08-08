@@ -1122,3 +1122,46 @@ to their supersession notes.)*
   entropy-as-mixed-strategy mechanism laid bare: the policy IS three weights), Obj-5 (the
   three-tier ladder as the comparative discipline's final form), ZST (the rescued like-for-like
   transfer claim). Ledger pointers only; numbers live in gen40/gen41.
+
+## 36. gen43: the consolidated Act-2 instrument - one instance, both registers, one K-axis  (2026-08-08 · branch `gen08-interdiction` · `experiments/gen43_unified_kboundary.md`)
+
+- **Goal (prospective):** Kilian's consolidation direction: the thesis's Act 2 stitched two
+  experiments on two instances with mismatched K columns (gen26 static, gen35 dynamic).
+  Rebuild it as ONE instrument: 71-33 (m=6, R=11, kx=8), both adversary registers, one
+  K-ladder run to each register's own measured wall, reusing banked cells where licensed.
+- **Headline results:** (i) **Free probes first:** exact LP feasible to K=4 (v* 0.1276 to
+  0.5106; the inv-vuln stack EXACTLY optimal at K=1); greedy-vs-exact stack fidelity 0.0000
+  at K<=4; the static right edge measured (mixing's value over the best committed route dies
+  between K=8 and K=9, det 0.8325 optimal from K=9; K=9/10 oracle-only); dynamic K=4 cheap,
+  K=5 nonexistent on this menu (gen40 wall). (ii) **The reuse licence:** banked static K=5/6
+  and dynamic K=2/3 reused verbatim - code identity proven by inspection (two inert gated
+  diffs), oracle side byte-exact, and bit-replay measured to NOT exist (two identical
+  invocations differ; macOS updated between the banked batches): pinned-SHA + n=3 spread is
+  the standard, and the new K=4/K=7 cells bracket the seam smoothly (clause satisfied).
+  (iii) **The batch (8 new cells, ~6.4 h, Kilian-launched):** static SACRED tracks the naive
+  frontier from behind at every K (0.160/0.328/0.463/0.605 at K=1-4 vs exactly/near-optimal
+  stacks; ties at K=7/8 as the frontier collapses onto det). **Dynamic K=4: PRIMARY PASS 3/3
+  AND pooled (0.1820 +/- 0.0036 vs best rule 0.2152, -15.4%)** - the beats-every-rule region
+  runs from K=3 to the game's wall with WIDENING margin (slack collected 26% -> 43%); STRONG
+  fails (1.31x the exact optimum); matched-budget tabular window-Q fails at both new cells;
+  worst-case committing premiums 1.60x/1.35x disclosed. (iv) One latent defect surfaced and
+  repaired post-results: the exact-path JSON writer crashed after training completed (logs +
+  checkpoints carry those cells); one-line fix, suite 171 green.
+- **What we learned:** (i) the two registers now separate on a single instrument - the
+  committed game extinguishes randomisation at high K while the observant game rewards it
+  ever more, to the wall; (ii) the reversal claim ("the ordering flips when the adversary
+  watches") no longer spans instances; (iii) bit-replay of multi-threaded training never
+  existed on this stack - the honest reproducibility unit is pinned-SHA code identity plus
+  seed spread, now ledgered as a measured fact; (iv) a crash after the last print costs
+  nothing IF per-eval artefacts and checkpoints are written incrementally.
+- **Thesis progression:** Act 2 rebuilds from one ledger: two mirrored tables and one figure
+  (static curve ending at the death of mixing, dynamic curve ending at the computability
+  wall), replacing the stitched gen26/gen35 presentation; 35-159's exact K=3 crossing
+  survives as a one-sentence second-instance replication remark.
+- **What it means for the thesis:** the Act-2 argument sharpens to its final form - where
+  the enemy commits, buy the two-line stack (exactly optimal at K=1, never beaten by
+  training on this instance); where the enemy watches, learning collects value no rule or
+  tabular learner reaches, growing with the budget to the exact wall.
+- **Thesis fit:** Obj-5 (the unified comparative instrument), Obj-1 (both walls as measured
+  laws), Obj-3 (function approximation load-bearing in the dynamic register). Numbers live
+  in `experiments/gen43_unified_kboundary.md` only.

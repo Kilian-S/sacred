@@ -645,7 +645,8 @@ def main():
             Path(args.json_out).write_text(json.dumps(
                 {"control": "fleet_route", "greedy_br": bool(args.greedy_br),
                  "loss_mixed": (sol.loss_mixed if sol is not None else None),
-                 "anchors": {k: float(v) for k, v in baselines.items()},
+                 "anchors": {k: float(v) for k, v in baselines.items()
+                             if isinstance(v, (int, float))},
                  "fleet_route": fc}, indent=2))
         return
     print("[vanilla] training (nominal travel objective, no adversary)...")
