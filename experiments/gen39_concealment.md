@@ -1698,3 +1698,40 @@ overrun. Plumbing amended, search untouched: thinking cap 8,000 -> 16,000; three
 round instead of two; unusable replies logged with finish_reason; per-field progress persisted
 so a crash loses nothing. The matched 16-evaluation budget, the round structure, the prompt
 and the temperature are unchanged.
+
+### STEP-5C ZERO-SHOT LEG, PART 1 (2026-08-08 20:27-20:31): THE COMPARABILITY REPAIR
+### DELIVERED, AND THE BANKED ZERO-SHOT PATTERN REPLICATES ON FRESH TEST SETS
+### (harness `scratch/gen39_zeroshot2.py`, artefacts `zeroshot2_build.json` + `zeroshot2.json`)
+
+The pre-registered repair is done and the banked table was never touched. Each unseen map's
+test set was rebuilt ONCE with LAYDOWNS SAVED, four families (llm16 / local16 / random16 /
+tuned) plus the oracle ceiling row, construction identical to the banked harness because every
+search function is IMPORTED from it. **Harness gate: the selfcheck reproduces the banked
+step-5 narva cells EXACTLY (max abs difference 0.00000).** Design choice disclosed: the test
+families stay the original four; qwenthink16 is a DEFENDER arm here, not a test family.
+
+The twelve BANKED defenders scored on the fresh sets (mean over 3 seeds; lower = better
+defender):
+
+| map | llm16 | local16 | random16 | tuned |
+|---|---|---|---|---|
+| kgd_gvardeysk | **0.3837** | 0.4028 | 0.4002 | 0.4403 |
+| ukraine | **0.2140** | 0.2327 | 0.2311 | 0.2620 |
+| fulda | **0.1182** | 0.1271 | 0.1306 | 0.1223 |
+
+**llm16 beats local16 on 8/9 map-seed pairs, random16 on 7/9, tuned on 8/9** (banked table:
+9/9 against local16). The one place authorship separated in the original act separates again
+on independently rebuilt test sets, which is the strongest available evidence that the banked
+zero-shot finding was not an artefact of its unrecoverable test object. Per map, llm16 beats
+every control 3/3 on kgd and ukraine, and 2/3 on fulda.
+
+**A pre-declared prediction, checked and NOT fired.** kgd_gvardeysk was pre-declared the
+negative cell for LLM edges (the free gate had measured random search beating the LLM proposer
+there, 0.0647 vs 0.0494). On the fresh sets kgd is llm16's STRONGEST cell, 3/3 against every
+control. Recorded as made-and-wrong, per the standing rule; the licensed reading is that
+curriculum-authorship advantage at the defender level does not follow the author's advantage
+at the force level on the same map.
+
+**Scope, binding.** These twelve rows are the BANKED arms only; the three qwenthink16
+defenders join when their training completes and the paired step-5c columns are read then.
+Nothing here pools with the banked zero-shot table, per the pre-registration.
