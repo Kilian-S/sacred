@@ -113,7 +113,7 @@ def build(maps, families, workers):
     print(f"[written] {BUILD}")
 
 
-def score(workers, out_path=None):
+def score(workers, out_path=None, only_maps=None):
     """Score all fifteen checkpoints on the fresh sets. Cell = mean over the four family
     instances plus the oracle-ceiling instance, exactly the banked cell definition.
 
@@ -125,8 +125,10 @@ def score(workers, out_path=None):
     maps = [m for m in art if all(
         all(f in art[m].get(str(fl), {}) and art[m][str(fl)][f] for f in ARMS)
         for fl in TEST_FIELDS)]
+    if only_maps:
+        maps = [m for m in maps if m in only_maps]
     if not maps:
-        raise SystemExit("no map has all four families banked yet; run --build first")
+        raise SystemExit("no (selected) map has all four families banked yet; run --build first")
     print(f"scoring maps: {maps}")
     ckpts = load_ckpts_all()
     print(f"checkpoints loaded: {len(ckpts)}")
@@ -206,7 +208,7 @@ def main():
         build([m for m in a.maps.split(",") if m],
               [f for f in a.families.split(",") if f], a.workers)
     if a.score:
-        score(a.workers, a.out)
+        score(a.workers, a.out, [m for m in a.maps.split(',') if m])
     if a.merge:
         merged = _load(OUT, {})
         for p in sorted(OUT.parent.glob("zeroshot2_score_*.json")):
