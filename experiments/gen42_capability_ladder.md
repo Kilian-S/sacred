@@ -287,3 +287,21 @@ rung for error bars, oracle-only at seconds per try. Train only if two authors s
 more than seed noise at a budget that still clears the trainable knee. The fallback finding
 is itself citable and nearly free: a modest search budget erases the difference between a 2B
 and a 27B as curriculum authors.
+
+### INDEPENDENT VERIFICATION OF AMENDMENTS 1-2 (2026-08-08, second instance, recomputed
+### from the raw artefacts with a fresh bootstrap seed)
+
+Confirmed exactly: the 3.5-27B within-rung B-COMP spread 0.0702 (0.0594-0.1296); the
+B-SLOT endpoints (4B median CI [0,7]% vs 3.5-27B [12,48]%, non-overlapping); the 4B-9B
+step unresolved; the crown's pooled thinking rows (OFF 16%, ON 20%, difference CI
+[-12,+25], no score claim); the top-clump medians 14-17%; and the 2B trace census
+(truncation 5/32, wrong team count 8/32) to the call. Two sharpenings, both in the
+amendments' favour. (i) The between-rung spread of VALID same-mode medians is 0.0138, not
+0.0303 (that figure included a format-limited or cross-mode cell), so the within-to-between
+ratio is ~5x, and the underpowered verdict STRENGTHENS. (ii) The borderline pairs (B-COMP
+9B-vs-3.5-27B, B-SLOT 9B-vs-27B) flip between separating marginally and not under
+bootstrap reseeding; with the demonstrated same-instrument replicate wobble (29% then 14%)
+no middle-step or pairwise sentence is licensed in either direction, exactly the
+amendments' conclusion. The do-not-extend reasoning for the trained row (the three-link
+chain, the ~0.022 knee, the 9B-at-8 hazard, eff@16 strengths 0.034-0.039 across all six
+rungs) reproduces from the banked artefacts.
