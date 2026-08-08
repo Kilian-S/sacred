@@ -66,3 +66,13 @@ CI excluding zero; both directions of every contrast reportable.
    Mac; the step-5c training is unaffected (different machine).
 
 ## RESULTS (appended per config; nothing above changes after results exist)
+
+### BANK BUILT (2026-08-08, 21 min Mac, oracle-only; `models/runs/gen43_exam/bank.json`)
+
+40 items (narva 8, kgd 10, ukraine 11, fulda 11), 15 candidates screened out (5 too few
+slots, 10 degenerate), 3,028 combinations valued exactly. Difficulty mix (S,K): (6,2) x8,
+(8,2) x10, (8,3) x8, (10,3) x9, (12,3) x5; ceilings 0.0125-0.0662; ceiling-to-median
+quartiles 2.9 / 5.5 / 14.2. Disclosure: 2 of 40 items have a near-zero MEDIAN combination
+(most answers score nothing, a few score; legal under the pinned screens and kept); the
+percentile mark handles them cleanly, the share mark is unaffected, and they are flagged in
+the artefact rather than replaced.
