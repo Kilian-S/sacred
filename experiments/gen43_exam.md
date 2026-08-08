@@ -151,3 +151,23 @@ result to every digit and `diff` against the surviving original log is empty, so
 agree on share, percentile and SOLVED. Both logs are preserved (`_ORIGINAL_2008`, `_rerun`).
 Lesson recorded: pinned output paths plus two uncoordinated drivers is a silent-corruption
 hazard, and a null summary field must be treated as an error rather than a datum.
+
+### AMENDMENT (2026-08-08 23:2x, BEFORE the calls; overnight box work, eval-only)
+
+The thinking contrast (+0.028, CI [-0.038, +0.093]) is the act's least settled row and carries
+a disclosed asymmetry: the thinking arm decodes at temperature 0.6 with a pinned seed, every
+other arm at temperature 0. Two additions, in priority order, both REPORTED rows that never
+replace the pinned seed-0 paper and never enter the pre-registered contrasts above:
+
+1. **Temperature control (the confound).** The crown, thinking ON, at temperature 0, same
+   bank, same prompt. This separates deliberation from sampling temperature: if the thinking
+   gap survives at matched temperature it is about reasoning, and if it vanishes it was the
+   decoding asymmetry. Artefact `qwen3-27b_think_t0.json`.
+2. **Noise floor for the one stochastic arm.** The pinned thinking configuration repeated at
+   seeds 1 and 2, giving the arm's own run-to-run spread. The +0.028 gap is interpretable only
+   against it. Artefacts `qwen3-27b_think_s1.json`, `_s2.json`.
+
+Pre-committed reading: if the thinking arm's own seed spread is comparable to or larger than
++0.028, the licensed sentence hardens from "unresolved" to "within the arm's own sampling
+noise", which is a stronger and more useful statement than a bare null. Both directions
+reportable; nothing here reopens the pinned contrasts.
