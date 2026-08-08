@@ -171,3 +171,14 @@ Pre-committed reading: if the thinking arm's own seed spread is comparable to or
 +0.028, the licensed sentence hardens from "unresolved" to "within the arm's own sampling
 noise", which is a stronger and more useful statement than a bare null. Both directions
 reportable; nothing here reopens the pinned contrasts.
+
+**Amendment plumbing (2026-08-08 23:5x).** The runner had temperature and seed as literals, so
+the amendment rows were unrunnable. The stagehand was instructed NOT to edit the instrument and
+correctly stood down rather than work around it (three workarounds considered and rejected in
+its report, including a rewriting proxy and an edited copy). The flags were then added
+deliberately by the analyst as `--temperature` / `--seed`, both defaulting to None, which
+reproduces the pinned decoding exactly. **Inertness PROVEN, not asserted:** the crown
+thinking-off paper was re-run through the patched runner and compared item by item against the
+banked artefact, 40/40 items agreeing on status, choice, share, solved and percentile, zero
+mismatching fields. The summary block now records the temperature and seed actually used, so
+every future paper carries its own decoding provenance.

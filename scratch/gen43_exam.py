@@ -23,7 +23,11 @@ KEY = "iits-local-key"
 SYSTEM = "You are an air-defence planner choosing emplacements."
 
 
-def call(base, model, prompt, k, thinking):
+def call(base, model, prompt, k, thinking, temperature=None, seed=None):
+    """temperature/seed default to None, which reproduces the PINNED decoding exactly
+    (0.6 + seed 0 for the thinking arm, 0.0 and no seed otherwise). They exist only for the
+    pre-registered 2026-08-08 amendment rows (temperature control, seed repeats) and are
+    additive: every banked paper's invocation is byte-identical under the defaults."""
     import requests
     schema = {"type": "object",
               "properties": {"slots": {"type": "array", "items": {"type": "string"},
@@ -33,12 +37,12 @@ def call(base, model, prompt, k, thinking):
             "messages": [{"role": "system", "content": SYSTEM},
                          {"role": "user", "content": prompt}],
             "max_tokens": 16000 if thinking else 1000,
-            "temperature": 0.6 if thinking else 0.0,
+            "temperature": (0.6 if thinking else 0.0) if temperature is None else temperature,
             "chat_template_kwargs": {"enable_thinking": bool(thinking)},
             "response_format": {"type": "json_schema",
                                 "json_schema": {"name": "slot_choice", "schema": schema}}}
     if thinking:
-        body["seed"] = 0
+        body["seed"] = 0 if seed is None else seed
     r = requests.post(base.rstrip("/") + "/chat/completions", json=body,
                       headers={"Authorization": f"Bearer {KEY}",
                                "content-type": "application/json"}, timeout=900)
@@ -65,6 +69,10 @@ def main():
     ap.add_argument("--base", default="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1")
     ap.add_argument("--thinking", choices=("off", "on"), default="off")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--temperature", type=float, default=None,
+                    help="amendment rows only; default reproduces the pinned decoding")
+    ap.add_argument("--seed", type=int, default=None,
+                    help="amendment rows only; default is the pinned seed 0")
     a = ap.parse_args()
     think = a.thinking == "on"
     tag = a.model + ("_think" if think else "")
@@ -78,7 +86,8 @@ def main():
                    share=None, solved=False, pct=None, choice=None)
         for attempt in range(2):
             try:
-                txt, fr, reasoning, usage = call(a.base, a.model, it["prompt"], it["K"], think)
+                txt, fr, reasoning, usage = call(a.base, a.model, it["prompt"], it["K"], think,
+                                                 a.temperature, a.seed)
                 traces.append(dict(id=it["id"], attempt=attempt, finish=fr, usage=usage,
                                    reasoning_len=len(reasoning), content=txt[:2000]))
                 names = tuple(parse_choice(txt, it))
@@ -98,6 +107,7 @@ def main():
                   f"  [{(time.time()-t0)/60:.1f} min]", flush=True)
     ok = [r for r in rows if r["status"] == "ok"]
     summary = dict(model=a.model, thinking=a.thinking, base=a.base, n=len(rows),
+                   temperature=a.temperature, seed=a.seed,
                    format_fail=len(rows) - len(ok),
                    mean_share=float(np.mean([r["share"] for r in ok])) if ok else None,
                    solved=sum(r["solved"] for r in ok),
