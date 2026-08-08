@@ -285,6 +285,69 @@ for Kilian's asynchronous review. **The C batch (3 doctrine-head seeds + head-on
 no-window control, 24,000 sorties, pool v2) LAUNCHED AUTONOMOUSLY per Kilian's 2026-08-07
 conditional go; bars as pre-registered above.**
 
+### ACT 3 RESULT (2026-08-08; 2 waves of 2 arms, completed 03:59; high-precision pass
+### 20,000 rollout sorties per held-out instance at each arm's select-on-train checkpoint;
+### artefacts `models/runs/gen41_act3w1/final_eval_seed*.json`)
+
+**PRIMARY: PASS, 2/3 seeds (bar: >= 2/3). STRONG: FAIL. Causal control clean. The first
+pass of the gen41 arc, and the first cell in the programme where a trained policy beats
+every intel-free rule AND every knowledge-earning adaptive learner zero-shot on a
+never-seen city.**
+
+| object (pooled ratio-to-cap, 6 held-out Gdansk instances) | value |
+|---|---|
+| full-menu exact optimum | 0.439 |
+| witness rule (Tier 1; the doctrine class's certified ceiling) | 0.478 |
+| composed family best (Tier 1, told both insights) | 0.656 |
+| **SACRED doctrine-head seed 1 / seed 2 / seed 0** | **0.746 / 0.781 / 0.823** (pooled **0.783 +/- 0.032**) |
+| self-tuned composed (Tier 2, binding gate) | 0.8223 |
+| EXP3 over the menu / corridors (Tier 2) | 0.984 / 1.032 |
+| corridor rotation (Tier 0) | 1.005 |
+| **no-window causal control** | **1.161 (beats the cap 0/6)** |
+| full-menu rotation (Tier 0) | 1.277 |
+| avoid-where-ambushed (Tier 2) | 1.299 |
+
+Clause detail. (i) cap-beats: **6/6 on every seed** (bar >= 4/6). (ii) below every Tier-0
+row: 3/3. (iii) below every Tier-2 row: seed 1 and seed 2 pass; **seed 0 misses by 0.0005
+(0.8228 vs the gate's 0.8223)**, stated exactly rather than rounded, and the seed is
+counted as a FAIL. Worst-case one-shot premiums 1.24-1.27x. Per-OD values are tabulated in
+the artefacts; the trained policy's best cell (0.55-0.66 on OD 303-15) reaches the composed
+rule's level, and its worst (0.90-0.93) does not.
+
+**The architecture ablation, which is the act's cleanest reading.** Act 2 and Act 3 differ
+in exactly ONE flag (`--head-only`); pool, budget, bars, seeds, and evaluation are
+identical. Full net: 0.887 / 0.940 / 1.003, pooled 0.943, PRIMARY 0/3. Doctrine head:
+0.823 / 0.746 / 0.781, pooled 0.783, PRIMARY 2/3. **Masking the encoder out of the route
+scores improves zero-shot transfer by 17% and converts a failed act into a passing one**,
+confirming the Act-2 autopsy (instance-tuned encoder variants were the transfer failure)
+by intervention rather than inference.
+
+**What is NOT licensed (binding).** The told-rules tier is unbeaten: the composed rule sits
+at 0.656 and the trained policy beats it on only 2 of 18 seed-instance cells, so STRONG
+fails and no sentence may claim SACRED beats every rule at this operating point. The policy
+also captures only ~42% of its own class's certified headroom (cap 1.0 -> witness 0.478;
+policy 0.783), so the residual gap is a TRAINING-EFFICIENCY gap inside a provably adequate
+policy class, not a representability limit; the witness weights are known and universal, so
+regularising training towards them is the recorded next step. The causal control lands at
+1.161 rather than exactly 1.0, disclosed as such (it beats the cap nowhere, which is the
+qualitative claim the control exists to make).
+
+**Licensed sentences.** Zero-shot on a never-seen city, at an interdiction budget of two,
+one doctrine-head policy trained by adversarial self-play with no labels beats the static
+cap on every held-out instance on every seed, beats every intel-free rule (rotation,
+full-menu rotation) 3/3, and beats every adaptive learner that must earn its knowledge from
+outcomes (EXP3 variants, avoid-where-ambushed, the self-tuned composed rule) on 2/3 seeds,
+with the window channel causally attributed by the blinded control. Hand-written rules that
+are TOLD the enemy's mechanism remain ahead.
+
+**Process disclosures for this act.** Two waves of two arms (memory, see the OOM incident
+below); wave 2 launched by a detached lock-guarded chain (`scratch/gen41_wave2_chain.sh`,
+rehearsed end-to-end before arming) and verified at first-print level. One evaluator defect
+caught BEFORE the verdict and fixed: `gen41_final_eval.py` did not apply the head-only mask,
+which would have scored these arms under a different policy class; it now reads `head_only`
+from each run's own artefact, so the two can never disagree. Suite 171 green at the run SHA;
+nice 5 throughout (wall-clock only); every bar judged exactly as pre-registered, none moved.
+
 ### OOM INCIDENT + CONFIG REVISION (2026-08-07 evening; disclosed in full)
 
 **What happened.** The four-arm C batch OOM-killed Kilian's machine (~60 GB). Root cause

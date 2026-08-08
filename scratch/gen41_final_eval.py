@@ -75,6 +75,13 @@ def main():
         ck = RUN_DIR / f"{arm}_ckpts" / f"actor_ep{sel['sortie']}.pt"
         prot = make_prot()
         prot.actor.load_state_dict(torch.load(str(ck), weights_only=True))
+        # The arm must be SCORED under the same policy class it was TRAINED under: the
+        # doctrine-head arms mask the encoder out of the route scores, so evaluating them
+        # without the mask would score a different policy entirely. Read from the run's own
+        # artefact rather than a flag, so the two can never disagree.
+        head_only = bool(js.get("head_only", False))
+        prot.actor.head_only = head_only
+        print(f"[{arm}] head_only={head_only}, checkpoint {ck.name}", flush=True)
         rows = []
         for i, it in enumerate(test):
             loss, marg = rollout(prot, it, T_FINAL, no_window, seed=1000 + i)
