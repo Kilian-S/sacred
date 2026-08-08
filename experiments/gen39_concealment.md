@@ -1689,3 +1689,12 @@ the licensed sentence is "curriculum authorship is insensitive to the author's r
 strength at matched search budget". Zero-shot separation = a composition-style transfer
 finding, stated per-model. No "best author" sentence exists unless it survives the paired
 columns on >= 2/3 seeds.
+
+**STEP 5C AUTHORING AMENDMENT (2026-08-08, before any result exists; incident + plumbing
+fix).** The first authoring run aborted at field 1005 (its opening round returned unusable
+content twice; fields 1000-1004 had authored cleanly at 0.029-0.039). Diagnosis: the thinking
+trace brushes the 8,000-token cap on the larger step-5 digest prompt, leaving empty content on
+overrun. Plumbing amended, search untouched: thinking cap 8,000 -> 16,000; three tries per
+round instead of two; unusable replies logged with finish_reason; per-field progress persisted
+so a crash loses nothing. The matched 16-evaluation budget, the round structure, the prompt
+and the temperature are unchanged.

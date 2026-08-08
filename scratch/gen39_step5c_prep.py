@@ -33,9 +33,10 @@ from scratch.gen39_phase1f import SCHEMA, llm_prompt, map_digest
 from scripts.train_gen39_conceal import TEST_FIELDS, TRAIN_FIELDS, narva_base
 from src.envs.aerial_conceal import resample_field
 
-MODEL, THINK_TOKENS = "qwen3-27b", 8000
+MODEL, THINK_TOKENS = "qwen3-27b", 16000
 OUT = Path("models/runs/gen39_step5/curricula_qwenthink.json")
 BANKED = Path("models/runs/gen39_step5/curricula.json")
+PROGRESS = Path("models/runs/gen39_step5/qwenthink_progress.json")
 
 
 def call_thinking(base, key, model, system, user, schema=None, max_tokens=2500,
@@ -68,9 +69,9 @@ def qwenthink16(base, digest, pool, field):
         if left <= 0:
             break
         tri = []
-        for _try in range(2):
+        for _try in range(3):
             try:
-                txt, _m = call_thinking(BASE_URL, KEY, MODEL,
+                txt, fr = call_thinking(BASE_URL, KEY, MODEL,
                                         "You are an air-defence planner running a search.",
                                         llm_prompt(digest, hist, min(4, left)), schema=SCHEMA,
                                         temperature=0.9, timeout=900)
@@ -80,7 +81,11 @@ def qwenthink16(base, digest, pool, field):
                         tri.append(tuple(sorted(set(s))))
                 if tri:
                     break
-            except Exception:                                          # noqa: BLE001
+                print(f"  [unusable reply] field {field} try {_try}: finish={fr} "
+                      f"content_len={len(txt)}", flush=True)
+            except Exception as e:                                     # noqa: BLE001
+                print(f"  [parse FAILED] field {field} try {_try}: {type(e).__name__}",
+                      flush=True)
                 continue
         tri = [t for t in dict.fromkeys(tri) if t not in dict(hist)][:left]
         if not tri:
@@ -97,15 +102,20 @@ def main():
     digest = map_digest(base, pp0)
     banked = json.loads(BANKED.read_text())
     fields = list(TRAIN_FIELDS) + list(TEST_FIELDS)
-    new: dict = {}
+    new: dict = json.loads(PROGRESS.read_text()) if PROGRESS.exists() else {}
+    if new:
+        print(f"  resuming: {len(new)} fields already done", flush=True)
     t0 = time.time()
     with mp_.get_context("spawn").Pool(9, initializer=p5._init) as P:
         for field in fields:
+            if str(field) in new:
+                continue
             h = sorted(qwenthink16(base, digest, P, field), key=lambda x: -x[1])[:p5.KEEP]
             if not h:
                 raise RuntimeError(f"field {field}: zero usable proposals - transport or "
                                    f"model failure, not a curriculum")
             new[str(field)] = [[list(map(int, t)), float(v)] for t, v in h]
+            PROGRESS.write_text(json.dumps(new, indent=1))
             print(f"  field {field}: qwenthink16 best {new[str(field)][0][1]:.4f} "
                   f"(kept {len(h)})  [{(time.time()-t0)/60:.1f} min]", flush=True)
     out = dict(banked)
