@@ -153,6 +153,32 @@ NON-monotone, a flat 0.062-0.090 band from 4B to the crown: composition quality 
 track parameter count in this family. The 2B is FORMAT-LIMITED on both gated phases (the
 smallest rung fails at output discipline before capability can be read).
 
+**AMENDMENT (2026-08-08, before any B-COMP sentence is used anywhere): B-COMP AS RUN
+CANNOT RESOLVE BETWEEN-MODEL DIFFERENCES, so reading (i)'s "flat" clause is restated as
+UNDERPOWERED, not as measured sameness.** Per-force values (median over the 3 fields, the
+`llm` arm) spread far more WITHIN one rung than the rung medians spread between rungs: the
+3.5-27B alone spans 0.0594-0.1296 (spread 0.0702) while the six rung medians span
+0.0618-0.0922 (spread 0.0303). Bootstrap 95% CIs on the difference of medians (20,000
+resamples, rng(0)) contain zero for 4B-vs-3.5-27B [-0.0129, +0.0436], 4B-vs-crown
+[-0.0206, +0.0423] and 3.5-27B-vs-crown [-0.0178, +0.0100]; only 9B-vs-crown separates
+[-0.0284, -0.0028], which at 6 comparisons is what one expects by chance. **Binding
+consequence:** no gen42 sentence may say composition quality is equal, better or worse
+across rungs; the licensed sentence is that at n=16 per rung the instrument's
+between-attempt noise exceeds any between-model effect it could detect, and the
+discriminating gap gen39 step 2 relied on (0.0747 vs 0.0603, ~24%) is itself of the same
+order as this noise, which is a second reason the standing banked-aggregation
+recomputation flag must be cleared before any step-2 comparison. A powered B-COMP would
+need a pre-run discrimination check (two known-different composers separated at the chosen
+n) and materially more samples; recorded as the method fix, not run.
+
+**2B FAILURE MODE (measured from `calls_comp.json`, 32 calls per rung): discipline, not
+comprehension.** The 2B returned correctly structured plans with the right fields
+(archetype, emplacement zone, doctrine, rationale); it failed by sending the wrong number
+of teams (1 team on 6 calls, 5 teams on 2, against the required 3) and by running out of
+the token budget mid-answer on 5 calls (finish_reason `length`). The 4B and 3.5-27B were
+32/32 on both counts. The FORMAT-LIMITED marking therefore means "cannot hold the answer
+format", NOT "cannot read the task"; the thesis sentence must say so.
+
 **Reading (ii), generation vs size at fixed 27B (both thinking off).** Scores are flat
 across the generation step: slot 15% -> 14%, comp e1 0.0726 -> 0.0739, eff@96 0.0479 ->
 0.0442. The generation shows up in CONTROL behaviour instead: the relabel collapse on the
