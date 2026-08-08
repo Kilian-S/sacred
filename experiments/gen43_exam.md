@@ -76,3 +76,78 @@ quartiles 2.9 / 5.5 / 14.2. Disclosure: 2 of 40 items have a near-zero MEDIAN co
 (most answers score nothing, a few score; legal under the pinned screens and kept); the
 percentile mark handles them cleanly, the share mark is unaffected, and they are flagged in
 the artefact rather than replaced.
+
+### ALL SEVEN PAPERS SAT (2026-08-08 20:06 - 22:31; marker `scratch/gen43_mark.py`;
+### per-config artefacts + full traces in `models/runs/gen43_exam/`)
+
+**Zero format failures anywhere in the act, 7/7 configurations, 40/40 items each.** The
+paired redesign delivered the resolving power it was built for.
+
+| config | share of ceiling | solved /40 | mean percentile |
+|---|---|---|---|
+| qwen35-2b | 0.483 | 3 | 0.664 |
+| qwen35-4b | 0.649 | 6 | 0.821 |
+| qwen35-9b | 0.719 | 6 | 0.868 |
+| qwen35-27b | 0.783 | 6 | 0.877 |
+| qwen3-27b (crown, off) | 0.830 | 11 | 0.912 |
+| qwen3-27b (crown, thinking on) | 0.858 | 12 | 0.924 |
+| llama-3.3-70b (off-ladder reference) | 0.627 | 4 | 0.806 |
+
+**Per-item paired contrasts (share; bootstrap 95% CI over 40 pairs; SEPARATED = CI excludes
+zero):**
+
+| contrast | mean diff | CI | verdict |
+|---|---|---|---|
+| size 4B -> 9B | +0.070 | [-0.005, +0.157] | indistinguishable |
+| size 9B -> 27B | +0.064 | [-0.023, +0.165] | indistinguishable |
+| **size CUMULATIVE 4B -> 27B** | **+0.134** | **[+0.030, +0.246]** | **SEPARATED** |
+| **size CUMULATIVE 2B -> 27B** | **+0.300** | **[+0.199, +0.405]** | **SEPARATED** |
+| GENERATION 3.5-27B -> 3.6-27B | +0.047 | [-0.017, +0.116] | indistinguishable |
+| THINKING off -> on (crown) | +0.028 | [-0.038, +0.093] | indistinguishable |
+| **llama-70B vs crown** | **+0.203** | **[+0.097, +0.306]** | **SEPARATED** |
+| **llama-70B vs 3.5-27B** | **+0.156** | **[+0.057, +0.258]** | **SEPARATED** |
+
+Spearman(share vs parameter count) over the four Qwen3.5 rungs: **rho +1.000, exact
+permutation p 0.083**, which IS the floor at n=4 (24 orderings), so the ordering is as strong
+as four rungs can express and is reported as such, never as a conventional significance.
+*(The marker's first pass printed scipy's asymptotic p of 0.000, which is meaningless at
+rho=1, n=4; corrected to the exact permutation p before any reading was taken.)*
+
+**Solved-exactly, tested pairwise (exact binomial on discordant items), because a count does
+not wobble the way a small-sample median does:** generation 6 items solved only by the crown
+vs 1 only by the 3.5-27B, p 0.125 (SUGGESTIVE, not licensed); thinking 4 vs 3, p 1.000;
+size 4B->27B 4 vs 4, p 1.000; **llama vs crown 1 vs 8, p 0.039 (SEPARATED)**.
+
+**Readings, and what they do to gen42.**
+1. **Size genuinely helps, and the effect is cumulative rather than step-wise.** The ordering
+   is perfectly monotone and both cumulative contrasts separate, while no single step does.
+   gen42's surviving endpoint claim is CONFIRMED with resolving power and extended: the whole
+   4B-to-27B span is real, not merely 4B-vs-27B at the extremes of a noisy instrument.
+2. **Generation and thinking remain unresolved even at n=40 paired**, with both point
+   estimates positive and small (+0.047, +0.028). The generation effect is suggestive on the
+   harder exact-solve mark (p 0.125) and absent on thinking, so the licensed sentence stays
+   "no measurable difference", now with tight intervals instead of gen42's helpless ones.
+3. **NEW, and it overturns a gen42 clump:** llama-3.3-70b sits clearly BELOW both 27Bs on
+   share (CIs exclude zero) and below the crown on exact solves (p 0.039). gen42 could not
+   separate llama from the 27Bs at all; the powered instrument does. A 2024 70B is measurably
+   worse at this task than 2026 27Bs, so neither parameter count nor vintage alone predicts
+   it, but on this family-and-vintage pair the modern smaller models win.
+4. **The 2B's format problem was an INSTRUMENT artefact, corrected here.** gen42 marked it
+   FORMAT-LIMITED (11/16 and 5/8 valid replies); on this paper it returns 40/40 parsable
+   answers and simply scores lowest. The gen42 wording ("cannot hold the answer format") is
+   therefore scoped to that harness's schema and prompt, not to the model.
+5. Binding rule 1 still holds: none of this pools with gen42 or gen39; those acts are
+   motivation, and the share scale here is not comparable to their share-of-ceiling numbers.
+
+**PROCESS INCIDENT, disclosed (found by the stagehand, repaired, and material).** A second,
+ad-hoc track from another session ran the same three gateway papers to the same pinned output
+paths. Its llama paper fired at ~21:50, precisely while llama was down for the mounting
+window, took 40 x 502 Bad Gateway, and **overwrote the good llama artefact with a
+format-fail-40, null-share row**. Nothing raised an alarm; it surfaced only when a summary
+line threw on the null. Blast radius was llama only: the two crown artefacts were also
+rewritten but byte-identically, since temperature 0 and a pinned seed make them reproducible.
+Repaired 22:58-23:00 by re-running the pinned command unchanged; it reproduced the 20:08
+result to every digit and `diff` against the surviving original log is empty, so all 40 items
+agree on share, percentile and SOLVED. Both logs are preserved (`_ORIGINAL_2008`, `_rerun`).
+Lesson recorded: pinned output paths plus two uncoordinated drivers is a silent-corruption
+hazard, and a null summary field must be treated as an error rather than a datum.

@@ -28,6 +28,8 @@ CONFIGS = ["qwen35-2b", "qwen35-4b", "qwen35-9b", "qwen35-27b",
            "qwen3-27b", "qwen3-27b_think", "llama-3.3-70b"]
 CONTRASTS = [("qwen35-4b", "qwen35-9b", "size 4B->9B"),
              ("qwen35-9b", "qwen35-27b", "size 9B->27B"),
+             ("qwen35-2b", "qwen35-27b", "size CUMULATIVE 2B->27B"),
+             ("qwen35-4b", "qwen35-27b", "size CUMULATIVE 4B->27B"),
              ("qwen35-27b", "qwen3-27b", "GENERATION 3.5->3.6 at 27B"),
              ("qwen3-27b", "qwen3-27b_think", "THINKING off->on (crown)"),
              ("llama-3.3-70b", "qwen3-27b", "reference: llama-70B vs crown"),
@@ -88,13 +90,25 @@ def main():
     rung = [(RUNG_B[c], got[c]["summary"]["mean_share"]) for c in RUNG_B
             if c in got and got[c]["summary"]["mean_share"] is not None]
     if len(rung) >= 3:
+        from itertools import permutations
+
         from scipy.stats import spearmanr
         x, y = zip(*rung)
-        rho, p = spearmanr(x, y)
+        rho, _ = spearmanr(x, y)
+        # scipy's asymptotic p is meaningless at n=4 (rho=1 -> t=inf -> p=0). Exact
+        # permutation p instead: the share of orderings at least this monotone.
+        allr = [abs(spearmanr(x, p_)[0]) for p_ in permutations(y)]
+        p_exact = float(np.mean([r >= abs(rho) - 1e-12 for r in allr]))
         print(f'\nSpearman(share vs parameter count) over {len(rung)} Qwen3.5 rungs: '
-              f'rho {rho:+.3f} (p {p:.3f})')
+              f'rho {rho:+.3f}, exact permutation p {p_exact:.3f} '
+              f'({len(allr)} orderings; the floor at n={len(rung)} is {2/len(allr):.3f})')
     else:
         print(f'\nSpearman: pending ({len(rung)}/4 Qwen3.5 rungs sat)')
+
+    print("\nSOLVED-EXACTLY counts (a count, so not subject to the median's small-sample wobble):")
+    for c in CONFIGS:
+        if c in got:
+            print(f'  {c:<18}{got[c]["summary"]["solved"]:>3}/40')
 
 
 if __name__ == "__main__":
