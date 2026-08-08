@@ -241,3 +241,49 @@ run was completed by the supervisor's ops driver (`gen42_ops_driver.sh`, archive
 the logs) with byte-identical serve flags and battery invocations; fix before any reuse.
 Box end state verified: gateway, llama and qwen all serving, rung ports clear, no sudo,
 no other user's process touched.
+
+### THE TRAINED-ROW QUESTION, ANSWERED BY PREDICTION RATHER THAN SPEND (2026-08-08,
+### Kilian's question: would training SACRED against each rung's curriculum show that
+### better reasoning makes a better adversarially-trained defender? Analysis only, no CPU)
+
+**Prediction, pre-registered here so it can be judged if the act is ever run: NULL, and the
+mechanism says why.** The chain from model quality to defender quality has three links and
+all three are measured weak. (1) Model -> curriculum: at gen39 step 5's matched 16-evaluation
+budget every rung authors a curriculum of essentially one strength, B-EFF@16 = 0.0359 (2B),
+0.0394 (4B), 0.0341 (9B), 0.0384 (3.5-27B), 0.0352 (crown off), 0.0365 (crown on), against
+llama's winning llm16 curriculum at 0.0393 and the TYING hill-climb local16 at 0.0222.
+(2) Curriculum -> defender: step 5 established saturation, with 0.0007 (step 3) failing and
+every directed arm in 0.022-0.039 succeeding, and recorded explicitly that threat alone does
+not order the arms. (3) The defender readout itself carries seed spread (step 5 pooled
++/- 0.011-0.016) comparable to any effect sought. Every rung sits above the saturation knee,
+so the 16-evaluation search LAUNDERS author differences; gen39's own local16 control already
+demonstrated this by tying the LLM with no language model at all.
+
+**Corollary on the pairing (asked directly): swapping the 2B for the 4B WEAKENS the test.**
+The 4B posts the family's HIGHEST curriculum strength (0.0394, llama's winning value to
+three decimals) and sits ABOVE the crown (0.0352), so a 4B-vs-crown pair would run the
+nominally stronger author as the "weak" arm. The 2B is the only rung with an independent
+reason to be weak (FORMAT-LIMITED), yet it too lands at 0.0359, above the knee.
+
+**Caveat on the evidence, stated plainly:** every B-EFF figure above is a SINGLE search run
+per rung (running-best curves, no repeats), so the 0.034-0.039 band is six n=1 readings.
+The prediction leans on the saturation mechanism, which is banked and robust to their
+precision, not on the readings themselves.
+
+**Budget economics, measured (`summary.json` eff timings vs proposals scored): a try is
+CHEAP.** 2.7-5.0 s per scored proposal; the 16-try search costs about a minute, the 96-try
+search 4-7 minutes, against ~hours for one training run. There is therefore NO cost argument
+for reducing the budget from 16 to 8; the only reason to lower it is DISCRIMINATION, and
+that case is weak too: 4 of 6 rungs had already plateaued by try 8 (identical @8 and @16
+values), so the wider spread at 8 is substantially early-draw luck, and with n=1 a flat
+curve cannot distinguish finding the peak fast from proposing the same idea repeatedly.
+Hazard at 8: the 9B lands at 0.0193, BELOW the ~0.022 trainable knee, which would confound
+"worse author" with "curriculum too weak to teach".
+
+**The recorded cheap alternative, if the question is ever to be tested rather than reasoned
+(NOT run, needs its own pre-registration since 16 is what step 5 was registered on):**
+curriculum strength as a function of evaluation budget (2/4/8/16), ~5 repeated searches per
+rung for error bars, oracle-only at seconds per try. Train only if two authors separate by
+more than seed noise at a budget that still clears the trainable knee. The fallback finding
+is itself citable and nearly free: a modest search budget erases the difference between a 2B
+and a 27B as curriculum authors.
