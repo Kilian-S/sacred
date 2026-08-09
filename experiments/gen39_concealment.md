@@ -1829,3 +1829,30 @@ compare their defenders; recorded as the next experiment, not run.
 quantity that is cheap to measure, already differs in the right direction, and explains why the
 effect showed up far more strongly in transfer (9/9 unanimous) than in-distribution (suggestive
 only), which is exactly what a diversity mechanism predicts.
+
+**REPLICATION of the diversity signature on INDEPENDENT data (2026-08-09 ~03:10, free).** The
+gen44 sweep saved every laydown, so the same quantity can be computed on searches that share no
+data with the step-5c curricula (different fields, three repeats each, budget 16):
+
+| config | mean pairwise Jaccard across fields (3 repeats) | distinct sites | strength @16 |
+|---|---|---|---|
+| **crown, thinking ON** | **0.022 +/- 0.038** | 8.7 | 0.0385 |
+| llama-3.3-70b | 0.233 +/- 0.088 | 6.7 | 0.0370 |
+| crown, thinking OFF | 0.144 +/- 0.135 | 7.0 | 0.0396 |
+| qwen35-27b | 0.222 +/- 0.019 | 6.3 | 0.0431 |
+| local16 | 0.000 +/- 0.000 | 9.0 | 0.0283 |
+
+The step-5c curricula gave qwenthink Jaccard 0.153 against llama's 0.321; gen44's independent
+searches give 0.022 against 0.233. **Same direction, large gap, non-overlapping spreads at
+n=3 repeats.** The thinking arm's tendency to vary its answer across fields is therefore a
+STABLE property of that configuration, not an artefact of the one authoring run that produced
+the step-5c curriculum. Note also that thinking OFF sits between the two (0.144) with a much
+larger spread, so within the crown it is DELIBERATION that raises variation.
+
+**The thread this closes, assembled from three independent measurements tonight.** Thinking
+changes the model's chosen answer on 23/40 exam items without changing its score (gen43
+amendment row 1); thinking produces measurably more varied curricula at matched strength
+(here, twice); and the more varied of two equally strong curricula trained the defender that
+transfers better on 9/9 unseen map-seed pairs (step 5c). Each link is measured. The chain as a
+whole remains a CANDIDATE, because the final link still rests on one matched pair, and the
+designed test (author at matched strength with deliberately varied diversity) is future work.
