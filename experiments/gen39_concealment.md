@@ -1925,3 +1925,39 @@ added for any thesis quote: the ZERO-overlap statement is about the per-field TO
 across the full kept sets (48 laydowns each, top-3 per field) the two qwenthink curricula
 share 5 laydowns. The 9/9 zero-shot table also verifies, and holds against random16 as well
 (9/9), which the banked wording did not claim.
+
+### STEP 5E PRE-REGISTERED (2026-08-09, Kilian's go "pre-register and start"; BEFORE any new
+### authoring call or training): THE AUTHORING GRID, 2 AUTHORS x 3 ROLLS x 3 SEEDS
+
+**Question.** Does the step-5c transfer effect survive fresh rolls of each author's dice?
+The candidate carrier (diversity, three independent draws of its signature) predicts qwen
+rolls transfer well and llama rolls do not. This grid is the decisive test: per-author
+transfer means with real spread over authoring rolls.
+
+**Design, everything else frozen.** Existing cells: qwen roll 1 (step 5c, trained) and llama
+roll 1 (banked step 5, trained). New authoring: llama rolls 2-3 via the ORIGINAL llm16
+search byte for byte (`scratch/gen39_step5e_llama_prep.py`, its silent two-try loop included,
+disclosed; progress persisted; output under the NEW key `llm16r` with all four banked family
+keys byte-identical, preserving the test set exactly, since writing over `llm16` would
+silently swap the test set's llm16 family); qwen roll 3 via the step-5d wrapper pattern
+(`scratch/gen39_step5e_qwen3_prep.py`). New training: 12 runs (rolls 2-3 of both authors,
+seeds {0,1,2}, 5000 sorties, validation-selected, the step-5 trainer with `--curricula`
+pointing at each roll's file; trainer gains the `llm16r` arm in choices + dispatch only).
+Zero-shot: every new defender scored on the SAME fresh laydown-saved test sets (zeroshot2),
+never on rebuilt ones.
+
+> **PRIMARY (the candidate's survival bar): rank separation of the author means. Each roll's
+> transfer score = its 3-seed mean over the 9 fresh map-seed cells. PASS = all three qwen
+> rolls transfer better than all three llama rolls (exact permutation p = 1/20 = 0.05).
+> FAIL branches, both pre-written: (a) qwen rolls scatter into llama's range = the step-5c
+> transfer was authoring-roll luck, the diversity candidate is RETIRED, and the licensed
+> sentence reverts to authorship-indistinguishable; (b) separation WITHOUT the diversity
+> correlation below = the effect is real and its carrier stays unnamed.**
+> **REPORTED, never gating:** per-roll narva pooled defender values (the in-distribution
+> column); per-roll curriculum strength and diversity (Jaccard, distinct sites) with the
+> roll-level Spearman of diversity vs transfer rank over all 6 rolls (the mediation row);
+> per-map counts; seed spreads (the step-5c +/-0.0004 anomaly watched for recurrence).
+> No bar moves after results exist; both directions of every reading are citable.
+
+**Cost, disclosed.** Authoring ~2-3 h (llama x2) + ~4 h (qwen thinking) box-side, overlapped;
+training 12 runs in three 4-concurrent waves ~10-11 h Mac; fresh-set scoring + folding ~1-2 h.

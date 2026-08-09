@@ -323,7 +323,8 @@ def load_full_state(path):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--arm", choices=("llm", "random", "heuristic",
-                                "llm16", "local16", "random16", "tuned", "qwenthink16"),
+                                "llm16", "local16", "random16", "tuned", "qwenthink16",
+                                "llm16r"),
                required=True)
     p.add_argument("--curricula", default="models/runs/gen39_step5/curricula.json",
                    help="step-5 strong curricula (arm -> field -> [[sites, threat]])")
@@ -360,7 +361,7 @@ def main():
     if args.prep:
         prep_cache(base, args.forces)
         return
-    if args.arm in ("llm16", "local16", "random16", "tuned", "qwenthink16"):
+    if args.arm in ("llm16", "local16", "random16", "tuned", "qwenthink16", "llm16r"):
         train, val, test = build_pools_step5(base, args.arm, args.curricula)
     else:
         train, val, test = build_pools(base, args.arm, args.forces)
