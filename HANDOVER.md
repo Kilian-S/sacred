@@ -14,7 +14,7 @@ through step 5 with zero-shot rows on all four theatres; nothing is running, the
 no decision is pending. The branch holds five acts: gen28 (the free-flight negatives, the
 retired Tier-1 tie, and the binding baseline-completeness appendix), gen31 (the aerial dynamic
 positive on the synthetic lattice), gen32 (the same positive reproduced TIGHTER on the real
-Kaliningrad-Gvardeysk terrain, with the ops-map exhibit), gen33 (the LLM red-force act, its
+Kaliningrad-Gvardeysk terrain), gen33 (the LLM red-force act, its
 terrain control failing), and gen39 (the concealment mechanic, the LLM composition positive
 with its terrain control passing, and the curriculum negative diagnosed then fixed).
 
@@ -24,7 +24,7 @@ with its terrain control passing, and the curriculum negative diagnosed then fix
 |---|---|---|
 | gen28 | free-flight negatives (menu bandit, credit starvation, corridor collapse); Tier-1 fleet claim RETIRED as a tie by the 2026-07-19 appendix (read the appendix FIRST); surviving claim = payoff-blind frontier MATCHING; the permuted-field row must run before any "on sight" sentence | `experiments/gen28_aerial.md` |
 | gen31 | the aerial trained positive, one attempt, blind-confirmed (6/6 beats-cap on 3/3 fresh seeds, blinded control causal) | `experiments/gen31_aerial_dyn.md` |
-| gen32 | gen31 reproduced on REAL terrain, tighter (pooled 0.451x cap, 1.30x the exact optimum); deliverable `scratch/gen32_ops_map.html` | `experiments/gen32_theatre_dyn.md` |
+| gen32 | gen31 reproduced on REAL terrain, tighter (pooled 0.451x cap, 1.30x the exact optimum) | `experiments/gen32_theatre_dyn.md` |
 | gen33 | LLM red force; K=3 coordinated passes for both models but the binding scrambled-terrain control FAILS, so no terrain-grounding claim; metric 2 left open, superseded by gen39 | `experiments/gen33_llm_adversary.md` |
 | gen39 | the concealment mechanic with an internal control; the LLM composition positive with the terrain control PASSING; the curriculum negative diagnosed (irreducible threat) and FIXED at step 5 with zero-shot transfer | `experiments/gen39_concealment.md` (reader's summary at top; nine superseded blocks deliberately visible) |
 | theatre atlas | the four scored theatres (kgd, ukraine, narva, fulda) | `experiments/theatre_atlas.md` |
