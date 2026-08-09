@@ -1882,3 +1882,38 @@ identical in every pinned respect (Qwen3.6-27B thinking on, 16 exact evaluations
 
 **Consequence if not run:** nothing banked changes; step 5c stands as a single-authoring-run
 result with that limitation already stated in its own section.
+
+### STEP-5D RESULT (2026-08-09, authoring completed ~09:5x, 340 min, 22 fields;
+### `curricula_qwenthink2.json`): ALL THREE PRE-COMMITTED READS PASS
+
+| curriculum | fields | strength | distinct sites | Jaccard | reuse |
+|---|---|---|---|---|---|
+| qwenthink 1 (banked, trained) | 16 | 0.0390 | 18 | 0.153 | 62.5% |
+| **qwenthink 2 (new, same author, fresh search)** | 16 | **0.0387** | 16 | **0.187** | 66.7% |
+| llama llm16 (reference) | 16 | 0.0393 | 12 | 0.321 | 75.0% |
+
+*(test-field median 0.0383; the prep's own check confirms the four banked family keys copied
+byte-identically, and `curricula_qwenthink.json` was never touched.)*
+
+**Read 1, strength: PASSES.** 0.0387 against curriculum 1's 0.0390 and llama's 0.0393, all three
+inside 0.6% of one another. Authoring strength is reproducible, and gen44's separate finding that
+llama and crown-thinking are indistinguishable authors at budget 16 is confirmed a third time.
+
+**Read 2, diversity: PASSES, and this is the important one.** Holding the author fixed and
+re-rolling only the search, the diversity signature reproduces (Jaccard 0.187 against 0.153) and
+stays clearly apart from llama's 0.321. Combined with gen44's independent replication
+(0.022 +/- 0.038 against llama's 0.233 +/- 0.088), the signature has now held on THREE
+independent draws. **Diversity is a stable property of the author, not of a lucky search.**
+
+**The sharpest observation, unplanned.** The two qwenthink curricula share ZERO of their 16
+chosen laydowns. Their CONTENT is entirely different while their strength matches to 0.6% and
+their diversity matches closely. An author therefore has a reproducible *style* (how much it
+varies across fields) without any reproducible *choices*, which is precisely the shape a
+diversity mechanism needs and a content mechanism forbids.
+
+**Read 3, the decision it unlocks.** The replication training is now a clean one-command
+decision: train the step-5 trainer's qwenthink16 arm on `curricula_qwenthink2.json`, 3 seeds,
+and ask whether its defender also transfers better on the fresh zero-shot sets. If it does, the
+step-5c headline survives authoring-seed luck and the diversity candidate gains its second
+matched pair. If it does not, the effect localises to the first authoring run and must be
+stated that way. **Not run: training needs Kilian's explicit go.**
