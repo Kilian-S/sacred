@@ -1917,3 +1917,11 @@ and ask whether its defender also transfers better on the fresh zero-shot sets. 
 step-5c headline survives authoring-seed luck and the diversity candidate gains its second
 matched pair. If it does not, the effect localises to the first authoring run and must be
 stated that way. **Not run: training needs Kilian's explicit go.**
+
+**Step-5d verification note (2026-08-09, second instance, recomputed from the committed
+curricula).** All 5d digits reproduce exactly under the pinned metric (Jaccard 0.153 / 0.187
+/ 0.321; distinct sites 18 / 16 / 12; field-wise identical top laydowns 0/16). Precision
+added for any thesis quote: the ZERO-overlap statement is about the per-field TOP choices;
+across the full kept sets (48 laydowns each, top-3 per field) the two qwenthink curricula
+share 5 laydowns. The 9/9 zero-shot table also verifies, and holds against random16 as well
+(9/9), which the banked wording did not claim.
