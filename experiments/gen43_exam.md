@@ -182,3 +182,30 @@ thinking-off paper was re-run through the patched runner and compared item by it
 banked artefact, 40/40 items agreeing on status, choice, share, solved and percentile, zero
 mismatching fields. The summary block now records the temperature and seed actually used, so
 every future paper carries its own decoding provenance.
+
+### AMENDMENT ROW 1 RESULT (2026-08-09 01:53, 67 min): THE TEMPERATURE CONFOUND IS RETIRED
+
+The crown, thinking ON, at temperature 0 (`qwen3-27b_think_t0.json`; the runner's summary
+records `temperature=0.0, seed=null`, so the flag genuinely applied): **11/40 solved, mean
+share 0.8520, mean percentile 0.9251, zero format failures.**
+
+| paired contrast | mean diff | CI | verdict | answers differ |
+|---|---|---|---|---|
+| thinking OFF vs ON, **both at t=0** (the control) | +0.0222 | [-0.0487, +0.0892] | indistinguishable | 23/40 |
+| thinking OFF (t=0) vs ON (t=0.6), the banked pair | +0.0280 | [-0.0399, +0.0923] | indistinguishable | 22/40 |
+| within the thinking arm, t=0.6 vs t=0 | -0.0058 | [-0.0331, +0.0148] | indistinguishable | 5/40 |
+
+**Reading.** The disclosed decoding asymmetry was NOT carrying the thinking result: removing it
+moves the gap from +0.028 to +0.022 and the two thinking decodings differ from each other by
+-0.006 on only 5 of 40 items. **The thinking contrast is therefore unresolved for reasons of
+effect size, not of instrument design**, which is the cleaner and more defensible position, and
+the asymmetry caveat attached to every thinking sentence can be dropped.
+
+**A finding in its own right.** Turning deliberation on changes the model's ANSWER on 23 of 40
+items while changing its SCORE not at all. Thinking alters the path and not the destination,
+which is the same shape as the gen39 repair's substitutes result (deliberation reaching, but
+not exceeding, where feedback already arrives). Recorded as an observation with a measured
+basis, not a mechanism.
+
+The seed-repeat rows (the arm's own noise floor) follow at ~03:00 and ~04:07 and complete the
+amendment.
