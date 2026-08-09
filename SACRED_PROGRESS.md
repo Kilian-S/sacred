@@ -803,8 +803,9 @@ to their supersession notes.)*
   0.600 beat SACRED 0.734-0.746: a tie with the naive frontier, the gen26 K=6 pattern).
 - **What survives:** zero-shot frontier-MATCHING (vs-naive 1.01-1.05: one policy re-derives the
   best rule's performance on sight, the amortisation claim in a third domain); the boundary/
-  structure screen findings; the vector-theatre real-map ops exhibit (the strongest Obj-2
-  asset, at Kilian's review gate); and the extension of the preconditions chain to the air.
+  structure screen findings; the vector-theatre real-map render (status revised 2026-08-09:
+  imperial-sacred is the visual centrepiece); and the extension of the preconditions chain to
+  the air.
 - **Thesis fit:** the aerial cells of the boundary map; Obj-2's "visual, interactive" clause
   finally earned; NO aerial trained-positive sentence is licensed.
 
@@ -924,14 +925,15 @@ to their supersession notes.)*
   so the doctrine needed the anti-repeat-anticipation component + w=3 to be robust; a corridor
   hunt with the completed baseline family aims a real-terrain training act precisely; the new
   theatre env adapter (`src/envs/aerial_theatre_env.py`) makes any vec-theatre SAC-trainable.
-- **Deliverable:** the dynamic operations map (`scratch/gen32_ops_map.html`, published artifact),
-  matching the committed static ops-map style, extended to show the pattern-of-life AD re-aiming
-  and SACRED threading around it, live scoreboard (SACRED 0.096 vs naive 0.18-0.23 over 80
-  serials on real terrain).
+- **Artefact:** a dynamic operations-map render (`scratch/gen32_ops_map.html`) showing the
+  pattern-of-life AD re-aiming and SACRED threading around it, live scoreboard (SACRED 0.096 vs
+  naive 0.18-0.23 over 80 serials on real terrain). *(Status revised 2026-08-09, Kilian: a
+  working render, not a deliverable; the project's visual centrepiece is the imperial-sacred
+  Mission Control app.)*
 - **Thesis fit:** the aerial positive now lives on the REAL Kaliningrad map (Obj-2's visual +
   the map-conditioned transfer the branch was built for), retiring the "synthetic lattice" caveat;
-  the boundary map's adaptive register has a real-geography cell; the ops-map exhibit is the
-  strongest Obj-2 asset, now carrying a trained positive.
+  the boundary map's adaptive register has a real-geography cell; the Obj-2 visual asset is the
+  imperial-sacred Mission Control app (status revised 2026-08-09).
 
 ## 31. The dynamic-yardstick repair + the Phase-1 hardening pre-registrations (gen34/gen35/gen36)  (2026-07-23 · branch `gen08-interdiction` + worktree `../sacred-gen29` · probes `scratch/dyn_exact.py`, `scratch/gen35_{kdyn_probe,mmc_check}.py`, `scratch/dyn_yardstick_repair.py`, `scratch/gen34_family_probe.py`, `../sacred-gen29/scratch/gen36_label_probe.py`)
 
