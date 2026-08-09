@@ -1792,3 +1792,40 @@ ladder-wide training comparison rested on this predicted null. That prediction h
 once, in the one place it was tested, so the recommendation is WITHDRAWN pending the gen44
 budget sweep, which measures with repeats whether authors differ at any budget. The
 "do-not-extend" chain in the gen42 ledger must be read with this result beside it.
+
+### STEP-5C MECHANISM PROBE (2026-08-09 ~03:00, oracle-only, free): A NAMED CANDIDATE CARRIER
+### FOR THE TRANSFER EFFECT, MEASURED FROM THE COMMITTED CURRICULA
+
+gen44 excluded curriculum STRENGTH as the carrier (llama vs crown-thinking indistinguishable
+at budget 16 with nine repeats each). The obvious next candidate is the one the banked step-5
+mechanism note already gestured at, namely that "the curriculum's DIVERSITY-plus-strength
+matters, not strength alone". That is measurable directly from the committed curricula, with no
+box and no training. Over the 16 training fields, taking each field's best authored force:
+
+| arm | distinct sites used | mean pairwise Jaccard between fields | site-reuse rate | strength |
+|---|---|---|---|---|
+| **qwenthink16** | **18** | **0.153** | **62.5%** | 0.0390 |
+| llm16 | 12 | 0.321 | 75.0% | 0.0393 |
+| local16 | 42 | 0.012 | 12.5% | 0.0222 |
+| random16 | 38 | 0.024 | 20.8% | 0.0286 |
+| tuned | 37 | 0.028 | 22.9% | 0.0278 |
+
+**The observation.** Of the two curricula that are equal in strength to within 1%, the one whose
+defender transfers better (qwenthink16, 9/9 zero-shot) is the measurably MORE VARIED one: it
+uses half again as many distinct emplacements and repeats itself half as much across fields,
+where llama's author returns to a small set of favourites (Jaccard 0.321). A defender trained
+against a more varied enemy set generalising better to unseen theatres is a mechanism with an
+obvious shape.
+
+**What this is NOT.** Diversity alone does not order the arms: the three search controls are far
+more varied than either LLM (Jaccard 0.012-0.028) and produce the WORST defenders, because their
+curricula are weak. So the licensed form is conditional, not monotone: **among curricula of
+comparable strength, the more varied one produced the better-transferring defender.** That rests
+on a single matched pair, so it is a NAMED, FALSIFIABLE CANDIDATE and not a finding. The
+designed test is to author curricula at matched strength and deliberately varied diversity and
+compare their defenders; recorded as the next experiment, not run.
+
+**Why it is worth recording tonight.** It converts "the carrier is unknown" into a specific
+quantity that is cheap to measure, already differs in the right direction, and explains why the
+effect showed up far more strongly in transfer (9/9 unanimous) than in-distribution (suggestive
+only), which is exactly what a diversity mechanism predicts.
