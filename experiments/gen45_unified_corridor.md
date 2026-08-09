@@ -167,3 +167,27 @@ The script caps every thread pool, runs `../sacred/.venv/bin/python`, writes log
 per-eval checkpoints under `models/runs/gen45_unified/`, and spawns its children from a bash
 foreground shell so the interactive-zsh background nice(5) trap cannot apply (verify with
 `ps -o pid,nice,command | grep gen45`).
+
+### OPS: THE OVERNIGHT CHAIN (2026-08-09 23:0x; Kilian's instruction, "make sure the commands
+### fire when they are supposed to ... I don't want the Mac to idle tonight")
+
+- **Armed:** `scratch/gen45_chain.sh`, detached (PPID 1) at **nice 0**, waits on the three
+  gen39 step-5e trainer PIDs (27673/27676/27678, qwenthink16 roll 3) and on the absence of any
+  `train_gen39_conceal.py` process, settles 60 s, then runs the pinned ATTEMPT command.
+  Hourly heartbeats and the per-seed tail land in `models/runs/gen45_unified/chain.log`.
+  5e ETA ~02:00-02:20 (the roll-2 runs took 12,347 s for 5000 sorties at 3-concurrent).
+- **The nice trap, measured tonight and worth inheriting:** backgrounding from this
+  interactive zsh yields **nice 5** (macOS then prefers efficiency cores, the recorded ~3x
+  penalty), while backgrounding inside `bash -c '... &'` yields **nice 0**. Every gen45
+  process is launched through bash for that reason and its nice value is verified after
+  launch, not assumed.
+- **THREADS=2 for tonight's waves, disclosed.** The committed batch script still defaults to
+  1; the chain passes `THREADS=2` because the wave has the machine to itself (3 runs x 2 = 6
+  of 10 cores). Thread count touches no game quantity, and bit-replay does not exist on this
+  stack (gen43), so the reproducibility unit is unchanged.
+- **The confirmation wave is NOT auto-chained, deliberately.** It spends the pristine gated
+  set once, so it fires only after the attempt diagnostics are read. `scratch/gen45_gate.py`
+  is the mechanical form of that read (each seed's validation-selected checkpoint must beat
+  BOTH the static cap and the whole payoff-blind family on both dev fields, 3/3 seeds; exit 0
+  = fire). It was written and tested tonight against the smoke artefact (structure only, no
+  verdict) and will be run when the attempt lands, with its table pasted into the results.
