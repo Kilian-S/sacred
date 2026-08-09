@@ -1165,3 +1165,15 @@ to their supersession notes.)*
 - **Thesis fit:** Obj-5 (the unified comparative instrument), Obj-1 (both walls as measured
   laws), Obj-3 (function approximation load-bearing in the dynamic register). Numbers live
   in `experiments/gen43_unified_kboundary.md` only.
+- **Extension (2026-08-09, same ledger):** Kilian asked the dynamic arm to reach K=8; the
+  probe found the "K=4 wall" was gen40's sweep work-guard, not the game's end (correction
+  disclosed in the ledger), and the EXACT game extends to K=6 for minutes of oracle compute
+  while K=7/8 are measured out on memory and cost (2.8/12.4 GB loss matrices), with
+  heuristic-proxy adversaries barred by the gen40 tier-E negative. The two new exact cells
+  ran overnight: **K=5 PRIMARY PASS 3/3 (pooled 0.2175 +/- 0.0041 vs rule 0.2743, -20.7%)
+  and K=6 PRIMARY PASS 3/3 (0.2638 +/- 0.0020 vs rule 0.3295, -19.9%)**, both STRONG-fail
+  at 1.24x the exact optimum (the closest any dynamic cell has come). The
+  beats-every-rule region now spans K=3 through K=6, the ENTIRE computable range past the
+  K=2 tie, with slack collected rising 26% -> 43% -> 57% and plateauing ~56%, while the
+  total value of history declines (iid/opt 2.25 -> 1.90), the game's saturation and the
+  policy's mastery of what remains, measured together.

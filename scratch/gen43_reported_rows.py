@@ -27,7 +27,7 @@ import torch
 
 from scratch.dyn_exact import build_window_mdp, policy_value_exact
 from scratch.gen35_reported_rows import tabular_q
-from scripts.train_b1lite1 import build_obs, pick_route, route_feats, stacked_L
+from scripts.train_b1lite1 import build_obs, pick_route, route_feats
 from src.agents.sac import ProtagonistSAC
 from src.envs.multiconvoy_interdiction import make_multiconvoy_env
 
@@ -35,7 +35,10 @@ torch.set_num_threads(2)
 N, BAND, KX, W, TAU = 3, (0.15, 0.95), 8, 3, 0.15
 OUT = Path("models/runs/gen43_unified")
 PINNED = {1: dict(v_eq=0.1276, mmc=0.0313, rule=0.0387, sacred=0.0462),
-          4: dict(v_eq=0.5106, mmc=0.1386, rule=0.2152, sacred=0.1820)}
+          4: dict(v_eq=0.5106, mmc=0.1386, rule=0.2152, sacred=0.1820),
+          5: dict(v_eq=0.6201, mmc=0.1756, rule=0.2743, sacred=0.2175),
+          6: dict(v_eq=0.6865, mmc=0.2121, rule=0.3295, sacred=0.2638)}
+KS = (5, 6)  # cells to (re)compute this invocation; existing artefact keys are preserved
 
 
 def worst_case_row(K, env, L):
@@ -73,12 +76,14 @@ def worst_case_row(K, env, L):
 
 
 def main():
-    out = {}
-    for K in (1, 4):
+    art = OUT / "reported_rows.json"
+    out = json.load(open(art)) if art.exists() else {}
+    for K in KS:
         env = make_multiconvoy_env(od=("71", "33"), N=N, K=K, k_extra_routes=KX,
                                    menu_select=True, edge_vuln_band=BAND,
                                    interception_loss=10.0)
-        L = stacked_L(env.game, N)
+        # closed form, verified equal to the trainer's stacked_L to 6.7e-16 (high-K probe)
+        L = 1.0 - (1.0 - env.game.payoff) ** N
         cost, n, R, pw = build_window_mdp(L, TAU, W)
         tq = [tabular_q(L, cost, n, R, pw, seed=s) for s in (0, 1, 2)]
         wc = worst_case_row(K, env, L)

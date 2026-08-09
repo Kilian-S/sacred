@@ -290,3 +290,33 @@ code change; RAM ~1.5 GB/process at 3-parallel, inside envelope).
 **Batch `scratch/gen43_dyn_ext_batch.sh`** (K=5 then K=6, 3 seeds 3-parallel each,
 ~2.5-3 h + ~4-4.5 h): outputs `models/runs/gen43_unified/dyn_K{5,6}_seed*.{json,log}`.
 Kilian launches; verification at first-print level.
+
+### EXTENSION RESULT (2026-08-09; launched by Kilian 23:40 BST at SHA `c59aa9d`, ALL DONE
+### 04:52 BST; K=5 2.1 h, K=6 3.1 h; artefacts `models/runs/gen43_unified/`)
+
+| K | exact optimum | best rule | tabular window-Q (matched budget) | SACRED per-seed | pooled | verdict |
+|---|---|---|---|---|---|---|
+| 5 | 0.1756 | 0.2743 | 0.2535 pooled (0.2768/0.2768/0.2068) | 0.2151 / 0.2233 / 0.2141 | **0.2175 +/- 0.0041** | **PRIMARY PASS 3/3 AND pooled (-20.7%)** |
+| 6 | 0.2121 | 0.3295 | 0.3159 pooled (0.3036/0.3202/0.3240) | 0.2612 / 0.2659 / 0.2642 | **0.2638 +/- 0.0020** | **PRIMARY PASS 3/3 AND pooled (-19.9%)** |
+
+> **VERDICT (per the pre-registered bars): BOTH cells PASS PRIMARY on every clause.** STRONG
+> fails at both (pooled 1.239x / 1.244x the exact optimum vs the 1.15x bar), the closest any
+> dynamic cell has come (K=3 1.38x, K=4 1.31x). Slack collected: 57.5% (K=5) and 56.0%
+> (K=6), up from 26% (K=3) and 43% (K=4). **The beats-every-rule region now spans K=3
+> through K=6, the entire computable range past the K=2 tie.**
+>
+> **Window-Q scoping (an honest revision of the earlier wording).** The matched-budget
+> tabular learner, which failed the rule outright at K <= 4, collects part of the slack at
+> high coverage: pooled 0.2535 at K=5 (below the rule on 1/3 seeds and pooled; 21% of the
+> slack) and 0.3159 at K=6 (3/3 seeds; 12%). The licensed sentence is therefore
+> regime-conditional: at K <= 4 the dynamic value is not no-net-collectable at matched
+> budget; at K = 5-6 the tabular learner collects a fifth of the slack or less while SACRED
+> collects ~56-58% and is strictly best at every K. No "requires function approximation"
+> sentence may be quoted for K >= 5.
+>
+> **Worst-case committing rows** (best seed's marginal vs the one-shot oracle BR, stacked-
+> class v_eq anchors): K=5 0.7677 = 1.24x, K=6 0.8006 = 1.17x. The committing premium
+> declines monotonically with K (1.60 / 1.72 / 1.51 / 1.35 / 1.24 / 1.17 at K = 1..6): as
+> coverage saturates, the specialised dynamic policy's marginal converges toward the static
+> hedge, so the regime-conditional deployment caveat weakens exactly where the budget is
+> largest. Reported-rows artefact updated in place (K1/K4 rows preserved).
