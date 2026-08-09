@@ -105,3 +105,65 @@ Hunt ~2-3 h of oracle compute. Training at gen32's measured ~0.6 s/sortie: ~2.7 
 ~5 h/run at 4-concurrent; 7 runs = two waves, ~10 h wall clock (an overnight).
 
 ## RESULTS (appended below this line; nothing above changes after results exist)
+
+### PHASE 0 RESULT (2026-08-09, oracle-only, 17 s wall; `scratch/gen45_corridor_hunt.py`;
+### artefact `models/runs/gen45_hunt.json`, log `models/runs/gen45_hunt.log`): GATES PASS
+### AT THE PREFERRED PIN
+
+- **Substrate as frozen:** R=26 routes (14 geometric lanes + 12 terrain-aware), H=200 quota
+  sites (open 81 / field 66 / forest 34 / urban 19).
+- **Flat-limit anchor (the ledger's required regression, run before any gate number):**
+  max |stepdmg difference| 3.9e-12, |history_opt difference| 1.4e-13 between `DynTheatre`
+  (the gen32 dynamics) and `ConcealDyn` with one team, huge sigma and no class mask (the
+  gen39 machinery's flat limit), same base, same field. The two enemies are the same object.
+- **Gates over fields 45001-45012 at DOC32, tau 0.10, w=2:** G1 min 3.71 (bar 2.0; range
+  3.71-4.31); G2 >= 1.25 on 12/12 (bar 10/12; range 2.01-2.82); G3 (fitted, disclosed caps)
+  median 1.11 with a floor of 1.00-1.01 on two fields (the composed fitted rule attains the
+  optimum there, reported per the standing disclosure).
+- **PINNED: w=2, DOC32 q=(0.6, 0.2, 0.3), tau 0.10.** Full gen39 consistency; the w=3
+  fallback was not needed. The w=2 rotation collapse gen32 measured on the v1 substrate does
+  not occur on the unified substrate (no field's best payoff-blind rule comes near the
+  optimum), so the corridor here is DEEPER than gen32's original hunt (G1 min 2.67, G2 11/12).
+- **Interpreter note (ops):** the aerial framework `python3` in this sandbox lacks site
+  packages, so every gen45 command (hunt, suite, smoke, and the pinned launches below) runs
+  through `../sacred/.venv/bin/python`, one interpreter for the whole act.
+
+### PROTOCOL COMPLETION (2026-08-09, before any training exists; the registration left the
+### training field ranges unnamed)
+
+Train fields 45300-45317 (18), validation 45400-45403 (4); dev-test 45101-45102 and the
+gated set 45200-45205 as registered; all disjoint from the burned hunt range 45001-45012.
+Trainer `scripts/train_gen45_unified.py`, the gen32 trainer with the substrate swap
+(`make_base` + `lethality_for` from the hunt module) and the pinned w=2; everything else,
+SAC config, head columns, blind-control semantics, eval machinery, byte-for-byte the gen32
+form.
+
+### SUITE + SMOKE (2026-08-09; suite then a 600-sortie plumbing/timing smoke, dev fields
+### only, the gated set untouched; exit 0)
+
+- **Suite 246 passed** (94.6 s, `PYTHONPATH=. ../sacred/.venv/bin/python -m pytest tests/`).
+- **Pool** (24 exact-ref fields) builds in 36 s; dev/val caps 0.17-0.21, best-blind
+  0.11-0.13, hist_opt 0.041-0.053 (the hunt's landscape, reproduced by the trainer's own
+  refs).
+- **Learning signature (diagnostics, burned fields, NOT citable):** beats-CAP 2/2 by sortie
+  320; beats-BLIND 2/2 by sortie 600 at ratio-to-iid 0.46; head weights rw = [+0.42
+  exposure, -2.95 recency, -6.74 doctrine] (the doctrine channel engages, the gen32
+  signature); alpha healthy at 0.20. Plumbing validated end to end.
+- **Timing, measured:** ~1.4 s/sortie at threads 1 while three external gen39 trainers
+  occupied the machine; 16,000 sorties projects to ~6-7 h per run under that load, likely
+  less on a clearer machine (gen32's 0.6 s/sortie was a solo threads-2 measurement). Each
+  wave runs its runs in parallel, so attempt and confirmation are one overnight each.
+
+### PINNED LAUNCH COMMANDS (Kilian launches, per the standing workflow; nothing below has
+### been run)
+
+1. Attempt wave (3 runs, seeds 0/1/2, dev diagnostics):
+   `cd /Users/kilian/Kilian/ICL/Thesis/code/sacred-aerial && bash scratch/gen45_batch.sh attempt`
+2. After the attempt diagnostics are read here and pass, the citable wave (fresh seeds
+   10/11/12 + the blinded control, all gated):
+   `cd /Users/kilian/Kilian/ICL/Thesis/code/sacred-aerial && bash scratch/gen45_batch.sh confirm`
+
+The script caps every thread pool, runs `../sacred/.venv/bin/python`, writes logs, JSONs and
+per-eval checkpoints under `models/runs/gen45_unified/`, and spawns its children from a bash
+foreground shell so the interactive-zsh background nice(5) trap cannot apply (verify with
+`ps -o pid,nice,command | grep gen45`).
