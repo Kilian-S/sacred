@@ -209,3 +209,41 @@ basis, not a mechanism.
 
 The seed-repeat rows (the arm's own noise floor) follow at ~03:00 and ~04:07 and complete the
 amendment.
+
+### AMENDMENT ROWS 2-3 RESULT (2026-08-09 03:45, 04:11): THE NOISE FLOOR, AND THE PRE-COMMITTED
+### BRANCH FIRES
+
+The pinned thinking configuration repeated at seeds 1 and 2 (provenance recorded per row;
+zero format failures in all three amendment rows):
+
+| run | solved | mean share | mean percentile |
+|---|---|---|---|
+| seed 0 (banked) | 12 | 0.8578 | 0.9244 |
+| seed 1 | 10 | 0.8490 | 0.9188 |
+| seed 2 | 12 | 0.8710 | 0.9265 |
+| temperature 0 (row 1) | 11 | 0.8520 | 0.9251 |
+
+**The arm's own noise floor: seed range 0.0219, sd 0.0110** across three runs that differ in
+nothing but the sampling seed.
+
+**Best estimate of the effect,** averaging the thinking arm over its three seeds and pairing
+per item against thinking-off: **+0.0295, CI [-0.0391, +0.0942], indistinguishable.** Per seed:
++0.0280, +0.0192, +0.0412, every one straddling zero.
+
+**The pre-committed reading fires.** The amendment stated that if the arm's own seed spread is
+comparable to the gap, the sentence hardens from "unresolved" to "within the arm's own sampling
+noise". Effect 0.0295 against a seed range of 0.0219 is a ratio of 1.34, i.e. the same order.
+**Licensed from now on: on this instrument, switching deliberation on moves the score by about
+as much as re-rolling the sampling seed does.** That is a stronger and more useful statement
+than a bare null, and it is what the act may say about thinking.
+
+Row 1 lands INSIDE the seed range (0.8520 against 0.8490-0.8710), so temperature 0 versus 0.6
+is likewise not separable from a seed re-roll, which independently confirms the row-1 verdict
+that the decoding asymmetry was never carrying the result. Pairwise answer-sheet differences
+are 5/40, 6/40 and 5/40 across all these comparisons, so roughly five to six items in forty is
+simply what any re-roll moves.
+
+**Standing correction to the marking artefact:** `marks.txt` was written by the night driver at
+23:22, BEFORE any amendment row existed, so it covers the seven original papers only. The
+amendment rows live in this section and in their own artefacts; the marker must be re-run before
+`marks.txt` is cited for anything.
