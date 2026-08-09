@@ -1856,3 +1856,29 @@ amendment row 1); thinking produces measurably more varied curricula at matched 
 transfers better on 9/9 unseen map-seed pairs (step 5c). Each link is measured. The chain as a
 whole remains a CANDIDATE, because the final link still rests on one matched pair, and the
 designed test (author at matched strength with deliberately varied diversity) is future work.
+
+### STEP-5D PRE-REGISTERED (2026-08-09 ~03:15, BEFORE any authoring call): THE REPLICATION
+### AUTHORING, box-side only; the training half needs Kilian's explicit go and is NOT run
+
+**Why.** Step 5c's headline (a defender that transfers better on 9/9 unseen map-seed pairs at
+matched curriculum strength) rests on ONE authoring run. The cheapest thing that could overturn
+it is authoring-seed luck. The authoring is a free oracle probe; the training that would use it
+is not, and is left for Kilian.
+
+**What runs tonight.** A SECOND qwenthink16 curriculum over the same 16 narva training fields,
+identical in every pinned respect (Qwen3.6-27B thinking on, 16 exact evaluations per field, top
+3 kept, DOC32 frozen, K=3, the step-5 operating point) except the search rng, giving
+`curricula_qwenthink2.json`. Nothing else changes and no banked artefact is touched.
+
+**Pre-committed reads, before the calls.**
+1. **Strength:** curriculum 2's median field strength against curriculum 1's 0.0390 and llama's
+   0.0393. Equality is the expectation; a large move would itself be the finding.
+2. **Diversity:** the Jaccard and distinct-site measures against curriculum 1's 0.153 / 18. This
+   is a THIRD independent test of the diversity signature and the one that matters most, since
+   it holds the author fixed and varies only the search seed.
+3. If curriculum 2 matches curriculum 1 on both, the replication training becomes a clean
+   one-command decision for Kilian, and its result would either confirm the transfer effect or
+   localise it to the first authoring run.
+
+**Consequence if not run:** nothing banked changes; step 5c stands as a single-authoring-run
+result with that limitation already stated in its own section.
