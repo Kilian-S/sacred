@@ -288,3 +288,37 @@ now stand on ONE game: the same terrain table, the same non-grid quota emplaceme
 multiplier field, and the same enemy model, which differs between the two acts only in how far
 a team may relocate between serials. The thesis's aerial chapter rebuilds from this ledger for
 the real corridor; gen32 remains banked in its own ledger as the superseded first version.
+
+### SECOND-INSTANCE VERIFICATION (2026-08-10; `scratch/gen45_verify.py`, selection logic
+### written independently of the scorer): THE CONFIRMATION SECTION IS CONFIRMED
+
+Every digit above reproduces from the raw artefacts: the three selected checkpoints
+(14,000 / 16,000 / 6,000), all 42 per-field values to four decimals, the 18/18 beats-cap and
+18/18 beats-blind-family counts, pooled 0.351x cap and 1.46x optimum, the blinded control at
+1.242x with 0/6 and its recency + doctrine weights at 0.000000 across ALL 16 of its evals,
+the fitted-rules factor (1.22), the drift triple, the seed-11 positive-recency disclosure
+(+6.78), and the attempt-wave table. Gated references are byte-identical across the three
+confirmation artefacts. No discrepancy of any size was found.
+
+### WORST-CASE-VS-COMMITTING PREMIUM (2026-08-10, eval-only; probe
+### `scratch/gen45_worstcase.py`, artefact `models/runs/gen45_unified/worstcase.json`; the
+### pre-registration's one outstanding reported row, never gating)
+
+**Construction, disclosed** (the gen27 shape): each confirmation seed's validation-selected
+checkpoint yields its stationary MARGINAL route mixture per gated field; the enemy abandons
+the doctrine and COMMITS to the single site maximising the stacked fleet's damage against
+that mixture (the oracle best response in the K=1 game); the ratio is to the field's static
+equilibrium value. The stacked equilibrium mixture's own worst case equals the equilibrium
+value on every field (reference row 1.00 exactly), so the denominator is the best achievable
+committed-enemy worst case for a stacked fleet, and the premium is entirely policy-specific.
+
+**Result: pooled 1.52x over the 18 seed-field cells** (seed means 1.53 / 1.54 / 1.48;
+per-cell range 1.42-1.63).
+
+**Reading (the standing regime-conditional scope sentence).** Against the pattern-of-life
+enemy the policy sits at 0.351x the static cap; if the enemy instead commits against the
+strategy, the policy's marginal pays 1.52x the equilibrium, so the static hedge remains the
+right play when the adversary best-responds to the strategy rather than the pattern, and
+choosing between them is an intelligence question. Per binding rule 1 the number belongs to
+the unified game alone; the superseded game's row (1.36x) lives in the gen32 ledger and is
+never tabulated beside this one.
