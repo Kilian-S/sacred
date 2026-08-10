@@ -191,3 +191,35 @@ foreground shell so the interactive-zsh background nice(5) trap cannot apply (ve
   BOTH the static cap and the whole payoff-blind family on both dev fields, 3/3 seeds; exit 0
   = fire). It was written and tested tonight against the smoke artefact (structure only, no
   verdict) and will be run when the attempt lands, with its table pasted into the results.
+
+### ATTEMPT WAVE RESULT (2026-08-10 02:11-05:43; 3 runs x 16,000 sorties, seeds 0/1/2,
+### THREADS=2, nice 0 verified; artefacts `models/runs/gen45_unified/attempt_seed*.json`,
+### logs beside them). DIAGNOSTIC ONLY: these are the BURNED dev fields 45101-45102, never
+### citable; the gated set 45200-45205 was untouched by this wave.
+
+The chain fired 60 s after the gen39 step-5e roll-3 wave exited (5e clear 02:09:45, launch
+02:10:45, first eval 02:24:34). Throughput 0.79 s/sortie, 12,700 s per run, all three in
+parallel.
+
+| seed | val-selected @ | VAL | dev ratio | beats CAP | beats BLIND | alpha | rw [exposure, recency, doctrine] |
+|---|---|---|---|---|---|---|---|
+| 0 | 12,000 | 0.314 | 0.339 | 2/2 | 2/2 | 0.21 | [-0.56, -10.33, -22.24] |
+| 1 | 5,000 | 0.324 | 0.348 | 2/2 | 2/2 | 0.20 | [+0.51, -5.80, -19.71] |
+| 2 | 9,000 | 0.324 | 0.347 | 2/2 | 2/2 | 0.23 | [+0.72, +3.06, -20.19] |
+
+**Readings.** (i) Every seed beat both the static cap and the entire payoff-blind rule family
+on both dev fields at EVERY eval from sortie 1,000 onward, not only at its selected
+checkpoint. (ii) The three seeds agree tightly (VAL spread 0.010). (iii) The doctrine column
+carries the result, its weight training to -20 on all three seeds. (iv) Drift from the
+selected checkpoint to the final iterate is mild (VAL 0.31-0.32 -> 0.33-0.36), the familiar
+pattern that validation selection exists to absorb, with no collapse and no alpha runaway
+(0.20-0.23 throughout). (v) **Disclosed per-seed variation:** seed 2 reaches the same score
+with its RECENCY weight positive (+3.06), i.e. it does not use anti-repeat at all and works
+through the doctrine channel alone, while seeds 0 and 1 use both channels. Worth carrying
+into the write-up as a mechanism note; the blinded control in the confirmation wave tests the
+channels collectively, not individually.
+
+**GATE: PASS 3/3** (`scratch/gen45_gate.py`, table above). Per the pre-registration the
+confirmation wave was therefore launched, at 05:44:44, four runs (fresh seeds 10/11/12 plus
+the blinded control on seed 10), all `--eval-gated`, THREADS=2, nice 0 verified, ~1.7 GB
+each. This is the citable tier and the pristine set's single evaluation.
