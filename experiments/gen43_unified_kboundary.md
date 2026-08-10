@@ -320,3 +320,114 @@ Kilian launches; verification at first-print level.
 > coverage saturates, the specialised dynamic policy's marginal converges toward the static
 > hedge, so the regime-conditional deployment caveat weakens exactly where the budget is
 > largest. Reported-rows artefact updated in place (K1/K4 rows preserved).
+
+### EXTENSION: THE EXACT STATIC OPTIMUM AT K=5 AND K=6, AND A BASELINE-DEFINITION DEFECT
+### FOUND BY IT (2026-08-10, Kilian's direction; ORACLE/EVAL-ONLY, no training anywhere;
+### probe `scratch/gen43_static_exact_highk.py`, artefacts
+### `models/runs/gen43_static_exact_highk.json` + `gen43_static_exact_35159.json`;
+### SHA `9630cf8` + this fold)
+
+**Why, and the correction it starts from.** Kilian asked why the exact static optimum stopped
+at K=4 when the K=5 payoff matrix is only ~2.2 GB. The answer is that finding 1's wall was a
+TRAINING constraint inherited from gen26's step-3 amendment (three seeds in parallel on a
+24 GB machine, each holding its own copy), not a SOLVING constraint, and this ledger's finding
+1 wording ("exact side reaches K=4") did not say so. Disclosed as a scoping slip in the
+original wording, corrected here.
+
+**What makes it cheap, and its licence.** Prop `stacks` (thesis Prop 3.2; theory appendix F
+`prop:stacked`) proves the mission objective is concave in the occupancy, so restricting the
+defender to STACKS leaves the game value unchanged. The exact value therefore needs only the
+R x n_isets stacked matrix (11 rows) rather than the 286 x n_isets occupancy matrix, 26x
+smaller: 0.085 GB at K=5 and 0.536 GB at K=6. Measured cost: **K=5 solves in 9 s end to end,
+K=6 in 75 s**, on the standing laptop, single process, all thread pools capped.
+
+**ANCHORS, read before any new number (all PASS).** (i) The stacked LP reproduces every banked
+exact v* at K=1..4 (0.127640 / 0.255280 / 0.382920 / 0.510560 against the banked 4-dp
+0.1276 / 0.2553 / 0.3829 / 0.5106). (ii) The stacked LP equals the FULL-OCCUPANCY LP at
+K=1..4, deviation 0.0e+00 / 5.6e-17 / 0.0e+00 / 0.0e+00, which is a numerical verification of
+Prop 3.2 on this instance and independently reproduces the same check made in the thesis
+graphics pass. (iii) The vectorised stacked matrix is identical to the committed
+`train_b1lite1.stacked_L` loop to 7.8e-16 on a 200-column slice at every budget. (iv) Every
+pinned stack anchor of this ledger reproduces to 4 dp under the convention it was computed
+with (see the defect below).
+
+**RESULT 1: the exact static optimum past the enumeration wall.**
+
+| K | n_isets | v* EXACT (new) | tabular FP (banked) | FP above v* | best-mixed-over-det EXACT | (greedy-yardstick banked) |
+|---|---|---|---|---|---|---|
+| 5 | 962,598 | **0.620058** | 0.621 | +0.15% | 0.7448 | 0.746 |
+| 6 | 6,096,454 | **0.686494** | 0.690 | +0.51% | 0.8246 | 0.829 |
+
+Two consequences. (i) **The banked tabular-FP values ARE the optimum to within half a
+percent**, so finding 4's death-of-mixing curve, computed under the greedy response, is
+confirmed against exact values at its first two points past the wall, and the ladder's
+"FP -> v*" arrow is licensed at K=5/6 as well as below the wall. (ii) The exact death-of-mixing
+ratio sits marginally BELOW the greedy-yardstick one (0.7448 vs 0.746; 0.8246 vs 0.829), i.e.
+the banked curve was very slightly conservative about how much value mixing retains, which
+does not move the K=8/9 crossing.
+
+**RESULT 2: greedy fidelity ABOVE the wall, measured for the first time.** Fidelity on every
+naive stack arm is **0.00% at both K=5 and K=6** (exact and greedy values agree to 4 dp:
+0.7049/0.6382/0.6656/0.6672 at K=5, 0.8002/0.7658/0.7387/0.7298 at K=6). The gen26 record
+(<= 1.8%) and this ledger's finding 2 (0.0000 at K <= 4) are therefore extended: on these
+objects the certified greedy response is not merely certified but exact at K=5 and K=6. Every
+banked greedy stack anchor also reproduces (max deviation 0.0004, rounding).
+
+**RESULT 3 (the defect, reported with the same prominence as the passes): THIS LEDGER USES TWO
+DIFFERENT DEFINITIONS OF THE INVERSE-VULNERABILITY STACK, AND THE THESIS'S OWN DEFINITION IS
+THE STRONGER ONE.** The consolidation probe's two halves weight the arm differently:
+
+- `part_s` (the K >= 5 rows) weights by each route's WORST SINGLE EDGE,
+  `1/(1 - (1 - max_e p_e)^N)`, computed from the K=1 game and therefore FIXED as K varies.
+  This is the thesis's stated definition (Prop floor; appendix E: `p_i^* = max_{e in E(r_i)} p_e`).
+- `part_x` (the K <= 4 rows) weights by `max_j payoff[r, j]`, the worst K-EDGE attack aimed at
+  that route. It coincides with the above at K=1 and diverges above it, tending to uniform as
+  K grows because every route becomes fully coverable.
+
+Both are recomputed here at every budget, and each reproduces its banked row exactly, which is
+what identifies the split:
+
+| K | v* exact | inv-vuln disjoint, WORST-EDGE (thesis definition) | inv-vuln disjoint, BUDGET-MAX (as banked at K<=4) | uniform disjoint |
+|---|---|---|---|---|
+| 1 | 0.127640 | **0.127640 = v*** | 0.127640 | 0.166646 |
+| 2 | 0.255280 | **0.255280 = v*** | 0.297795 *(banked)* | 0.328785 |
+| 3 | 0.382920 | **0.382920 = v*** | 0.455620 *(banked)* | 0.467540 |
+| 4 | 0.510560 | **0.510560 = v*** | 0.585971 *(banked)* | 0.601668 |
+| 5 | 0.620058 | 0.638200 *(banked)* | 0.701898 | 0.704901 |
+| 6 | 0.686494 | 0.765839 *(banked)* | 0.794721 | 0.800200 |
+
+**The finding this exposes, and it strengthens the act's concession rather than weakening any
+claim.** Under the thesis's own definition the two-line disjoint stack **attains the exact game
+value with gap 0.00e+00 at K=1, 2, 3 AND 4**, not at K=1 alone. The structure is closed-form:
+the rule's value is exactly `K x v*(1) = K x 0.127640` at every budget (measured to 6 dp at all
+six), because with the equalising mixture over the m=6 disjoint corridors, K assets on K
+distinct corridors' worst edges collect exactly K times the common per-corridor contribution.
+The full-game optimum tracks that line exactly until **K=5, the first budget at which the
+padded menu buys anything at all: 0.620058 against the rule's 0.638200, an improvement of
+2.84%, widening to 10.36% at K=6.** Prop floor proves the K=1 case; K=2-4 are measured here
+and are an instance-level fact, not a theorem.
+
+**What this changes and what it does not.**
+- **No banked verdict moves.** The static register's verdict is that SACRED never beats the
+  best naive stack on this instance; under the stronger definition the margin against it is
+  LARGER at K <= 4 (best stack 0.2553/0.3829/0.5106 against SACRED 0.328/0.463/0.605), so the
+  verdict is reinforced, not threatened. The dynamic register is untouched (its baseline family
+  is rotation and anti-repeat, not vulnerability-weighted stacks).
+- **The gen26 K=3 crossing on 35-159 SURVIVES, checked explicitly** (artefact
+  `gen43_static_exact_35159.json`): on that instance the worst-edge variant scores 0.7233 at
+  K=3 against the budget-max 0.7373 and uniform 0.7376, all far above SACRED's
+  0.664 +/- 0.018, and the exact v* there is 0.604049 (banked 0.604), so the disjoint rule does
+  NOT attain the optimum on the four-corridor instance and the crossing is genuine under either
+  convention. The K=1 row also reproduces (v* 0.206124, uniform 0.2500, inv-vuln 0.2411).
+- **Baseline-completeness consequence (binding).** The K <= 4 rows of this ladder were scored
+  against a WEAKER member of the inverse-vulnerability family than the thesis defines. That is
+  the same class of error the 2026-07-16 disjoint-baseline critique exists to prevent, caught
+  here by a routine anchor check. **The recommendation, for Kilian's decision, is that the
+  thesis adopt the worst-edge definition throughout the ladder, since it is the thesis's own
+  stated rule, it is the stronger baseline, and it is what the K >= 5 rows already use.** Both
+  columns are preserved above so either choice is fully documented; nothing is rewritten.
+
+**Cost and hygiene.** Whole extension 96 s of oracle compute on the standing laptop, no
+training launched, no `src/` or `scripts/` change, single process with `OMP_NUM_THREADS=1
+VECLIB_MAXIMUM_THREADS=1`. Both artefacts regenerate deterministically from the committed
+probe.
