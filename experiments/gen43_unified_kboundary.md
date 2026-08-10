@@ -431,3 +431,75 @@ and are an instance-level fact, not a theorem.
 training launched, no `src/` or `scripts/` change, single process with `OMP_NUM_THREADS=1
 VECLIB_MAXIMUM_THREADS=1`. Both artefacts regenerate deterministically from the committed
 probe.
+
+### EXTENSION 2: THE STATIC LADDER MADE EXACT TO THE END OF THE GAME, K = 7 TO 10, AND THE
+### DEATH OF MIXING LOCATED EXACTLY (2026-08-10, Kilian's direction; ORACLE/EVAL-ONLY, no
+### training; probe `scratch/gen43_static_exact_k78.py`, artefacts
+### `models/runs/gen43_static_exact_k78.json` + `gen43_static_exact_k910.json`, logs beside
+### them; SHA `4bd8f02` + this fold)
+
+**Why the dense LP stops and this does not.** The extension above reached K=6 with a dense
+stacked LP. K=7 and K=8 are past that: the LP's own constraint matrix alone is ~3.1 GB and
+~13.9 GB with the survival array beside it, so the direct route peaks near 11 GB and 50 GB, and
+K=9/K=10 are 25 GB and 84 GB of survival cache alone. **Constraint generation removes the
+memory entirely.** By Prop 3.2 the defender has only R=11 pure strategies, so the LP has 11
+unknowns and, by LP basis size, an optimal attacker mixture supported on at most 12 columns.
+The solver therefore keeps a small working set, solves the exact LP on it, and SCANS every
+column of the full game for the most violating one; when no column beats the LP value, that
+value is v* for the WHOLE game. This is a certificate, not an approximation. Scans run in
+float32 for speed and the winning column is re-evaluated in float64 before the certificate is
+applied.
+
+**ANCHORS (all PASS, read before any new number).** The same solver reproduces the dense-LP
+values at K=5 (deviation 1.93e-07) and K=6 (9.44e-08). K=7 was solved twice by independent
+paths, the cached-matrix solver and the streaming solver, agreeing at 0.752166 with the
+streaming certificate closing to 1.11e-16.
+
+**RESULT: the exact static optimum at every remaining budget.**
+
+| K | interdiction sets | v* EXACT | columns needed | certificate gap | wall clock |
+|---|---|---|---|---|---|
+| 7 | 32,224,114 | **0.752166** | 29 | 2.6e-08 | 9 s |
+| 8 | 145,008,513 | **0.806521** | 32 | 1.2e-08 | 48 s |
+| 9 | 563,921,995 | **0.832529** | 29 | **0.0e+00** | 144 s |
+| 10 | 1,917,334,783 | **0.832529** (forced) | - | - | see below |
+
+Thirty-odd columns out of 564 million suffice, which is the whole point of the method. K=10 is
+determined without computation: v* is non-decreasing in K and never exceeds the deterministic
+value, and both equal 0.832529 at K=9, so v*(10) is squeezed to 0.832529; the running scan is
+kept only as confirmation.
+
+**THE DEATH OF MIXING, NOW EXACT RATHER THAN BRACKETED.** The best single committed route
+saturates at **0.832529 from K=3 upward** (its value is the damage from that route's K worst
+edges, and the best route's cap is reached by K=3). Randomisation's worth over it is therefore
+exactly computable at every budget:
+
+| K | 5 | 6 | 7 | 8 | **9** |
+|---|---|---|---|---|---|
+| v* exact | 0.620058 | 0.686494 | 0.752166 | 0.806521 | **0.832529** |
+| mixing's worth over the best committed route | 25.52% | 17.54% | 9.65% | 3.12% | **0.0000%** |
+
+**Finding 4 is CONFIRMED and SHARPENED. It said randomisation's value reaches zero "between
+K=8 and K=9"; exactly, it reaches zero AT K=9, where the game value and the best single
+committed route coincide to every digit.** From K=9 the deterministic route is not merely the
+best playable object, it is an optimal strategy of the whole game, so the act's closing sentence
+can be stated as an exact fact rather than an extrapolation. One artefact of the old yardstick
+is retired in passing: finding 4's greedy-scored `best_mixed_over_det >= 1.006` at K=9 implied
+mixing was WORSE than committing, which is impossible (pure strategies are a subset of mixed, so
+v* <= det always); it was an approximation artefact of scoring the two objects under the greedy
+response, and the exact ratio is 1.000000.
+
+**What the static register now rests on.** Every BENCHMARK cell of the static ladder, K=1
+through K=10, is now an exact certified value; no benchmark in this register depends on the
+greedy yardstick any more. The TRAINED policy cells (0.667 / 0.733 / 0.778 / 0.822 at K=5..8)
+are still scored under the certified greedy response, whose measured deviation from exact is
+0.0000 on every naive stack at every budget where both were computed, so the scoring is exact on
+stacked objects; rescoring the trained mixtures themselves against the exact response needs only
+their stored route distributions and one matrix-vector product, and is recorded as a cheap
+follow-up rather than claimed here. **No verdict moves:** SACRED remains behind the best naive
+stack at every static budget, and now the exact distance to optimal play is known at all of
+them.
+
+**Cost and hygiene.** K=7 through K=9 total under four minutes of oracle compute on the standing
+laptop, peak memory ~500 MB in streaming mode and 6.4 GB in cached mode, single process, all
+thread pools capped, no training launched and no `src/` or `scripts/` change.
