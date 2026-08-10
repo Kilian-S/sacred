@@ -1961,3 +1961,44 @@ never on rebuilt ones.
 
 **Cost, disclosed.** Authoring ~2-3 h (llama x2) + ~4 h (qwen thinking) box-side, overlapped;
 training 12 runs in three 4-concurrent waves ~10-11 h Mac; fresh-set scoring + folding ~1-2 h.
+
+### STEP 5E RESULT (2026-08-10; 12 new runs complete, scored on the SAME saved fresh sets;
+### scorer wrapper `scratch/gen39_step5e_zeroshot.py`, artefact `step5e_zeroshot.json`):
+### **PRIMARY PASS AT THE LOCKED BAR, AND THE MEDIATION ROW FIRES WITH IT**
+
+The full grid (transfer = mean over the 9 fresh map-seed cells; lower = better; strength =
+train-field median best; diversity = the pinned top-1 Jaccard / distinct sites):
+
+| roll | transfer | narva pooled | strength | Jaccard / distinct |
+|---|---|---|---|---|
+| qwen r3 | **0.2076** | 0.1158 | 0.0381 | 0.158 / 17 |
+| qwen r2 | **0.2147** | 0.1183 | 0.0387 | 0.187 / 16 |
+| qwen r1 | **0.2165** | 0.1132 | 0.0390 | 0.153 / 18 |
+| llama r2 | 0.2356 | 0.1209 | 0.0389 | 0.209 / 16 |
+| llama r1 | 0.2386 | 0.1288 | 0.0393 | 0.321 / 12 |
+| llama r3 | 0.2479 | 0.1329 | 0.0383 | 0.406 / 12 |
+
+**PRIMARY: PASS.** All three qwen rolls transfer better than all three llama rolls
+(author means 0.2129 +/- 0.0039 vs 0.2407 +/- 0.0052; complete rank separation, exact
+permutation p = 0.05, the pre-registered bar). The step-5c transfer effect is a property of
+the AUTHOR, not of an authoring roll. Unplanned but parallel: the narva column separates by
+rank too (max qwen 0.1183 < min llama 0.1209), so the home-turf advantage that was only
+suggestive at one roll pair is author-level at three.
+
+**The mediation row (reported, never gating): it fires.** Spearman of curriculum Jaccard
+against transfer loss over all six rolls is rho 0.83 (nominal p 0.042): more varied
+curricula transfer better, WITHIN authors as well as between them (llama's most varied roll,
+r2 at 0.209, is llama's best transferrer; its least varied, r3 at 0.406, is its worst).
+Strength stays excluded, the whole grid sits in 0.0381-0.0393, matched to ~3%.
+
+**The licensed sentence.** At a matched search budget and matched curriculum strength,
+curricula authored by the thinking-mode reasoner train defenders that transfer better to
+unseen theatres, an author-level effect (3 rolls x 3 seeds per author, rank-separated at the
+pre-registered exact p 0.05), and curriculum DIVERSITY is the measured carrier candidate
+consistent with every roll (six of six in rank order with it). Per-model as always; the
+step-5c "candidate, not finding" status is UPGRADED to a finding at the author level, with
+the mediation stated as supported, not proven.
+
+**Watched rows.** The step-5c +/-0.0004 seed-spread anomaly did NOT recur on any new roll
+(spreads 0.0058-0.0075); it stands as a one-off. All six curricula files carry byte-identical
+banked family keys (asserted at write time); the test sets were never rebuilt.
