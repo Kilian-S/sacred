@@ -223,3 +223,68 @@ channels collectively, not individually.
 confirmation wave was therefore launched, at 05:44:44, four runs (fresh seeds 10/11/12 plus
 the blinded control on seed 10), all `--eval-gated`, THREADS=2, nice 0 verified, ~1.7 GB
 each. This is the citable tier and the pristine set's single evaluation.
+
+### CONFIRMATION RESULT (2026-08-10 05:45-10:18; fresh seeds 10/11/12 + the blinded control,
+### 16,000 sorties each, THREADS=2, nice 0, 1.02 s/sortie; scored by `scratch/gen45_score.py`,
+### committed at `ea5e293` BEFORE these artefacts existed). **PRIMARY PASS, STRONG PASS,
+### CAUSAL PASS.** Checkpoints selected on the VALIDATION fields only; the gated set was never
+### used for selection.
+
+| seed | val-selected @ | beats CAP | beats payoff-blind family | mean ratio-to-cap | mean x optimum | drift (sel -> final) |
+|---|---|---|---|---|---|---|
+| 10 | 14,000 | **6/6** | **6/6** | 0.347 | 1.44 | 0.312 -> 0.328 |
+| 11 | 16,000 | **6/6** | **6/6** | 0.352 | 1.47 | 0.324 -> 0.324 |
+| 12 | 6,000 | **6/6** | **6/6** | 0.355 | 1.48 | 0.323 -> 0.331 |
+| blinded control (seed 10) | - | **0/6** | 0/6 | 1.242 | - | - |
+
+Per-field, the gated set (identical references across seeds; policy values are the
+validation-selected checkpoints' exact stationary damage):
+
+| field | CAP | best payoff-blind rule | fitted (oracle caps) | exact optimum | seed10 | seed11 | seed12 |
+|---|---|---|---|---|---|---|---|
+| 45200 | 0.1775 | 0.1119 | 0.0516 | 0.0414 | 0.0601 | 0.0603 | 0.0613 |
+| 45201 | 0.2106 | 0.1107 | 0.0593 | 0.0522 | 0.0756 | 0.0774 | 0.0779 |
+| 45202 | 0.2008 | 0.1180 | 0.0581 | 0.0491 | 0.0689 | 0.0716 | 0.0713 |
+| 45203 | 0.1950 | 0.1173 | 0.0499 | 0.0439 | 0.0644 | 0.0654 | 0.0664 |
+| 45204 | 0.2005 | 0.1255 | 0.0586 | 0.0467 | 0.0699 | 0.0694 | 0.0709 |
+| 45205 | 0.1959 | 0.1245 | 0.0620 | 0.0505 | 0.0708 | 0.0717 | 0.0714 |
+
+**Verdicts against the bars as registered.**
+- **PRIMARY (>= 4/6 gated fields on >= 2/3 seeds and pooled below the cap): PASS**, at the
+  ceiling of what the bar can express, 6/6 on 3/3 seeds, all 18 cells, pooled ratio-to-cap
+  **0.351**.
+- **STRONG (pooled <= 2.5x the exact dynamic optimum): PASS at 1.46x.**
+- **CAUSAL (the blinded control beats the cap nowhere): PASS**, 0/6 at **1.242x** the cap,
+  with its recency and doctrine weights pinned at exactly 0.00 while its exposure weight
+  trained freely. The gain from 1.242 to 0.351 is causally the window-plus-doctrine
+  conditioning.
+- **REPORTED: the entire payoff-blind dynamic rule family is beaten on 18/18 seed-field
+  cells.**
+
+**Disclosures, stated plainly.**
+1. **The fitted doctrine-informed rules remain ahead**, at 0.0499-0.0620 against the policy's
+   0.060-0.078, roughly 1.2x. This is the standing pattern of gen27/gen32 and the reason the
+   licensed sentence is "beats every static object and every payoff-blind dynamic rule,
+   discovered unaided", never "beats every rule". Those rules read the hidden field and the
+   enemy's response model per instance.
+2. **Drift is negligible** (0.312 -> 0.328, 0.324 -> 0.324, 0.323 -> 0.331), the smallest of
+   any act in this programme, so validation selection is doing almost no work here.
+3. **The recency channel is largely inert on this game.** Seed 11's selected checkpoint
+   carries a POSITIVE recency weight (+6.78) and still scores 6/6, and the same appeared in
+   the attempt wave (seed 2, +3.06). The doctrine column (-19.7 to -21.6 on every seed and
+   every wave) carries the result. This is a mechanism finding of the unified game, not a
+   defect, and it sharpens the Act-4 mechanism sentence: the policy's value is the
+   threat-given-window column, not anti-repetition.
+4. **Cross-game comparison is NOT licensed** (binding rule 1). The gen32 numbers (0.451x cap,
+   1.30x optimum, blinded 1.28x, blind family 15/18) belong to the old game and may never sit
+   in a table with these. What may be said in prose is that the same claim SHAPE reproduces on
+   the unified game, each number attributed to its own game.
+5. **Outstanding reported row:** the worst-case-versus-committing-enemy premium was registered
+   as a reported row and is NOT computed by the scorer; it needs its own eval-only probe
+   before the thesis quotes it. Nothing above depends on it.
+
+**What this does to the programme.** Act 4's real-corridor result and Act 5's concealment work
+now stand on ONE game: the same terrain table, the same non-grid quota emplacements, the same
+multiplier field, and the same enemy model, which differs between the two acts only in how far
+a team may relocate between serials. The thesis's aerial chapter rebuilds from this ledger for
+the real corridor; gen32 remains banked in its own ledger as the superseded first version.
