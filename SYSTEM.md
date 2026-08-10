@@ -98,7 +98,7 @@ ledgers, memory) as your own prior work. Identity, house rules and the project m
 
 ## 5. Where everything else lives
 
-State and claims, `HANDOVER.md`. History, `SACRED_PROGRESS.md` (34 entries). Numbers, the
+State and claims, `HANDOVER.md`. History, `SACRED_PROGRESS.md` (39 entries). Numbers, the
 `experiments/` ledgers only. Historical direction documents and the critique series,
 `docs/archive/` (see its `INDEX.md`). Working with Kilian, `CLAUDE.md` (house rules, writing
 rules, command style).
