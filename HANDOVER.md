@@ -6,17 +6,20 @@
 > claim below carries its ledger pointer, and the ledgers remain the sole source of citable
 > numbers. Read `CLAUDE.md` first if you have not (identity, house rules, project map).
 
-## The state in one paragraph (2026-08-04)
+## The state in one paragraph (2026-08-10)
 
-The experimental campaign is COMPLETE across all three worktrees (36 chronicle entries,
-gen01-gen43; the gen40-gen43 arcs of 2026-08-04/08 were post-freeze follow-ups on Kilian's
-instruction: the doctrine-head transfer positive, then the gen43 consolidation of the
-thesis's Act 2 onto one instrument). Nothing is
+The experimental campaign is COMPLETE across all three worktrees (39 chronicle entries,
+gen01-gen45; the gen40-gen45 arcs of 2026-08-04/10 were post-freeze follow-ups on Kilian's
+instruction: the doctrine-head transfer positive (gen41), the gen43 consolidation of the
+thesis's Act 2 onto one instrument, the LLM capability-measurement chain (gen42, the aerial
+gen43 exam, gen44) with the gen39 author-level transfer arc (steps 5c-5e), and the gen45
+unification of Acts 4 and 5 onto one game). Nothing is
 running, no launch decision is pending, and all three trees are clean and committed. The Final Activities Report deadline (30 July) and the self-imposed experimental
 freeze (3 August) are past. **Writing is the critical path.** The thesis and poster are due
 10:00, Friday 28 August 2026 (12,000 words excluding appendices). In the thesis repo the
 Methodology chapter and its proofs appendix are drafted and being Kilianised, the Results
-chapter is substantially drafted on the five-act structure agreed 2026-08-03, and the
+chapter is substantially drafted on the five-act structure agreed 2026-08-03 (Acts 2 and 4
+now rebuild from the gen43 and gen45 consolidation ledgers respectively), and the
 introduction, literature, conclusions and abstract are the thin remaining ends.
 
 ## Deadlines, rubric and objectives
@@ -46,13 +49,16 @@ it has somewhere safe to go. This is proven three ways, by the negative campaign
 congestion adversaries have a flat attack landscape), by the disjoint-baseline finding (a
 max-flow stack matches every trained static K=1 number), and by the aerial baseline-completeness
 appendix. Learning pays where the cheap escape is closed, at interdiction budgets approaching
-the min-cut (gen26, gen35) and against adaptive pattern-of-life adversaries (gen19, gen27,
-gen31, gen32), always scored against computable optima. Above both sits a harder wall,
+the min-cut (gen26, gen35, gen43) and against adaptive pattern-of-life adversaries (gen19,
+gen27, gen31, and gen45, which rebuilt gen32's real-terrain positive on the unified game),
+always scored against computable optima. Above both sits a harder wall,
 conditioning capacity, where a channel is present and visible yet the policy cannot convert it
 (gen29 coordination, gen34 hidden type, gen39 exposure). The LLM arc adds a measured map of
 where a language model helps this pipeline (doctrine identification from prose, terrain-grounded
 force composition, sample-efficient curriculum authoring) and where it is useless to harmful
-(numeric mixtures, combinatorial curation).
+(numeric mixtures, combinatorial curation), now with a measured capability axis (scale helps
+cumulatively, deliberation changes answers rather than scores, and the thinking reasoner's
+more varied curricula train the defenders that transfer best).
 
 ## The claims register
 
@@ -71,8 +77,10 @@ the change to the other trees in the same session.
 | **gen41 Act 3 (2026-08-08).** The doctrine-head transfer positive under the three-tier fairness ladder: zero-shot on Gdansk at K=2, PRIMARY PASS 2/3 (pooled 0.783x cap; beats the cap 6/6 on every seed, every map-only rule 3/3, every outcome-earning adaptive learner 2/3, seed 0 missing by 0.0005); causal control 1.161 at 0/6; the 0.943 -> 0.783 one-flag encoder ablation against Act 2 is the mechanism claim; STRONG FAIL disclosed (mechanism-told rules at 0.656 stay ahead) | (R) `experiments/gen41_deepwindow_zst.md` |
 | **gen19.** Single-instance pattern-of-life register; history-aware SACRED far below the static cap with causal no-window control (its STRONG "reaches the optimum" clause retired by the yardstick repair; rotation attains the exact optimum on m=4) | (R) `experiments/gen19_b1lite1.md` |
 | **gen26.** The K-to-min-cut boundary map; SACRED beats both max-flow heuristics at K=m-1 exact; ties the best naive full-menu stack at K=m; tabular FP with the same greedy oracle also works, so the licensed sentence is "learning is required, deep RL is one sufficient method" | (R) `experiments/gen26_kboundary.md` |
-| **gen31 + gen32.** The aerial dynamic positives, synthetic then REAL Kaliningrad terrain; 6/6 beats-static-cap on 3/3 fresh seeds each, blinded controls causal, one attempt each; gen32 pooled 0.451x cap, 1.30x the exact optimum | (A) `experiments/gen31_aerial_dyn.md`, `gen32_theatre_dyn.md` |
-| **gen39.** The concealment mechanic with an internal control (sight worth 1.26-1.37x vs exactly 1.00x concealed); the LLM composition positive with the terrain-relabel control PASSING (the LLM arc's first licensed terrain-reasoning claim); the curriculum negative diagnosed (irreducible threat) and FIXED at step 5 (llm16 23% better than the tuned control 3/3, zero-shot to three unseen theatres) | (A) `experiments/gen39_concealment.md` |
+| **gen31 + gen32.** The aerial dynamic positives, synthetic then REAL Kaliningrad terrain; 6/6 beats-static-cap on 3/3 fresh seeds each, blinded controls causal, one attempt each; gen32 pooled 0.451x cap, 1.30x the exact optimum; gen32 SUPERSEDED for the thesis's Act 4 by gen45 (2026-08-10), its numbers never tabulated beside gen45's | (A) `experiments/gen31_aerial_dyn.md`, `gen32_theatre_dyn.md` |
+| **gen45 (2026-08-09/10).** The unified corridor game: Acts 4 and 5 rebuilt on ONE substrate (gen39 terrain v2, quota sites, multiplier field; one enemy model whose only dial is relocation range, the gen32 "searchlight" proven its flat limit). The Act-4 positive reproduced in one attempt on the pristine gated set: PRIMARY 18/18 beats-cap (pooled 0.351x), STRONG 1.46x the exact optimum, blinded control causal (1.242x at 0/6, information weights 0.000000); the whole payoff-blind family beaten 18/18; fitted doctrine-informed rules ~1.2x ahead disclosed; worst-case committing 1.52x; the doctrine column, not anti-repeat, carries the result; verified digit-for-digit | (A) `experiments/gen45_unified_corridor.md` |
+| **gen39.** The concealment mechanic with an internal control (sight worth 1.26-1.37x vs exactly 1.00x concealed); the LLM composition positive with the terrain-relabel control PASSING (the LLM arc's first licensed terrain-reasoning claim); the curriculum negative diagnosed (irreducible threat) and FIXED at step 5 (llm16 23% better than the tuned control 3/3, zero-shot to three unseen theatres); extended 2026-08-06/10 by the brief repair (1c/1d/1e citable only from corrected artefacts) and steps 5c-5e (own row below) | (A) `experiments/gen39_concealment.md` |
+| **gen39 steps 5c-5e (2026-08-08/10).** The author-level transfer effect: at a matched 16-evaluation budget and matched curriculum strength (~3% grid-wide), curricula authored by Qwen3.6-27B thinking-on train defenders that transfer better to unseen theatres than llama's on ALL rolls (2 authors x 3 rolls x 3 seeds, complete rank separation, exact permutation p 0.05); curriculum DIVERSITY is the supported carrier candidate (Jaccard-vs-transfer rho 0.83 over six rolls; authors have reproducible style without reproducible choices); in-distribution suggestive only; per-model as always | (A) `experiments/gen39_concealment.md` (steps 5c-5e) |
 | **gen38.** LLM enemy identification; V1 reads intel prose, classifies five doctrines at 100%, crosses the gen34 type-blind wall 6/6; V2 trained type-conditioned SACRED crosses 3/3 seeds at 0.664x the blind cap, LLM-supplied type indistinguishable from truth | (R) `experiments/gen38_llm_enemy_id.md` |
 | **gen30.** Security-aware facility location, oracle-only; the (cost, security) depot frontier; redundancy-coordination complementarity (median 25% at the coordinated optimum, negative under napkin play); surrogate Spearman 0.870 | (R) `experiments/gen30_secure_flp.md` |
 | **gen16 + gen15.** The static ZST arc (cross-city transfer with causal controls); wording bound by the disjoint-baseline rules below | (R) `experiments/gen16_multicity.md`, `gen15_generalist.md` |
@@ -89,6 +97,7 @@ the change to the other trees in the same session.
 | **FP transience + coordination.** The equilibrium is a reproducible transient of last-iterate smooth FP (best-checkpoint discipline is the resolution); independent followers never learn to stack | (R) `experiments/gen17_lastiterate.md`, `gen18_learnedfollower.md` |
 | **Aerial static register.** The fleet Tier-1 "positive" is RETIRED (tie with the naive frontier); the surviving zero-shot claim is payoff-blind-frontier MATCHING only, and the permuted-field row must run before any "on sight" sentence | (A) `experiments/gen28_aerial.md` (2026-07-19 appendix first) |
 | **LLM negatives.** Neither open-weight model calibrates a mixed strategy (B2, the knowledge/application dissociation); gen33's terrain control failed; gen37 route curation is worse than random at every prune size | (R) `experiments/b2_llm_benchmark.md`; (A) `gen33_llm_adversary.md`; (M) `gen37_reasoning_curation.md` |
+| **The capability axis (gen42, the aerial gen43 exam, gen44; all eval-only).** Size helps CUMULATIVELY (2B->27B +0.300 share of ceiling, 4B->27B +0.134, CIs excluding zero; no single step separates); generation and thinking unresolved with tight CIs (thinking changes the answer on 23/40 items and moves the score about as much as re-rolling the sampling seed); llama-3.3-70b measurably BELOW the 2026 27Bs; with repeats, every LLM author beats hill-climbing at the CURRICULUM level at every budget while the defender-level tie stands; gen42's B-COMP is underpowered at n=16 (no between-model composition sentence) | (A) `experiments/gen42_capability_ladder.md`, `gen43_exam.md`, `gen44_budget_sweep.md` |
 | **gen39 boundary.** No arm beats the best simple OBSERVING rule on any cell of any of the four maps | (A) `experiments/gen39_concealment.md` |
 | **Yardstick repair.** The roads dynamic-optimum yardstick (`oracle_refs` undamped RVI) was wrong on every cell tested; exact truth is Karp min-mean-cycle, `scratch/dyn_exact.py`; corrected appendices in the gen19/gen27 ledgers | (R) chronicle entry 31 |
 | **The gen40 structure laws + the gen41 boundaries.** Rotation exactly optimal at w = m-1; rules fail deepest at w a multiple of m; rule failure grows with K/m to the exact wall (~K=4-5), past which NO computable adversary preserves the game; at w = 2m nothing tested collects the (real, 0.58x-cap) optimum, a channel-content boundary; at transfer the full net's encoder is the calibration bottleneck (Act 2 FAIL 0/3, fixed by the Act-3 mask) | (R) `experiments/gen40_dyn_sensitivity.md`, `gen41_deepwindow_zst.md`; chronicle entry 35 |
@@ -100,8 +109,16 @@ composition gen33, combinatorial curation gen37). Decisively valuable at the lan
 register (gen38 doctrine ID) and at composition once the mechanics were real (gen39 step 2,
 terrain control passing). Its distinctive advantage is SAMPLE EFFICIENCY at small evaluation
 budgets (leads every method at 8-16 evaluations in a 1.3M-force space, overtaken by
-hill-climbing by 96). The two models reverse between tasks (llama leads composition, qwen the
-grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
+hill-climbing by 96 at the DEFENDER level; at the CURRICULUM level gen44's repeats show every
+LLM author beating hill-climbing at every budget, and the two levels are never elided). The
+capability axis is measured (gen42, the aerial gen43 exam, gen44): performance climbs
+cumulatively with size, generation and deliberation move nothing on score (thinking changes
+answers, not outcomes, within the seed-re-roll noise floor), and a 2024 70B sits below the
+2026 27Bs. The strongest positive shape is the author-level transfer effect (gen39 steps
+5c-5e): thinking-authored curricula, matched in strength, train better-transferring
+defenders, with diversity the supported carrier. The models still reverse between tasks
+(llama leads composition; the 1e slot-task reversal was RETIRED by the 2026-08-06 brief
+repair, near parity). Synthesis table: `experiments/regime_decision_table.md`.
 
 ## Binding wording rules (consolidated; each earned by a named finding)
 
@@ -126,6 +143,17 @@ grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
 9. Nash framing throughout the thesis; no Stackelberg anywhere.
 10. n=3 results say "mean +/- population std, per-seed values shown"; no significance language
     from pooled dependent cells.
+11. Act-4 real-corridor numbers come from gen45; gen32 is superseded and its numbers never
+    sit in a table beside gen45's (prose may say the claim SHAPE reproduces, each number
+    attributed to its own game). The gen45 mechanism sentence is the doctrine/threat column,
+    not anti-repeat (the recency channel is largely inert there).
+12. Curriculum-level and defender-level claims are stated separately (gen44: hill-climb ties
+    the LLM at the defender level yet is clearly worse at the curriculum level); the 5c-5e
+    transfer sentence is author-level, per-model, with diversity "supported, not proven".
+13. No thinking-mode score claim in either direction (deliberation changes answers, not
+    scores, within the seed-re-roll noise floor); no between-model composition sentence from
+    gen42's B-COMP (underpowered at n=16); the gen39 1c/1d/1e diagnostic chain is citable
+    only from the corrected-brief artefacts (the 2026-08-06 repair).
 
 ## Open threads (all small, none blocking writing)
 
@@ -133,15 +161,19 @@ grounded slot task). Synthesis table: `experiments/regime_decision_table.md`.
    3 and built from tuned-family enemies; a rebuild would tighten every step-5 number.
 2. **The aerial permuted-field row** (eval-only, minutes): must run before the thesis cites the
    aerial amortisation sentence.
-3. **gen37 restriction follow-up**: recorded future work only.
-4. **imperial-sacred** carries uncommitted Story/UX work dated 2026-08-04; Kilian has parked it
+3. **The 5d replication training + the diversity-manipulation test** (aerial): the one-command
+   training of the second qwenthink curriculum's defenders, and the designed test (author at
+   matched strength with deliberately varied diversity) that would turn the diversity carrier
+   from supported into proven; both recorded, both need Kilian's go.
+4. **gen37 restriction follow-up**: recorded future work only.
+5. **imperial-sacred** carries uncommitted Story/UX work dated 2026-08-04; Kilian has parked it
    ("done for now").
 
 ## The project map
 
 Three sacred worktrees (see `CLAUDE.md` for the table): roads `gen08-interdiction` (this tree,
 master docs, suite last recorded 171; the "224" previously recorded here was a doc slip, the
-aerial-era count), aerial `gen28-aerial` (suite last recorded 240+), multi-OD
+aerial-era count), aerial `gen28-aerial` (suite last recorded 246), multi-OD
 `gen29-multiod` (closed, suite last recorded 173). Branches `main` and `gen07-contested` are
 frozen history at the gen07 close. Only `gen08-interdiction` has a remote (`origin`).
 

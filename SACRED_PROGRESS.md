@@ -1179,3 +1179,106 @@ to their supersession notes.)*
   K=2 tie, with slack collected rising 26% -> 43% -> 57% and plateauing ~56%, while the
   total value of history declines (iid/opt 2.25 -> 1.90), the game's saturation and the
   policy's mastery of what remains, measured together.
+
+## 37. The model-capability measurement chain: the gen39 brief repair, the gen42 ladder, the gen43 exam, and the gen44 budget sweep  (2026-08-06 -> 09 · branch `gen28-aerial`, worktree `../sacred-aerial` · ledgers `gen39_concealment.md` (repair section), `gen42_capability_ladder.md`, `gen43_exam.md`, `gen44_budget_sweep.md`; all oracle/eval-only, no training)
+
+- **Goal (prospective):** put the LLM arc's per-model claims on measured ground. Repair the
+  gen39 diagnostic chain's briefing defect, then ask whether general model capability predicts
+  performance on the pipeline's LLM registers (a capability ladder within one family, gen42),
+  rebuild the underpowered instrument for resolving power (the forty-question exam, the aerial
+  gen43), and put error bars on curriculum authoring at every search budget (gen44).
+- **Headline results:** (i) **The v1-brief defect repaired** (1c/1d/1e had briefed the v1
+  physics table while every scorer used v2; 167 calls affected, everything else clean by
+  construction). Re-run at pinned bars: "briefing is not the constraint" softened (a truthful
+  brief roughly doubles the median yet every arm stays 5-10x short of the bar), grounding ~12%
+  and UNMOVED by truthful physics, the 1e llama-vs-qwen slot reversal RETIRED (a defect
+  asymmetry; corrected values near parity), and "what remains is combinatorial search"
+  re-established on corrected artefacts, the only citable ones for that chain. (ii) **gen42**
+  (six rungs, Qwen3.5 2B/4B/9B/27B + Qwen3.6-27B thinking off/on): endpoints separate (4B
+  below 27B at the search-bound slot register), every finer contrast drowns in n=8 sampling
+  noise; its two amendments (B-COMP underpowered at n=16; only the staircase's endpoints
+  survive bootstrap) are binding. (iii) **The gen43 exam** (40 items, seven configurations on
+  one paper, zero format failures): size helps and CUMULATIVELY (2B->27B +0.300 share of
+  ceiling, 4B->27B +0.134, CIs excluding zero; no single step separates); generation and
+  thinking stay unresolved with tight CIs; thinking changes the ANSWER on 23/40 items while
+  moving the SCORE by about as much as re-rolling the sampling seed (the amendment's
+  noise-floor rows, seed range 0.0219 vs effect 0.0295); llama-3.3-70b sits measurably BELOW
+  both 2026 27Bs (overturning a gen42 clump); the 2B's gen42 format problem was
+  harness-scoped, not model-scoped. (iv) **gen44** (nine repeated searches per configuration):
+  2B/4B SEPARATE from 27B as curriculum authors at usable budgets, correcting gen42's n=1
+  flat-band reading; every LLM author beats hill-climbing at EVERY budget at the CURRICULUM
+  level (the banked defender-level tie stands; the two levels had been elided and are now
+  distinct claims); llama vs crown-thinking indistinguishable at budget 16, which EXCLUDES
+  curriculum strength as the step-5c transfer carrier.
+- **What we learned:** power is a design property (per-item pairing at n=40 resolved what n=8
+  medians could not); any small effect must beat the instrument's own noise floor (seed
+  re-rolls); an n=0 LLM result is a transport question before it is a capability reading; and
+  single-draw search curves mislead (three gen42 readings revised by the exam and the sweep).
+- **Thesis fit:** Obj-3's LLM strand gains its capability axis (scale cumulative, generation
+  null, deliberation answer-changing but not score-moving, all per-model per-register); the
+  where-LLMs-help map's core prediction, that the search-bound register stays far below its
+  ceiling at every scale, survives the whole family.
+
+## 38. gen39 steps 5c-5e: the author-level transfer effect and the diversity carrier  (2026-08-08 -> 10 · branch `gen28-aerial` · `experiments/gen39_concealment.md` steps 5c/5d/5e; fresh-set harness `scratch/gen39_zeroshot2.py`)
+
+- **Goal (prospective):** Kilian's additional step-5 row: does a curriculum authored by the
+  best qwen with thinking ON train a better defender than llama's llm16 at the identical
+  matched budget? The gen42 three-link argument predicted NULL; running the arm made that
+  prediction judgeable.
+- **Headline results:** (i) **The null prediction FAILED** (recorded made-and-wrong):
+  qwenthink16 PASSES the step-5 primary 3/3 and its defender transfers better on 9/9 fresh
+  map-seed pairs against every arm, at curriculum strength matched to <1%; in-distribution
+  the advantage is suggestive only (paired p ~0.2 at n=3). (ii) **The comparability repair:**
+  the banked zero-shot test sets were unrecoverable (scores saved, laydowns not; disclosed),
+  so fresh laydown-saved sets were built once; the banked zero-shot pattern REPLICATES on
+  them (llm16 over local16 8/9), and the pre-declared kgd negative prediction fired wrong
+  again (kgd is llm16's strongest map). (iii) **5d:** a second qwenthink authoring roll
+  matches strength (0.0387 vs 0.0390) and diversity (Jaccard 0.187 vs 0.153) while sharing
+  ZERO of its 16 top laydowns: an author has reproducible STYLE without reproducible CHOICES,
+  the shape a diversity mechanism needs and a content mechanism forbids. (iv) **5e, the
+  decisive grid** (2 authors x 3 rolls x 3 seeds): PRIMARY PASS at the locked bar, complete
+  rank separation of the author transfer means (qwen 0.2129 +/- 0.0039 vs llama 0.2407 +/-
+  0.0052, exact permutation p 0.05); the mediation row fires (Jaccard-vs-transfer rho 0.83
+  over all six rolls, within-author consistent); strength matched ~3% grid-wide stays
+  excluded (gen44); the narva in-distribution column rank-separates too.
+- **What we learned:** the transfer effect is a property of the AUTHOR, not of an authoring
+  roll; curriculum DIVERSITY is the supported (not proven) carrier; defender-level effects
+  need not follow curriculum-level measures; the step-5c +/-0.0004 seed-spread anomaly did
+  not recur (a one-off).
+- **What it means for the thesis:** the LLM arc's strongest positive shape: at matched search
+  budget and matched curriculum strength, the thinking-mode reasoner's curricula train
+  defenders that transfer better to unseen theatres, an author-level finding, per-model as
+  always. The designed diversity-manipulation test and the 5d replication training are
+  recorded future work, not run.
+- **Thesis fit:** Obj-3 (the LLM-assists-SACRED line upgraded from a candidate to an
+  author-level finding), Obj-5 (matched-budget and rank-separation discipline at its
+  cleanest).
+
+## 39. gen45: the unified corridor game - Acts 4 and 5 on one substrate  (2026-08-09/10 · branch `gen28-aerial` · `experiments/gen45_unified_corridor.md`)
+
+- **Goal (prospective):** Kilian's consolidation direction: rebuild the gen32 real-corridor
+  positive on the exact gen39 substrate so the thesis's Acts 4 and 5 share ONE game (one
+  terrain table, one quota-sampled emplacement set, one multiplier field, one enemy model
+  whose only dial is how far a team may relocate between serials; the gen32 "searchlight" is
+  the gen39 machinery's flat full-map-relocation limit, regression-anchored at 3.9e-12).
+- **Headline results:** Phase-0 hunt PASSED at the preferred pin (w=2, DOC32, tau 0.10; G1
+  min 3.71 vs bar 2.0, G2 12/12; the corridor DEEPER than gen32's original hunt); the attempt
+  wave passed its gate 3/3; the confirmation wave on the pristine gated set passed every bar:
+  **PRIMARY at the bar's ceiling (beats the static cap 18/18 seed-field cells, pooled
+  0.351x), STRONG (1.46x the exact dynamic optimum vs the 2.5x bar), CAUSAL (blinded control
+  1.242x at 0/6 with its information weights pinned at 0.000000)**; the ENTIRE payoff-blind
+  dynamic rule family beaten 18/18; fitted doctrine-informed rules ~1.2x ahead, disclosed as
+  the standing pattern; worst-case committing premium 1.52x pooled; every digit verified by a
+  second instance.
+- **What we learned:** the recency channel is largely INERT on this game (one seed sweeps 6/6
+  with a POSITIVE recency weight); the doctrine/threat column (~-20 on every seed and wave)
+  carries the result, sharpening the Act-4 mechanism sentence; drift is the smallest of any
+  act; the overnight-chain ops pattern (bash-launched nice-0 waves, a gate-guarded
+  confirmation that alone may spend the pristine set) is worth inheriting.
+- **What it means for the thesis:** Act 4's real-corridor claims rebuild from gen45; gen32 is
+  SUPERSEDED and its numbers may never sit in a table beside gen45's (prose may say the claim
+  SHAPE reproduces, each number attributed to its own game). The licensed sentence stays
+  "beats every static object and every payoff-blind dynamic rule, discovered unaided".
+- **Thesis fit:** Obj-1/Obj-2 (one game and one enemy model across both aerial acts), Obj-5
+  (the gated-set single-evaluation ceremony), ZST unaffected (field-level zero-shot is the
+  act's evaluation axis by construction).
