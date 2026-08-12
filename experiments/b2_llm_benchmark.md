@@ -245,4 +245,72 @@ this instance the two-line stack is not merely strong but EXACTLY OPTIMAL at K=1
 trained SACRED itself sits behind it (0.160) and behind rotation dynamically (0.0462 vs
 0.0387, the gen43 thin-slack cell), so every comparative sentence names the ladder exactly.
 
-### RESULT: the 71-33 cell (appended after the batch; nothing above changes)
+### RESULT: the 71-33 cell (2026-08-12, batch 15:47-20:02 BST + a quiet-box recovery of two
+### episodes; artefacts `models/runs/b2_llm/batch_7133/` + `batch_7133_scored.json`, scorer
+### `scratch/b2_score_7133.py`; registration SHA `f129694`, results at this fold's commit)
+
+**Process disclosures, before any verdict.** (i) llama completed all 25 conversations in
+~17 min; qwen took ~4.2 h (essay-length turns throughout, two concurrent streams sharing the
+box). (ii) Two qwen register-(c) episodes (seeds 0 and 4) failed both scripted attempts under
+that load, one on the 900-s turn timeout and one on HTTP 400 (consistent with the 64K context
+ceiling under essay-length turns; the surviving episodes carried up to ~24k tokens of replies).
+Recovered by re-invoking the idempotent runner on the quiet box after the batch; both landed
+on the next attempt and are disclosed as third-attempt samples. (iii) No other retries; zero
+parse failures; final set 25/25 conversations per model. (iv) Endpoint MagicDNS as registered;
+no `src/` or `scripts/` change anywhere in this cell (scratch + ledger only).
+
+| register | anchor context | llama-3.3-70b | qwen3-27b (= Qwen3.6-27B) |
+|---|---|---|---|
+| (a) deterministic (worst-cased) | loss_det 0.4199 | 0.641 (route 4 on 9/10) | 0.572 (route 5 on 10/10) |
+| (b) stated-strategy | **v* 0.1276 = inv-vuln stack (exactly optimal)** · uniform-disjoint 0.1666 · uniform-full 0.2252 · SACRED 0.160 | **0.619 +/- 0.000** (gate 1.2/3) | **0.254 +/- 0.076** (gate 2.1/3) |
+| (c) sequential vs pattern-of-life (w=3, tau=0.15) | opt 0.0313 · rotation 0.0387 · SACRED 0.0462 · iid_eq 0.0967 | **0.069 +/- 0.024** (best 0.033) | **0.054 +/- 0.043** (best 0.000) |
+
+Per-seed (b): llama 0.619 x10 (two distinct supports, identical value); qwen 0.298, 0.157,
+0.173, 0.298, 0.375, 0.298, 0.128, 0.298, 0.216, 0.297. Per-episode (c): llama 0.0614,
+0.0330, 0.0798, 0.0652, 0.1063 (repeat-in-window rate 0.00); qwen 0.0598, 0.0664, 0.1241,
+0.0000, 0.0174 (repeat rate 0.21; the 0.0000 episode is a realisation of the sampled
+adversary, not a stationary value).
+
+**Readings (against the pre-registered expectations, all of which held; the qwen split was
+pre-flagged and fired).**
+1. **Register (a) as pre-registered:** both models sit above loss_det (0.641 / 0.572 vs
+   0.4199) and each commits a single fixed route; neither computes the minimax-safe route.
+2. **Register (b), llama: the calibration failure in its sharpest form yet.** Ten seeds
+   produce only TWO distinct distributions (pure route 4; 0.2/0.8 over routes 4 and 10),
+   and the two score identically (0.619) because routes 4 and 10 share their worst segment.
+   4.9x the optimum, 2.7x uniform-full-menu stacking, core mass 0.28, and WORSE than the
+   best deterministic route (0.4199): actively harmful randomisation, previously seen only
+   on the Gdansk transfer cell, now on the home instrument.
+3. **Register (b), qwen: the model x instance interaction, amplified.** Ten distinct
+   distributions, core mass 0.55, best seeds 0.128 and 0.157 at or near the exact optimum
+   (which the two-line stack attains), worst 0.375; mean 0.254 above uniform-full 0.2252
+   (below it on 4/10 seeds, below uniform-disjoint on 2/10). Qwen's failure mode on this
+   instance is RELIABILITY, not level.
+4. **The pre-registered max-flow question, scored on the post-probe transcripts:** qwen
+   names the EXACT maximal independent set {0,1,2,3,4,5} on 6/10 probes (pairwise-disjoint
+   on 7/10); llama names the valid pair {1,3} on 6/10 and invalid larger sets otherwise
+   (exact 0/10). The knowledge-application dissociation therefore holds in its purest form
+   for qwen (names the exact core, still commits unreliable mixtures); for llama on this
+   instance BOTH halves are weak. **The banked "both models name near-correct independent
+   sets" sentence is NOT licensed on 71-33; per-model wording binding.**
+5. **Register (c): both models land between the trained policy and static play** (llama
+   0.069, a strict out-of-window cycler; qwen 0.054), above rotation 0.0387 and the optimum
+   0.0313 on average, with SACRED 0.0462 ahead of both means. The relative gap to the
+   trained policy is much smaller than on 35-159 (1.2-1.5x vs ~3.5x), and the mechanism is
+   structural, not a capability jump: with six disjoint corridors the naive cycling the
+   models discover in context is close to the best rule, the same thin-slack fact (rules
+   leave only 1.24x over the optimum; gen43) that makes this cell the static concession
+   region. Any quote of these numbers carries the instance with them.
+
+**What the three-instance benchmark now banks for 71-33 (binding wording for the thesis's
+4.5.1 rebase):** *on the consolidated Act-2 instrument, where the two-line
+inverse-vulnerability stack is exactly optimal at K=1, neither pinned open-weight model
+states a reliably calibrated mixture. Llama-3.3-70B commits near-deterministically to
+overlapping padded routes and scores worse than the best single route (0.619 vs 0.4199).
+Qwen3.6-27B reaches the optimal stack's level on its best draws (0.128 vs 0.1276) and spans
+0.13-0.38 across seeds, with its mean above naive uniform stacking; it also names the exact
+six-corridor independent set on demand, so its gap is application, not knowledge. Both
+remain behind trained SACRED (0.160). Given sortie-by-sortie feedback both discover
+anti-repeat cycling that lands between the trained policy and static play, and lands
+comparatively close here because six disjoint corridors make naive cycling structurally
+strong.* Per-model, per-instance, as always; no pooling with the 35-159 or Gdansk cells.
