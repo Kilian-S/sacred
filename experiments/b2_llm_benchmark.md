@@ -195,3 +195,54 @@ capability gap is calibrated randomisation, and it does not close with model rea
 adaptive feedback at these scales.* Two open-weight models, two instances (per-model, per-instance
 reporting; no "LLMs in general"). REMAINING (optional): 71-33 K=5 (past-the-wall reasoning) needs
 the greedy-yardstick scoring path + a design decision on its dynamic anchors; flagged, not blocking.
+
+## LAUNCH: the 71-33 cell (PRE-REGISTERED 2026-08-12, BEFORE any call; Kilian's instruction)
+
+**Why.** The thesis's Act 2 was consolidated onto the 71-33 six-corridor instance (gen43,
+`experiments/gen43_unified_kboundary.md`), so its Act-5 LLM subsection (4.5.1) currently quotes
+a game the rest of the results chapter no longer uses. Kilian's direction (2026-08-12): re-run
+the B2 test on 71-33 so the LLM ladder sits on the standard instrument. K=1 (the banked B2
+protocol, like-for-like with the 35-159 cell); the old optional K=5 idea above stays unrun. The
+35-159 and Gdansk cells stay banked; the Gdansk zero-shot sentence in the thesis stays as is.
+
+**Design (harness byte-identical; instance is the only moved variable).** Harness
+`scratch/b2_llm_benchmark.py` UNCHANGED at SHA `83781ff` (+ this fold); flags
+`--od 71-33 --city kaliningrad --K 1` (N=3, k-extra 8, menu-select, band 0.15-0.95, R=11,
+exact attacker). Footprint per model exactly the banked cells': registers (a) x10 seeds,
+(b) x10 seeds, (c) x5 episodes (T=30, gen19 pattern-of-life adversary w=3 tau=0.15);
+temperature 0.7, max-tokens 12000, one retry per conversation. Models `llama-3.3-70b` and
+`qwen3-27b` (served alias; identity **Qwen3.6-27B** per the 2026-08-06 on-box identity check;
+thinking OFF, the gateway default, matching every banked B2 call). Endpoint pinned to the
+MagicDNS name `http://cv-iits-w05.tail5b8d80.ts.net:8080/v1` (the 2026-08-06 transport repair;
+both endpoints verified alive from Python today, both models served). Runner
+`scratch/b2_batch_7133.sh`; outputs `models/runs/b2_llm/batch_7133/` (full transcripts in
+every JSON). Eval-only, no training anywhere.
+
+**Anchors (ALL reproduced 2026-08-12 by `scratch/b2_7133_anchor_probe.py`, artefact
+`models/runs/b2_llm/b2_7133_anchors.json`; every banked value to 4 dp before any call).**
+- Register (a): loss_det **0.4199**.
+- Register (b), one-shot stacked: equilibrium v* **0.1276**, attained EXACTLY by the
+  inverse-vulnerability disjoint stack (the worst-edge and budget-max definitions coincide at
+  K=1); uniform-disjoint **0.1666**; uniform-full-menu **0.2252**; inv-vuln-full 0.2502;
+  trained SACRED (gen43 static K=1) **0.160 +/- 0.003**.
+- Register (c), w=3 tau=0.15, all exact: dynamic optimum (Karp) **0.0313**; best rule =
+  rotation **0.0387**; composed anti-repeat (core) 0.0423; full-menu anti-repeat 0.0728;
+  iid_eq **0.0967**; static_det 0.3835; trained SACRED (gen43 dynamic K=1)
+  **0.0462 +/- 0.0008**; matched-budget window-Q 0.0472.
+- **Yardstick guard (binding rule 8):** the harness JSON's `history_opt_c` field comes from
+  the defective undamped-RVI `oracle_refs` and is NOT citable; the exact anchors above are
+  the record for this cell.
+
+**Pre-registered expectations (both directions reportable, per-model as always).** From the
+two banked instances: (a) lands at or above loss_det; (b) misses the disjoint structure and
+lands at or above the uniform-full-menu stack 0.2252, far above v* 0.1276, with a possible
+model x instance split (the Gdansk qwen pattern); (c) discovers anti-repeat from feedback,
+dropping below its own static play but staying above the exact optimum 0.0313 and short of
+the trained policy 0.0462. The pre-registered scored question carries over: does the stated
+mixture put mass on the disjoint core (distance to the inv-vuln stack vs to uniform), and
+does the rationale mention route independence/shared edges? Note for the thesis wording: on
+this instance the two-line stack is not merely strong but EXACTLY OPTIMAL at K=1, and
+trained SACRED itself sits behind it (0.160) and behind rotation dynamically (0.0462 vs
+0.0387, the gen43 thin-slack cell), so every comparative sentence names the ladder exactly.
+
+### RESULT: the 71-33 cell (appended after the batch; nothing above changes)
