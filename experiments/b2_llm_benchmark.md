@@ -380,3 +380,16 @@ bound. Residual consequence, disclosed as a validity fact: completed (b) cells r
 conditioned on draws whose deliberation fits the gateway window (an effective ~20-27k-token
 ceiling at three streams), a weaker version of the 16k censoring; the validity row reports it,
 and eliminating it entirely would need direct-port access (a box-side change, not taken here).
+
+**AMENDMENT 3 (2026-08-13 ~16:5x, ops; Kilian's in-conversation authorisation "can you open
+direct-port access to qwen").** The gateway window (amendment 2) remained binding at reduced
+concurrency, so register (b) moved DIRECT-TO-PORT: the qwen3-27b vllm server answers on the
+box's port 8001 with the same bearer key (discovered by a client-side port probe from the Mac;
+llama sits on 8002; NOTHING box-side was touched or reconfigured). One end-to-end thinking call
+verified before the switch. Two consequences, disclosed: (i) direct calls bypass the gateway's
+audit log, so the per-run JSON transcripts, saved verbatim as always, are the call record for
+these cells (the gen42 direct-to-port precedent); (ii) the gateway's default-injection of
+`enable_thinking: false` does not apply on the direct port, which is immaterial here because
+every request sets the flag explicitly (and would matter for any future OFF-mode direct call,
+noted for the record). Registers (a)/(c) and all six banked 16k-era (b) completions were
+gateway calls; the remaining (b) cells are direct-port. Request bodies unchanged throughout.
