@@ -19,11 +19,11 @@ worker () {
     done
   done
 }
-worker 71-33 kaliningrad 7133 0 1 2 3 4 &
-worker 71-33 kaliningrad 7133 5 6 7 8 9 &
-worker 35-159 kaliningrad 35159 0 1 2 3 4 &
-worker 35-159 kaliningrad 35159 5 6 7 8 9 &
-worker 249-95 gdansk gdansk 0 1 2 3 4 &
-worker 249-95 gdansk gdansk 5 6 7 8 9 &
+worker 71-33 kaliningrad 7133 0 1 2 3 4 5 6 7 8 9 &
+
+worker 35-159 kaliningrad 35159 0 1 2 3 4 5 6 7 8 9 &
+
+worker 249-95 gdansk gdansk 0 1 2 3 4 5 6 7 8 9 &
+
 wait
 echo "B2_THINK_B32K_DONE"

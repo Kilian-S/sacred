@@ -369,3 +369,14 @@ on short-deliberation draws). The cap gates termination, not content, so it cann
 completed conversation's score. Runner `scratch/b2_batch_think_b32k.sh` (b-only, six
 workers). The censoring rate itself is banked as a validity finding: deliberation-mode output
 length is register-dependent, and the strategy-commitment register is where it explodes.
+
+**AMENDMENT 2 (2026-08-13 15:3x, ops; disclosed).** At six concurrent 32k streams the gateway
+returns 502 on precisely the long-trace attempts (11 occurrences; failures cluster at ~10 min
+of generation; the 71-33 workers, whose draws deliberate longest, failed 6/6 while short-trace
+draws completed cleanly). The binding ceiling is therefore the GATEWAY'S proxy window, not the
+token cap. Mac-side remedy: concurrency reduced to three workers (faster per-stream decode
+raises the token count reachable inside the window); the cap stays 32,000 as a harmless upper
+bound. Residual consequence, disclosed as a validity fact: completed (b) cells remain
+conditioned on draws whose deliberation fits the gateway window (an effective ~20-27k-token
+ceiling at three streams), a weaker version of the 16k censoring; the validity row reports it,
+and eliminating it entirely would need direct-port access (a box-side change, not taken here).
