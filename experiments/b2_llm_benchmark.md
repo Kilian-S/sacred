@@ -354,3 +354,18 @@ gate means; wall-clock. Comparisons are thinking-vs-off within each cell only. T
 step-2 thinking row is registered in its own ledger (aerial) and runs Mac-side in parallel.
 
 ### RESULT: the thinking-mode rerun (appended after the batch; nothing above changes)
+
+**AMENDMENT (2026-08-13 14:4x, BEFORE any register-(b) thinking score was read; the 5c-class
+forced co-change, applied once and disclosed).** At the registered 16,000-token cap the
+thinking trace CENSORS register (b) specifically: over half of (b) attempts terminated with
+null content (12 of ~21 resolved cells burned both scripted attempts; registers (a) and (c)
+completed in full at the same cap, all 30 + 15 conversations, with only isolated single
+retries). The mixture-commitment prompt is the one register that invites a full in-head
+derivation of the game, and 16k truncates it on most draws. Consequence: register (b) reruns
+at a UNIFORM 32,000-token cap (a-, c-registers stand as completed at 16k); the nine
+16k-completed (b) cells are set aside as `*_16k.json` sidecars (preserved, reported in the
+validity rows, never mixed into the scored table, since a 16k-completed sample is conditioned
+on short-deliberation draws). The cap gates termination, not content, so it cannot bias a
+completed conversation's score. Runner `scratch/b2_batch_think_b32k.sh` (b-only, six
+workers). The censoring rate itself is banked as a validity finding: deliberation-mode output
+length is register-dependent, and the strategy-commitment register is where it explodes.
