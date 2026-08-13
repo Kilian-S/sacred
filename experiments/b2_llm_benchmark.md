@@ -195,3 +195,273 @@ capability gap is calibrated randomisation, and it does not close with model rea
 adaptive feedback at these scales.* Two open-weight models, two instances (per-model, per-instance
 reporting; no "LLMs in general"). REMAINING (optional): 71-33 K=5 (past-the-wall reasoning) needs
 the greedy-yardstick scoring path + a design decision on its dynamic anchors; flagged, not blocking.
+
+## LAUNCH: the 71-33 cell (PRE-REGISTERED 2026-08-12, BEFORE any call; Kilian's instruction)
+
+**Why.** The thesis's Act 2 was consolidated onto the 71-33 six-corridor instance (gen43,
+`experiments/gen43_unified_kboundary.md`), so its Act-5 LLM subsection (4.5.1) currently quotes
+a game the rest of the results chapter no longer uses. Kilian's direction (2026-08-12): re-run
+the B2 test on 71-33 so the LLM ladder sits on the standard instrument. K=1 (the banked B2
+protocol, like-for-like with the 35-159 cell); the old optional K=5 idea above stays unrun. The
+35-159 and Gdansk cells stay banked; the Gdansk zero-shot sentence in the thesis stays as is.
+
+**Design (harness byte-identical; instance is the only moved variable).** Harness
+`scratch/b2_llm_benchmark.py` UNCHANGED at SHA `83781ff` (+ this fold); flags
+`--od 71-33 --city kaliningrad --K 1` (N=3, k-extra 8, menu-select, band 0.15-0.95, R=11,
+exact attacker). Footprint per model exactly the banked cells': registers (a) x10 seeds,
+(b) x10 seeds, (c) x5 episodes (T=30, gen19 pattern-of-life adversary w=3 tau=0.15);
+temperature 0.7, max-tokens 12000, one retry per conversation. Models `llama-3.3-70b` and
+`qwen3-27b` (served alias; identity **Qwen3.6-27B** per the 2026-08-06 on-box identity check;
+thinking OFF, the gateway default, matching every banked B2 call). Endpoint pinned to the
+MagicDNS name `http://cv-iits-w05.tail5b8d80.ts.net:8080/v1` (the 2026-08-06 transport repair;
+both endpoints verified alive from Python today, both models served). Runner
+`scratch/b2_batch_7133.sh`; outputs `models/runs/b2_llm/batch_7133/` (full transcripts in
+every JSON). Eval-only, no training anywhere.
+
+**Anchors (ALL reproduced 2026-08-12 by `scratch/b2_7133_anchor_probe.py`, artefact
+`models/runs/b2_llm/b2_7133_anchors.json`; every banked value to 4 dp before any call).**
+- Register (a): loss_det **0.4199**.
+- Register (b), one-shot stacked: equilibrium v* **0.1276**, attained EXACTLY by the
+  inverse-vulnerability disjoint stack (the worst-edge and budget-max definitions coincide at
+  K=1); uniform-disjoint **0.1666**; uniform-full-menu **0.2252**; inv-vuln-full 0.2502;
+  trained SACRED (gen43 static K=1) **0.160 +/- 0.003**.
+- Register (c), w=3 tau=0.15, all exact: dynamic optimum (Karp) **0.0313**; best rule =
+  rotation **0.0387**; composed anti-repeat (core) 0.0423; full-menu anti-repeat 0.0728;
+  iid_eq **0.0967**; static_det 0.3835; trained SACRED (gen43 dynamic K=1)
+  **0.0462 +/- 0.0008**; matched-budget window-Q 0.0472.
+- **Yardstick guard (binding rule 8):** the harness JSON's `history_opt_c` field comes from
+  the defective undamped-RVI `oracle_refs` and is NOT citable; the exact anchors above are
+  the record for this cell.
+
+**Pre-registered expectations (both directions reportable, per-model as always).** From the
+two banked instances: (a) lands at or above loss_det; (b) misses the disjoint structure and
+lands at or above the uniform-full-menu stack 0.2252, far above v* 0.1276, with a possible
+model x instance split (the Gdansk qwen pattern); (c) discovers anti-repeat from feedback,
+dropping below its own static play but staying above the exact optimum 0.0313 and short of
+the trained policy 0.0462. The pre-registered scored question carries over: does the stated
+mixture put mass on the disjoint core (distance to the inv-vuln stack vs to uniform), and
+does the rationale mention route independence/shared edges? Note for the thesis wording: on
+this instance the two-line stack is not merely strong but EXACTLY OPTIMAL at K=1, and
+trained SACRED itself sits behind it (0.160) and behind rotation dynamically (0.0462 vs
+0.0387, the gen43 thin-slack cell), so every comparative sentence names the ladder exactly.
+
+### RESULT: the 71-33 cell (2026-08-12, batch 15:47-20:02 BST + a quiet-box recovery of two
+### episodes; artefacts `models/runs/b2_llm/batch_7133/` + `batch_7133_scored.json`, scorer
+### `scratch/b2_score_7133.py`; registration SHA `f129694`, results at this fold's commit)
+
+**Process disclosures, before any verdict.** (i) llama completed all 25 conversations in
+~17 min; qwen took ~4.2 h (essay-length turns throughout, two concurrent streams sharing the
+box). (ii) Two qwen register-(c) episodes (seeds 0 and 4) failed both scripted attempts under
+that load, one on the 900-s turn timeout and one on HTTP 400 (consistent with the 64K context
+ceiling under essay-length turns; the surviving episodes carried up to ~24k tokens of replies).
+Recovered by re-invoking the idempotent runner on the quiet box after the batch; both landed
+on the next attempt and are disclosed as third-attempt samples. (iii) No other retries; zero
+parse failures; final set 25/25 conversations per model. (iv) Endpoint MagicDNS as registered;
+no `src/` or `scripts/` change anywhere in this cell (scratch + ledger only).
+
+| register | anchor context | llama-3.3-70b | qwen3-27b (= Qwen3.6-27B) |
+|---|---|---|---|
+| (a) deterministic (worst-cased) | loss_det 0.4199 | 0.641 (route 4 on 9/10) | 0.572 (route 5 on 10/10) |
+| (b) stated-strategy | **v* 0.1276 = inv-vuln stack (exactly optimal)** · uniform-disjoint 0.1666 · uniform-full 0.2252 · SACRED 0.160 | **0.619 +/- 0.000** (gate 1.2/3) | **0.254 +/- 0.076** (gate 2.1/3) |
+| (c) sequential vs pattern-of-life (w=3, tau=0.15) | opt 0.0313 · rotation 0.0387 · SACRED 0.0462 · iid_eq 0.0967 | **0.069 +/- 0.024** (best 0.033) | **0.054 +/- 0.043** (best 0.000) |
+
+Per-seed (b): llama 0.619 x10 (two distinct supports, identical value); qwen 0.298, 0.157,
+0.173, 0.298, 0.375, 0.298, 0.128, 0.298, 0.216, 0.297. Per-episode (c): llama 0.0614,
+0.0330, 0.0798, 0.0652, 0.1063 (repeat-in-window rate 0.00); qwen 0.0598, 0.0664, 0.1241,
+0.0000, 0.0174 (repeat rate 0.21; the 0.0000 episode is a realisation of the sampled
+adversary, not a stationary value).
+
+**Readings (against the pre-registered expectations, all of which held; the qwen split was
+pre-flagged and fired).**
+1. **Register (a) as pre-registered:** both models sit above loss_det (0.641 / 0.572 vs
+   0.4199) and each commits a single fixed route; neither computes the minimax-safe route.
+2. **Register (b), llama: the calibration failure in its sharpest form yet.** Ten seeds
+   produce only TWO distinct distributions (pure route 4; 0.2/0.8 over routes 4 and 10),
+   and the two score identically (0.619) because routes 4 and 10 share their worst segment.
+   4.9x the optimum, 2.7x uniform-full-menu stacking, core mass 0.28, and WORSE than the
+   best deterministic route (0.4199): actively harmful randomisation, previously seen only
+   on the Gdansk transfer cell, now on the home instrument.
+3. **Register (b), qwen: the model x instance interaction, amplified.** Ten distinct
+   distributions, core mass 0.55, best seeds 0.128 and 0.157 at or near the exact optimum
+   (which the two-line stack attains), worst 0.375; mean 0.254 above uniform-full 0.2252
+   (below it on 4/10 seeds, below uniform-disjoint on 2/10). Qwen's failure mode on this
+   instance is RELIABILITY, not level.
+4. **The pre-registered max-flow question, scored on the post-probe transcripts:** qwen
+   names the EXACT maximal independent set {0,1,2,3,4,5} on 6/10 probes (pairwise-disjoint
+   on 7/10); llama names the valid pair {1,3} on 6/10 and invalid larger sets otherwise
+   (exact 0/10). The knowledge-application dissociation therefore holds in its purest form
+   for qwen (names the exact core, still commits unreliable mixtures); for llama on this
+   instance BOTH halves are weak. **The banked "both models name near-correct independent
+   sets" sentence is NOT licensed on 71-33; per-model wording binding.**
+5. **Register (c): both models land between the trained policy and static play** (llama
+   0.069, a strict out-of-window cycler; qwen 0.054), above rotation 0.0387 and the optimum
+   0.0313 on average, with SACRED 0.0462 ahead of both means. The relative gap to the
+   trained policy is much smaller than on 35-159 (1.2-1.5x vs ~3.5x), and the mechanism is
+   structural, not a capability jump: with six disjoint corridors the naive cycling the
+   models discover in context is close to the best rule, the same thin-slack fact (rules
+   leave only 1.24x over the optimum; gen43) that makes this cell the static concession
+   region. Any quote of these numbers carries the instance with them.
+
+**What the three-instance benchmark now banks for 71-33 (binding wording for the thesis's
+4.5.1 rebase):** *on the consolidated Act-2 instrument, where the two-line
+inverse-vulnerability stack is exactly optimal at K=1, neither pinned open-weight model
+states a reliably calibrated mixture. Llama-3.3-70B commits near-deterministically to
+overlapping padded routes and scores worse than the best single route (0.619 vs 0.4199).
+Qwen3.6-27B reaches the optimal stack's level on its best draws (0.128 vs 0.1276) and spans
+0.13-0.38 across seeds, with its mean above naive uniform stacking; it also names the exact
+six-corridor independent set on demand, so its gap is application, not knowledge. Both
+remain behind trained SACRED (0.160). Given sortie-by-sortie feedback both discover
+anti-repeat cycling that lands between the trained policy and static play, and lands
+comparatively close here because six disjoint corridors make naive cycling structurally
+strong.* Per-model, per-instance, as always; no pooling with the 35-159 or Gdansk cells.
+
+## LAUNCH: the THINKING-MODE rerun, all three cells, qwen only (PRE-REGISTERED 2026-08-13,
+## BEFORE any batch call; Kilian's go: "B2 benchmark and gen39 step 2, nothing else, speed
+## is priority 1")
+
+**Question.** Does the deliberation mode change qwen's play on the B2 registers? The gen43
+exam measured deliberation moving SCORES within the seed-reroll noise floor at the slot
+register; the mixture-calibration and in-context registers have no thinking measurement.
+On 71-33 qwen-off's register-(b) failure is RELIABILITY (0.254 +/- 0.076, best 0.128, worst
+0.375), the sharpest open question.
+
+**Design.** qwen3-27b ONLY (llama has no deliberation mode). Protocol identical to each
+banked cell (same instances, registers, footprints a x10 / b x10 / c x5, seeds, temperature
+0.7, endpoint) except two forced co-changes per the 5c precedent: `enable_thinking: true`
+via `chat_template_kwargs`, and max-tokens 12000 -> 16000 (thinking traces brush lower
+caps, leaving empty content). The harness gains an additive `--thinking` flag (absent =
+byte-identical request bodies) and records decoding provenance per JSON. Smoke: one
+register-(a) conversation at seed 99 (outside the real seed range, scratch path, not data):
+plumbing end-to-end, gate 3/3, probe named the exact core. Runner
+`scratch/b2_batch_think.sh`, three cells as three concurrent streams, ~215 calls/cell.
+Outputs `models/runs/b2_llm/batch_{35159,gdansk,7133}_think/`.
+
+**Corrected dynamic anchors, pinned (binding rule 8).** 71-33: as the 2026-08-12 cell
+(opt 0.0313, rotation 0.0387, iid_eq 0.0967, SACRED 0.0462). 35-159: exact optimum 0.0413,
+ATTAINED by rotation (gen40 sanity anchor; the banked cell's history_opt 0.049 was the
+pre-repair defective RVI and is retired for comparisons), iid_eq 0.1468, SACRED 0.050,
+static_det 0.613. Gdansk 249-95: iid_eq 0.223 (exact); the exact optimum is recomputed via
+`scratch/dyn_exact.py` at scoring time and the banked 0.079 `oracle_refs` figure is not
+citable. Register-(b) anchors unchanged per cell (banked).
+
+**Expectations (both directions reportable, judged per cell, never pooled).** From the exam:
+no score movement beyond the instrument's own spread would be unsurprising. The readable
+positive is variance collapse toward the stack on 71-33 register (b) (deliberation fixes
+calibration reliability); the readable negative is spread unchanged or worse. Noise floors
+stated: (b) sd 0.076 at n=10, (c) sd 0.043 at n=5 (off-mode measurements). REPORTED validity
+rows: empty-content turns and parse-fallback counts per cell (the thinking-overrun risk);
+gate means; wall-clock. Comparisons are thinking-vs-off within each cell only. The gen39
+step-2 thinking row is registered in its own ledger (aerial) and runs Mac-side in parallel.
+
+### RESULT: the thinking-mode rerun (appended after the batch; nothing above changes)
+
+**AMENDMENT (2026-08-13 14:4x, BEFORE any register-(b) thinking score was read; the 5c-class
+forced co-change, applied once and disclosed).** At the registered 16,000-token cap the
+thinking trace CENSORS register (b) specifically: over half of (b) attempts terminated with
+null content (12 of ~21 resolved cells burned both scripted attempts; registers (a) and (c)
+completed in full at the same cap, all 30 + 15 conversations, with only isolated single
+retries). The mixture-commitment prompt is the one register that invites a full in-head
+derivation of the game, and 16k truncates it on most draws. Consequence: register (b) reruns
+at a UNIFORM 32,000-token cap (a-, c-registers stand as completed at 16k); the nine
+16k-completed (b) cells are set aside as `*_16k.json` sidecars (preserved, reported in the
+validity rows, never mixed into the scored table, since a 16k-completed sample is conditioned
+on short-deliberation draws). The cap gates termination, not content, so it cannot bias a
+completed conversation's score. Runner `scratch/b2_batch_think_b32k.sh` (b-only, six
+workers). The censoring rate itself is banked as a validity finding: deliberation-mode output
+length is register-dependent, and the strategy-commitment register is where it explodes.
+
+**AMENDMENT 2 (2026-08-13 15:3x, ops; disclosed).** At six concurrent 32k streams the gateway
+returns 502 on precisely the long-trace attempts (11 occurrences; failures cluster at ~10 min
+of generation; the 71-33 workers, whose draws deliberate longest, failed 6/6 while short-trace
+draws completed cleanly). The binding ceiling is therefore the GATEWAY'S proxy window, not the
+token cap. Mac-side remedy: concurrency reduced to three workers (faster per-stream decode
+raises the token count reachable inside the window); the cap stays 32,000 as a harmless upper
+bound. Residual consequence, disclosed as a validity fact: completed (b) cells remain
+conditioned on draws whose deliberation fits the gateway window (an effective ~20-27k-token
+ceiling at three streams), a weaker version of the 16k censoring; the validity row reports it,
+and eliminating it entirely would need direct-port access (a box-side change, not taken here).
+
+**AMENDMENT 3 (2026-08-13 ~16:5x, ops; Kilian's in-conversation authorisation "can you open
+direct-port access to qwen").** The gateway window (amendment 2) remained binding at reduced
+concurrency, so register (b) moved DIRECT-TO-PORT: the qwen3-27b vllm server answers on the
+box's port 8001 with the same bearer key (discovered by a client-side port probe from the Mac;
+llama sits on 8002; NOTHING box-side was touched or reconfigured). One end-to-end thinking call
+verified before the switch. Two consequences, disclosed: (i) direct calls bypass the gateway's
+audit log, so the per-run JSON transcripts, saved verbatim as always, are the call record for
+these cells (the gen42 direct-to-port precedent); (ii) the gateway's default-injection of
+`enable_thinking: false` does not apply on the direct port, which is immaterial here because
+every request sets the flag explicitly (and would matter for any future OFF-mode direct call,
+noted for the record). Registers (a)/(c) and all six banked 16k-era (b) completions were
+gateway calls; the remaining (b) cells are direct-port. Request bodies unchanged throughout.
+
+### RESULT: the thinking-mode rerun (2026-08-13 10:37-22:01 with amendments 1-3; artefacts
+### `models/runs/b2_llm/batch_{7133,35159,gdansk}_think/` + `batch_think_scored.json`, scorer
+### `scratch/b2_score_think.py`; Gdansk exact dynamic anchors computed at scoring time per the
+### registration, `gdansk_dyn_anchors.json`: optimum 0.0723 by Karp, best rotation 0.2069)
+
+**Completion and provenance.** Registers (a)/(c) completed at the 16k gateway phase (30 + 15
+conversations, all cells). Register (b) completed at the amended uniform 32k cap on the
+direct port (30/30): 26 cells on scripted attempts, two 32k-overrun cells (71-33 s4/s7)
+landed on the idempotent sweep, and two ANSWER-CHANNEL-censored cells (71-33 s5/s8, the
+model deriving in the content channel and hitting the cap before any distribution line;
+unparsed replies preserved as `_unparsed.json` sidecars) landed on one re-roll each. Final
+empty-content turn-retries in the artefacts of record: 2 / 7 / 3 per cell. Nine 16k-era (b)
+completions remain sidecars outside scoring, as amended.
+
+| cell | register | thinking ON | off (banked) | anchors |
+|---|---|---|---|---|
+| 71-33 | (a) | 0.572 (route 5 x10) | 0.572 | loss_det 0.4199 |
+| 71-33 | (b) | **0.291 +/- 0.060** [0.128, 0.386] | 0.254 +/- 0.076 | v* = stack 0.1276 · uni-full 0.2252 · SACRED 0.160 |
+| 71-33 | (c) | 0.057 +/- 0.025 (best 0.034) | 0.054 +/- 0.043 | opt 0.0313 · rot 0.0387 · SACRED 0.0462 · iid 0.0967 |
+| 35-159 | (a) | 0.841 (route 6 x10) | 0.841 | loss_det 0.699 |
+| 35-159 | (b) | **0.261 +/- 0.099** [0.209, 0.555] | 0.523 +/- 0.161 | eq 0.206 · stack 0.250 · SACRED 0.256 · uni-full 0.442 |
+| 35-159 | (c) | **0.065 +/- 0.027** (best 0.037) | 0.297 +/- 0.176 | opt 0.0413 = rotation · SACRED 0.050 · iid 0.1468 |
+| gdansk | (a) | 0.867 (route 1 x10) | 0.867 | loss_det 0.740 |
+| gdansk | (b) | **0.326 +/- 0.046** [0.303, 0.464] | 0.354 +/- 0.066 | eq 0.302 · stack 0.333 · uni-full 0.694 |
+| gdansk | (c) | **0.133 +/- 0.065** (best 0.068) | 0.394 +/- 0.047 | opt 0.0723 · SACRED ~0.098 · rot 0.2069 · iid 0.223 |
+
+Comprehension gates 3.0/3 on every conversation of every cell (off-mode 1.2-2.2). Per-seed
+(b) rows in the artefact; the structure matters and is the finding below.
+
+**Verdicts against the pre-registered expectations.**
+1. **The registered readable-positive for 71-33 (variance collapse toward the stack) did NOT
+   occur; the readable-negative branch fires.** Thinking (b) on the standard instrument is
+   0.291 +/- 0.060 against off's 0.254 +/- 0.076: no better on mean or spread, and 2.3x the
+   optimum the two-line stack attains exactly.
+2. **Deliberation produces MODAL answers, and that is the new mechanism finding.** Seven of
+   ten 71-33 seeds commit near-identical mixtures (0.2975-0.3007); eight of ten Gdansk seeds
+   commit exactly 0.3111. Off-mode produced ten distinct mixtures per cell. Deliberation
+   trades exploration for consistency: where its derivation is good the model is consistently
+   good, where it is wrong it is consistently wrong. One 71-33 re-roll (s5) found the stack
+   (0.128); the mode did not.
+3. **Calibration quality grades with corridor count.** Gdansk (m=3): the modal mixture sits
+   BELOW the two-line stack (0.311 vs 0.333, 9/10 seeds) and within 3% of the equilibrium
+   (0.302), the first LLM mixtures in this benchmark below the disjoint heuristic on any
+   instance. 35-159 (m=4): 0.261, at the stack (0.250) and SACRED (0.256), halved from
+   off-mode. 71-33 (m=6): 0.291 vs 0.1276, far above, modal-wrong. Deliberation buys
+   calibration on small menus and loses it as the combinatorial load grows.
+4. **Register (c) is deliberation's genuine win.** In-context play lands between the trained
+   policy and static play on every cell, transforming the two instances where off-mode was
+   erratic (35-159 0.297 -> 0.065; Gdansk 0.394 -> 0.133) and matching off on 71-33 (0.057).
+   Strict out-of-window cycling on the Kaliningrad instances (repeat 0.00). Neither reaches
+   the trained policy or the exact optimum anywhere.
+5. **The dissociation is deliberation-robust and sharper than ever: thinking-mode qwen names
+   the EXACT six-corridor independent set on 9/10 probes (off: 6/10) while committing the
+   modal miscalibrated mixture on 7/10 of the same conversations.** Perfect knowledge, modal
+   misapplication.
+6. **Register (a) is unmoved everywhere** (same routes, same values as off-mode).
+7. **The censoring findings are banked as validity facts:** deliberation length explodes
+   specifically on the strategy-commitment register (>50% null-content at 16k; two draws
+   exhausted even 32k; two more overflowed the answer channel), while the per-sortie and
+   single-route registers fit comfortably. Where the model must derive the whole game, its
+   deliberation is effectively unbounded.
+
+**Binding wording (the thesis's 4.5.1 under the qwen-thinking framing).** With deliberation
+on, the model still never reliably states a calibrated mixture on the standard instrument
+(modal 0.298 vs the exactly-optimal stack's 0.1276) despite naming the exact independent set
+on demand, so the knowledge-application dissociation stands under deliberation where the
+menu is large; on the smallest instance deliberation closes the gap to within 3% of the
+equilibrium, and the graded shape (m=3 below the stack, m=4 at it, m=6 far above) is the
+licensed sentence. In-context feedback play sits between the trained policy and static play
+everywhere. Per-model, per-instance, per-mode as always; thinking rows never pool with off
+rows and each is labelled.
