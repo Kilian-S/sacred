@@ -126,8 +126,9 @@ def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperatu
             host + "/chat/completions",
             data=json.dumps(body).encode(),
             headers={"Authorization": f"Bearer {key}", "content-type": "application/json"})
-        # long-reasoning models at 12k-token budgets need minutes, not 120 s (live test 2026-07-16)
-        with urllib.request.urlopen(req, timeout=900) as r:
+        # long-reasoning models at 12k-token budgets need minutes, not 120 s (live test 2026-07-16);
+        # thinking mode under concurrent streams needs more still (ops robustness, 2026-08-13)
+        with urllib.request.urlopen(req, timeout=(1800 if thinking else 900)) as r:
             return json.load(r)["choices"][0]["message"]["content"]
     raise ValueError(provider)
 
