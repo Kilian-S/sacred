@@ -2002,3 +2002,64 @@ the mediation stated as supported, not proven.
 **Watched rows.** The step-5c +/-0.0004 seed-spread anomaly did NOT recur on any new roll
 (spreads 0.0058-0.0075); it stands as a one-off. All six curricula files carry byte-identical
 banked family keys (asserted at write time); the test sets were never rebuilt.
+
+### STEP-2 THINKING ROW VIA THE GEN42 ARMS (PRE-REGISTERED 2026-08-13, BEFORE any number is
+### read; Kilian's go "the B2 benchmark and the gen39 step 2, nothing else, speed first";
+### ZERO new calls, no training, Mac-side scoring only)
+
+**Question.** Does the deliberation mode change composition quality on the step-2
+instrument? Step 2's banked qwen number (0.0613, partial) is off-mode; no thinking-mode
+composition has ever been scored under the banked aggregation.
+
+**Method.** The gen42 battery ran the step-2 protocol verbatim (corrected brief, fields
+5100-5102, same scorer, n=16 llm + 16 relabel per arm) for the crown thinking OFF and ON;
+its banked artefacts (`models/runs/gen42_ladder/qwen3-27b[_think]/scores.json`) carry the
+identical structure to the step-2 record, reference arms included. Those forces are RESCORED
+under the BANKED step-2 headline aggregation (per-arm median over forces x fields of the
+vs-best-observing-defender column, with the per-field, pooled, and above-random clauses and
+the relabel collapse), which simultaneously clears the gen42 standing recomputation flag.
+
+**Consistency anchor (must pass before any new number is read).** The same script applied to
+the banked step-2 directory must reproduce the banked table exactly: llama 0.0747, qwen
+0.0613, heuristic 0.0603, random 0.0123, relabel 0.0059/0.0057.
+
+**Pre-committed caveats, both directions reportable.** n=16 is underpowered per the gen42
+amendment (within-arm spread exceeds between-arm differences at this n), so "indistinguishable"
+is the expected verdict and a separation would be the surprise; the gen42 off-arm rescore is
+simultaneously a fresh-draw REPLICATION row for the banked 0.0613 (sampling noise made
+visible); crown-only, per-model as always; nothing pools with the banked llama rows beyond
+tabulation side by side. Script `scratch/gen39_step2_think_rescore.py`; artefact
+`models/runs/gen42_ladder/step2_rescore.json`.
+
+### STEP-2 THINKING ROW RESULT (2026-08-13, minutes of Mac scoring; artefact
+### `models/runs/gen42_ladder/step2_rescore.json`; ALL SIX consistency anchors PASS, the
+### banked step-2 table reproducing to the digit before any new number was read)
+
+| arm (banked step-2 aggregation, vs the best observing defender) | n | pooled | per-field | vs heuristic 0.0603 | relabel collapse |
+|---|---|---|---|---|---|
+| banked step-2 qwen, off (2026-07-26 draw) | 8 | **0.0613** | 0.0683 / 0.0643 / 0.0330 | pooled PASS (thin), 1/3 fields = the banked partial | 10.8x |
+| gen42 crown OFF (fresh draw, corrected brief) | 16 | **0.0343** | 0.0421 / 0.0430 / 0.0185 | pooled FAIL, 0/3 fields | 7.8x |
+| gen42 crown ON (thinking; 12/16 valid) | 12 | **0.0211** | 0.0113 / 0.0402 / 0.0059 | pooled FAIL, 0/3 fields | 1.8x |
+
+Both gen42 arms stay above the random mean (0.0179), and the heuristic and random reference
+values reproduce identically across all three directories (same seeded arms, same fields).
+
+**Readings, judged against the pre-committed caveats.**
+1. **The expected verdict fired: no thinking effect is readable on this instrument.** The
+   off-to-on gap (0.0343 vs 0.0211) is SMALLER than the same-configuration draw-to-draw gap
+   (0.0613 vs 0.0343, the banked and fresh OFF draws), so no sentence about deliberation
+   helping or hurting composition is licensed in either direction. This extends the exam's
+   noise-floor finding to the composition register under the banked aggregation.
+2. **The replication row is the sharper finding.** The banked qwen partial (pooled 0.0613
+   against the heuristic's 0.0603, thin, 1/3 fields) does NOT replicate on a fresh draw at
+   larger n (0.0343, 0/3 fields, pooled FAIL). The banked llama PASS (0.0747, every clause)
+   is untouched, llama was not re-drawn. Binding wording consequence: the thesis's step-2
+   positive rests on llama, as banked; any qwen composition sentence now carries the
+   fresh-draw caveat, and the "partial" label is understood as draw-sensitive.
+3. **The relabel collapse magnitude is draw- and mode-sensitive** (banked 10-13x; fresh off
+   7.8x; thinking 1.8x at n=12). The banked terrain-reasoning claim stands on its own
+   decisive artefacts (both models, terrain-share shifts plus collapse); the thinking arm's
+   weak collapse is REPORTED at its n, not read as a control failure, and any thinking-mode
+   terrain-grounding sentence would need its own powered run.
+4. **The gen42 standing recomputation flag is CLEARED** (this rescore is the banked-
+   aggregation recomputation gen42's amendment required before any step-2 comparison).
