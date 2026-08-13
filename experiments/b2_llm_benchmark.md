@@ -314,3 +314,43 @@ remain behind trained SACRED (0.160). Given sortie-by-sortie feedback both disco
 anti-repeat cycling that lands between the trained policy and static play, and lands
 comparatively close here because six disjoint corridors make naive cycling structurally
 strong.* Per-model, per-instance, as always; no pooling with the 35-159 or Gdansk cells.
+
+## LAUNCH: the THINKING-MODE rerun, all three cells, qwen only (PRE-REGISTERED 2026-08-13,
+## BEFORE any batch call; Kilian's go: "B2 benchmark and gen39 step 2, nothing else, speed
+## is priority 1")
+
+**Question.** Does the deliberation mode change qwen's play on the B2 registers? The gen43
+exam measured deliberation moving SCORES within the seed-reroll noise floor at the slot
+register; the mixture-calibration and in-context registers have no thinking measurement.
+On 71-33 qwen-off's register-(b) failure is RELIABILITY (0.254 +/- 0.076, best 0.128, worst
+0.375), the sharpest open question.
+
+**Design.** qwen3-27b ONLY (llama has no deliberation mode). Protocol identical to each
+banked cell (same instances, registers, footprints a x10 / b x10 / c x5, seeds, temperature
+0.7, endpoint) except two forced co-changes per the 5c precedent: `enable_thinking: true`
+via `chat_template_kwargs`, and max-tokens 12000 -> 16000 (thinking traces brush lower
+caps, leaving empty content). The harness gains an additive `--thinking` flag (absent =
+byte-identical request bodies) and records decoding provenance per JSON. Smoke: one
+register-(a) conversation at seed 99 (outside the real seed range, scratch path, not data):
+plumbing end-to-end, gate 3/3, probe named the exact core. Runner
+`scratch/b2_batch_think.sh`, three cells as three concurrent streams, ~215 calls/cell.
+Outputs `models/runs/b2_llm/batch_{35159,gdansk,7133}_think/`.
+
+**Corrected dynamic anchors, pinned (binding rule 8).** 71-33: as the 2026-08-12 cell
+(opt 0.0313, rotation 0.0387, iid_eq 0.0967, SACRED 0.0462). 35-159: exact optimum 0.0413,
+ATTAINED by rotation (gen40 sanity anchor; the banked cell's history_opt 0.049 was the
+pre-repair defective RVI and is retired for comparisons), iid_eq 0.1468, SACRED 0.050,
+static_det 0.613. Gdansk 249-95: iid_eq 0.223 (exact); the exact optimum is recomputed via
+`scratch/dyn_exact.py` at scoring time and the banked 0.079 `oracle_refs` figure is not
+citable. Register-(b) anchors unchanged per cell (banked).
+
+**Expectations (both directions reportable, judged per cell, never pooled).** From the exam:
+no score movement beyond the instrument's own spread would be unsurprising. The readable
+positive is variance collapse toward the stack on 71-33 register (b) (deliberation fixes
+calibration reliability); the readable negative is spread unchanged or worse. Noise floors
+stated: (b) sd 0.076 at n=10, (c) sd 0.043 at n=5 (off-mode measurements). REPORTED validity
+rows: empty-content turns and parse-fallback counts per cell (the thinking-overrun risk);
+gate means; wall-clock. Comparisons are thinking-vs-off within each cell only. The gen39
+step-2 thinking row is registered in its own ledger (aerial) and runs Mac-side in parallel.
+
+### RESULT: the thinking-mode rerun (appended after the batch; nothing above changes)

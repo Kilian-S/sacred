@@ -103,7 +103,8 @@ def gate_questions(env):
     return q, check
 
 
-def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperature=0.7):
+def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperature=0.7,
+             thinking=False):
     if provider == "anthropic":
         req = urllib.request.Request(
             "https://api.anthropic.com/v1/messages",
@@ -115,11 +116,15 @@ def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperatu
             return json.load(r)["content"][0]["text"]
     if provider == "openai":
         host = (base.rstrip("/") if base else "https://api.openai.com/v1")
+        body = {"model": model, "max_tokens": max_tokens,
+                "temperature": temperature, "messages": messages}
+        if thinking:
+            # the proven aerial convention (gen39_phase1e_thinking.py / step-5c prep):
+            # explicit opt-in beats the gateway's default_thinking=false injection
+            body["chat_template_kwargs"] = {"enable_thinking": True}
         req = urllib.request.Request(
             host + "/chat/completions",
-            data=json.dumps({"model": model, "max_tokens": max_tokens,
-                             "temperature": temperature,
-                             "messages": messages}).encode(),
+            data=json.dumps(body).encode(),
             headers={"Authorization": f"Bearer {key}", "content-type": "application/json"})
         # long-reasoning models at 12k-token budgets need minutes, not 120 s (live test 2026-07-16)
         with urllib.request.urlopen(req, timeout=900) as r:
@@ -164,6 +169,9 @@ def main():
     ap.add_argument("--print-prompts", action="store_true",
                     help="emit the exact prompts (system, gate, registers a/b/c) and exit; no API")
     ap.add_argument("--register", default="abc", help="subset of registers to run, e.g. 'b'")
+    ap.add_argument("--thinking", action="store_true",
+                    help="enable the model's deliberation mode (qwen3-27b); absent = "
+                         "byte-identical off-mode request bodies")
     ap.add_argument("--od", default="35-159", help="OD pair, e.g. 249-95 (Gdansk held-out)")
     ap.add_argument("--K", type=int, default=1, help="interdiction budget (K>=4 uses the greedy yardstick)")
     ap.add_argument("--city", default="kaliningrad", help="graph the OD lives on (kaliningrad|gdansk|...)")
@@ -202,7 +210,7 @@ def main():
                      else "\n".join(f"{i}: {1/R:.4f}" for i in range(R)))
         else:
             reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
-                             base=a.base, temperature=a.temperature)
+                             base=a.base, temperature=a.temperature, thinking=a.thinking)
             time.sleep(0.5)
         transcript[-1]["reply"] = reply
         return reply
@@ -253,6 +261,7 @@ def main():
         return
 
     out = {"model": a.model, "provider": a.provider, "od": a.od, "K": a.K, "city": a.city,
+           "thinking": a.thinking, "max_tokens": a.max_tokens,  # decoding provenance (gen43-exam lesson)
            "anchors": {"loss_det": (sol.loss_det if sol is not None else None), "eq": eq_val,
                        "uniform_stack": None,
                        "static_det_c": crefs["static_det"], "iid_eq_c": crefs["iid_eq"],
