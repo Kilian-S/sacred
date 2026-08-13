@@ -1,6 +1,6 @@
 #!/bin/bash
 # B2 thinking rerun, register (b) at the amended uniform 32k cap (2026-08-13; the 5c-class
-# co-change, ledger amendment). Six workers (2 per cell). Idempotent.
+# co-change, ledger amendment). v3: TWO workers (7133 dedicated; 35159+gdansk sequential) to maximise per-stream decode inside the gateway window. Idempotent.
 set -u; cd "$(dirname "$0")/.."
 BASE="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"; KEY="iits-local-key"; MODEL="qwen3-27b"
 worker () {
@@ -20,10 +20,12 @@ worker () {
   done
 }
 worker 71-33 kaliningrad 7133 0 1 2 3 4 5 6 7 8 9 &
+wait_gd () { worker 35-159 kaliningrad 35159 0 1 2 3 4 5 6 7 8 9; worker 249-95 gdansk gdansk 0 1 2 3 4 5 6 7 8 9; }
+wait_gd &
 
-worker 35-159 kaliningrad 35159 0 1 2 3 4 5 6 7 8 9 &
 
-worker 249-95 gdansk gdansk 0 1 2 3 4 5 6 7 8 9 &
+
+
 
 wait
 echo "B2_THINK_B32K_DONE"
