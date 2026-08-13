@@ -393,3 +393,75 @@ these cells (the gen42 direct-to-port precedent); (ii) the gateway's default-inj
 every request sets the flag explicitly (and would matter for any future OFF-mode direct call,
 noted for the record). Registers (a)/(c) and all six banked 16k-era (b) completions were
 gateway calls; the remaining (b) cells are direct-port. Request bodies unchanged throughout.
+
+### RESULT: the thinking-mode rerun (2026-08-13 10:37-22:01 with amendments 1-3; artefacts
+### `models/runs/b2_llm/batch_{7133,35159,gdansk}_think/` + `batch_think_scored.json`, scorer
+### `scratch/b2_score_think.py`; Gdansk exact dynamic anchors computed at scoring time per the
+### registration, `gdansk_dyn_anchors.json`: optimum 0.0723 by Karp, best rotation 0.2069)
+
+**Completion and provenance.** Registers (a)/(c) completed at the 16k gateway phase (30 + 15
+conversations, all cells). Register (b) completed at the amended uniform 32k cap on the
+direct port (30/30): 26 cells on scripted attempts, two 32k-overrun cells (71-33 s4/s7)
+landed on the idempotent sweep, and two ANSWER-CHANNEL-censored cells (71-33 s5/s8, the
+model deriving in the content channel and hitting the cap before any distribution line;
+unparsed replies preserved as `_unparsed.json` sidecars) landed on one re-roll each. Final
+empty-content turn-retries in the artefacts of record: 2 / 7 / 3 per cell. Nine 16k-era (b)
+completions remain sidecars outside scoring, as amended.
+
+| cell | register | thinking ON | off (banked) | anchors |
+|---|---|---|---|---|
+| 71-33 | (a) | 0.572 (route 5 x10) | 0.572 | loss_det 0.4199 |
+| 71-33 | (b) | **0.291 +/- 0.060** [0.128, 0.386] | 0.254 +/- 0.076 | v* = stack 0.1276 · uni-full 0.2252 · SACRED 0.160 |
+| 71-33 | (c) | 0.057 +/- 0.025 (best 0.034) | 0.054 +/- 0.043 | opt 0.0313 · rot 0.0387 · SACRED 0.0462 · iid 0.0967 |
+| 35-159 | (a) | 0.841 (route 6 x10) | 0.841 | loss_det 0.699 |
+| 35-159 | (b) | **0.261 +/- 0.099** [0.209, 0.555] | 0.523 +/- 0.161 | eq 0.206 · stack 0.250 · SACRED 0.256 · uni-full 0.442 |
+| 35-159 | (c) | **0.065 +/- 0.027** (best 0.037) | 0.297 +/- 0.176 | opt 0.0413 = rotation · SACRED 0.050 · iid 0.1468 |
+| gdansk | (a) | 0.867 (route 1 x10) | 0.867 | loss_det 0.740 |
+| gdansk | (b) | **0.326 +/- 0.046** [0.303, 0.464] | 0.354 +/- 0.066 | eq 0.302 · stack 0.333 · uni-full 0.694 |
+| gdansk | (c) | **0.133 +/- 0.065** (best 0.068) | 0.394 +/- 0.047 | opt 0.0723 · SACRED ~0.098 · rot 0.2069 · iid 0.223 |
+
+Comprehension gates 3.0/3 on every conversation of every cell (off-mode 1.2-2.2). Per-seed
+(b) rows in the artefact; the structure matters and is the finding below.
+
+**Verdicts against the pre-registered expectations.**
+1. **The registered readable-positive for 71-33 (variance collapse toward the stack) did NOT
+   occur; the readable-negative branch fires.** Thinking (b) on the standard instrument is
+   0.291 +/- 0.060 against off's 0.254 +/- 0.076: no better on mean or spread, and 2.3x the
+   optimum the two-line stack attains exactly.
+2. **Deliberation produces MODAL answers, and that is the new mechanism finding.** Seven of
+   ten 71-33 seeds commit near-identical mixtures (0.2975-0.3007); eight of ten Gdansk seeds
+   commit exactly 0.3111. Off-mode produced ten distinct mixtures per cell. Deliberation
+   trades exploration for consistency: where its derivation is good the model is consistently
+   good, where it is wrong it is consistently wrong. One 71-33 re-roll (s5) found the stack
+   (0.128); the mode did not.
+3. **Calibration quality grades with corridor count.** Gdansk (m=3): the modal mixture sits
+   BELOW the two-line stack (0.311 vs 0.333, 9/10 seeds) and within 3% of the equilibrium
+   (0.302), the first LLM mixtures in this benchmark below the disjoint heuristic on any
+   instance. 35-159 (m=4): 0.261, at the stack (0.250) and SACRED (0.256), halved from
+   off-mode. 71-33 (m=6): 0.291 vs 0.1276, far above, modal-wrong. Deliberation buys
+   calibration on small menus and loses it as the combinatorial load grows.
+4. **Register (c) is deliberation's genuine win.** In-context play lands between the trained
+   policy and static play on every cell, transforming the two instances where off-mode was
+   erratic (35-159 0.297 -> 0.065; Gdansk 0.394 -> 0.133) and matching off on 71-33 (0.057).
+   Strict out-of-window cycling on the Kaliningrad instances (repeat 0.00). Neither reaches
+   the trained policy or the exact optimum anywhere.
+5. **The dissociation is deliberation-robust and sharper than ever: thinking-mode qwen names
+   the EXACT six-corridor independent set on 9/10 probes (off: 6/10) while committing the
+   modal miscalibrated mixture on 7/10 of the same conversations.** Perfect knowledge, modal
+   misapplication.
+6. **Register (a) is unmoved everywhere** (same routes, same values as off-mode).
+7. **The censoring findings are banked as validity facts:** deliberation length explodes
+   specifically on the strategy-commitment register (>50% null-content at 16k; two draws
+   exhausted even 32k; two more overflowed the answer channel), while the per-sortie and
+   single-route registers fit comfortably. Where the model must derive the whole game, its
+   deliberation is effectively unbounded.
+
+**Binding wording (the thesis's 4.5.1 under the qwen-thinking framing).** With deliberation
+on, the model still never reliably states a calibrated mixture on the standard instrument
+(modal 0.298 vs the exactly-optimal stack's 0.1276) despite naming the exact independent set
+on demand, so the knowledge-application dissociation stands under deliberation where the
+menu is large; on the smallest instance deliberation closes the gap to within 3% of the
+equilibrium, and the graded shape (m=3 below the stack, m=4 at it, m=6 far above) is the
+licensed sentence. In-context feedback play sits between the trained policy and static play
+everywhere. Per-model, per-instance, per-mode as always; thinking rows never pool with off
+rows and each is labelled.
