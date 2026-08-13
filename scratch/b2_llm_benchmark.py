@@ -212,6 +212,15 @@ def main():
         else:
             reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
                              base=a.base, temperature=a.temperature, thinking=a.thinking)
+            if reply is None or not reply.strip():
+                # thinking overrun leaves null/empty content (the 5c lesson); one loud
+                # turn-level retry, then fail so the runner-level retry fires
+                transcript[-1]["empty_retry"] = True
+                time.sleep(2)
+                reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
+                                 base=a.base, temperature=a.temperature, thinking=a.thinking)
+                if reply is None or not reply.strip():
+                    raise RuntimeError("empty content twice (thinking overrun?)")
             time.sleep(0.5)
         transcript[-1]["reply"] = reply
         return reply
