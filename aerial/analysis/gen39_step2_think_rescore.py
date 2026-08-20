@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-"""Step-2 thinking row via the gen42 arms (pre-registered 2026-08-13; zero new calls).
-
-Applies the BANKED step-2 headline aggregation (per-arm median over forces x fields of the
-vs-best-observing-defender column, index 2 of each scores.json tuple, plus the per-field,
-pooled, and above-random clauses and the relabel collapse) to three directories: the banked
-step-2 record (the consistency anchor, which must reproduce exactly), and the gen42 crown
-OFF and ON arms, whose generation followed the step-2 protocol verbatim on the corrected
-brief. Clears the gen42 standing recomputation flag in the same pass.
+"""Applies the step-2 headline aggregation, the per-arm median over forces and fields of the
+vs-best-observing-defender column, to the banked step-2 record and to the gen42 thinking-off and
+thinking-on arms. The banked record is the consistency anchor and must reproduce exactly.
 
 Run: PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_step2_think_rescore.py
 Writes models/runs/gen42_ladder/step2_rescore.json
@@ -24,7 +19,7 @@ DIRS = {
     "crown_off": "models/runs/gen42_ladder/qwen3-27b",
     "crown_on": "models/runs/gen42_ladder/qwen3-27b_think",
 }
-ANCHOR = {  # banked step-2 table, must reproduce to 4 dp before any new number is read
+ANCHOR = {  # must reproduce to 4 dp before any new number is read
     "llm:llama-3.3-70b": 0.0747, "llm:qwen3-27b": 0.0613, "heuristic": 0.0603,
     "random": 0.0123, "relabel:llama-3.3-70b": 0.0059, "relabel:qwen3-27b": 0.0057,
 }

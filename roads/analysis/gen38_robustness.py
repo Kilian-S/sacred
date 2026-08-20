@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
-"""gen38 V1 ROBUSTNESS row (ungated, disclosed; the skeptic's attack on the clean 100%).
-
-V1 hit 100% on clean author-written narratives. This probes whether that is fragile by
-degrading the intel to messy/realistic forms, PROGRAMMATICALLY (not re-authored, to avoid
-gaming):
-  - TERSE:      first sentence only (minimal signal).
-  - DISTRACTOR: the full narrative + one CONFLICTING sentence lifted from a DIFFERENT
-                doctrine's narrative (contradictory intel, the realistic case). The true label
-                is still the base narrative's type; a surface pattern-matcher should break.
-  - BOTH:       terse + a distractor sentence.
-Accuracy under each condition, LLM vs keyword, + the operational value (pooled held-out) so the
-fragility is priced against the gen34 wall.
-
-Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python analysis/gen38_robustness.py
+"""gen38 V1 robustness row: degrades the intelligence narratives programmatically (terse: first
+sentence only; distractor: a conflicting sentence lifted from a different doctrine's narrative;
+or both) and measures classification accuracy and operational value under each condition, LLM vs
+keyword, against the gen34 wall.
 """
 from __future__ import annotations
 

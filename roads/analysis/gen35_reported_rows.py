@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""gen35 REPORTED rows (eval-only; pre-registered ungated in experiments/gen35_dyn_kboundary.md):
-
-1. TABULAR window-Q: average-cost Q-learning over the R^w window states with the SAME
-   interaction budget (8000 sorties) and the same analytic loss signal SACRED trains on,
-   epsilon-greedy, no network (the gen26 no-net-learner lesson applied to the dynamic
-   register). Greedy policy evaluated EXACTLY (damped power iteration) every 500 sorties;
-   best value reported, 3 seeds.
-2. WORST-CASE COMMITTING row: each cell's best seed's best checkpoint rolled 2000 sorties vs
-   the pattern-of-life enemy; the realised route MARGINAL evaluated against the one-shot
-   ORACLE best response, beside the one-shot v_eq (0.2553 K=2 / 0.3829 K=3).
+"""gen35 reported rows (eval-only): computes two reference rows for the K-boundary act. The
+tabular window-Q row is average-cost Q-learning over the R^w window states with the same
+interaction budget and analytic loss signal SACRED trains on, no network, greedy policy
+evaluated exactly every 500 sorties, best value over 3 seeds. The worst-case-committing row
+rolls each cell's best checkpoint 2000 sorties against the pattern-of-life enemy and evaluates
+the realised route marginal against the one-shot oracle best response.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python analysis/gen35_reported_rows.py
 Writes models/runs/gen35_dyn_kboundary/reported_rows.json

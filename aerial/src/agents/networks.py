@@ -1,10 +1,8 @@
-"""PyTorch Geometric and GATv2 Actor-Critic Network architectures for SACRED.
+"""GATv2 actor-critic network architectures for SACRED.
 
-This module defines:
-1. Featurization helpers to convert NetworkX/SMDP states into GNN-ready Tensors.
-2. GATv2Encoder: Shared spatial representation learning backbone.
-3. ProtagonistPolicyValueNet: Routing policy & critic for the dispatcher.
-4. AntagonistPolicyValueNet: Edge congestion policy & critic for the adversary.
+Holds the featurisation helpers that turn SMDP observations into PyTorch Geometric tensors, the
+shared GATv2 encoder backbone, and the two policy-value heads: a routing policy and critic for the
+dispatcher, and an edge-congestion policy and critic for the adversary.
 """
 
 from __future__ import annotations
@@ -21,40 +19,29 @@ _FEATURIZE_CACHE = {}
 
 
 def node_index_map(observation: dict[str, Any]) -> dict[Any, int]:
-    """Node id -> row index in the tensors ``featurize_state`` builds for this observation.
+    """Node id to row index in the tensors ``featurize_state`` builds for this observation.
 
-    ``featurize_state`` orders rows by ``sorted(nodes.keys())``. Every consumer that indexes into
-    the featurized node matrix (active-node index, candidate-node indices, per-route node indices)
-    MUST build its map with this helper: dict insertion order differs from sorted order on the OSM
-    graphs, and using it silently reads the wrong rows (the 2026-07-09 node-ordering fix; see
-    CRITIQUE_INTERDICTION.md §5.1 and tests/test_node_ordering.py)."""
+    Rows are ordered by ``sorted(nodes.keys())``, so every consumer that indexes into the
+    featurised node matrix must build its map with this helper. Dict insertion order differs from
+    sorted order on the OSM graphs, and relying on it silently reads the wrong rows.
+    """
     return {nid: idx for idx, nid in enumerate(sorted(observation["nodes"].keys()))}
 
-# Node feature width. Bumped 9 -> 11 for Stage 1.5 (request age + active truck's congestion-aware
-# ETA; zero for static problems), and 11 -> 13 for the fixed hybrid rung: column 11 marks the
-# active truck's assigned target (the goal it is routing toward — previously invisible to the
-# policy) and column 12 is the congestion-aware distance-to-that-goal field (global routing
-# information a 2-layer GNN cannot propagate itself; parity with greedy's Dijkstra). Both are zero
-# whenever the observation lacks the keys, so pre-hybrid problems are informationally unchanged.
-# Checkpoints trained at a narrower width are still evaluable: the SAC agents slice features to
-# their own node_in_dim (new columns are appended LAST, so a [:, :11] slice reproduces the old
-# featurization exactly).
+# Node feature width. Columns absent from an observation are filled with zero. New columns are
+# always appended LAST, and the SAC agents slice features down to their own node_in_dim, so a
+# checkpoint trained at a narrower width stays evaluable.
 NODE_FEATURE_DIM = 14
 _WAIT_NORM = 100.0  # rough scale for request age (ticks) -> O(1)
 _ETA_NORM = 50.0    # rough scale for congestion-aware ETA (graph diameter ~44) -> O(1)
 _GOAL_NORM = 50.0   # same scale for the distance-to-goal field
 # Full blockage sets effective_weight ~ distance/1e-6, so a node whose only route to the goal is
-# blocked would get a ~1e4 feature after normalization — clamp distance features to a sane range.
+# blocked would reach ~1e4 after normalisation. Clamp distance features to a sane range.
 _DIST_FEATURE_CAP = 10.0
 
-# Edge feature width. Bumped 2 -> 4 for the gen03/gen04 antagonist-observability fix: columns 2/3
-# are the DIRECTED truck occupancy (count, furthest progress fraction) of the edge — the motion
-# state the adversary needs to attack ahead of a moving truck (mid-edge trucks were previously
-# invisible to both agents). Bumped 4 -> 5 for the A1 generalist (2026-07-10): column 4 is the
-# edge's interception VULNERABILITY p_e from the instance's threat map (obs["edge_vulnerability"]),
-# zero when absent — the map-conditioning signal without which zero-shot transfer has no mechanism
-# (the measured ZST-0 negative, experiments/zst_step0.md). Same back-compat rule as node features:
-# new columns are appended LAST, and the SAC agents slice edge_attr down to their own edge_in_dim.
+# Edge feature width. Columns 2/3 are the DIRECTED truck occupancy (count, furthest progress
+# fraction), the motion state an adversary needs to attack ahead of a moving truck; column 4 is the
+# edge's interception vulnerability p_e from the instance's threat map, zero when absent. Same
+# append-last and slicing rule as the node features.
 EDGE_FEATURE_DIM = 5
 
 def featurize_state(
@@ -63,31 +50,24 @@ def featurize_state(
 ) -> Data:
     """Convert an SMDP wrapper observation dict into a PyG Data object.
 
-    Parameters
-    ----------
-    observation:
-        The environment observation dict returned by SMDPWrapper or GraphEnv.
-    active_truck_id:
-        The ID of the truck that is currently making a decision. If None,
-        truck-specific features will be set to zero.
+    Args:
+        observation: The observation dict returned by SMDPWrapper or GraphEnv.
+        active_truck_id: The truck currently making a decision. None zeroes the truck-specific
+            features.
 
-    Returns
-    -------
-    Data:
-        A PyTorch Geometric Data object with features:
-        - x: Node features [num_nodes, 11]
-        - edge_index: Graph topology [2, 2 * num_edges]
-        - edge_attr: Edge features [2 * num_edges, 2]
+    Returns:
+        A batched PyG Data object with node features x [num_nodes, NODE_FEATURE_DIM], topology
+        edge_index [2, 2 * num_edges] and edge features edge_attr [2 * num_edges,
+        EDGE_FEATURE_DIM].
     """
     nodes_dict = observation["nodes"]
     edges_dict = observation["edges"]
     trucks_dict = observation["trucks"]
-    # Dynamic-queue features (Stage 1.5); empty/zero for static problems.
+    # Dynamic-queue features; empty or zero for static problems.
     node_waits = observation.get("node_waits", {})
     active_etas = observation.get("truck_etas", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
-    # Hybrid features: the active truck's assigned goal and the distance-to-goal field.
     goal_dists = observation.get("goal_dists", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
-    # Multi-convoy route-correlation: per-node fraction of earlier convoys routed through it (col 14).
+    # Per-node fraction of earlier convoys routed through it.
     taken_node_frac = observation.get("taken_node_frac", {})
     active_target = None
     if active_truck_id is not None and active_truck_id in trucks_dict:
@@ -97,10 +77,9 @@ def featurize_state(
     node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
     num_nodes = len(node_ids)
 
-    # 1. Normalize/Center coordinates
-    # Cache key covers nodes AND the edge set's size/total length: two graphs sharing node ids but
-    # differing in edges/lengths must not share cached edge indices or normalisation constants
-    # (CRITIQUE_PREFREEZE §5.3: a multi-instance/ZST trap with the old node-ids-only key).
+    # The cache key covers the nodes AND the edge set's size and total length: two graphs sharing
+    # node ids but differing in edges or lengths must not share cached edge indices or
+    # normalisation constants.
     cache_key = (tuple(node_ids), len(edges_dict),
                  round(sum(float(e["distance"]) for e in edges_dict.values()), 6))
     if cache_key not in _FEATURIZE_CACHE:
@@ -112,7 +91,7 @@ def featurize_state(
         mean_dist_val = np.mean(dists) if dists else 1.0
         std_dist_val = np.std(dists) + 1e-6 if dists else 1.0
 
-        # Precompute static edge index and normalized distances
+        # Precompute the static edge index and normalised distances.
         edge_indices = []
         norm_dists = []
         for (u, v), edata in sorted(list(edges_dict.items())):
@@ -137,37 +116,31 @@ def featurize_state(
     
     mean_x, std_x, mean_y, std_y, mean_dist, std_dist, edge_index_tensor, norm_dists = _FEATURIZE_CACHE[cache_key]
 
-    # 2. Count truck presence and active target commitments
     trucks_per_node = {n: 0 for n in node_ids}
     targeted_by_other = {n: 0.0 for n in node_ids}
     other_targeted_capacity = {n: 0.0 for n in node_ids}
 
     for t_id, t in trucks_dict.items():
-        # Count physical presence
         if t["current_node"] is not None:
             trucks_per_node[t["current_node"]] += 1
 
-        # Count commitments by other trucks. A truck's commitment is its assigned request
-        # (hybrid mode) falling back to its in-flight destination (destination mode — identical
-        # to the old behaviour there, since assigned_target is always None outside hybrid; in
-        # hybrid the destination is only the next hop and would be meaningless). When there is
-        # no active truck (the ANTAGONIST's view), every truck counts as "other" — previously
-        # the antagonist saw no commitments at all.
+        # A truck's commitment is its assigned request, falling back to its in-flight destination.
+        # assigned_target is always None outside hybrid mode; inside it the destination is only the
+        # next hop and would be meaningless. With no active truck (the antagonist's view) every
+        # truck counts as "other".
         if t_id != active_truck_id:
             commit = t.get("assigned_target") or t.get("destination")
             if commit is not None and commit in nodes_dict:
                 targeted_by_other[commit] = 1.0
                 other_targeted_capacity[commit] += t.get("capacity", 1.0)
 
-    # 3. Build node features
     # Columns: [x_norm, y_norm, demand, is_depot, num_trucks, is_active_truck, active_truck_load,
     #           is_targeted_by_other, unassigned_demand, oldest_wait_norm, active_truck_eta_norm,
-    #           is_active_target, goal_dist_norm]
+    #           is_active_target, goal_dist_norm, taken_node_frac]
     x_features = []
     for node_id in node_ids:
         ndata = nodes_dict[node_id]
 
-        # Check if active truck is here
         is_active_here = 0.0
         active_load = 0.0
         if active_truck_id is not None and active_truck_id in trucks_dict:
@@ -200,11 +173,8 @@ def featurize_state(
 
     x_tensor = torch.tensor(x_features, dtype=torch.float32)
 
-    # 4a. Truck occupancy per DIRECTED edge — the motion state (gen03 fix). A truck mid-edge was
-    # previously invisible (only at-node presence was featurized), which is exactly the state an
-    # attacker needs to block "the edge ahead of a moving truck" — the scripted heuristic that
-    # out-attacked the learned antagonist 3-6x used precisely this. Keyed by travel direction
-    # (truck.edge = (from, to)), so heading is encoded by which directed row carries the value.
+    # Truck occupancy per DIRECTED edge, keyed by travel direction (truck.edge = (from, to)), so a
+    # truck's heading is encoded by which directed row carries the value.
     edge_occ: dict[tuple[int, int], list[float]] = {}
     for t in trucks_dict.values():
         e = t.get("edge")
@@ -220,9 +190,8 @@ def featurize_state(
         rec[0] += 1.0                # occupancy count on this directed edge
         rec[1] = max(rec[1], frac)   # furthest along (0 = just entered, ~1 = about to arrive)
 
-    # 4b. Build dynamic edge features only (topology is cached)
-    # Columns: [norm_distance, congestion, occupancy_count(directed), max_progress_frac(directed),
-    #           vulnerability]
+    # Dynamic edge features only; topology is cached. Columns: [norm_distance, congestion,
+    # occupancy_count(directed), max_progress_frac(directed), vulnerability]
     edge_vuln = observation.get("edge_vulnerability", {})
     edge_features = []
     norm_idx = 0
@@ -236,10 +205,8 @@ def featurize_state(
         rev = edge_occ.get((node_to_idx[v], node_to_idx[u]), _no_occ)
         vuln = float(edge_vuln.get((u, v), edge_vuln.get((v, u), 0.0)))
 
-        # Forward edge (u -> v)
-        edge_features.append([norm_dists[norm_idx], cong, fwd[0], fwd[1], vuln])
-        # Reverse edge (v -> u)
-        edge_features.append([norm_dists[norm_idx + 1], cong, rev[0], rev[1], vuln])
+        edge_features.append([norm_dists[norm_idx], cong, fwd[0], fwd[1], vuln])      # u -> v
+        edge_features.append([norm_dists[norm_idx + 1], cong, rev[0], rev[1], vuln])  # v -> u
 
         norm_idx += 2
 
@@ -254,16 +221,14 @@ def featurize_state(
 
 
 def _route_head_terms(net: nn.Module, logits: torch.Tensor, action_mask_indices) -> torch.Tensor:
-    """gen11 menu-head discriminability terms, delivered UNDILUTED at the head (the proven lever-2
-    pattern; see CRITIQUE_PREFREEZE.md §2/§8.2). Applied only when the corresponding attributes are
-    attached by the trainer (menu-select mode); absent attributes = byte-identical behaviour.
+    """Apply menu-head discriminability terms undiluted at the head.
 
-    * ``route_feats`` [R, F] static per-route features (normalised COST, worst-case VULNERABILITY)
-      with LEARNED weight vector ``route_feat_w`` [F] (init 0): logit shift = feats @ w. The
-      transferable-feature arm (also the ZST map-conditioning mechanism).
-    * ``route_bias`` [R] LEARNED per-route scalar bias (init 0): pure identity capacity - exactly
-      what the pre-fix permutation accidentally provided (the identity-hash arm).
-    Both are Bellman-consistent when the same attributes are attached to the Q heads."""
+    Two optional terms, applied only when the trainer has attached the corresponding attributes in
+    menu-select mode; absent attributes leave behaviour byte-identical. ``route_feats`` [R, F] are
+    static per-route features carrying a learned weight ``route_feat_w`` [F], shifting each logit
+    by feats @ w. ``route_bias`` [R] is a learned per-route scalar bias giving pure identity
+    capacity. Both stay Bellman-consistent when the same attributes are attached to the Q heads.
+    """
     feats = getattr(net, "route_feats", None)
     fw = getattr(net, "route_feat_w", None)
     if feats is not None and fw is not None:
@@ -277,7 +242,7 @@ def _route_head_terms(net: nn.Module, logits: torch.Tensor, action_mask_indices)
 
 
 class GATv2Encoder(nn.Module):
-    """Shared Graph Attention Backbone to learn node/edge spatial embeddings."""
+    """Shared graph-attention backbone learning node and edge spatial embeddings."""
 
     def __init__(
         self,
@@ -295,7 +260,6 @@ class GATv2Encoder(nn.Module):
         self.dropout = dropout
 
         self.convs = nn.ModuleList()
-        # Layer 1
         self.convs.append(
             GATv2Conv(
                 in_channels=node_in_dim,
@@ -307,7 +271,6 @@ class GATv2Encoder(nn.Module):
             )
         )
         
-        # Intermediate layers
         for _ in range(num_layers - 1):
             self.convs.append(
                 GATv2Conv(
@@ -320,7 +283,6 @@ class GATv2Encoder(nn.Module):
                 )
             )
 
-        # Output projection to standard hidden dim
         self.proj = nn.Linear(hidden_dim * heads, hidden_dim)
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: torch.Tensor) -> torch.Tensor:
@@ -334,7 +296,7 @@ class GATv2Encoder(nn.Module):
 
 
 class ProtagonistPolicyValueNet(nn.Module):
-    """Dispatcher Agent: maps GATv2 embeddings to node-routing logits and state value."""
+    """Dispatcher agent mapping GATv2 embeddings to node-routing logits and a state value."""
 
     def __init__(
         self,
@@ -353,10 +315,8 @@ class ProtagonistPolicyValueNet(nn.Module):
             heads=heads,
         )
         
-        # Bilinear attention scoring head for routing action selection
         self.policy_bilinear = nn.Bilinear(hidden_dim, hidden_dim, 1)
 
-        # Critic state-value estimation layers
         self.critic_fc1 = nn.Linear(hidden_dim, hidden_dim)
         self.critic_val = nn.Linear(hidden_dim, 1)
 
@@ -367,25 +327,15 @@ class ProtagonistPolicyValueNet(nn.Module):
         action_mask_indices: list[int],
         taken: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Perform forward pass to get routing action probabilities and state value.
+        """Encode the graph and return routing action probabilities and the state value.
 
-        Parameters
-        ----------
-        pyg_data:
-            Featurized PyG Data object.
-        active_node_idx:
-            Index of the active truck's current node in pyg_data.x.
-        action_mask_indices:
-            List of valid node indices that the active truck is allowed to travel to.
+        Args:
+            active_node_idx: Index of the active truck's current node in pyg_data.x.
+            action_mask_indices: Node indices the active truck may travel to.
 
-        Returns
-        -------
-        probs:
-            Action probability tensor [len(action_mask_indices)] summing to 1.
-        value:
-            Estimated state value V(s) [1] for reinforcement learning.
+        Returns:
+            probs [len(action_mask_indices)] summing to 1, and the state value V(s) [1].
         """
-        # 1. Generate node embeddings: [num_nodes, hidden_dim]
         h = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
         return self.head(h, active_node_idx, action_mask_indices, taken)
 
@@ -396,26 +346,25 @@ class ProtagonistPolicyValueNet(nn.Module):
         action_mask_indices: list[int],
         taken: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Policy/value head on precomputed node embeddings ``h`` [num_nodes, hidden_dim].
+        """Policy and value head on precomputed node embeddings ``h`` [num_nodes, hidden_dim].
 
-        Separated from the encoder so :meth:`SAC.update` can batch-encode the whole
-        minibatch in a single GATv2 pass and then apply this head per-sample. Behaviour
-        is identical to running :meth:`forward` on the corresponding single graph.
+        Separated from the encoder so :meth:`SAC.update` can batch-encode a whole minibatch in one
+        GATv2 pass and apply this head per sample, identically to :meth:`forward` on the
+        corresponding single graph.
         """
-        # 2. Get active node embedding: [1, hidden_dim]
         h_active = h[active_node_idx].unsqueeze(0)
 
-        # 3. If no actions are available, return dummy uniform prob and value
+        # No actions available: report an empty distribution alongside the value.
         if len(action_mask_indices) == 0:
             probs = torch.empty(0, device=h.device)
             h_graph = torch.mean(h, dim=0, keepdim=True)
             v = self.critic_val(F.relu(self.critic_fc1(h_graph))).squeeze(-1)
             return probs, v
 
-        # 4. Score valid candidates. Default = per-NODE (destination/first-hop). ROUTE MENU-SELECT
-        # (multi-convoy shared-edge): if `menu_routes` is set, `action_mask_indices` are route ids
-        # and each route is scored by the MEAN-POOLED embedding of its nodes -- works for overlapping
-        # routes, parameter-free (reuses the bilinear head), one decision per convoy. Off by default.
+        # Candidates are scored per node (destination or first hop) by default. In route
+        # menu-select mode, set by attaching `menu_routes`, `action_mask_indices` are route ids
+        # instead and each route is scored by the mean-pooled embedding of its nodes, which handles
+        # overlapping routes and reuses the bilinear head without extra parameters.
         menu = getattr(self, "menu_routes", None)
         if menu is not None:
             h_candidates = torch.stack([h[menu[int(r)]].mean(dim=0) for r in action_mask_indices])
@@ -426,22 +375,20 @@ class ProtagonistPolicyValueNet(nn.Module):
         logits = self.policy_bilinear(h_active_rep, h_candidates).squeeze(-1)  # [num_candidates]
         fw = getattr(self, "follow_w", None)
         if fw is not None and taken is not None:
-            # LEVER 2: undiluted LEARNED route-correlation. Each route's logit is shifted by its
-            # "earlier-convoys-committed" count times a LEARNED weight, delivered straight to the head
-            # (not via the GNN), so the follower can generalise "follow the signal" to non-modal routes.
+            # Route-correlation shift delivered straight to the head rather than through the GNN,
+            # so the follower can generalise "follow the signal" to non-modal routes.
             logits = logits + fw * taken
         logits = _route_head_terms(self, logits, action_mask_indices)
         probs = F.softmax(logits, dim=-1)
 
-        # 5. Critic value: Pool node embeddings to get graph state embedding
-        h_graph = torch.mean(h, dim=0, keepdim=True)  # Global Average Pooling [1, hidden_dim]
+        h_graph = torch.mean(h, dim=0, keepdim=True)  # global average pooling, [1, hidden_dim]
         v = self.critic_val(F.relu(self.critic_fc1(h_graph))).squeeze(-1)  # [1]
 
         return probs, v
 
 
 class AntagonistPolicyValueNet(nn.Module):
-    """Adversary Agent: selects edges to congest and sets congestion levels."""
+    """Adversary agent selecting edges to congest and setting congestion levels."""
 
     def __init__(
         self,
@@ -461,23 +408,16 @@ class AntagonistPolicyValueNet(nn.Module):
             heads=heads,
         )
 
-        # Edge feature processing MLP
         self.edge_mlp = nn.Sequential(
             nn.Linear(hidden_dim * 2 + edge_in_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
         )
 
-        # Edge selection scoring head
         self.edge_scorer = nn.Linear(hidden_dim, 1)
-
-        # Wait action scoring node
         self.wait_scorer = nn.Linear(hidden_dim, 1)
-
-        # Congestion level selection head (conditioned on edge features)
         self.level_head = nn.Linear(hidden_dim, num_congestion_levels)
 
-        # Critic layers
         self.critic_fc1 = nn.Linear(hidden_dim, hidden_dim)
         self.critic_val = nn.Linear(hidden_dim, 1)
 
@@ -490,31 +430,18 @@ class AntagonistPolicyValueNet(nn.Module):
         remaining_budget: float,
         level_costs: list[float],  # maps index to cost
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Perform forward pass to get edge choice, wait choice, and level probability.
+        """Encode the graph and return the edge choice, wait choice, and level probabilities.
 
-        Parameters
-        ----------
-        pyg_data:
-            Featurized PyG Data.
-        original_edges:
-            List of undirected edges in the original env order.
-        node_to_idx:
-            Dict mapping NodeId to integer index in pyg_data.
-        allowed_edges:
-            Subset of original_edges that are NOT currently congested and can be chosen.
-        remaining_budget:
-            The antagonist's remaining congestion credit.
-        level_costs:
-            List of credit costs corresponding to each congestion level.
+        Args:
+            original_edges: Undirected edges in the original environment order.
+            node_to_idx: Node id to row index in pyg_data.
+            allowed_edges: The subset of original_edges not currently congested.
+            remaining_budget: The antagonist's remaining congestion credit.
+            level_costs: Credit cost of each congestion level.
 
-        Returns
-        -------
-        edge_probs:
-            Probability tensor over allowed edges + [wait action] (size: len(allowed_edges) + 1).
-        level_probs:
-            Matrix of shape [len(allowed_edges), num_levels] containing valid level choices.
-        value:
-            Critic estimated state value V(s) [1].
+        Returns:
+            edge_probs over allowed edges plus a trailing wait action, level_probs
+            [len(allowed_edges), num_levels], and the state value V(s) [1].
         """
         h_nodes = self.encoder(pyg_data.x, pyg_data.edge_index, pyg_data.edge_attr)
         return self.head(
@@ -532,20 +459,20 @@ class AntagonistPolicyValueNet(nn.Module):
         remaining_budget: float,
         level_costs: list[float],
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Policy/value head on precomputed node embeddings (see ProtagonistPolicyValueNet.head)."""
+        """Policy and value head on precomputed node embeddings.
+
+        See :meth:`ProtagonistPolicyValueNet.head` for why the encoder is split off.
+        """
         device = h_nodes.device
         num_allowed = len(allowed_edges)
 
         h_graph = torch.mean(h_nodes, dim=0, keepdim=True)  # [1, hidden_dim]
-
-        # 2. Critic state value estimation
         v = self.critic_val(F.relu(self.critic_fc1(h_graph))).squeeze(-1)
 
-        # 3. Calculate edge embeddings for all allowed edges
-        # We find the node indices of edge endpoints, gather their embeddings, and append current edge features.
+        # Edge embeddings: gather each endpoint's embedding and append the current edge features.
+        # edge_index is directed (2 * num_edges), so the undirected pairs are looked up in both
+        # orientations.
         h_edges = []
-        # Re-construct maps of existing edge features for lookup
-        # edge_index is directed (2 * num_edges), we lookup the undirected pairs
         u_list = edge_index[0].tolist()
         v_list = edge_index[1].tolist()
         edge_features_dict = dict(zip(zip(u_list, v_list), edge_attr))
@@ -556,54 +483,45 @@ class AntagonistPolicyValueNet(nn.Module):
             
             emb_u = h_nodes[idx_u]
             emb_v = h_nodes[idx_v]
-            # Lookup original edge attribute tensor
             attr = edge_features_dict.get((idx_u, idx_v), torch.zeros(edge_attr.size(1), device=device))
-            
-            # Enforce permutation invariance for undirected edges
+
+            # Order the endpoints by index so the encoding is permutation-invariant.
             if idx_u < idx_v:
                 emb_min, emb_max = emb_u, emb_v
             else:
                 emb_min, emb_max = emb_v, emb_u
 
-            # Combine [emb_min, emb_max, edge_attr]
             combined = torch.cat([emb_min, emb_max, attr], dim=-1)
             h_edges.append(combined)
 
-        # Handle the case where no edge changes are allowed (e.g. out of budget)
+        # No edge change is allowed, for instance when out of budget.
         if num_allowed == 0:
             edge_probs = torch.ones(1, device=device)  # 100% probability on "wait"
             level_probs = torch.empty((0, len(level_costs)), device=device)
             return edge_probs, level_probs, v
 
-        # Tensorize edge encodings: [num_allowed, hidden_dim * 2 + 2]
-        h_edges_tensor = torch.stack(h_edges, dim=0)
+        h_edges_tensor = torch.stack(h_edges, dim=0)  # [num_allowed, hidden_dim * 2 + edge_in_dim]
         h_edge_features = self.edge_mlp(h_edges_tensor)  # [num_allowed, hidden_dim]
 
-        # 4. Compute edge logits and level logits
         edge_logits = self.edge_scorer(h_edge_features).squeeze(-1)  # [num_allowed]
         wait_logit = self.wait_scorer(h_graph).squeeze(-1)  # [1]
+        all_logits = torch.cat([edge_logits, wait_logit], dim=0)  # [num_allowed + 1], wait last
 
-        # Combine logits: [allowed_edges... , wait]
-        all_logits = torch.cat([edge_logits, wait_logit], dim=0)  # [num_allowed + 1]
-
-        # 5. Compute congestion level probabilities for each allowed edge
         level_logits = self.level_head(h_edge_features)  # [num_allowed, num_levels]
-        
-        # Apply action masking for levels based on the remaining budget
-        # If cost of a level exceeds budget, mask to -infinity
+
+        # Levels costing more than the remaining budget are masked out.
         level_mask = torch.tensor(
             [cost <= remaining_budget + 1e-6 for cost in level_costs],
             dtype=torch.bool,
             device=device
         )
         
-        # If no levels are affordable, mask out all edge actions to force wait
+        # With nothing affordable, every edge action is masked so only wait survives.
         if not level_mask.any():
             all_logits[:-1] = -1e9
 
         edge_probs = F.softmax(all_logits, dim=-1)
 
-        # Expand mask to [num_allowed, num_levels]
         level_mask_expanded = level_mask.unsqueeze(0).expand(num_allowed, -1)
         masked_level_logits = level_logits.masked_fill(~level_mask_expanded, -1e9)
         level_probs = F.softmax(masked_level_logits, dim=-1)

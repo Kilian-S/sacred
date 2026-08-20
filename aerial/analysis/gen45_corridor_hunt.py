@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-"""gen45 Phase 0: the corridor hunt on the UNIFIED real-corridor game (ORACLE-ONLY, free;
-pre-registered gates G1-G2 + fail branch in experiments/gen45_unified_corridor.md).
+"""Hunts a gen45 operating point on the unified real-corridor game, oracle only.
 
-Substrate FROZEN to gen39's values: kgd_gvardeysk, terrain v2 (hidden_leth 1.0, conceal_reach
-0.85), range_scale 0.7, 200 quota sites, spacing 2.0, standoff 4.0; hidden field = the gen39
-MULTIPLIER draw (band 0.55-1.0) on terrain lethality. Enemy = the gen32 anticipatory doctrine
-(DynTheatre, verbatim import) running on ConcealBase, i.e. the gen39 machinery's flat
-full-map-relocation limit. The pre-registered freedom is enemy-behavioural only (q, tau,
-w in {2, 3}); w=2 is the preferred pin and w=3 runs only if w=2 fails its gates.
-
-SELF-CHECK (hard assert, runs before any gate number is read): ConcealDyn with one team,
-sigma_r huge and same_class=False must reproduce DynTheatre's aim matrix, stepdmg and
-history_opt on the same (base, field) - the flat-limit regression the ledger requires.
+The substrate is fixed; the only freedom is enemy-behavioural (q, tau and w), with w=2 the
+preferred pin and w=3 run only if w=2 fails its gates. A hard self-check asserts that ConcealDyn
+in its flat limit reproduces DynTheatre before any gate number is read.
 """
 from __future__ import annotations
 
@@ -26,12 +18,12 @@ from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
 from src.envs.aerial_theatre_vec import terrain_v2
 
 PATH = "data/maps/theatre_kgd_gvardeysk_vec.json"
-RANGE_SCALE = 0.7                      # gen39's RM at the kgd reference (lateral factor 1.0)
-CONCEAL_REACH = 0.85                   # gen39 pinned table
-DOC32 = (0.6, 0.2, 0.3)                # q_rep, q_flee, q_ar (frozen components)
+RANGE_SCALE = 0.7
+CONCEAL_REACH = 0.85
+DOC32 = (0.6, 0.2, 0.3)                # q_rep, q_flee, q_ar
 TAU = 0.10
-HUNT_FIELDS = tuple(range(45001, 45013))     # burned by this hunt, per the ledger
-G1_BAR, G2_BAR, G2_COUNT = 2.0, 1.25, 10     # pre-registered
+HUNT_FIELDS = tuple(range(45001, 45013))
+G1_BAR, G2_BAR, G2_COUNT = 2.0, 1.25, 10
 
 
 def make_base() -> ConcealBase:
@@ -40,7 +32,7 @@ def make_base() -> ConcealBase:
 
 
 def lethality_for(base: ConcealBase, seed: int) -> np.ndarray:
-    """Terrain lethality x the gen39 multiplier draw (band 0.55-1.0); hidden_leth pinned 1.0."""
+    """Terrain lethality times the hidden-field multiplier draw, band 0.55-1.0."""
     return base.lethality(resample_field(base.coords, seed), hidden_leth=1.0)
 
 

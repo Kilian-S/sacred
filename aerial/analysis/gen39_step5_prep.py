@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-"""gen39 step 5 PREP: build the four STRONG curricula and the strong test set (oracle + model
-calls only, no training). Pinned by the step-5 pre-registration in the ledger.
+"""Builds the four gen39 step-5 curricula and the strong test set, with no training.
 
-Per training field (1000-1015) and per test field (6100-6105), each arm runs its OWN search at a
-MATCHED budget of 16 exact evaluations and keeps its top-3 laydowns:
-
-  llm16     llama-3.3-70b proposes from the site catalogue + its running leaderboard
-  local16   greedy seed + steepest-descent single-site swaps
-  random16  uniform triples
-  tuned     the step-3 control unchanged (`choose_force` + gen32 doctrine, 3 archetypes)
-
-Doctrine is FROZEN to gen32 in every arm (free-gate Part A: LLM-written doctrine scores 0.53-0.75x
-on the same positions). Output: models/runs/gen39_step5/curricula.json, consumed by the trainer.
+Per training and test field, each arm runs its own search at a matched budget of 16 exact
+evaluations and keeps its top three laydowns: llm16 proposes from the site catalogue and its
+running leaderboard, local16 is a greedy seed with steepest-descent single-site swaps, random16 is
+uniform triples, and tuned is the step-3 control. Doctrine is frozen across every arm.
 
     PYTHONPATH=. python analysis/gen39_step5_prep.py
 """

@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""A3.4 (ROADMAP): seed-level sensitivity statistics for the gen05 and gen06 primaries.
-
-Post-hoc dual-reporting note (primaries untouched). The pre-registered primaries pooled paired
-instances across the 3 seed pairings (n=72/90). This script computes the conservative
-seed-level view: per-pairing mean dD (n=3 pairings as the unit), mean/SD/SEM, the t(2) 95% CI,
-and the one-sided sign probability, straight from the raw per-instance results in the portfolio
-JSONs (verifying the ledgered per-pairing numbers on the way).
+"""gen05/gen06: seed-level sensitivity statistics, computing per-pairing mean dD (n=3 pairings
+as the unit), mean/SD/SEM, the t(2) 95% CI, and the one-sided sign probability directly from the
+raw per-instance results in the portfolio JSONs, as a conservative alternative to the primaries'
+pooled-instance view.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/gen0506_seedlevel_stats.py
 """

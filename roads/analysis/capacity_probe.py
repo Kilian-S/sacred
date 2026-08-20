@@ -1,23 +1,9 @@
 #!/usr/bin/env python3
-"""Capacity lever probe (gen07 arena scoping, 2026-07-06): greedy rollouts only, NO training.
+"""Capacity lever probe: greedy rollouts only, no training.
 
-Question (per Kilian): does raising truck capacity from the placeholder 1 strengthen the
-exploitability lever SACRED depends on, and does it keep greedy competent + the attacker biting?
-Measured on the contested arena (dynassign + route reach) at capacities {1, 3, 5}, paired demand
-instances:
-
-  * competence:  W_clean and delivery rate of deterministic greedy, no attack.
-  * attack bite: D_det = W(greedy_det, targeted) - W(greedy_det, none), the reactive route-reach
-                 scripted attacker's damage on the predictable dispatcher.
-  * LEVER:       D_det - D_rand, where greedy_rand is an eps-randomised-assignment greedy (mixes
-                 which truck/request, i.e. exercises the unpredictability a stochastic policy could
-                 learn). D subtracts each policy's OWN clean baseline, so the difference isolates
-                 how much unpredictability REDUCES attacker damage, net of its clean cost. A larger
-                 lever = more room for adversarial training's calibrated unpredictability to pay.
-  * clean cost:  W(greedy_rand, none) - W(greedy_det, none), the price of that unpredictability.
-
-The lever-vs-clean-cost frontier across capacities is the decision input: adopt the capacity where
-the lever is largest relative to its clean cost (and greedy stays competent, attacker still bites).
+Measures whether raising truck capacity from 1 to {3, 5} strengthens the exploitability gap
+between a deterministic and an eps-randomised-assignment greedy dispatcher under a targeted
+route-reach attacker, on paired demand instances in the contested arena.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/capacity_probe.py
 """

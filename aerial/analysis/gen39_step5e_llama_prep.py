@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""gen39 step 5E: author a FRESH llama llm16 curriculum (authoring rolls 2 and 3 of the
-grid). The search is the ORIGINAL `gen39_step5_prep.llm16` byte for byte (same caller, same
-silent two-try loop, same prompt, budget, doctrine and temperature as the banked roll 1),
-so a run differs from the banked curriculum only by the search's own stochasticity. Output
-lands under the NEW key "llm16r" in its own file carrying ALL FOUR banked family keys
-byte-identically (including the banked llm16), so the trainer's test set, which reads the
-four family keys from the same file, is preserved exactly (the step-5c convention; putting
-the fresh roll under "llm16" itself would silently swap the test set's llm16 family).
-Per-field progress persists; refuses to overwrite an existing roll.
+"""Authors a fresh llama llm16 curriculum for gen39 step 5e, reusing the step-5 search
+unchanged so a roll differs only by the search's own stochasticity. The output carries all four
+banked family keys unaltered and puts the fresh roll under "llm16r", so the trainer's test set,
+which reads the family keys from the same file, is preserved. Per-field progress persists and an
+existing roll is never overwritten.
 
     PYTHONPATH=. OMP_NUM_THREADS=1 ../sacred/.venv/bin/python \
         analysis/gen39_step5e_llama_prep.py --roll 2

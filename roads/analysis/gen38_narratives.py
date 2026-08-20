@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""gen38 intelligence-assessment narratives (committed verbatim, authored 2026-07-24 BEFORE any
-LLM call; the enemy TYPE is never named). 4 per member; behaviourally worded; some deliberately
-NOT keyword-obvious so the keyword baseline must miss what reasoning can catch.
-
-The five members (gen34, normative defs in analysis/gen34_family_probe.py:member_fns):
-  reactive     - softmax-BR to our RECENT realised-route counts (counters where we have been)
-  sharp        - the same but near-argmax: decisive, concentrated on our single dominant route
-  anticipatory - BR to the ANTI-REPEAT prediction: pre-aims where we will likely go NEXT
-                 (expects us to switch off our recent routes)
-  doctrine     - window-INDEPENDENT: a fixed counter to our overall posture, ignores any sortie
-  scattergun   - uniform/indiscriminate: assets spread thinly with no focus
+"""gen38 intelligence-assessment narratives: four behaviourally worded narratives per enemy
+doctrine (reactive, sharp, anticipatory, doctrine, scattergun; defined in
+analysis/gen34_family_probe.py:member_fns), used to test whether an LLM or a keyword classifier
+can identify the doctrine without the type ever being named. Some narratives are deliberately
+not keyword-obvious, so the keyword baseline should miss what reasoning can catch.
 """
 
 NARRATIVES = {
@@ -89,7 +83,7 @@ DOCTRINE_BRIEF = {
     "scattergun": "SCATTERGUN: spreads assets uniformly/indiscriminately with no focus.",
 }
 
-# naive keyword control: first matching keyword wins (order matters); reasonable-analyst lookup.
+# keyword control: first matching keyword wins (order matters).
 KEYWORD_TABLE = [
     ("scattergun", ["random", "scattered", "indiscriminate", "noise", "blanket", "disorganis",
                     "uniform", "no focus", "no discernible", "diluted", "thin, unfocused"]),

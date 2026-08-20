@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Score the B2 THINKING-MODE rerun (pre-registered 2026-08-13 + amendments 1-3).
+"""Score the B2 thinking-mode rerun.
 
-Three cells (71-33, 35-159, Gdansk 249-95), qwen3-27b thinking ON. Registers (a)/(c) from
-the 16k gateway phase (complete); register (b) from the direct-port 32k phase only (the 16k
-(b) sidecars are excluded from scoring by registration). Off-mode comparison rows come from
-the banked scored artefacts. Validity rows: per-register n, empty-content turn retries
-(transcript `empty_retry` flags), gate means, and the per-cell double-failure counts.
+Three cells (71-33, 35-159, Gdansk 249-95), qwen3-27b thinking ON. Registers (a)/(c) come
+from the 16k gateway phase; register (b) comes from the direct-port 32k phase only (16k (b)
+sidecars are excluded). Off-mode comparison rows come from the banked scored artefacts.
+Validity rows report per-register n, empty-content turn retries, and gate means.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/b2_score_think.py
 Writes models/runs/b2_llm/batch_think_scored.json

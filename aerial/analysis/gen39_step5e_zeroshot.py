@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""gen39 step 5E zero-shot pass: score the twelve NEW grid defenders (qwen rolls 2-3, llama
-rolls 2-3, seeds 0-2) on the SAME saved fresh test sets as roll 1 (zeroshot2_build.json,
-laydowns saved). Thin wrapper: rebinds only the checkpoint enumeration and the output path
-of the pinned zeroshot2 harness; the scoring loop, cell definition and test objects are the
-originals byte for byte. Pre-registered in the step-5e section.
+"""Scores the twelve gen39 step-5e grid defenders zero-shot on the saved fresh test sets.
+
+Thin wrapper over the zeroshot2 harness: rebinds only the checkpoint enumeration and the
+output path, leaving the scoring loop, cell definition and test objects unchanged.
 
     PYTHONPATH=. OMP_NUM_THREADS=1 ../sacred/.venv/bin/python analysis/gen39_step5e_zeroshot.py
 """

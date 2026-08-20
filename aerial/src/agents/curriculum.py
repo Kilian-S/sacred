@@ -1,18 +1,9 @@
-"""Attack exposure/strength curriculum (B3, gen07).
+"""Attack exposure and strength curriculum for adversarial training.
 
-gen06 trained the adversarial arm under CONSTANT full-budget attack, so it spent every episode in
-a near-collapse regime (delivery 0.18-0.27 vs vanilla's 0.66; A3.1) and learned to lose
-gracefully from saturation rather than to keep a viable system viable (the M3 pathology). This
-curriculum instead:
-
-  * mixes clean and attacked episodes (`p_attack`), so the replay retains viable-state experience;
-  * ramps the attack budget from `budget_min` toward `budget_max` ONLY while the defender stays
-    competent (windowed delivery over attacked episodes >= `competence_floor`), i.e. difficulty
-    rises as the policy earns it (curriculum adversarial training; QARL bounded-rationality
-    curricula).
-
-Deterministic given `seed` (reproducible per-arm schedules). Pure/stateful and framework-free so
-it unit-tests without touching the trainer.
+Mixes clean and attacked episodes so the replay retains viable-state experience, and ramps the
+attack budget from `budget_min` towards `budget_max` only while the defender stays competent, so
+difficulty rises as the policy earns it. Deterministic given `seed`, and framework-free so it
+unit-tests without touching the trainer.
 """
 
 from __future__ import annotations
@@ -63,17 +54,21 @@ class AttackCurriculum:
         return self._budget_at(self._level)
 
     def decide(self) -> tuple[bool, float]:
-        """Draw whether the NEXT episode is attacked, and at what budget. Clean episodes report a
-        zero budget (the antagonist stays inert that episode)."""
+        """Draw whether the next episode is attacked, and at what budget.
+
+        Clean episodes report a zero budget, leaving the antagonist inert.
+        """
         attacked = self._rng.random() < self.p_attack
         self._last_attacked = attacked
         return attacked, (self.current_budget if attacked else 0.0)
 
     def record(self, delivery_rate: float) -> None:
-        """Feed back the episode's delivery rate. Only ATTACKED episodes drive the ramp (clean
-        episodes are easy and would inflate competence). When a full window of attacked episodes
-        averages at or above the floor, advance one difficulty level and reset the window so the
-        next level must be re-earned."""
+        """Feed back an episode's delivery rate.
+
+        Only attacked episodes drive the ramp, since clean ones would inflate competence. A full
+        window averaging at or above the floor advances one level and resets the window, so the
+        next level must be re-earned.
+        """
         if not self._last_attacked:
             return
         self._recent.append(float(delivery_rate))
@@ -83,7 +78,7 @@ class AttackCurriculum:
                 self._recent.clear()
 
     def state(self) -> dict:
-        """Loggable snapshot (for TensorBoard / the ledger)."""
+        """Loggable snapshot of the curriculum's current state."""
         return {
             "level": self._level,
             "budget": self.current_budget,

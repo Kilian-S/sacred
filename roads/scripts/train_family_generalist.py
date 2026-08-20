@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
-"""gen34: train ONE history-aware fleet policy against a HIDDEN adversary-TYPE family
-(experiments/gen34_hidden_adversary.md; pre-registered 2026-07-23).
+"""Trains one history-aware fleet policy against a hidden adversary-type family.
 
-The gen27 recipe (multi-city pool, fleet-route, pattern-of-life window head) with two changes:
-  1. The enemy is drawn per EPISODE, hidden, uniformly from the five-member doctrine family
-     (`scratch/gen34_family_probe.py:member_fns` - the normative definitions).
-  2. The defender's route features gain two INTEL columns computed from the realised
-     interdiction placements the game reveals after each sortie: col 3 = minmax of
-     L[r, j_last]; col 4 = minmax of an EWMA (decay 0.8, per-episode reset) of L[r, j_s].
-     `--no-intel` zeroes both (the causal control; the window col 2 stays).
+The enemy is drawn per episode, hidden, uniformly from a five-member doctrine family
+(`analysis.gen34_family_probe.member_fns`). The defender's route features gain two intel
+columns computed from the realised interdiction placements the game reveals after each sortie:
+minmax of L[r, j_last], and minmax of an EWMA (decay 0.8, per-episode reset) of L[r, j_s].
+`--no-intel` zeroes both as a causal control (the window feature stays).
 
-Reward stays ANALYTIC (expected loss vs the member's current response - low variance, the
-gen19/27 estimator); the intel columns use SAMPLED placements (the realistic observation).
-Scored against the exact type-blind cap per instance (models/runs/gen34_hidden_adversary/
-family_refs.json, produced by scratch/gen34_refs.py; Karp/damped-RVI, never the defective
-undamped RVI).
-
-Run: PYTHONPATH=. .venv/bin/python scripts/train_family_generalist.py --sorties 12000 --seed 0
+Reward is the analytic expected loss against the member's current response (low variance); the
+intel columns use sampled placements. Scored against the exact type-blind cap per instance.
 """
 from __future__ import annotations
 

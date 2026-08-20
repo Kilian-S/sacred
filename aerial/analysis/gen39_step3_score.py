@@ -1,5 +1,5 @@
-"""gen39 step 3: score the 12-run batch against the PRE-REGISTERED clauses (ledger, launch
-record). Validation-selected checkpoint per run; per-cell values; no averaging-away."""
+"""Scores the gen39 step-3 batch against its pre-registered clauses, one validation-selected
+checkpoint per run, reported per cell."""
 import json, glob, numpy as np
 from pathlib import Path
 O = Path("models/runs/gen39_step3")
@@ -9,7 +9,7 @@ def load(tag, seed):
     return json.loads(p.read_text()) if p.exists() else None
 
 def sel(run):
-    """validation-selected checkpoint = lowest VAL ratio; returns (sortie, per-cell means)."""
+    """Returns (sortie, per-cell means, record) at the lowest-VAL checkpoint."""
     h = run["history"]
     best = min(h, key=lambda r: r["val"])
     return best["sortie"], np.array(best["cells"], float), best

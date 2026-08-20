@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen39 step 1 read-out (see experiments/gen39_concealment.md RESULTS).
+"""Reads out the gen39 step-1 screen: headroom, concealment worth, and operating-point candidates.
 
     PYTHONPATH=. python analysis/gen39_read_screen.py
 """

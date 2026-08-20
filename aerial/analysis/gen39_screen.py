@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""gen39 step 1: the dynamic screen (ORACLE-ONLY, FREE; experiments/gen39_concealment.md).
-
-Finds the operating point where concealment makes the game interesting: where the simple rules a
-practitioner would actually write leave real value on the table, and the game is not saturated.
-
-Per cell we compute, exactly, on the window MDP:
-  cap        = min(static equilibrium mixture, multi-start static local optimum)   [static ceiling]
-  blind      = best TERRAIN-ONLY dynamic rule (rotation / anti-repeat over lanes and the menu)
-  revealed   = best rule that also uses the sites its own recent track has exposed  [the gen39 rule]
-  fit        = best field- or doctrine-informed rule                                [disclosed cap]
-  opt        = the exact optimum for a defender that knows everything
-
-Gates: G1 = cap/opt (is static play genuinely capped), G2 = min(blind, revealed)/opt (do the simple
-rules leave value), G_conceal = blind/revealed (is the reveal channel worth anything at all).
+"""Screens the gen39 concealment game, oracle only, for an operating point where the simple rules
+a practitioner would write leave real value on the table and the game is not saturated. Each cell
+is solved exactly on the window MDP and read through three gates: G1 = cap/opt asks whether static
+play is genuinely capped, G2 = min(blind, revealed)/opt whether the simple rules leave value, and
+G_conceal = blind/revealed whether the reveal channel is worth anything.
 
     PYTHONPATH=. python analysis/gen39_screen.py --maps kgd_gvardeysk --quick
-    PYTHONPATH=. python analysis/gen39_screen.py            # the full pre-registered sweep
+    PYTHONPATH=. python analysis/gen39_screen.py            # the full sweep
 """
 from __future__ import annotations
 
@@ -35,19 +26,15 @@ MAPS = ["kgd_gvardeysk", "ukraine", "narva", "fulda"]
 PATH = "data/maps/theatre_%s_vec.json"
 OUT = "models/runs/gen39_screen.json"
 
-# the gen32 pinned doctrine (q_rep/q_flee/q_ar). NOTE: the enemy habit window w=2 is a deliberate
-# COST choice, not gen32's pinned w=3 (state space R^w). The defender's memory of DISCOVERED
-# teams is whole-mission in the persistent arm (the arm the gates are read from), which is the
-# quantity that must never be forgotten (Kilian 2026-07-25); w only bounds the enemy's memory of
-# the defender's recent routes and the anti-repeat rules' window.
+# w bounds only the enemy's memory of the defender's recent routes and the anti-repeat rules'
+# window; the state space is R^w, so w=2 is a cost choice. The defender's memory of discovered
+# teams is whole-mission in the persistent arm, the arm the gates are read from.
 DOCTRINE = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)
 TAU, W = 0.10, 2
 FIELDS = (5100, 5101, 5102)
 
-# concealed-class lethality MULTIPLIER on the table's pinned 0.55. The two >1 points (added
-# 2026-07-26 BEFORE the third run, disclosed) put effective forest lethality 0.70 and 0.90 in the
-# grid, so the screen itself settles the raise-lethality question the v2 cost table opened; the
-# four pre-registered points are unchanged.
+# concealed-class lethality multiplier on the terrain table's 0.55; the two points above 1 put
+# effective forest lethality at 0.70 and 0.90.
 HIDDEN_LETH = (0.4, 0.6, 0.8, 1.0, 1.27, 1.64)
 RANGE_MULT = (0.7, 1.0, 1.3)            # on top of each map's comparability scale
 TEAMS = (1, 2, 3, 4, 6)                 # emplaced teams (the enemy commits to ground)
@@ -137,7 +124,7 @@ def cell(base: ConcealBase, seed, hidden_leth, K, kind, tag):
     gc = b_blind / max(b_rev, 1e-9)
     # a laydown a knowing defender can simply walk around is not a game: concealed teams are
     # short-ranged, so at low team counts they leave free routes and the optimum collapses to ~0.
-    # Flagged rather than dropped, because WHERE that boundary sits is part of the result.
+    # Flagged rather than dropped, since where that boundary sits is itself of interest.
     degenerate = bool(opt < 5e-3 or cap > 0.90)
     phi = float(2.0 * np.asarray(base.rr)[L].sum() / lateral_width(base.th))
     rec = dict(tag=tag, seed=seed, hidden_leth=hidden_leth, K=K, kind=kind,
@@ -177,13 +164,10 @@ def main():
         sc = map_scale(name, ref_lat)
         for rm, cr in itertools.product(rmults, creach):
             t0 = time.time()
-            # the site grid and the terminal standoff scale WITH the weapon ranges, so a candidate
+            # the site grid and the terminal standoff scale with the weapon ranges, so a candidate
             # position means the same thing on every map (2 km spacing against a 3.5 km reach on
             # Kaliningrad is 11.6 km against a 20 km reach on Fulda). Without this, the big maps
             # are both incomparable and needlessly expensive.
-            # asymmetric-forest DEFAULT + the 200-site quota sampler, matching gen39_screen2
-            # (this script's earlier runs used forest_los=True + the raster: DIFFERENT GAMES,
-            # archived as *_symforest; rule 8)
             base = ConcealBase(PATH % name,
                                terrain=terrain_v2(hidden_leth=1.0, conceal_reach=cr),
                                range_scale=sc * rm, spacing_km=2.0 * sc, standoff_km=4.0 * sc,

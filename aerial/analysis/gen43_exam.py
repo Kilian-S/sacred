@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""gen43 EXAM RUNNER: sit one model configuration on the forty-question bank. Pinned by the
-gen43 pre-registration: one call per item, ONE retry on parse/format failure, non-thinking
-arms at temperature 0, the thinking arm at 0.6 / seed 0 / max_tokens 16000; traces banked.
+"""Sits one model configuration on the gen43 forty-question bank: one call per item with a single
+retry on parse or format failure, non-thinking arms at temperature 0 and the thinking arm at 0.6,
+seed 0 and max_tokens 16000. Traces are banked.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b --thinking on
@@ -24,10 +24,11 @@ SYSTEM = "You are an air-defence planner choosing emplacements."
 
 
 def call(base, model, prompt, k, thinking, temperature=None, seed=None):
-    """temperature/seed default to None, which reproduces the PINNED decoding exactly
-    (0.6 + seed 0 for the thinking arm, 0.0 and no seed otherwise). They exist only for the
-    pre-registered 2026-08-08 amendment rows (temperature control, seed repeats) and are
-    additive: every banked paper's invocation is byte-identical under the defaults."""
+    """Puts one exam question to the model.
+
+    Leaving temperature and seed as None reproduces the pinned decoding: 0.6 with seed 0 for the
+    thinking arm, 0.0 and no seed otherwise.
+    """
     import requests
     schema = {"type": "object",
               "properties": {"slots": {"type": "array", "items": {"type": "string"},

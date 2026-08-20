@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""gen38 Step V1 (pre-registered: experiments/gen38_llm_enemy_id.md): does an LLM classify the
-enemy doctrine from a behavioural intelligence narrative well enough that deploying the matching
-exact counter crosses the gen34 type-blind wall?
-
-Oracle-exact operational eval, no training. Per held-out Gdansk cell (gen34 pool): build the 5
-members' cost matrices + exact specialists (dyn_exact), pull blind_cap/omni_cap. Classify each
-of 20 narratives with (a) the LLM (3 draws, temp 0.2), (b) the keyword control, (c) random
-(analytic). The assisted defender plays specialist[predicted] vs the true type; value =
-mean over narratives of policy_value_exact(specialist[pred], cost[true]).
-
-Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python analysis/gen38_enemy_id.py
+"""gen38 Step V1: tests whether an LLM can classify the enemy doctrine from a behavioural
+intelligence narrative well enough that deploying the matching exact counter crosses the gen34
+type-blind wall. Oracle-exact operational eval, no training: per held-out Gdansk cell, classifies
+each narrative with the LLM, a keyword control and a random baseline, then scores the assisted
+defender by playing the predicted specialist policy against the true enemy type.
 """
 from __future__ import annotations
 

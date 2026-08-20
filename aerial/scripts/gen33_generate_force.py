@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
-"""gen33_llm_adversary: generate the LLM red force (the w05-ready generation half).
-
-Serialise each theatre to a brief, ask the model for a structured force (guided JSON), validate,
-resolve onto concrete sites + doctrine, and save. `--provider dry` runs the whole pipeline with a
-synthetic force (no model, no network). `--provider openai --base <url> --key <k>` is the live
-path on the workbench (vLLM guided_json).
-
-Generation is CONCURRENT: the (model x theatre x phase x force-index) tasks fan out over a capped
-thread pool (the calls are HTTP-bound, so threads are correct), and each force is validated +
-resolved as it returns. Pass `--models a,b` to hold both models in flight at the same time.
-Structured output: the workbench gateway ignores vLLM's guided_json extra but honours OpenAI
-`response_format: json_schema` (the "guided" mode here); if a guided attempt drifts or truncates,
-the task resamples once and then falls back to the documented few-shot + parse + retry path,
-recording which mode produced each force.
+"""Generate the LLM red force for the gen33 experiment: serialise each theatre to a brief, ask the
+model for a structured force, validate it, resolve it onto concrete sites and doctrine, and save.
+The (model x theatre x phase x force-index) tasks fan out over a capped thread pool because the
+calls are HTTP-bound, and `--provider dry` runs the whole pipeline against a synthetic force with
+no model and no network.
 
   Dry:   PYTHONPATH=. <venv>/bin/python scripts/gen33_generate_force.py --provider dry
   Smoke: PYTHONPATH=. <venv>/bin/python scripts/gen33_generate_force.py --provider openai \
@@ -76,9 +67,8 @@ def call_openai(base, key, model, system, user, schema=None, max_tokens=1500, te
         "temperature": temperature,
     }
     if schema is not None:
-        # The workbench gateway silently IGNORES vLLM's guided_json extra (measured 2026-07-22:
-        # 200 + free prose) but HONOURS the OpenAI structured-output form, so that is the
-        # enforcement path.
+        # The gateway ignores vLLM's guided_json extra but honours the OpenAI structured-output
+        # form, so that is the only enforcement path available.
         body["response_format"] = {"type": "json_schema",
                                    "json_schema": {"name": "red_force", "schema": schema}}
     r = requests.post(base.rstrip("/") + "/chat/completions", json=body,
@@ -102,9 +92,12 @@ def build_ctx(name, path, lat_ref) -> dict:
 
 
 def run_task(t, a) -> dict:
-    """One (model, theatre, phase, index) generation: call -> parse -> validate -> resolve.
-    Live path: two guided attempts, then the few-shot fallback without guided_json; an emitted
-    agent count != K is a retryable problem (the brief asks for exactly K teams)."""
+    """Run one (model, theatre, phase, index) generation: call, parse, validate, resolve.
+
+    The live path makes two guided attempts and then falls back to a few-shot prompt without the
+    schema. An emitted agent count other than K is retryable, since the brief asks for exactly K
+    teams.
+    """
     rec = {"model": t["model"], "theatre": t["theatre"], "phase": t["phase"], "index": t["j"],
            "K": t["K"]}
     t0 = time.perf_counter()
@@ -161,8 +154,10 @@ def run_task(t, a) -> dict:
 
 
 def summarise_and_save(records, a, out_dir):
-    """Group by (model, theatre, phase), save one artefact each, print the summary rows.
-    NO pooling across models anywhere."""
+    """Group by (model, theatre, phase), save one artefact each and print the summary rows.
+
+    Results are never pooled across models.
+    """
     groups: dict = {}
     for r in records:
         groups.setdefault((r["model"], r["theatre"], r["phase"]), []).append(r)

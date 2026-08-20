@@ -166,10 +166,9 @@ def test_walk_distribution_exact_product():
 
 
 def test_B2_shared_edge_kaliningrad_gate():
-    """The B2 primary instance (33->71, k_extra=8, hard, K=1), anchors pinned by
-    scratch/shared_edge_probe.py: 11 routes, first-hop collisions (walk required), equilibrium
-    1/6 over the disjoint routes, uniform mixing >2.5x suboptimal (mass stacks on shared edges),
-    and the walk expresses exactly the candidate route set."""
+    """The B2 primary instance (33->71, k_extra=8, hard, K=1): 11 routes, first-hop collisions so
+    the walk is required, equilibrium 1/6 over the disjoint routes, uniform mixing over 2.5x
+    suboptimal, and the walk expresses exactly the candidate route set."""
     from src.envs.interdiction import make_interdiction_env
     env = make_interdiction_env(od=("33", "71"), K=1, k_extra_routes=8)
     assert env.game.n_routes == 11
@@ -217,7 +216,7 @@ def test_resolve_bernoulli_seeded_and_hard_limits():
             out.append(env2.resolve(route).intercepted)
         return out
 
-    # same seed -> identical outcome sequence (determinism dogma); the empirical rate matches p.
+    # same seed -> identical outcome sequence; the empirical rate matches p.
     a, b = draws(sa, r1, 4000, seed=7), draws(sa, r1, 4000, seed=7)
     assert a == b
     assert np.mean(a) == pytest.approx(0.5, abs=0.04)
@@ -226,17 +225,16 @@ def test_resolve_bernoulli_seeded_and_hard_limits():
 
 
 def test_G3_soft_env_reproduces_oracle_kaliningrad():
-    """The I3 primary asymmetric instance, pinned by scratch/vuln_band_probe.py: Kaliningrad
-    33->71, edge-disjoint routes, K=1, length band (0.15, 0.95). Gate: the factory-built env
-    reproduces the oracle's NON-uniform equilibrium end-to-end (Monte Carlo over Bernoulli
-    interception), and uniform mixing is measurably suboptimal (the vanilla-vs-SACRED gap)."""
+    """The I3 primary asymmetric instance (Kaliningrad 33->71, edge-disjoint routes, K=1, length
+    band 0.15 to 0.95): the factory-built env reproduces the oracle's non-uniform equilibrium
+    end-to-end under Bernoulli interception, and uniform mixing is measurably suboptimal."""
     from src.envs.interdiction import make_interdiction_env
     env = make_interdiction_env(od=("33", "71"), K=1, k_extra_routes=0,
                                 edge_vuln_band=(0.15, 0.95), seed=3)
     P = env.game.payoff
     assert ((P > 0.0) & (P < 1.0)).any()                      # genuinely soft interception
     sol = solve(env.game)
-    assert sol.value == pytest.approx(0.063, abs=0.005)        # probe-pinned equilibrium value
+    assert sol.value == pytest.approx(0.063, abs=0.005)        # oracle equilibrium value
     d = sol.defender_strategy
     assert d.min() > 0.03 and d.max() / d.min() > 2.0          # strongly non-uniform equilibrium
     uni = np.ones(env.game.n_routes) / env.game.n_routes

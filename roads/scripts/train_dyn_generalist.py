@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-"""gen27: the DYNAMIC GENERALIST (gen19 x gen16; Block R2).
+"""Trains one history-aware fleet-route policy across a multi-city instance pool against each
+instance's own within-episode pattern-of-life interdictor (softmax best response, temperature
+tau, to the defender's realised routes over a trailing window), evaluated zero-shot on a held-out
+city against each held-out instance's computable dynamic yardsticks (iid_eq, history_opt by
+relative value iteration).
 
-ONE history-aware fleet-route policy trained across a multi-city instance pool against each
-instance's OWN within-episode pattern-of-life interdictor (softmax-BR, temperature tau, to the
-defender's realised routes over a trailing w-window), evaluated ZERO-SHOT on a held-out city
-against each held-out instance's computable dynamic yardsticks (iid_eq, history_opt by RVI).
-
-Why this is the rescued ZST claim: every STATIC object — the disjoint max-flow heuristic, the
-LP equilibrium mixture, any distilled/retrieved policy — is mathematically capped at iid_eq
-against this adversary; only history-conditioned play can go below it (gen19 measured 0.050 vs
-the 0.147 cap, single-instance). Beating iid_eq zero-shot on a never-seen city is therefore a
-claim no static method can match, by construction.
-
-Recipe: gen19 mechanism VERBATIM (w=3, tau=0.15 operating point, S=40 sortie episodes chained
-with gamma=0.95, analytic expected-mission-failure reward, [cost, worst-vuln, window-freq] route
-features at head-term lr) on the gen16 pools VERBATIM (train cities x 6 ODs, held-out city x 6,
-pool-seed 0). Selection = select-on-train (standing default); select-on-test dual-reported.
-
-Run: PYTHONPATH=. python scripts/train_dyn_generalist.py --sorties 12000 --seed 0
+Every static object (disjoint max-flow heuristic, LP equilibrium mixture, distilled or retrieved
+policy) is mathematically capped at iid_eq against this adversary; only history-conditioned play
+can go below it, so beating iid_eq zero-shot on a never-seen city is a claim no static method can
+match by construction.
 """
 from __future__ import annotations
 
@@ -36,8 +27,7 @@ from src.env.smdp_wrapper import SMDPTransition
 
 
 def _karp_mmc(cost, n, R, pw):
-    """Exact minimum mean cycle (scratch/dyn_exact.py's solver, inlined so the trainer stays
-    self-contained; the corrected dynamic-optimum method per binding rule 8)."""
+    """Exact minimum mean cycle (Karp's algorithm), used as the dynamic-optimum reference."""
     v = np.arange(n)
     heads = v // R
     U = (np.arange(R)[:, None] * pw) + heads[None, :]
@@ -57,8 +47,8 @@ def _karp_mmc(cost, n, R, pw):
 
 
 def fast_refs(L, tau, w, route_edges):
-    """gen41 references for deep windows where oracle_refs' R^w enumeration is infeasible:
-    exact iid_eq by count-class enumeration with multinomial weights, static_det, and the
+    """References for deep windows where oracle_refs' R^w enumeration is infeasible: exact
+    iid_eq by count-class enumeration with multinomial weights, static_det, and the
     corridor-restricted exact optimum (Karp over the m^w core window graph)."""
     import itertools as _it
     import math as _math
@@ -105,8 +95,8 @@ def fast_refs(L, tau, w, route_edges):
 
 def prep_instance(it, tau, w, fast=False):
     """Attach the dynamic-game apparatus to a pool instance: stacked payoff L, oracle refs
-    (iid_eq / history_opt / static_det via RVI; or the gen41 fast refs for deep windows),
-    cached menus."""
+    (iid_eq / history_opt / static_det via RVI, or the fast refs for deep windows), cached
+    menus."""
     it.L = stacked_L(it.env.game, it.env.config.N)
     it.refs = fast_refs(it.L, tau, w, it.env.game.route_edges) if fast \
         else oracle_refs(it.L, tau, w)
@@ -116,7 +106,7 @@ def prep_instance(it, tau, w, fast=False):
 
 
 def load_pool_file(path, N, K, band, kx, seed):
-    """gen41 pool injection: {'train': [[city, s, t], ...], 'test': [[city, s, t], ...]}."""
+    """Load an explicit OD pool: {'train': [[city, s, t], ...], 'test': [[city, s, t], ...]}."""
     spec = json.loads(Path(path).read_text())
     def build(rows):
         return [Instance((s, t), N, K, band, kx, seed, city=c) for c, s, t in rows]
@@ -126,14 +116,12 @@ def load_pool_file(path, N, K, band, kx, seed):
 def build_obs(it, counts, w, no_window=False):
     """Per-transition observation for instance ``it``.
 
-    The env is reset before every observation, so an instance's node/edge/truck payload is
-    IDENTICAL across transitions and only the per-route feature matrix varies. The base
-    payload is therefore built ONCE per instance and shared by reference; each transition
-    gets a fresh shallow dict carrying its own ``menu_route_feats`` (the only varying
-    field, and the one the head reads). Deep-copying it per transition, as observe() does
-    by default for the mutable congestion games, cost ~5.7 MB per stored transition on the
-    6,083-node Kyiv graph and OOM-killed the 2026-08-07 batch. ``_graph_key`` lets the SAC
-    update memoize this instance's featurized graph once instead of once per transition.
+    An instance's node/edge/truck payload is identical across transitions, so the base
+    payload is built once per instance and shared by reference; each transition gets a
+    fresh shallow dict carrying only its own ``menu_route_feats``. This avoids the deep
+    copy that observe() performs by default, which is costly on large graphs.
+    ``_graph_key`` lets the SAC update memoize this instance's featurized graph once
+    instead of once per transition.
     """
     base = getattr(it, "_base_obs", None)
     if base is None:
@@ -156,7 +144,7 @@ def pick_route(prot, obs, R, deterministic=False):
 
 def eval_instance(prot, it, tau, w, n=1000, no_window=False):
     """Stationary per-sortie expected mission failure vs the instance's pattern-of-life
-    adversary (the gen19 estimator), plus the ratio to the instance's own iid_eq cap."""
+    adversary, plus the ratio to the instance's own iid_eq cap."""
     window = deque(maxlen=w)
     tot = 0.0
     for _ in range(n):

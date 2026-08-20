@@ -1,15 +1,9 @@
-"""Aggregate the gen03 portfolio JSONs into the pre-registered decision metrics.
+"""gen03: aggregates the gen03 portfolio JSONs (experiments/gen03_portfolio_pair0.json /
+pair1.json / v2.json, produced by scripts/evaluate_portfolio.py) into the primary paired
+degradation metric (each arm vs its own best-response attacker) plus secondary breakdowns by
+attack type, cross-attacker generalisation, and clean-performance premium.
 
-Reads experiments/gen03_portfolio_pair0.json / pair1.json / v2.json (produced by
-scripts/evaluate_portfolio.py) and computes, per the gen03 ledger:
-
-  PRIMARY   dD = D(vanilla, br_vanilla) - D(sacred, br_sacred), paired per instance within each
-            pairing JSON (each arm vs its OWN best-response attacker). dD > 0 => the vanilla
-            control degrades more, i.e. adversarial training bought robustness.
-  SECONDARY dD under the common attacks (targeted / random); the cross-BR 2x2; the clean premium
-            W(sacred,none) - W(vanilla,none); greedy reference rows.
-
-    PYTHONPATH=. python analysis/gen03_aggregate.py
+Run: PYTHONPATH=. python analysis/gen03_aggregate.py
 """
 
 from __future__ import annotations

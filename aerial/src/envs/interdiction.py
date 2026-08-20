@@ -1,20 +1,12 @@
-"""Single-convoy interdiction environment (gen08 / Obj 2): convoy routing as a security game.
+"""Single-convoy interdiction environment (gen08): convoy routing as a security game.
 
-A convoy must travel base -> FOB across a contested network. An interdictor COMMITS K interdiction
-assets to edges each sortie, HIDDEN from the convoy; the convoy routes; crossing an interdicted edge
-is an INTERCEPTION (terminal, high loss). Reactivity is useless (the ambush is set before the move);
-the only defence is an unpredictable, mixed-strategy route. See `REDESIGN_INTERDICTION.md`.
-
-The game CORE is at route granularity, the level the equilibrium oracle
-(`src/baselines/interdiction_oracle.py`) solves, so the env reproduces `loss_det`/`loss_mixed`
-exactly (the G1 env-fidelity gate). Agent interfaces reuse the existing SAC:
-  * defender action = the FIRST HOP out of the base (for edge-disjoint routes the first hop
-    identifies the route), a NODE selection like the next-hop protagonist;
-  * attacker action (K=1 first) = one EDGE to interdict, like the antagonist.
-`observe()` returns a GraphEnv observation (base convoy, FOB target) that the existing
-`featurize_state` consumes, so `ProtagonistSAC`/`AntagonistSAC` act on it unchanged. The multi-branch
-next-hop physics is a later extension; for the disjoint-route single-convoy headline the first-hop
-decision IS the route decision.
+A convoy travels base -> FOB across a contested network. An interdictor commits K assets to edges
+each sortie, hidden from the convoy, and crossing an interdicted edge is a terminal interception.
+Reactivity is useless because the ambush is set before the move, so the only defence is an
+unpredictable mixed-strategy route. The game core sits at route granularity, the level
+``src/baselines/interdiction_oracle.py`` solves, and ``observe()`` returns a GraphEnv observation
+the existing featurisation consumes, so the SAC agents act on it unchanged. The defender acts by
+choosing its first hop out of base; the attacker by choosing an edge to interdict.
 """
 
 from __future__ import annotations
@@ -47,10 +39,9 @@ class InterdictionConfig:
     travel_cost_weight: float = 0.0        # small defender-only per-distance cost (0 = pure game)
     k_extra_routes: int = 8
     weight: str = "w"
-    # I3 asymmetric instances: per-edge interception probability (frozenset edge -> p in (0, 1]).
-    # None = hard interception (crossing an interdicted edge intercepts with certainty), the I2
-    # symmetric instance whose equilibrium is uniform; a heterogeneous map gives a NON-uniform
-    # equilibrium (d_i ~ 1/p_i* on disjoint routes) that separates SACRED from vanilla.
+    # Per-edge interception probability (frozenset edge -> p in (0, 1]). None = hard interception
+    # (crossing an interdicted edge intercepts with certainty), whose equilibrium is uniform; a
+    # heterogeneous map gives a non-uniform equilibrium (d_i ~ 1/p_i on disjoint routes).
     edge_vulnerability: dict | None = None
     seed: int = 0                          # env RNG seed (Bernoulli interception outcomes)
 
@@ -66,10 +57,12 @@ class InterdictionOutcome:
 
 
 class InterdictionEnv:
-    """The game core + a GraphEnv-backed observation. One sortie = attacker commits an interdiction
-    set (hidden) -> defender picks a route (via first hop) -> interception + reward. Repeated across
-    sorties (the RL / co-evolution). Both agents act only on the graph (neither observes the other's
-    realised action): the hidden-commit Stackelberg structure."""
+    """The game core plus a GraphEnv-backed observation.
+
+    One sortie: the attacker commits an interdiction set (hidden), the defender picks a route via
+    its first hop, then interception and reward are resolved. Both agents act only on the graph,
+    so neither observes the other's realised action.
+    """
 
     def __init__(self, graph: nx.Graph, config: InterdictionConfig, graph_env: GraphEnv | None = None):
         self.graph = graph
@@ -91,10 +84,9 @@ class InterdictionEnv:
         for i, r in enumerate(self.game.routes):
             self.routes_by_first_hop.setdefault(r[1], []).append(i)
         self.first_hops: list[NodeId] = sorted(self.routes_by_first_hop, key=repr)
-        # Route-walk trie (class-b shared-edge instances): when candidate routes share prefixes,
-        # first hop != route, so the defender walks hop-by-hop along the trie of candidate routes
-        # and its mixed strategy is the product of branch probabilities. children[prefix] = the
-        # allowed next hops at that node-sequence prefix (sorted: determinism dogma).
+        # Route-walk trie: when candidate routes share prefixes the first hop no longer identifies
+        # the route, so the defender walks hop-by-hop and its mixed strategy is the product of
+        # branch probabilities. children[prefix] = allowed next hops, sorted for determinism.
         self._prefix_children: dict[tuple, list[NodeId]] = {}
         self._route_by_path: dict[tuple, int] = {tuple(r): i for i, r in enumerate(self.game.routes)}
         for r in self.game.routes:
@@ -111,8 +103,7 @@ class InterdictionEnv:
 
     # -- episode ---------------------------------------------------------------
     def reset(self) -> dict:
-        """Start a sortie: reset the convoy to base (target FOB), clear the interdiction. Returns the
-        defender observation."""
+        """Start a sortie: convoy back at base targeting the FOB, interdiction cleared."""
         self._committed_iset = None
         if self.graph_env is not None:
             self.graph_env.reset()
@@ -120,8 +111,10 @@ class InterdictionEnv:
         return self.observe()
 
     def observe(self) -> dict:
-        """GraphEnv observation with the convoy (truck 0) at base and target = FOB, plus active_truck
-        so `featurize_state` populates truck features. Requires a graph_env (built by the factory)."""
+        """GraphEnv observation with the convoy at base and target the FOB.
+
+        Requires an attached ``graph_env``, which the factory builds.
+        """
         if self.graph_env is None:
             raise RuntimeError("no graph_env attached; use make_interdiction_env()")
         obs = dict(self.graph_env.observe())
@@ -164,9 +157,11 @@ class InterdictionEnv:
         return min(idxs, key=lambda i: self.game.travel_cost[i])
 
     def resolve(self, route_index: int) -> InterdictionOutcome:
-        """Defender commits to a route; sample interception vs the committed interdiction. The
-        payoff entry is the interception PROBABILITY (0/1 under hard interception, so the draw
-        reproduces the deterministic behaviour exactly; fractional under edge vulnerability)."""
+        """Commit the defender to a route and sample interception against the committed set.
+
+        The payoff entry is an interception probability: 0/1 under hard interception, so the draw
+        reproduces deterministic behaviour exactly, and fractional under edge vulnerability.
+        """
         if self._committed_iset is None:
             raise RuntimeError("attacker has not committed this sortie")
         j = self._committed_iset
@@ -181,14 +176,16 @@ class InterdictionEnv:
     def resolve_first_hop(self, first_hop: NodeId) -> InterdictionOutcome:
         return self.resolve(self.route_of_first_hop(first_hop))
 
-    # -- defender (convoy), WALK mode: hop-by-hop route choice on the candidate-route trie -------
-    # A simple path ends at the FOB exactly once, so a prefix ending at the FOB IS a complete
-    # candidate route (no route is a proper prefix of another): terminal detection is unambiguous.
+    # -- defender (convoy), walk mode: hop-by-hop route choice on the candidate-route trie -------
+    # A simple path ends at the FOB exactly once, so a prefix ending at the FOB is a complete
+    # candidate route and no route is a proper prefix of another: terminal detection is unambiguous.
 
     def begin_walk(self) -> tuple[dict | None, bool, int | None]:
-        """Start a sortie in walk mode: convoy at base, prefix = (base,). Auto-advances forced
-        (single-child) hops. Returns (observation | None, done, route_index | None), the same
-        contract as step_walk. The committed interdiction (hidden) is untouched by the walk."""
+        """Start a sortie in walk mode, auto-advancing forced (single-child) hops.
+
+        Returns:
+            (observation | None, done, route_index | None), the same contract as ``step_walk``.
+        """
         if self.graph_env is not None:
             self.graph_env.reset()
             self.graph_env.trucks[0].assigned_target = self.fob
@@ -202,9 +199,11 @@ class InterdictionEnv:
         return {0: list(self._prefix_children[self._walk_prefix])}
 
     def step_walk(self, next_hop: NodeId) -> tuple[dict | None, bool, int | None]:
-        """Take a hop; auto-advance forced hops until a branch or the FOB. On done, the returned
-        route index is resolved separately via resolve() (interception applies to the whole route:
-        the ambush was committed before the convoy moved)."""
+        """Take a hop, auto-advancing forced hops until a branch or the FOB.
+
+        On done, the returned route index is resolved separately via ``resolve()``: interception
+        applies to the whole route, since the ambush was committed before the convoy moved.
+        """
         if self._walk_prefix is None:
             raise RuntimeError("no walk in progress; call begin_walk()")
         if next_hop not in self._prefix_children.get(self._walk_prefix, ()):
@@ -225,18 +224,19 @@ class InterdictionEnv:
             return self.observe_at(pref[-1]), False, None
 
     def observe_at(self, node: NodeId) -> dict | None:
-        """Observation with the convoy positioned at ``node`` (walk decision points and the exact
-        policy-distribution enumeration). None without a graph_env (core-only use)."""
+        """Observation with the convoy positioned at ``node``; None without a graph_env."""
         if self.graph_env is None:
             return None
         self.graph_env.trucks[0].current_node = node
         return self.observe()
 
     def walk_distribution(self, hop_probs_fn) -> np.ndarray:
-        """EXACT route distribution of a walk policy: ``hop_probs_fn(node, allowed) -> {hop: p}``
-        queried at each BRANCH prefix (forced hops contribute probability 1). This is the
-        deployable mixed strategy over ``game.routes`` that exploitability is scored on; exactness
-        holds because the policy is Markov in the convoy position (featurisation is position-based)."""
+        """Exact route distribution of a walk policy over ``game.routes``.
+
+        ``hop_probs_fn(node, allowed) -> {hop: p}`` is queried at each branch prefix, with forced
+        hops contributing probability 1. Exactness holds because the policy is Markov in the
+        convoy position.
+        """
         dist = np.zeros(self.game.n_routes)
 
         def rec(pref: tuple, p: float) -> None:
@@ -279,10 +279,13 @@ def make_interdiction_env(
     edges_path: str = _DEFAULT_EDGES,
     tasks_path: str = _DEFAULT_TASKS,
 ) -> InterdictionEnv:
-    """Build the single-convoy interdiction env on the Kaliningrad graph: base (depot, truck 0) ->
-    FOB (demand), plus the NetworkX graph for the oracle/game core. Default OD 33->71 (edge-conn 6).
-    ``edge_vuln_band=(lo, hi)`` switches to heterogeneous soft interception: candidate-edge
-    vulnerabilities length-mapped into the band (the I3 asymmetric instances); None = hard."""
+    """Build the single-convoy interdiction env on the Kaliningrad graph.
+
+    Args:
+        edge_vuln_band: ``(lo, hi)`` switches to heterogeneous soft interception, with
+            candidate-edge vulnerabilities length-mapped into the band. None gives hard
+            interception.
+    """
     s, t = od
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
     if s not in nodes or t not in nodes:

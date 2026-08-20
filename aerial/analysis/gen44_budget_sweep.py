@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""gen44 AUTHORING-BUDGET SWEEP: does the author's reasoning strength ever separate, and at
-what search budget? Pre-registered in `experiments/gen44_budget_sweep.md`.
+"""Sweeps the gen44 authoring budget: whether the author's reasoning strength ever separates, and
+at what search budget. The step-5 authoring loop, model-parameterised and repeated so the readings
+carry error bars. Evaluation only, with LLM proposals and exact scoring but no training; the
+search, prompt, temperature, doctrine and operating point are imported from step 5 rather than
+re-implemented.
 
-The step-5 authoring loop, model-parameterised and repeated, so the n=1 B-EFF readings that
-the gen42 do-not-extend argument rests on gain error bars. Oracle/eval-only: LLM proposals
-plus exact scoring, no training. Search, prompt, temperature, doctrine and operating point are
-the step-5 originals, imported rather than re-implemented.
-
-    # a mounted rung, inside its existing gen43 window
+    # a mounted rung, inside its existing window
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config qwen35-4b \
         --base http://cv-iits-w05.tail5b8d80.ts.net:8006/v1
     # gateway configurations
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config llama-3.3-70b
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config qwen3-27b --thinking on
-    # the no-LLM controls (Mac only, no box)
+    # the no-LLM controls
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config local16
 """
 from __future__ import annotations
@@ -41,7 +39,8 @@ GATEWAY = "http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"
 
 
 def search_llm_cfg(base, digest, pool, field, model, url, thinking, rng_tag):
-    """The step-5 search_llm loop, model-parameterised. Failures are printed, never silent."""
+    """Runs the step-5 search_llm loop against a named model, printing rather than swallowing
+    call failures."""
     hist = []
     for _round in range(4):
         left = BUDGET - len(hist)

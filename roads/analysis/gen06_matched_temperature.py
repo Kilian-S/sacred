@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""A3.3 (ROADMAP): matched-temperature diagnostic for the gen06 selected checkpoints.
-
-Post-hoc mechanism probe of the CLOSED gen06 generation (primary untouched). The arms converged
-at different SAC temperatures (vanilla alpha ~0.13 vs scripted ~0.62-0.86; entropy 0.37-0.39 vs
-0.47-0.52), so part of the gen06 robustness gap could be sampling temperature rather than what
-the policies know. Here both arms are evaluated at MATCHED determinism levels:
-
-  tau = 1.0   the policy as trained (must reproduce the ledgered rows exactly: same episode
-              seeds, same sampling path -> sanity check)
-  tau = 0.5   sharpened: sample from p^(1/tau), renormalised
-  argmax      fully deterministic (dogma note: argmax-ing a max-entropy policy is banned for
-              HEADLINE claims; here it is a symmetric, labelled diagnostic at matched settings)
-
-If sharpening closes the vanilla-vs-scripted gap, the deficit is temperature; if the gap
-persists, the deficit is in the learned policy/Q itself. 30 TEST instances, paired, per pair.
+"""gen06: matched-temperature diagnostic for the gen06 selected checkpoints. The vanilla and
+scripted-adversarial arms converged at different SAC temperatures, so this evaluates both arms
+at matched sampling temperatures (tau=1.0, tau=0.5, and argmax) on 30 paired test instances per
+pair, to check whether the robustness gap is a temperature artefact rather than a difference in
+what the policies know.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/gen06_matched_temperature.py  (~5-15 min, eval only)
 """
@@ -58,8 +48,7 @@ INSTANCES = 30
 
 def _select_with_temperature(agent: ProtagonistSAC, observation, action_mask,
                              tau: float | None):
-    """ProtagonistSAC.select_action with a sampling-temperature knob (tau=None -> argmax).
-    Mirrors src/agents/sac.py select_action exactly apart from the sampling step."""
+    """Temperature-controlled variant of ProtagonistSAC.select_action (tau=None means argmax)."""
     active_truck = observation.get("active_truck")
     if active_truck is None or active_truck not in action_mask:
         return {}
@@ -89,7 +78,7 @@ def _select_with_temperature(agent: ProtagonistSAC, observation, action_mask,
 
 
 def temp_policy(smdp, agent: ProtagonistSAC, tau: float | None):
-    """sac_protagonist_policy (scripts/evaluate_portfolio.py) with the temperature knob."""
+    """Temperature-controlled variant of the sac_protagonist_policy in scripts/evaluate_portfolio.py."""
     def policy(event):
         env = smdp.env
         mask = event.protagonist_action_mask

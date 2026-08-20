@@ -1,17 +1,8 @@
 #!/usr/bin/env python3
-"""gen43 EXAM MARKER: the three pinned marks, the pinned per-item paired contrasts with
-bootstrap CIs, and the size-Spearman. Reads whatever config papers exist and reports the rest
-as pending, so it can be run repeatedly as the night's papers land.
-
-Pinned by `experiments/gen43_exam.md`:
-  (a) mean share of ceiling over non-format-fail items
-  (b) items solved EXACTLY (a count)
-  (c) mean percentile of the chosen combination in the item's full value table
-  contrasts, per-item PAIRED with bootstrap CIs: 4B-9B, 9B-27B, 3.5-27B vs crown-off
-  (generation), crown off vs on (thinking), llama vs the 27Bs (reference, never in family
-  statistics); Spearman of score vs parameter count over the 3.5 rungs.
-  No superiority sentence below a paired CI excluding zero; both directions reportable.
-  Format-fail counts are first-class rows.
+"""Marks the gen43 placement exam: mean share of ceiling, items solved exactly, mean percentile
+of the chosen combination, per-item paired contrasts with bootstrap CIs, and the Spearman of
+score against parameter count. Reads whatever config papers exist and reports the rest as pending,
+so it can be run repeatedly as papers land.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_mark.py
 """

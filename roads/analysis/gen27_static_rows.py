@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""gen27 static-baseline rows (ORACLE-EXACT, eval-only; pre-registered by the gen27 ledger
-amendment BEFORE results were read).
-
-For each held-out Gdansk instance, the stationary value of a STATIC mixture d against the
-pattern-of-life adversary is  V(d) = E_{win ~ d^w} [ d . L . BR(win) ]  (exact enumeration over
-R^w windows). Rows: the uniform-disjoint heuristic, the inv-vuln heuristic, the equilibrium
-mixture (= iid_eq, the sanity row), and a multi-start projected-gradient LOCAL search for the
-static optimum (disclosed as local, an upper bound on how good static play can be).
+"""gen27 static-baseline rows (oracle-exact, eval-only): for each held-out Gdansk instance,
+computes the exact stationary value of static route mixtures against the pattern-of-life
+adversary, V(d) = E_{win ~ d^w} [ d . L . BR(win) ] via exact enumeration over R^w windows.
+Rows: the uniform-disjoint heuristic, the inverse-vulnerability heuristic, the equilibrium
+mixture, and a local search for the static optimum.
 """
 from __future__ import annotations
 
@@ -47,9 +44,8 @@ def static_value(d, L, tau=TAU, w=W):
 
 
 def local_static_opt(L, restarts=8, iters=300, lr=0.5, seed=0):
-    """Multi-start projected-gradient (softmax-parameterised, finite-diff free: autograd through
-    the exact enumeration is overkill; use numerical gradient) local search for the best static
-    mixture. Disclosed as LOCAL: a lower bound on iid_eq-family values, not a certificate."""
+    """Multi-start local search (numerical gradient over a softmax parameterisation) for the
+    best static mixture. Disclosed as local: not a certificate of the static optimum."""
     R = L.shape[0]
     rng = np.random.default_rng(seed)
     best = (np.inf, None)

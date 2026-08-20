@@ -1,5 +1,5 @@
-"""gen39 step 5: score the 8-run batch against the PRE-REGISTERED clauses (ledger, step-5
-pre-registration). Validation-selected checkpoint per run; per-cell values; no averaging-away."""
+"""Scores the gen39 step-5 batch against its pre-registered clauses, one validation-selected
+checkpoint per run, reported per cell."""
 import json, numpy as np
 from pathlib import Path
 O = Path("models/runs/gen39_step5")

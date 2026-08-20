@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
-"""gen39 step 5c PREP: the qwenthink16 curriculum (Qwen3.6-27B, thinking ON, positions only;
-oracle + model calls, no training). Pinned by the step-5c pre-registration in the ledger.
+"""Authors the qwenthink16 curriculum for gen39 step 5c, positions only, with no training.
 
-Identical machinery to step5_prep's llm16 arm (4 rounds x <=4 proposals, matched budget of 16
-exact evaluations per field, top-3 kept, gen32 doctrine frozen) with exactly two changes: the
-model is qwen3-27b (Qwen3.6-27B) called with chat_template_kwargs.enable_thinking=true and
-max_tokens 8000 (the thinking trace draws from the same budget; the gen39_phase1e_thinking
-precedent), and transport failures print loudly before the retry (the false-zero lesson).
-
-Output: models/runs/gen39_step5/curricula_qwenthink.json = the four banked family keys copied
-byte-identically from curricula.json (build_pools_step5 reads the TEST-SET families out of the
-same file, so the banked test set is preserved exactly) plus the new "qwenthink16" key.
+The machinery is step5_prep's llm16 arm at the same budget of 16 exact evaluations per field; the
+model is called with reasoning enabled and a larger token budget, since the trace draws from the
+same allowance. The output copies the four banked family keys across unaltered, so the banked test
+set is preserved, and adds the new "qwenthink16" key.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_step5c_prep.py
 """

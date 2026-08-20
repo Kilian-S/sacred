@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-"""gen44 MARKER: the pre-registered reads of the authoring-budget sweep
-(`experiments/gen44_budget_sweep.md`).
-
-  1 per configuration and budget: median best-so-far over the 9 searches + bootstrap 95% CI
-  2 separation: per-(field,repeat) PAIRED bootstrap CIs between configurations at each budget
-  3 the decision row: does any budget separate an LLM pair beyond repeat noise, and do both
-    arms at that budget still sit at or above the trainable knee 0.022
-  4 knee row: fraction of searches whose best-at-b falls below 0.022
+"""Marks the gen44 authoring-budget sweep: median best-so-far per configuration and budget with
+bootstrap CIs, paired separation tests between configurations, the share of searches falling below
+the trainable knee, and the decision row that follows from them.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_mark.py
 """
@@ -42,7 +37,7 @@ def load():
 
 
 def vec(run, b):
-    """best-at-budget b for each search, keyed so pairs align on (field, repeat)."""
+    """Best-at-budget b for each search, keyed so pairs align on (field, repeat)."""
     return {k: (v["at"][str(b)] if v["at"][str(b)] is not None else np.nan)
             for k, v in sorted(run.items())}
 

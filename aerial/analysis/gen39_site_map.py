@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""gen39: one PNG per theatre showing EVERY candidate emplacement, coloured by the ground it
-stands on (Kilian 2026-07-25).
-
-This is the audit picture for the quota sampler: candidate class shares are supposed to match the
-theatre's terrain composition, and every point is supposed to stand INSIDE the terrain whose
-weapon characteristics it carries. The caption prints both numbers so the two can be checked
-against each other by eye.
+"""Draws one PNG per theatre showing every candidate emplacement, coloured by the ground it
+stands on. This is the audit picture for the quota sampler: candidate class shares should match
+the theatre's terrain composition, and every point should stand inside the terrain whose weapon
+characteristics it carries. The caption prints both numbers so they can be checked by eye.
 
     PYTHONPATH=. python analysis/gen39_site_map.py
     PYTHONPATH=. python analysis/gen39_site_map.py --maps kgd_gvardeysk --n-sites 200
@@ -76,7 +73,7 @@ def draw(name, n_sites):
                 color="#2b2b2b" if i in base.lane_idx else "#7b2d8e")
 
     cnt = collections.Counter(base.cls)
-    for cls in EMPL:                                   # candidates, coloured by their own ground
+    for cls in EMPL:
         idx = [i for i, c in enumerate(base.cls) if c == cls]
         if idx:
             ax.scatter(base.coords[idx, 0], base.coords[idx, 1], s=26, c=SITE[cls],

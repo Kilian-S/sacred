@@ -1,16 +1,10 @@
-"""Shared protagonist transition construction (single source of truth).
+"""Shared protagonist transition construction, the single source of truth for
+``SMDPTransition`` records.
 
-Both the live ATLA trainer and the offline ERB demo generator must produce *byte-identical*
-``SMDPTransition`` records — otherwise SAC silently trains on malformed data (we have been
-bitten repeatedly by mask/format drift). This module owns the one implementation:
-
-  * sequential per-truck decisions with **state projection** (commit each truck's choice into
-    the projected obs before the next truck decides), and
-  * **sequential claiming** (a claimed demand node is removed from later trucks' masks so two
-    trucks never get the same request; depots are never claimed),
-
-parameterised by a ``choose_fn`` so the *only* difference between training and demo collection
-is who picks the action (the SAC policy vs a greedy heuristic).
+Trucks decide sequentially with state projection (each truck's choice is committed into the
+projected observation before the next decides) and sequential claiming (a claimed demand node is
+removed from later trucks' masks, so two trucks never take the same request; depots are never
+claimed). A ``choose_fn`` parameter is the only difference between training and demo collection.
 """
 
 from __future__ import annotations
@@ -30,9 +24,9 @@ def collect_protagonist_transitions(
 ) -> tuple[DecisionEvent, list[SMDPTransition]]:
     """Run one protagonist decision epoch and return (next_event, per-truck transitions).
 
-    Identical to the logic the ATLA trainer used inline; extracted so demo generation reuses
-    it verbatim. ``choose_fn`` selects the action for the active truck given its projected obs
-    and its (claim-reduced) mask.
+    Args:
+        choose_fn: Selects the action for the active truck, given its projected observation and
+            its claim-reduced mask.
     """
     mask = event.protagonist_action_mask
 
@@ -52,7 +46,7 @@ def collect_protagonist_transitions(
         projected_obs["active_truck"] = truck_id
         projected_obs["allowed_destinations"] = {"protagonist": dict(truck_mask)}
 
-        # Save the exact projected state this truck sees (for replay compatibility).
+        # Replay needs the exact projected state this truck saw.
         state_used = dict(projected_obs)
         state_used["trucks"] = {tid: dict(t) for tid, t in projected_obs["trucks"].items()}
         truck_decision_states[truck_id] = state_used
@@ -60,7 +54,6 @@ def collect_protagonist_transitions(
         truck_action = choose_fn(projected_obs, truck_mask, truck_id)
         actions.update(truck_action)
 
-        # Project commitment: set destination, clear current node, claim the request.
         chosen_node = truck_action.get(truck_id)
         if chosen_node is not None:
             projected_obs["trucks"][truck_id]["destination"] = chosen_node

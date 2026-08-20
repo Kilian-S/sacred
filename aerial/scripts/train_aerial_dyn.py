@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""gen28 v4.0-dyn: the adaptive-enemy aerial fleet act (ledger pre-registration 2026-07-18).
-
-Enemy = softmax-BR (tau=0.15) to the trailing w=2 window of realised fleet routes; fleet-route
-N=3 mission damage; per-sortie ANALYTIC reward; 40-sortie episodes (gamma 0.95 across sorties,
-no discount within a sortie's 3 pushes); window route-frequency as the second head column
-beside exposure. Yardsticks per instance, ALL EXACT over the 1600-window chain: iid_eq,
-multi-start local-search static optimum, the full naive-dynamic family (rotation/anti-repeat
-over every support), history_opt (RVI). Policy evaluation is the EXACT stationary damage of
-the policy-induced window chain (encoder once, head per window, power iteration).
+"""Train the aerial fleet against an adaptive enemy that plays a softmax best response to a
+trailing window of realised fleet routes. The fleet flies one shared route per sortie and reward is
+the analytic mission damage of that sortie. Every per-instance yardstick is exact over the window
+chain (i.i.d. equilibrium, a multi-start local-search static optimum, the naive dynamic family of
+rotation and anti-repeat rules, and the history-optimal gain), and policy evaluation is the exact
+stationary damage of the chain the policy induces.
 """
 from __future__ import annotations
 
@@ -114,9 +111,11 @@ class DynInstance:
         return float(best)
 
     def chain_value(self, dist_fn) -> float:
-        """Exact stationary damage of a window-conditioned rule dist_fn(window)->route dist.
-        Vectorised: windows are (a, b); the successor of ((a, b), r) is (b, r), so one power
-        iteration is nu[b, r] = sum_a mu[a, b] * P[a, b, r] (an einsum, ~64k ops)."""
+        """Exact stationary damage of a window-conditioned rule ``dist_fn(window) -> route dist``.
+
+        Windows are pairs (a, b) and the successor of ((a, b), r) is (b, r), so one power iteration
+        is ``nu[b, r] = sum_a mu[a, b] * P[a, b, r]``, a single einsum.
+        """
         R = self.R
         P = np.stack([dist_fn(w) for w in self.wins]).reshape(R, R, R)
         D = (P.reshape(-1, R) * self.stepdmg).sum(axis=1)
@@ -168,8 +167,8 @@ class DynInstance:
             Q = self.stepdmg + Vv[nxt]
             Vn = Q.min(axis=1)
             g = float(Vn.mean())
-            # aperiodicity (lazy) transform: near-periodic optimal policies make plain RVI
-            # oscillate above the true gain (caught by the rotation-beats-optimum test)
+            # lazy transform for aperiodicity: near-periodic optimal policies make plain RVI
+            # oscillate above the true gain
             Vd = 0.5 * Vv + 0.5 * (Vn - g)
             if np.abs(Vd - Vv).max() < 1e-11:
                 Vv = Vd
@@ -191,8 +190,11 @@ def make_pool():
 
 
 def policy_chain_value(prot, inst: DynInstance) -> float:
-    """EXACT stationary damage of the current policy vs the adaptive enemy: encoder once,
-    head per window (route_feats vary with the window), power-iterate the induced chain."""
+    """Exact stationary damage of the current policy against the adaptive enemy.
+
+    The encoder runs once and the head runs per window, since ``route_feats`` varies with the
+    window; the induced chain is then power-iterated.
+    """
     env = inst.env
     env.reset()
     obs = env.observe()

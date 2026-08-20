@@ -1,11 +1,6 @@
-"""PyTorch Geometric and GATv2 Actor-Critic Network architectures for SACRED.
-
-This module defines:
-1. Featurization helpers to convert NetworkX/SMDP states into GNN-ready Tensors.
-2. GATv2Encoder: Shared spatial representation learning backbone.
-3. ProtagonistPolicyValueNet: Routing policy & critic for the dispatcher.
-4. AntagonistPolicyValueNet: Edge congestion policy & critic for the adversary.
-"""
+"""GATv2 actor-critic networks for SACRED: featurisation of environment observations into
+PyTorch Geometric graphs, a shared GATv2 encoder, and the protagonist/antagonist policy-value
+heads built on top of it."""
 
 from __future__ import annotations
 
@@ -21,40 +16,28 @@ _FEATURIZE_CACHE = {}
 
 
 def node_index_map(observation: dict[str, Any]) -> dict[Any, int]:
-    """Node id -> row index in the tensors ``featurize_state`` builds for this observation.
+    """Map node id to its row index in the tensors ``featurize_state`` builds.
 
-    ``featurize_state`` orders rows by ``sorted(nodes.keys())``. Every consumer that indexes into
-    the featurized node matrix (active-node index, candidate-node indices, per-route node indices)
-    MUST build its map with this helper: dict insertion order differs from sorted order on the OSM
-    graphs, and using it silently reads the wrong rows (the 2026-07-09 node-ordering fix; see
-    CRITIQUE_INTERDICTION.md §5.1 and tests/test_node_ordering.py)."""
+    ``featurize_state`` orders rows by ``sorted(nodes.keys())``, which can differ from dict
+    insertion order on OSM graphs. Any code indexing into the featurized node matrix must
+    build its map with this helper, or it will silently read the wrong rows."""
     return {nid: idx for idx, nid in enumerate(sorted(observation["nodes"].keys()))}
 
-# Node feature width. Bumped 9 -> 11 for Stage 1.5 (request age + active truck's congestion-aware
-# ETA; zero for static problems), and 11 -> 13 for the fixed hybrid rung: column 11 marks the
-# active truck's assigned target (the goal it is routing toward — previously invisible to the
-# policy) and column 12 is the congestion-aware distance-to-that-goal field (global routing
-# information a 2-layer GNN cannot propagate itself; parity with greedy's Dijkstra). Both are zero
-# whenever the observation lacks the keys, so pre-hybrid problems are informationally unchanged.
-# Checkpoints trained at a narrower width are still evaluable: the SAC agents slice features to
-# their own node_in_dim (new columns are appended LAST, so a [:, :11] slice reproduces the old
-# featurization exactly).
+# Node feature width. New columns are always appended last, so a checkpoint trained at a
+# narrower width stays evaluable by slicing features down to its own node_in_dim.
 NODE_FEATURE_DIM = 14
 _WAIT_NORM = 100.0  # rough scale for request age (ticks) -> O(1)
 _ETA_NORM = 50.0    # rough scale for congestion-aware ETA (graph diameter ~44) -> O(1)
 _GOAL_NORM = 50.0   # same scale for the distance-to-goal field
-# Full blockage sets effective_weight ~ distance/1e-6, so a node whose only route to the goal is
-# blocked would get a ~1e4 feature after normalization — clamp distance features to a sane range.
+# Full blockage sets effective_weight ~ distance/1e-6, so a node whose only route to the goal
+# is blocked would get a ~1e4 feature after normalisation; clamp distance features to a sane range.
 _DIST_FEATURE_CAP = 10.0
 
-# Edge feature width. Bumped 2 -> 4 for the gen03/gen04 antagonist-observability fix: columns 2/3
-# are the DIRECTED truck occupancy (count, furthest progress fraction) of the edge — the motion
-# state the adversary needs to attack ahead of a moving truck (mid-edge trucks were previously
-# invisible to both agents). Bumped 4 -> 5 for the A1 generalist (2026-07-10): column 4 is the
-# edge's interception VULNERABILITY p_e from the instance's threat map (obs["edge_vulnerability"]),
-# zero when absent — the map-conditioning signal without which zero-shot transfer has no mechanism
-# (the measured ZST-0 negative, experiments/zst_step0.md). Same back-compat rule as node features:
-# new columns are appended LAST, and the SAC agents slice edge_attr down to their own edge_in_dim.
+# Edge feature width. Columns 2/3 carry the directed truck occupancy (count, furthest progress
+# fraction) of the edge, the motion state the adversary needs to attack ahead of a moving truck.
+# Column 4 is the edge's interception vulnerability from the instance's threat map
+# (obs["edge_vulnerability"]), zero when absent. Same back-compat rule as node features: new
+# columns are appended last, and edge_attr is sliced down to each agent's own edge_in_dim.
 EDGE_FEATURE_DIM = 5
 
 def featurize_state(
@@ -63,31 +46,24 @@ def featurize_state(
 ) -> Data:
     """Convert an SMDP wrapper observation dict into a PyG Data object.
 
-    Parameters
-    ----------
-    observation:
-        The environment observation dict returned by SMDPWrapper or GraphEnv.
-    active_truck_id:
-        The ID of the truck that is currently making a decision. If None,
-        truck-specific features will be set to zero.
+    Args:
+        observation: Environment observation dict returned by SMDPWrapper or GraphEnv.
+        active_truck_id: ID of the truck currently making a decision; truck-specific
+            features are zero when None.
 
-    Returns
-    -------
-    Data:
-        A PyTorch Geometric Data object with features:
-        - x: Node features [num_nodes, 11]
-        - edge_index: Graph topology [2, 2 * num_edges]
-        - edge_attr: Edge features [2 * num_edges, 2]
+    Returns:
+        A PyG Data object with node features x [num_nodes, NODE_FEATURE_DIM], directed
+        edge_index [2, 2 * num_edges], and edge_attr [2 * num_edges, EDGE_FEATURE_DIM].
     """
     nodes_dict = observation["nodes"]
     edges_dict = observation["edges"]
     trucks_dict = observation["trucks"]
-    # Dynamic-queue features (Stage 1.5); empty/zero for static problems.
+    # Dynamic-queue features; zero/empty for static problems.
     node_waits = observation.get("node_waits", {})
     active_etas = observation.get("truck_etas", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
-    # Hybrid features: the active truck's assigned goal and the distance-to-goal field.
+    # The active truck's assigned goal and the distance-to-goal field (hybrid mode only).
     goal_dists = observation.get("goal_dists", {}).get(active_truck_id, {}) if active_truck_id is not None else {}
-    # Multi-convoy route-correlation: per-node fraction of earlier convoys routed through it (col 14).
+    # Multi-convoy route-correlation: per-node fraction of earlier convoys routed through it.
     taken_node_frac = observation.get("taken_node_frac", {})
     active_target = None
     if active_truck_id is not None and active_truck_id in trucks_dict:
@@ -97,10 +73,9 @@ def featurize_state(
     node_to_idx = {node_id: idx for idx, node_id in enumerate(node_ids)}
     num_nodes = len(node_ids)
 
-    # 1. Normalize/Center coordinates
-    # Cache key covers nodes AND the edge set's size/total length: two graphs sharing node ids but
-    # differing in edges/lengths must not share cached edge indices or normalisation constants
-    # (CRITIQUE_PREFREEZE §5.3: a multi-instance/ZST trap with the old node-ids-only key).
+    # Normalise/centre coordinates.
+    # Cache key covers nodes AND the edge set's size/total length: two graphs sharing node ids
+    # but differing in edges/lengths must not share cached edge indices or normalisation constants.
     cache_key = (tuple(node_ids), len(edges_dict),
                  round(sum(float(e["distance"]) for e in edges_dict.values()), 6))
     if cache_key not in _FEATURIZE_CACHE:
@@ -147,12 +122,9 @@ def featurize_state(
         if t["current_node"] is not None:
             trucks_per_node[t["current_node"]] += 1
 
-        # Count commitments by other trucks. A truck's commitment is its assigned request
-        # (hybrid mode) falling back to its in-flight destination (destination mode — identical
-        # to the old behaviour there, since assigned_target is always None outside hybrid; in
-        # hybrid the destination is only the next hop and would be meaningless). When there is
-        # no active truck (the ANTAGONIST's view), every truck counts as "other" — previously
-        # the antagonist saw no commitments at all.
+        # A truck's commitment is its assigned request (hybrid mode), falling back to its
+        # in-flight destination otherwise. With no active truck (the antagonist's view), every
+        # truck counts as "other".
         if t_id != active_truck_id:
             commit = t.get("assigned_target") or t.get("destination")
             if commit is not None and commit in nodes_dict:
@@ -200,11 +172,9 @@ def featurize_state(
 
     x_tensor = torch.tensor(x_features, dtype=torch.float32)
 
-    # 4a. Truck occupancy per DIRECTED edge — the motion state (gen03 fix). A truck mid-edge was
-    # previously invisible (only at-node presence was featurized), which is exactly the state an
-    # attacker needs to block "the edge ahead of a moving truck" — the scripted heuristic that
-    # out-attacked the learned antagonist 3-6x used precisely this. Keyed by travel direction
-    # (truck.edge = (from, to)), so heading is encoded by which directed row carries the value.
+    # Truck occupancy per directed edge: the motion state of trucks mid-edge, keyed by travel
+    # direction (truck.edge = (from, to)), so heading is encoded by which directed row carries
+    # the value.
     edge_occ: dict[tuple[int, int], list[float]] = {}
     for t in trucks_dict.values():
         e = t.get("edge")
@@ -220,7 +190,7 @@ def featurize_state(
         rec[0] += 1.0                # occupancy count on this directed edge
         rec[1] = max(rec[1], frac)   # furthest along (0 = just entered, ~1 = about to arrive)
 
-    # 4b. Build dynamic edge features only (topology is cached)
+    # Build dynamic edge features only (topology is cached).
     # Columns: [norm_distance, congestion, occupancy_count(directed), max_progress_frac(directed),
     #           vulnerability]
     edge_vuln = observation.get("edge_vulnerability", {})
@@ -254,24 +224,22 @@ def featurize_state(
 
 
 def _route_head_terms(net: nn.Module, logits: torch.Tensor, action_mask_indices) -> torch.Tensor:
-    """gen11 menu-head discriminability terms, delivered UNDILUTED at the head (the proven lever-2
-    pattern; see CRITIQUE_PREFREEZE.md §2/§8.2). Applied only when the corresponding attributes are
-    attached by the trainer (menu-select mode); absent attributes = byte-identical behaviour.
+    """Add optional per-route logit adjustments, delivered directly at the head rather than
+    through the encoder. Applied only when the trainer attaches the corresponding attributes
+    (menu-select mode); absent attributes leave the logits unchanged.
 
-    * ``route_feats`` [R, F] static per-route features (normalised COST, worst-case VULNERABILITY)
-      with LEARNED weight vector ``route_feat_w`` [F] (init 0): logit shift = feats @ w. The
-      transferable-feature arm (also the ZST map-conditioning mechanism).
-    * ``route_bias`` [R] LEARNED per-route scalar bias (init 0): pure identity capacity - exactly
-      what the pre-fix permutation accidentally provided (the identity-hash arm).
+    * ``route_feats`` [R, F] static per-route features with learned weight vector
+      ``route_feat_w`` [F] (init 0): logit shift = feats @ w.
+    * ``route_bias`` [R] learned per-route scalar bias (init 0).
+
     Both are Bellman-consistent when the same attributes are attached to the Q heads."""
     feats = getattr(net, "route_feats", None)
     fw = getattr(net, "route_feat_w", None)
     if feats is not None and fw is not None:
         idx = torch.as_tensor(list(action_mask_indices), dtype=torch.long, device=logits.device)
         if getattr(net, "head_only", False):
-            # gen41 ACT 3 doctrine-head arm: the policy class is the feature head ALONE (the
-            # encoder pathway is masked from the route scores). Attribute-gated: absent
-            # attribute = byte-identical behaviour, like every term above.
+            # When set, the feature head alone determines route scores; the encoder pathway
+            # is masked out.
             logits = torch.zeros_like(logits)
         logits = logits + feats[idx] @ fw
     bias = getattr(net, "route_bias", None)
@@ -431,9 +399,9 @@ class ProtagonistPolicyValueNet(nn.Module):
         logits = self.policy_bilinear(h_active_rep, h_candidates).squeeze(-1)  # [num_candidates]
         fw = getattr(self, "follow_w", None)
         if fw is not None and taken is not None:
-            # LEVER 2: undiluted LEARNED route-correlation. Each route's logit is shifted by its
-            # "earlier-convoys-committed" count times a LEARNED weight, delivered straight to the head
-            # (not via the GNN), so the follower can generalise "follow the signal" to non-modal routes.
+            # Each route's logit is shifted by its "earlier-convoys-committed" count times a
+            # learned weight, delivered straight to the head (not via the GNN) so the follower
+            # can generalise "follow the signal" to non-modal routes.
             logits = logits + fw * taken
         logits = _route_head_terms(self, logits, action_mask_indices)
         probs = F.softmax(logits, dim=-1)
@@ -547,10 +515,8 @@ class AntagonistPolicyValueNet(nn.Module):
         v = self.critic_val(F.relu(self.critic_fc1(h_graph))).squeeze(-1)
 
         # 3. Calculate edge embeddings for all allowed edges
-        # We find the node indices of edge endpoints, gather their embeddings, and append current edge features.
         h_edges = []
-        # Re-construct maps of existing edge features for lookup
-        # edge_index is directed (2 * num_edges), we lookup the undirected pairs
+        # edge_index is directed (2 * num_edges); look up the undirected pairs.
         u_list = edge_index[0].tolist()
         v_list = edge_index[1].tolist()
         edge_features_dict = dict(zip(zip(u_list, v_list), edge_attr))
@@ -570,7 +536,6 @@ class AntagonistPolicyValueNet(nn.Module):
             else:
                 emb_min, emb_max = emb_v, emb_u
 
-            # Combine [emb_min, emb_max, edge_attr]
             combined = torch.cat([emb_min, emb_max, attr], dim=-1)
             h_edges.append(combined)
 

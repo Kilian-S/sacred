@@ -1,12 +1,5 @@
-"""Regression tests for the 2026-07-09 node-ordering fix.
-
-`featurize_state` orders node rows by sorted(node ids); before the fix, every consumer built its
-node->index map from dict INSERTION order, so on any observation whose insertion order differs from
-sorted order the policy/critic heads indexed the wrong rows (demonstrated on the Kaliningrad graph:
-a convoy at node 62 read node 167's embedding). These tests pin the single-source-of-truth helper
-`node_index_map` to featurize_state's actual row order, on both a synthetic adversarial ordering
-and the real Kaliningrad interdiction/multi-convoy envs.
-"""
+"""Pins `node_index_map` to `featurize_state`'s actual row order (sorted node ids, not dict
+insertion order), on a synthetic adversarial ordering and on the real Kaliningrad envs."""
 from __future__ import annotations
 
 import torch

@@ -1,8 +1,6 @@
 #!/bin/zsh
-# gen39 repair re-run (2026-08-06): phases 1c/1d/1e on the CORRECTED v2-table brief, plus the
-# 1e thinking-on rider. Pre-registered in experiments/gen39_concealment.md (2026-08-06 session).
-# Originals (defective v1-table brief) are preserved as *_v1brief.* BEFORE anything runs;
-# corrected artefacts then land at the standard paths.
+# gen39 phases 1c/1d/1e on the corrected v2-table brief, plus the 1e thinking-on rider.
+# Existing artefacts are copied aside as *_v1brief.* before anything runs.
 set -e
 cd "$(dirname "$0")/.."
 PY=../sacred/.venv/bin/python

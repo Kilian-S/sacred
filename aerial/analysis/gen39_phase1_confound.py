@@ -1,20 +1,10 @@
 #!/usr/bin/env python3
-"""gen39 Phase 1a: HOW MUCH OF THE HEURISTIC ARM'S MARGIN IS PLACEMENT, NOT COMPOSITION?
+"""Separates placement from composition in the gen39 step-3 curricula, oracle only.
 
-The step-3 arms did not face equally SITED enemies: the heuristic arm's laydowns came from
-`choose_force` (the exact combination optimiser), the llm and random arms' from the step-2 rule
-placer. This scores, on ONE common yardstick, the enemies each arm actually trained against, and
-adds the two counterfactuals that isolate the two variables:
-
-  heur_oracle    gen32 doctrine + ORACLE placement      (what the heuristic arm faced)
-  heur_placer    gen32 doctrine + RULE placement        (composition held, placement removed)
-  llm_placer     LLM doctrine   + RULE placement        (what the llm arm faced)
-  llm_oracle     LLM doctrine   + ORACLE placement      (posture-restricted; the Phase-2 design)
-  rnd_placer     random doctrine + RULE placement       (what the random arm faced)
-
-Reported per force: damage against the best OBSERVING rule (the deployable defender) and against
-the omniscient optimum, median over the training fields. A stronger opponent = a harder
-curriculum. Oracle-only, no training, free under the standing rule.
+The step-3 arms did not face equally sited enemies, so this scores five opponent families on one
+common yardstick: the three the arms actually trained against, plus the two counterfactuals that
+hold doctrine or placement fixed. Each is reported as damage against the best observing rule and
+against the omniscient optimum, taken as a median over the training fields.
 
     PYTHONPATH=. python analysis/gen39_phase1_confound.py
 """
@@ -36,7 +26,7 @@ from src.envs.aerial_theatre_vec import lateral_width, load_vec_theatre, terrain
 MAP, CR, RM, K, W, TAU = "narva", 0.85, 0.7, 3, 2, 0.10
 PATH = "data/maps/theatre_%s_vec.json"
 DOC32 = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)
-FIELDS = tuple(range(1000, 1008))            # a subset of the training fields (median over 8)
+FIELDS = tuple(range(1000, 1008))            # a subset of the training fields
 FORCES = "models/runs/gen39_compose/forces_llm.json"
 OUT = Path("models/runs/gen39_phase1_confound.json")
 
@@ -61,8 +51,10 @@ def score(base, pp, sites, doctrines):
 
 
 def posture_pool(base, force):
-    """Sites consistent with the force's stated terrain postures (the Phase-2 oracle placer:
-    the model still chooses the ground, the optimiser only chooses where within it)."""
+    """Sites consistent with the force's stated terrain postures.
+
+    The model still chooses the ground; the optimiser only chooses where within it.
+    """
     want = {a["emplacement_zone"]["terrain"] for a in force["agents"]}
     keep = {c for c in want}
     if "open" in want:
@@ -83,11 +75,11 @@ def main():
     for f in FIELDS:
         pp = base.lethality(resample_field(base.coords, f), hidden_leth=1.0)
         rng = np.random.default_rng(f)
-        # heuristic arm, as trained against: oracle placement, gen32 doctrine
+        # heuristic arm, as trained against: oracle placement, fixed doctrine
         for kind in ("open", "hidden", "mixed"):
             L, g, _ = choose_force(base, pp, kind, K, rng, w=W, tau=TAU, doctrine=DOC32)
             rows["heur_oracle"].append(score(base, pp, L, None))
-        # same doctrine, RULE placement (the placement variable, isolated)
+        # same doctrine, rule placement: the placement variable, isolated
         for kind in ("open", "hidden", "mixed"):
             fake = {"agents": [{"emplacement_zone": {
                 "terrain": {"open": "open", "hidden": "forest", "mixed": "open"}[kind],
@@ -98,7 +90,7 @@ def main():
         # llm arm, as trained against: rule placement, llm doctrine
         for fo in llm[:6]:
             rows["llm_placer"].append(score(base, pp, place(fo, base, pp), doctrines_of(fo)))
-        # llm doctrine + ORACLE placement inside its stated posture (the Phase-2 design)
+        # llm doctrine with oracle placement inside its stated posture
         for fo in llm[:6]:
             L, _, _ = choose_force(base, pp, "open", K, rng, w=W, tau=TAU, doctrine=DOC32)
             pool = posture_pool(base, fo)

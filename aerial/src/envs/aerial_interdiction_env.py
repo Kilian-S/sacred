@@ -1,21 +1,9 @@
-"""SAC-trainable aerial interdiction env (gen28): the thin adapter that presents an aerial
-sector game through the SAME observation/menu contract the road multiconvoy env exposes, so
-`route_one`, `featurize_state`, `node_index_map`, the menu-select head and the whole
-ProtagonistSAC update path work UNCHANGED on the lattice.
-
-Contract replicated (see MultiConvoyInterdictionEnv + featurize_state):
-  * observe() -> {nodes: {id: {x, y, demand, has_depot}}, edges: {(u,v): {distance,
-    congestion_level}}, trucks: {0: {...}}, edge_vulnerability (col 4 = the layout's
-    per-arc threat projection), menu_route_node_idx / menu_route_feats (per-instance, riding
-    the transition), active_truck, taken_node_frac};
-  * commit(j) / current_convoy() / defender_action_mask() / route_convoy_by_index() /
-    defender_occupancy() / occupancies / _occ_index / obj_matrix / game / config.N.
-
-Node ids are zero-padded "ii,jj" strings so featurize_state's sorted() row order is stable and
-`menu_route_node_idx` (built with the same sort) can never repeat the 2026-07-09 ordering bug.
-The observable threat projection (edge col 4) is max_h p(arc, h) under the instance's layout:
-"how dangerous is this arc at the enemy's best nearby position" (recorded design decision;
-the full field also reaches the head via the per-route exposure feature).
+"""SAC-trainable aerial interdiction env (gen28): a thin adapter presenting an aerial sector game
+through the same observation and menu contract the road multiconvoy env exposes, so routing,
+feature extraction, the menu-select head and the protagonist update path work unchanged on the
+lattice. Node ids are zero-padded "ii,jj" strings so ``featurize_state``'s sorted row order is
+stable; the observable per-arc threat is max_h p(arc, h) under the instance's layout, while the
+full field reaches the head via the per-route exposure feature.
 """
 
 from __future__ import annotations
@@ -36,9 +24,9 @@ def _nid(n) -> str:
 
 @dataclass(frozen=True)
 class AerialConfig:
-    N: int = 1                       # single UAV (Kilian's pin); fleet = the A4 extension
+    N: int = 1                       # number of UAVs
     K: int = 1
-    menu_select: bool = True         # always: the aerial policy is a route-menu policy
+    menu_select: bool = True         # the aerial policy is always a route-menu policy
     objective: str = "mission"       # at N=1 mission == interception probability
     threshold_m: int = 1
 
@@ -47,11 +35,12 @@ class AerialInterdictionEnv:
     def __init__(self, lat: SectorLattice, menu: list[CurveRoute], centres: np.ndarray, *,
                  K: int = 1, r: float, p_max=0.9, N: int = 1,
                  head_feats: tuple = ("cost", "exposure")):
-        """Game v2 (2026-07-17): the menu is a family of smooth curvature-bounded CurveRoutes
-        and exposure is the hazard-rate line integral (src/envs/aerial_curves.py).
-        head_feats: which per-route columns reach the menu head (v3.1: ("exposure",) only -
-        cost is reward-irrelevant under the mission objective and railroaded the policy in
-        three measured runs)."""
+        """Build the game from a curvature-bounded route menu over the sector lattice.
+
+        Args:
+            head_feats: which per-route columns reach the menu head. Cost is reward-irrelevant
+                under the mission objective and measurably railroads the policy when included.
+        """
         self._head_feats = tuple(head_feats)
         self.lat = lat
         self.menu = menu
@@ -66,7 +55,7 @@ class AerialInterdictionEnv:
         self._cur = 0
         self._obs_cache = self._build_obs()
 
-    # -- observation (built once; per-sortie fields patched in observe) --------
+    # -- observation (built once; per-sortie fields patched in observe) -----------
     def _build_obs(self) -> dict:
         lat = self.lat
         nodes = {_nid(n): {"x": float(n[0]), "y": float(n[1]), "demand": 0.0,
@@ -81,8 +70,7 @@ class AerialInterdictionEnv:
             mid = (np.asarray(u, float) + np.asarray(v, float))[None, :] / 2.0
             p = arc_hazard_prob(mid, self.centres, self.r, self.p_max)
             vuln[(_nid(u), _nid(v))] = float(p.max()) if p.size else 0.0
-        # menu route node indices in featurize_state's sorted row order (the curve's nearest-
-        # unblocked-waypoint-per-column projection = what the GNN menu head pools)
+        # menu route node indices in featurize_state's sorted row order
         pos = {nid: i for i, nid in enumerate(sorted(nodes.keys()))}
         menu_idx = [torch.tensor([pos[_nid(n)] for n in c.node_seq], dtype=torch.long)
                     for c in self.menu]

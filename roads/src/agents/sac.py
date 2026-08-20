@@ -1,11 +1,9 @@
-"""Soft Actor-Critic (SAC) implementation for SACRED.
+"""Soft Actor-Critic implementation for SACRED.
 
-This module provides two distinct agent managers optimized for the discrete,
-masked Graph Attention Networks:
-1. ProtagonistSAC: Manages fleet routing decisions with A* path selection.
-2. AntagonistSAC: Manages dynamic edge congestion and duration selection under credit budgets.
-
-Both classes support Semi-Markov Decision Process (SMDP) temporal discounting (gamma^dt).
+Provides two agent managers built on discrete, masked Graph Attention Networks:
+ProtagonistSAC for fleet routing decisions, and AntagonistSAC for dynamic edge
+congestion and duration selection under credit budgets. Both support Semi-Markov
+Decision Process (SMDP) temporal discounting (gamma^dt).
 """
 
 from __future__ import annotations
@@ -33,11 +31,10 @@ from src.agents.networks import (
 def _collate_graphs(data_list: list) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, list[int]]:
     """Concatenate per-sample graphs into one disjoint graph for a single encoder pass.
 
-    Each entry is a single-graph PyG object (as returned by ``featurize_state``). Node
-    features are concatenated, edge indices are offset per graph, and ``offsets`` marks
-    each graph's node span so the encoder output can be sliced back per sample. Because
-    the union has no cross-graph edges, GATv2 message passing is identical to encoding
-    each graph separately (guarded by tests/test_batched_equivalence.py).
+    Node features are concatenated and edge indices offset per graph; ``offsets`` marks
+    each graph's node span so the encoder output can be sliced back per sample. The union
+    has no cross-graph edges, so GATv2 message passing is identical to encoding each
+    graph separately.
     """
     xs, eis, eas = [], [], []
     offsets = [0]
@@ -54,9 +51,11 @@ def _collate_graphs(data_list: list) -> tuple[torch.Tensor, torch.Tensor, torch.
 
 
 def _clip_x(x: torch.Tensor, node_in_dim: int) -> torch.Tensor:
-    """Slice node features down to the width an agent's networks were built for (no-op when they
-    already match). New feature columns are appended last, so this exactly reproduces the older
-    featurization for checkpoints trained before a width bump."""
+    """Slice node features down to the width an agent's networks expect (no-op if already matching).
+
+    New feature columns are appended last, so this reproduces exactly what a checkpoint
+    trained at a narrower width saw.
+    """
     return x[:, :node_in_dim] if x.size(1) > node_in_dim else x
 
 
@@ -66,12 +65,10 @@ def _clip_ea(edge_attr: torch.Tensor, edge_in_dim: int) -> torch.Tensor:
 
 
 def infer_node_in_dim(actor_state_dict: Mapping[str, Any], default: int = 13) -> int:
-    """Read the node-feature width a checkpoint was trained with from its first GATv2 layer.
+    """Read the node-feature width a checkpoint was trained with, from its first GATv2 layer.
 
-    featurize_state appends new columns LAST, so an agent built with the inferred (narrower)
-    node_in_dim slices current features down to exactly what the checkpoint saw in training —
-    this keeps pre-hybrid checkpoints (11-dim, e.g. gen02_dynassign) evaluable after the 13-dim
-    bump without a separate legacy featurizer.
+    Used with node_in_dim slicing so older, narrower checkpoints see exactly the features
+    they were trained on.
     """
     for key in ("encoder.convs.0.lin_l.weight", "encoder.convs.0.lin_r.weight"):
         w = actor_state_dict.get(key)
@@ -92,16 +89,10 @@ _SHARED_GRAPH_CACHE: dict[Any, Any] = {}
 def _cached_featurize(trans: Any, key: str, build_fn):
     """Memoize a featurized graph on the transition, building it once via ``build_fn``.
 
-    Tolerates transitions deserialized from older pickles (e.g. preseed
-    ``data/erb_transitions.pt``) whose ``feature_cache`` slot was never assigned: the
-    slot exists on the class, so we lazily initialize it here.
-
-    When the observation carries a ``_graph_key`` (set only by trainers whose per-instance
-    graph features are constant across transitions, e.g. the fleet-route dynamic
-    generalist, whose every observation is taken at env reset), the featurization is
-    memoized ONCE PER INSTANCE in a process-wide cache instead of once per transition.
-    Without it a 6,000-node city costs ~1 MB of tensors per stored transition, which is
-    what OOM-killed the 2026-08-07 four-city batch. Absent key = unchanged behaviour.
+    If the observation carries a ``_graph_key`` (set when per-instance graph features are
+    constant across transitions), the featurization is memoized once per instance in a
+    process-wide cache instead of once per transition, avoiding a large tensor copy per
+    stored transition. Without a key, behaviour is unchanged (cached per transition).
     """
     state = getattr(trans, "state", None)
     gkey = state.get("_graph_key") if isinstance(state, dict) else None
@@ -196,9 +187,8 @@ class ProtagonistQNet(nn.Module):
         q_values = self.q_bilinear(h_active_rep, h_candidates).squeeze(-1)  # [num_candidates]
         fw = getattr(self, "follow_w", None)
         if fw is not None and taken is not None:
-            # LEVER 2 (critic half): give Q a direct, un-GNN-diluted dependence on 'did the leader
-            # take this route' as a LEARNED input (Bellman-consistent), so it can rank the leader's
-            # route and the actor gets a gradient to grow follow_w. The missing half of the fix.
+            # Learned bias term: gives Q a direct dependence on whether the leader already
+            # took this route, beyond what the GNN encoding captures.
             q_values = q_values + fw * taken
         from src.agents.networks import _route_head_terms
         q_values = _route_head_terms(self, q_values, action_mask_indices)
@@ -235,20 +225,17 @@ class ProtagonistSAC:
         self.tau = tau
         self.reward_scale = reward_scale
         self.target_entropy = target_entropy
-        # Optional SECOND temperature for a per-decision "role" (multi-convoy: convoy-0 leader vs
-        # followers). A single alpha cannot hold the leader near max-entropy while driving followers
-        # to ~0, so a transition tagged state["alpha_group"]==1 uses this follower alpha in BOTH the
-        # actor loss and its own auto-tuning. Default off -> single-alpha behaviour is byte-identical.
+        # Optional second temperature for a per-decision role (multi-convoy: leader vs
+        # followers). A transition tagged state["alpha_group"]==1 uses this follower alpha
+        # in both the actor loss and its own auto-tuning. Default off leaves single-alpha
+        # behaviour unchanged.
         self.role_alpha = role_alpha
-        # Optional FLOOR on the primary temperature: after each auto-tune step, clamp log_alpha so
-        # alpha cannot collapse below alpha_floor (toward a deterministic, exploitable policy). In
-        # multi-convoy fleet-route mode the primary alpha IS the leader's, so this is the leader-alpha
-        # floor that kills the across-seed variance from the leader over-concentrating in bad seeds
-        # (mirrors the follower-alpha late-decay lesson). Default None = no floor = byte-identical.
+        # Optional floor on the primary temperature: after each auto-tune step, clamps
+        # log_alpha so alpha cannot collapse toward a deterministic, exploitable policy.
+        # Default None means no floor.
         self.alpha_floor = alpha_floor
-        # gen10-MC2 isolation flag: True reverts the 2026-07-09 role-alpha TARGET fix (V(s')
-        # entropy term always uses the primary alpha, the pre-fix behaviour) while keeping the
-        # node-ordering fix; used to attribute the gen10-MC regression. Default False = fixed.
+        # Isolation flag: True reverts V(s')'s entropy term to always use the primary alpha
+        # instead of the per-decision role alpha. Default False.
         self.legacy_next_alpha = legacy_next_alpha
         # Feature widths this agent's networks consume. featurize_state may emit MORE columns
         # (new ones are appended last); _clip_x/_clip_ea slice down so checkpoints trained at a
@@ -256,7 +243,6 @@ class ProtagonistSAC:
         self.node_in_dim = node_in_dim
         self.edge_in_dim = edge_in_dim
 
-        # 1. Initialize Actor & twin Critics
         self.actor = ProtagonistPolicyValueNet(
             node_in_dim=node_in_dim,
             edge_in_dim=edge_in_dim,
@@ -281,7 +267,6 @@ class ProtagonistSAC:
             heads=heads,
         ).to(self.device)
 
-        # 2. Target Critics
         self.target_q1 = ProtagonistQNet(
             node_in_dim=node_in_dim,
             edge_in_dim=edge_in_dim,
@@ -300,14 +285,12 @@ class ProtagonistSAC:
         ).to(self.device)
         self.target_q2.load_state_dict(self.q2.state_dict())
 
-        # 3. Optimizers
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr_actor)
         self.critic_optimizer = optim.Adam(
             list(self.q1.parameters()) + list(self.q2.parameters()),
             lr=lr_critic,
         )
 
-        # 4. Temperature Entropy coefficient (alpha)
         self.autotune_alpha = autotune_alpha
         alr = lr_alpha if lr_alpha is not None else lr_actor  # temperature LR (role_alpha wants it fast)
         if autotune_alpha:
@@ -329,7 +312,6 @@ class ProtagonistSAC:
             self.alpha = alpha_init
             self.alpha_foll = alpha_init
 
-        # 5. Experience Replay Buffer
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
 
     def select_action(
@@ -340,19 +322,13 @@ class ProtagonistSAC:
     ) -> dict[int, Any]:
         """Select a destination node for the active truck using the policy.
 
-        Parameters
-        ----------
-        observation:
-            SMDP observation dict.
-        action_mask:
-            Dict mapping active truck ID to a list of allowed destination nodes.
-        deterministic:
-            If True, choose the highest-probability action.
+        Args:
+            observation: SMDP observation dict.
+            action_mask: Dict mapping active truck ID to a list of allowed destination nodes.
+            deterministic: If True, choose the highest-probability action.
 
-        Returns
-        -------
-        dict[int, Any]:
-            A dispatch dictionary `{active_truck_id: chosen_node}`.
+        Returns:
+            A dispatch dictionary ``{active_truck_id: chosen_node}``.
         """
         active_truck = observation.get("active_truck")
         if active_truck is None or active_truck not in action_mask:
@@ -414,16 +390,15 @@ class ProtagonistSAC:
         critic_losses = []
         actor_losses = []
         alpha_losses = []
-        alpha_foll_losses = []  # role_alpha: follower-group temperature loss (multi-convoy)
+        alpha_foll_losses = []  # follower-group temperature loss (role_alpha only)
         q_values_list = []
         entropies_list = []
         q_spreads = []  # diagnostic: how discriminative the critic is across allowed actions
 
         # --- Pass 1: parse + featurize all valid samples, collate graphs ---
-        # The GATv2 encoder is the hot path (one pass per network per sample previously).
-        # We encode the whole minibatch in a single Batch.from_data_list pass, then apply
-        # each network's `head` per-sample. Disjoint batching is identical to per-sample
-        # (see tests/test_batched_equivalence.py).
+        # The GATv2 encoder is the hot path: encode the whole minibatch in one batched
+        # pass, then apply each network's `head` per sample. Disjoint batching (no
+        # cross-graph edges) is mathematically identical to encoding each graph separately.
         samples: list[dict[str, Any]] = []
         state_data_list: list[Data] = []
         next_data_list: list[Data] = []
@@ -487,18 +462,17 @@ class ProtagonistSAC:
                 "next_slot": next_slot,
                 "next_active_idx": next_active_idx,
                 "next_mask_idxs": next_mask_idxs,
-                # optional per-decision entropy target carried on the state (multi-convoy
-                # role-dependent entropy). None for every historical transition -> the fallback below.
+                # optional per-decision entropy target (role-dependent entropy); falls back
+                # to the defaults below when absent.
                 "target_entropy": state.get("target_entropy"),
                 # optional per-decision temperature group (0 = default/leader, 1 = follower).
                 "alpha_group": state.get("alpha_group", 0),
-                # the NEXT decision's group, for the soft value V(s') (a follower successor state
-                # must use the follower temperature in its entropy term, not the leader's; the
-                # 2026-07-09 role-alpha target fix). 0 for every historical transition.
+                # the NEXT decision's group, for the soft value V(s') (a follower successor
+                # state must use the follower temperature in its entropy term, not the leader's).
                 "next_alpha_group": next_state.get("alpha_group", 0),
-                "taken": taken, "next_taken": next_taken,  # menu route-correlation (lever 2)
-                # A1 generalist: per-sample instance menus/features (None on single-instance paths
-                # -> the net attributes stand and behaviour is unchanged).
+                "taken": taken, "next_taken": next_taken,  # menu route-correlation features
+                # per-sample instance menu/features; None means the net's existing
+                # attributes stand (single-instance paths unaffected).
                 "menu_state": state.get("menu_route_node_idx"),
                 "menu_feats": state.get("menu_route_feats"),
                 "next_menu": next_state.get("menu_route_node_idx"),
@@ -539,7 +513,7 @@ class ProtagonistSAC:
                 if s["next_slot"] is None:
                     v_next = torch.tensor(0.0, device=self.device)
                 else:
-                    if s["next_menu"] is not None:  # per-sample instance menu (A1 generalist)
+                    if s["next_menu"] is not None:  # override the net's menu for this sample's instance
                         for net in (self.actor, self.target_q1, self.target_q2):
                             net.menu_routes = s["next_menu"]
                             if hasattr(net, "route_feat_w"):
@@ -552,9 +526,9 @@ class ProtagonistSAC:
                     q2_target = self.target_q2.head(h_tq2[hn], s["next_active_idx"], s["next_mask_idxs"], nt)
                     min_q_target = torch.min(q1_target, q2_target)
                     log_next_probs = torch.log(next_probs + 1e-9)
-                    # role_alpha: the entropy term of V(s') uses the temperature of the decision
-                    # taken AT s' (follower successors get the follower alpha), unless the
-                    # legacy_next_alpha isolation flag reverts to the pre-fix behaviour.
+                    # role_alpha: V(s')'s entropy term uses the temperature of the decision
+                    # taken at s' (follower successors get the follower alpha), unless
+                    # legacy_next_alpha reverts to always using the primary alpha.
                     a_next = (self.alpha_foll
                               if (self.role_alpha and not self.legacy_next_alpha
                                   and s.get("next_alpha_group", 0) == 1)
@@ -564,7 +538,7 @@ class ProtagonistSAC:
             # SMDP Bellman target: y = r + gamma^dt * (1 - done) * V(s')
             target_q = (s["reward"] * self.reward_scale) + (self.gamma ** s["dt"]) * (1.0 - float(s["done"])) * v_next
 
-            if s["menu_state"] is not None:  # per-sample instance menu for the CURRENT-state heads
+            if s["menu_state"] is not None:  # per-sample instance menu for the current-state heads
                 for net in (self.actor, self.q1, self.q2):
                     net.menu_routes = s["menu_state"]
                     if hasattr(net, "route_feat_w"):
@@ -582,11 +556,11 @@ class ProtagonistSAC:
             log_probs = torch.log(probs + 1e-9)
             curr_q1 = self.q1.head(h_q1[hs], active_idx, mask_idxs, tk)
             curr_q2 = self.q2.head(h_q2[hs], active_idx, mask_idxs, tk)
-            # CRITICAL: Detach critic predictions to block policy gradients from critic networks
+            # Detach critic predictions so policy gradients do not flow into the critic networks.
             min_q = torch.min(curr_q1, curr_q2).detach()
             if min_q.numel() > 1:
-                # Q-spread across allowed destinations: ~0 means the critic can't tell good routes
-                # from bad ones (the protagonist's reward signal-to-noise failure mode).
+                # Q-spread across allowed destinations; near zero means the critic can't
+                # discriminate good routes from bad ones.
                 q_spreads.append((min_q.max() - min_q.min()).item())
             # role_alpha: followers (alpha_group==1) use the follower temperature in the actor loss.
             use_foll = self.role_alpha and s.get("alpha_group", 0) == 1
@@ -600,16 +574,16 @@ class ProtagonistSAC:
             if self.autotune_alpha:
                 per_sample_te = s.get("target_entropy")
                 if per_sample_te is not None:
-                    # per-decision target (multi-convoy role-dependent entropy: leader high,
-                    # followers ~0). Absent for every historical transition -> falls back below.
+                    # per-decision target (role-dependent entropy: leader high, followers ~0);
+                    # falls back to the defaults below when absent.
                     target_entropy = torch.tensor(float(per_sample_te), device=self.device)
                 elif self.target_entropy is not None:
                     target_entropy = torch.tensor(self.target_entropy, device=self.device)
                 else:
                     # Dynamic target entropy based on number of active valid actions (calibrated to 0.45)
                     target_entropy = -0.45 * torch.log(torch.tensor(1.0 / s["allowed_len"], device=self.device))
-                # Negative feedback: alpha decreases when entropy > target (standard SAC temperature loss).
-                # The previous `-log_alpha * (...)` had the sign inverted -> alpha runaway / critic divergence.
+                # Negative feedback: alpha decreases when entropy exceeds target (standard SAC
+                # temperature loss).
                 if use_foll:
                     alpha_foll_losses.append(self.log_alpha_foll * (entropy - target_entropy).detach())
                 else:
@@ -658,7 +632,6 @@ class ProtagonistSAC:
             self.alpha_foll_optimizer.step()
             self.alpha_foll = self.log_alpha_foll.exp().item()
 
-        # Soft update target critics
         self._soft_update(self.q1, self.target_q1)
         self._soft_update(self.q2, self.target_q2)
 

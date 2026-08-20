@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""gen45 worst-case-vs-committing premium (eval-only, the pre-registered REPORTED row).
+"""Computes the gen45 worst-case-versus-committing premium, evaluation only.
 
-Construction, disclosed precisely (the gen27 shape, `scratch/gen27_worstcase.py` precedent):
-for each confirmation seed's VALIDATION-selected checkpoint and each gated field, take the
-policy's stationary MARGINAL route mixture m under its own window chain, let the enemy stop
-following the doctrine and COMMIT to the single site that maximises the stacked-fleet damage
-of m (the oracle best response in the K=1 site game), and report that worst case against the
-field's static equilibrium value. The stacked equilibrium mixture d_eq's own worst case is
-reported beside it, so the premium separates what is policy-specific from what stacking
+For each confirmation seed's validation-selected checkpoint and each gated field, takes the
+policy's stationary marginal route mixture m under its own window chain, lets the enemy abandon
+the doctrine and commit to the single site maximising the stacked-fleet damage of m, and reports
+that worst case against the field's static equilibrium value. The stacked equilibrium mixture's
+own worst case is reported beside it, separating what is policy-specific from what stacking
 itself costs.
 """
 from __future__ import annotations

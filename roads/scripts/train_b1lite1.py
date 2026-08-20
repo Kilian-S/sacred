@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""B1-lite-1: train a HISTORY-AWARE fleet-route policy against a within-episode PATTERN-OF-LIFE
-interdictor (gen19; DIRECTION_EXPANSION B1-lite). Restores within-episode dynamism (the "D") to the
-interdiction headline: an episode = S sorties; each sortie the fleet stacks on one route; the
-adversary softmax-BRs (temperature tau) to the defender's REALISED routes over a trailing window of
-w sorties; the defender OBSERVES the window (per-route recent frequency, delivered undiluted at the
-menu head as a 3rd route-feature column) and must learn to vary its routing to exploit the
-adversary's predictability. Analytic expected-mission-failure reward; sorties chained with
-bootstrapping (the window is state). Scored against the exact oracle references
-(scratch/within_episode_screen.py): static_det > iid_eq (history-blind) > SACRED >= history_opt.
+"""Trains a history-aware fleet-route policy against a within-episode pattern-of-life
+interdictor. An episode is S sorties; each sortie the fleet stacks on one route, and the
+adversary softmax-best-responds (temperature tau) to the defender's realised routes over a
+trailing window of w sorties. The defender observes the window (per-route recent frequency as a
+route-feature column) and must learn to vary its routing to exploit the adversary's
+predictability.
 
-Run: PYTHONPATH=. python scripts/train_b1lite1.py --sorties 8000 --seed 0
+Reward is the analytic expected mission failure; sorties are chained with bootstrapping since
+the window is state. Scored against the exact oracle references: static_det > iid_eq
+(history-blind) > SACRED >= history_opt.
 """
 from __future__ import annotations
 

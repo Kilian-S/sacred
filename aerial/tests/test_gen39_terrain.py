@@ -1,12 +1,5 @@
-"""gen39_concealment: terrain table v2 contracts.
-
-Guards the five things the act depends on: (i) v1 is untouched and remains the default, so
-gen31/gen32/gen33 reproduce byte-identically; (ii) the forest sight-line flag is honoured when it
-is set (v1 declared it and only the LLM brief ever read it); (iii) urban is emplaceable AND not
-self-masked (without the own-polygon exemption every urban site is dead); (iv) the reveal trigger
-is EXPOSURE with line of sight, not a kill; (v) forest HIDES WITHOUT BLINDING under the v2 default
-(Kilian 2026-07-25), which is the asymmetry the whole concealment claim rests on.
-"""
+"""Contracts for the v2 terrain table: v1 defaults, sight-line masking, urban emplacement, the
+reveal trigger, and the hide-without-blind asymmetry."""
 import numpy as np
 from shapely.geometry import LineString
 
@@ -20,8 +13,7 @@ ROUTES = build_menu(TH, R=5)
 
 
 def _urban_only_reference(route, coords, rr, pp):
-    """The pre-gen39 route_survival, copied verbatim: the byte-identity oracle for the default
-    path. If gen39 ever changes v1 behaviour, this fires."""
+    """Urban-only masking reference for route_survival, the byte-identity oracle for v1."""
     mids = (route[:-1] + route[1:]) / 2.0
     ds = np.linalg.norm(np.diff(route, axis=0), axis=1)
     kappa = -np.log(np.clip(1.0 - pp, 1e-12, 1.0)) / np.clip(rr, 1e-9, None)
@@ -49,9 +41,8 @@ def test_v1_table_unchanged_and_still_the_default():
 
 
 def test_the_v1_mismatch_is_documented_not_silently_repaired():
-    """v1's table DECLARES forest los=True but route_survival only ever masked with urban. That
-    mismatch is the gen39 finding; the default path must keep the IMPLEMENTED behaviour so banked
-    numbers are untouched, and honouring the declared table must be opt-in."""
+    """v1 declares forest los=True but masks with urban only; the default keeps the implemented
+    behaviour and honouring the declared table is opt-in."""
     assert TERRAIN["forest"]["los"] is True                     # declared
     declared = blocker_union(TH, TERRAIN)
     assert declared.area > TH._urban_union.area                 # ... and it would mask more
@@ -147,12 +138,11 @@ def test_hidden_lethality_knob_scales_only_the_concealed_classes():
     assert t["open"]["r_km"] > t["field"]["r_km"] > t["forest"]["r_km"] > t["urban"]["r_km"]
 
 
-# --- (v) forest HIDES without BLINDING (the v2 default since 2026-07-25) -----------------------
+# --- (v) forest HIDES without BLINDING (the v2 default) ---------------------------------------
 
 def test_forest_hides_but_does_not_blind_by_default():
-    """The asymmetry the concealment claim rests on: canopy conceals a ground team from an aircraft
-    looking down, but modern radar-cued sights still engage an aircraft above the treeline. Urban
-    keeps BOTH, because buildings are true vertical obstacles."""
+    """Canopy conceals a ground team but does not block its fire; urban does both, being a true
+    vertical obstacle."""
     t = terrain_v2()
     assert t["forest"]["reveal"] is False and t["forest"]["los"] is False   # hidden, not blind
     assert t["urban"]["reveal"] is False and t["urban"]["los"] is True      # hidden AND blocking
@@ -160,8 +150,8 @@ def test_forest_hides_but_does_not_blind_by_default():
 
 
 def test_default_blocker_excludes_forest_and_the_symmetric_variant_is_still_reachable():
-    """Woodland must not enter the sight-line mask by default; setting forest_los=True restores the
-    old symmetric rule (a DIFFERENT game, kept only as the disclosed sensitivity row)."""
+    """Woodland stays out of the sight-line mask by default; forest_los=True restores the
+    symmetric rule, which is a different game."""
     default, symmetric = blocker_union(TH, terrain_v2()), blocker_union(TH, terrain_v2(forest_los=True))
     assert symmetric.area > default.area
     assert default.equals(blocker_union(TH, {k: dict(v, los=(k in ("urban", "alpine")))
@@ -169,9 +159,8 @@ def test_default_blocker_excludes_forest_and_the_symmetric_variant_is_still_reac
 
 
 def test_brief_states_hiding_and_sight_blocking_separately():
-    """gen33's brief derived 'it conceals you (blocks line of sight)' from the single `los` flag,
-    describing a mechanic the simulator did not implement. The two facts must now be stated apart,
-    and woodland must be briefed as hiding without blocking."""
+    """The brief must state hiding and sight-blocking as separate facts, with woodland briefed as
+    hiding but not blocking."""
     from src.redforce import _physics_table_text
     txt = _physics_table_text(1.0, terrain_v2())
     assert "conceals you (blocks line of sight)" not in txt
@@ -186,10 +175,8 @@ def test_brief_states_hiding_and_sight_blocking_separately():
 # --- (vi) the concentration must not leak across terrain classes -------------------------------
 
 def test_engagement_concentration_stays_on_the_teams_own_ground():
-    """Kilian's catch, 2026-07-25. The smear used to spread a team's effect over every nearby
-    candidate site regardless of ground, so a team nominally in woodland drew most of its reach and
-    lethality from OPEN sites while keeping woodland's invisibility (reveal reads the team's own
-    site). That made the emplacement choice non-binding and inflated every hide-vs-open number."""
+    """A team's engagement smear must stay within its own terrain class, otherwise a woodland team
+    draws reach and lethality from open sites while keeping woodland's invisibility."""
     import collections
     from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
     base = ConcealBase(KGD, terrain=terrain_v2(hidden_leth=0.4, conceal_reach=0.85),
@@ -206,7 +193,6 @@ def test_engagement_concentration_stays_on_the_teams_own_ground():
             for i, x in enumerate(base.cls):
                 share[x] += g.prior_j[0][i]
             assert share[c] >= floor, (c, same_class, share[c])
-        # and the leak was real, not hypothetical: cover leaked the most
         leaked = ConcealDyn(base, pp, L, w=2, same_class=False)
         own = sum(w for i, w in enumerate(leaked.prior_j[0]) if base.cls[i] == c)
         if c in ("forest", "urban"):
@@ -220,7 +206,7 @@ def test_same_class_default_is_the_non_leaking_one():
     assert inspect.signature(ConcealDyn.__init__).parameters["same_class"].default is True
 
 
-# --- (vii) force selection scores both pickers (finding 6) -------------------------------------
+# --- (vii) force selection scores both pickers -------------------------------------------------
 
 def test_choose_force_scores_both_pickers_and_is_never_worse_than_topk():
     from src.envs.aerial_conceal import ConcealBase, ConcealDyn, choose_force, pick_laydown, \
@@ -235,10 +221,8 @@ def test_choose_force_scores_both_pickers_and_is_never_worse_than_topk():
 
 
 def test_spotting_follows_the_fire_and_hidden_teams_never_reveal():
-    """Kilian 2026-07-25: a team is spotted when the flight comes within range of ANY position it
-    fights from (it relocates between serials within its zone), not only its nominal site. The
-    new trigger must be a superset of the old own-site-only one, and concealed ground must still
-    never reveal."""
+    """A team is spotted within range of any position it fires from, not only its nominal site, so
+    the trigger is a superset of the own-site one; concealed ground never reveals."""
     from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
     base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
     pp = base.lethality(resample_field(base.coords, 5100))
@@ -253,9 +237,8 @@ def test_spotting_follows_the_fire_and_hidden_teams_never_reveal():
 
 
 def test_per_team_doctrines_identical_reproduce_the_single_doctrine_game():
-    """The step-2 regression anchor: a force whose teams all carry the pinned gen32 doctrine must
-    be numerically the SAME enemy as the single-doctrine game the screen ran; differing doctrines
-    must change the aim; hold_static must bias toward track-independence."""
+    """Uniform per-team doctrines reproduce the single-doctrine game exactly, differing doctrines
+    change the aim, and hold_static biases towards track-independence."""
     from src.envs.aerial_conceal import ConcealBase, ConcealDyn, resample_field
     base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
     pp = base.lethality(resample_field(base.coords, 5100))
@@ -279,6 +262,6 @@ def test_force_schema_follows_the_table_in_force():
     from src.redforce import FORCE_SCHEMA, force_schema
     path = lambda s: s["properties"]["agents"]["items"]["properties"]["emplacement_zone"][  # noqa: E731
         "properties"]["terrain"]["enum"]
-    assert "urban" not in path(FORCE_SCHEMA)            # the frozen v1 contract (gen33)
+    assert "urban" not in path(FORCE_SCHEMA)            # v1 does not admit urban emplacement
     assert "urban" in path(force_schema(terrain_v2()))  # v2: urban is choosable
     assert force_schema() is FORCE_SCHEMA               # default untouched

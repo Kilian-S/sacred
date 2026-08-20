@@ -1,15 +1,11 @@
-"""Non-learning baselines and an episode-eval harness for the Stage-0 rung.
+"""Non-learning baselines and an episode-eval harness.
 
-The greedy dispatcher is the reference the learned protagonist must beat: at every
-decision it sends each idle truck to the *nearest* allowed destination along the
-**congestion-aware** shortest path (``effective_weight``, which already encodes the
-antagonist's congestion). For the capacity-1 Stage-0 shuttle this is greedy
-nearest-request scheduling — the natural, strong, non-adaptive heuristic.
-
-``run_episode`` drives the SMDP wrapper with arbitrary protagonist/antagonist
-*policies* (callables of the current ``DecisionEvent``), so the same harness scores
-the greedy baseline and a trained SAC agent under the same antagonist. It mirrors the
-decision-branch structure of :class:`ATLACoevolutionTrainer` exactly.
+The greedy dispatcher is the reference the learned protagonist must beat: at every decision it
+sends each idle truck to the nearest allowed destination along the congestion-aware shortest path
+(``effective_weight``, which already encodes the antagonist's congestion). ``run_episode`` drives
+the SMDP wrapper with arbitrary protagonist/antagonist policies (callables of the current
+``DecisionEvent``), so the same harness scores the greedy baseline and a trained agent under the
+same antagonist.
 """
 
 from __future__ import annotations
@@ -78,9 +74,8 @@ def _greedy_goal(env: GraphEnv, truck) -> Any:
 
 
 def greedy_next_hop_action(env: GraphEnv, action_mask: "dict[int, list[Any]]") -> "dict[int, Any]":
-    """Reactive next-hop greedy: step onto the first hop of the congestion-aware shortest
-    path to the current goal. This reacts to congestion *now* but cannot anticipate the
-    antagonist — the headroom a learned policy can exploit."""
+    """Reactive next-hop greedy: step onto the first hop of the congestion-aware shortest path
+    to the current goal. Reacts to congestion now but cannot anticipate the antagonist."""
     actions: dict[int, Any] = {}
     for truck_id, neighbors in action_mask.items():
         if not neighbors:
@@ -107,9 +102,9 @@ def greedy_next_hop_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 def greedy_insertion_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
     """Multi-truck greedy-insertion baseline (destination mode): each free truck takes the
-    nearest (congestion-aware) unserved request, with *sequential claiming* so two trucks
-    deciding in the same event never grab the same request. Depot (reload/return) only if no
-    request is available. This is the reactive classical dispatcher the learned policy must beat.
+    nearest (congestion-aware) unserved request, with sequential claiming so two trucks deciding
+    in the same event never grab the same request. Falls back to the depot (reload/return) only
+    if no request is available.
     """
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env
@@ -134,11 +129,9 @@ def greedy_insertion_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 def urgency_dispatch_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
     """Oldest-first (most-urgent) dispatcher: each free truck takes the longest-waiting unserved
-    request, tie-broken by congestion-aware distance, with sequential claiming. Unlike greedy-
-    insertion (nearest), this *uses request age* — the signal greedy is blind to — so it tests
-    whether prioritising the backlog beats myopic-nearest under load. Reactive (no anticipation),
-    so it is a heuristic floor on "smart", not a ceiling. (Dynamic-demand only; reads the env's
-    per-node pending-arrival ages.)"""
+    request, tie-broken by congestion-aware distance, with sequential claiming. Unlike greedy
+    insertion (nearest), this uses request age, the signal greedy ignores. Dynamic-demand only;
+    reads the env's per-node pending-arrival ages."""
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env
         pending = getattr(env, "_pending_arrivals", {})

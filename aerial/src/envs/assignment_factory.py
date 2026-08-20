@@ -1,17 +1,7 @@
-"""Multi-truck assignment-probe environment factory (3b).
-
-The Stage-0 conclusion was that single-truck *routing* vs a reactive greedy is near-a-wash;
-the beat-the-baseline headroom lives in **assignment** — which truck serves which request —
-because multi-vehicle assignment/VRP is NP-hard and greedy-insertion is just a heuristic.
-
-This factory builds the minimal probe: `n` depots (one truck each) on the OSM graph with a
-fixed set of focused demand nodes positioned so *which truck serves* matters (the default
-demand band is roughly equidistant from the two diameter-endpoint depots 110/135, so neither
-truck is trivially the right one). Action is the existing **destination mode** (pick a request,
-env auto-routes via exact Dijkstra) — assignment with no new network head. Learned next-hop
-routing is layered on later for the hybrid headline.
-
-Built alongside the static OSM, Stage-0 cluster, and Stage-0 next-hop factories — none touched.
+"""Multi-truck assignment-probe environment factories over the OSM graph. Each places ``n``
+depots (one truck each) with a fixed set of demand nodes positioned so that which truck serves
+a request genuinely matters. Action is destination mode: the policy picks a request and the env
+auto-routes via exact Dijkstra, so assignment is exercised without a new network head.
 """
 
 from __future__ import annotations
@@ -28,16 +18,14 @@ _DEFAULT_NODES = str(PROJECT_ROOT / "data/maps/kaliningrad_simplified_30m/kalini
 _DEFAULT_EDGES = str(PROJECT_ROOT / "data/maps/kaliningrad_simplified_30m/kaliningrad_edges.geojson")
 _DEFAULT_TASKS = str(PROJECT_ROOT / "data/maps/koenigsberg1.json")
 
-# Two diameter-endpoint depots and a band of demand nodes ~equidistant from both (contested),
-# so the assignment decision is genuinely non-trivial. Found via graph analysis (see CONTEXT).
+# Two diameter-endpoint depots and a band of demand nodes roughly equidistant from both, so
+# the assignment decision is genuinely non-trivial.
 _DEFAULT_DEPOTS = ("110", "135")
 _DEFAULT_DEMAND = ("237", "78", "130", "27", "49", "224", "43", "220")
 
-# Stage-2 HYBRID geometry (assignment + next-hop routing). Chosen by the chokepoint search
-# (scratch/find_chokepoints.py, design_hybrid_geometry.py): demand placed east of the node-0 hub so
-# Depot A's routes funnel through the ('0','1') gateway and Depot B's through different chokepoints
-# -> both the assignment lever (which truck) and the routing lever (route around a blocked gateway)
-# are live. See CONTEXT.md §2 / TASK.md STAGE 2.
+# Hybrid geometry (assignment + next-hop routing): demand sits east of the node-0 hub so Depot
+# A's routes funnel through the ('0','1') gateway and Depot B's through different chokepoints,
+# keeping both the assignment lever and the routing lever live.
 _HYBRID_DEPOTS = ("110", "135")
 _HYBRID_DEMAND = ("78", "130", "49", "224", "48", "17", "47", "46")
 
@@ -101,10 +89,12 @@ def make_hybrid_assign_env(
     truck_capacity: float = 1.0,
     max_time: int = 800,
 ) -> GraphEnv:
-    """Stage-2 hybrid geometry (static demand). Same GraphEnv as the assignment probe but with the
-    chokepoint-optimised depots/demand; the *hybrid* behaviour (assignment + next-hop routing) comes
-    from `SMDPConfig(routing_mode="hybrid")` in the wrapper, not the env. Routes funnel through the
-    node-0 gateways so the routing lever is exercised."""
+    """The hybrid geometry with static demand.
+
+    Same GraphEnv as the assignment probe but with the chokepoint-optimised depots and demand,
+    so routes funnel through the node-0 gateways and the routing lever is exercised. The hybrid
+    behaviour itself comes from ``SMDPConfig(routing_mode="hybrid")`` in the wrapper, not the env.
+    """
     env = make_assignment_env(
         nodes_path, edges_path, tasks_path,
         depots=depots, demand_nodes=demand_nodes, truck_capacity=truck_capacity, max_time=max_time,
@@ -118,9 +108,9 @@ def poisson_arrival_fn(hotspot_nodes: tuple[str, ...], rate: float, size: float 
     """Build a `(rng, horizon) -> [(tick, node, size), ...]` Poisson arrival sampler.
 
     A homogeneous Poisson process on the env clock (inter-arrivals ~ Exponential(1/rate)),
-    decoupled from what the trucks are doing (redesign §3.2). Each request's location is drawn
-    uniformly from ``hotspot_nodes`` (the K=1 contested band by default). The arrival process is
-    re-sampled fresh each reset; pass a ``demand_seed`` to reset() to fix the instance for eval.
+    decoupled from what the trucks are doing. Each request's location is drawn uniformly from
+    ``hotspot_nodes``. The arrival process is re-sampled fresh each reset; pass a ``demand_seed``
+    to reset() to fix the instance for eval.
     """
     nodes = list(hotspot_nodes)
 
@@ -154,17 +144,17 @@ def make_dynamic_assign_env(
     demand_seed: int | None = None,
     arrival_schedule: list[tuple[int, str, float]] | None = None,
 ) -> GraphEnv:
-    """Stage 1.5: the contested multi-truck assignment geometry made *dynamic*.
+    """The contested multi-truck assignment geometry made dynamic.
 
-    Same depots/hotspot band as :func:`make_assignment_env`, but demand is **zero at t=0** and
-    arrives over the horizon on a Poisson process (rate ``arrival_rate`` requests/tick), so the
-    queue can build and the antagonist's congestion compounds the backlog (the headroom
-    hypothesis). ``arrival_rate`` is a placeholder — the Step-4 headroom gate tunes it to the
-    ρ≈1 operating point. Destination-mode assignment (routing deferred), capacity 1.
+    Same depots and hotspot band as :func:`make_assignment_env`, but demand is zero at t=0 and
+    arrives over the horizon on a Poisson process (rate ``arrival_rate`` requests per tick), so
+    the queue can build and antagonist congestion compounds the backlog. Destination-mode
+    assignment, capacity 1.
 
-    ``arrival_schedule`` (B1 twin baseline): if given, REPLAY this exact list of
-    ``(tick, node, size)`` arrivals instead of sampling a Poisson process — used to build a twin
-    env with byte-identical arrivals to a real episode (the arrival fn then ignores its rng).
+    Args:
+        arrival_schedule: if given, replay this exact list of ``(tick, node, size)`` arrivals
+            instead of sampling, so a twin env can reproduce a real episode's arrivals exactly.
+            The arrival function then ignores its rng.
     """
     if len(depots) < 1:
         raise ValueError("need at least one depot")

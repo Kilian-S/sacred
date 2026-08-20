@@ -1,20 +1,14 @@
-"""Single-convoy interdiction environment (gen08 / Obj 2): convoy routing as a security game.
+"""Single-convoy interdiction environment: convoy routing as a security game.
 
-A convoy must travel base -> FOB across a contested network. An interdictor COMMITS K interdiction
-assets to edges each sortie, HIDDEN from the convoy; the convoy routes; crossing an interdicted edge
-is an INTERCEPTION (terminal, high loss). Reactivity is useless (the ambush is set before the move);
-the only defence is an unpredictable, mixed-strategy route. See `REDESIGN_INTERDICTION.md`.
-
-The game CORE is at route granularity, the level the equilibrium oracle
-(`src/baselines/interdiction_oracle.py`) solves, so the env reproduces `loss_det`/`loss_mixed`
-exactly (the G1 env-fidelity gate). Agent interfaces reuse the existing SAC:
-  * defender action = the FIRST HOP out of the base (for edge-disjoint routes the first hop
-    identifies the route), a NODE selection like the next-hop protagonist;
-  * attacker action (K=1 first) = one EDGE to interdict, like the antagonist.
-`observe()` returns a GraphEnv observation (base convoy, FOB target) that the existing
-`featurize_state` consumes, so `ProtagonistSAC`/`AntagonistSAC` act on it unchanged. The multi-branch
-next-hop physics is a later extension; for the disjoint-route single-convoy headline the first-hop
-decision IS the route decision.
+A convoy travels base -> FOB across a contested network. An interdictor commits K interdiction
+assets to edges each sortie, hidden from the convoy; the convoy routes, and crossing an
+interdicted edge is an interception (terminal, high loss). The game core is at route
+granularity, the level the equilibrium oracle (`src/baselines/interdiction_oracle.py`) solves,
+so the env reproduces `loss_det`/`loss_mixed` exactly. Agent interfaces reuse the existing SAC:
+the defender's action is the first hop out of the base (for edge-disjoint routes the first hop
+identifies the route), a node selection like the next-hop protagonist; the attacker's action is
+one edge to interdict, like the antagonist. `observe()` returns a GraphEnv observation that the
+existing `featurize_state` consumes, so `ProtagonistSAC`/`AntagonistSAC` act on it unchanged.
 """
 
 from __future__ import annotations
@@ -47,10 +41,9 @@ class InterdictionConfig:
     travel_cost_weight: float = 0.0        # small defender-only per-distance cost (0 = pure game)
     k_extra_routes: int = 8
     weight: str = "w"
-    # I3 asymmetric instances: per-edge interception probability (frozenset edge -> p in (0, 1]).
-    # None = hard interception (crossing an interdicted edge intercepts with certainty), the I2
-    # symmetric instance whose equilibrium is uniform; a heterogeneous map gives a NON-uniform
-    # equilibrium (d_i ~ 1/p_i* on disjoint routes) that separates SACRED from vanilla.
+    # Per-edge interception probability (frozenset edge -> p in (0, 1]); None = hard
+    # interception (crossing an interdicted edge intercepts with certainty, uniform equilibrium).
+    # A heterogeneous map gives a non-uniform equilibrium (d_i ~ 1/p_i* on disjoint routes).
     edge_vulnerability: dict | None = None
     seed: int = 0                          # env RNG seed (Bernoulli interception outcomes)
 
@@ -91,10 +84,10 @@ class InterdictionEnv:
         for i, r in enumerate(self.game.routes):
             self.routes_by_first_hop.setdefault(r[1], []).append(i)
         self.first_hops: list[NodeId] = sorted(self.routes_by_first_hop, key=repr)
-        # Route-walk trie (class-b shared-edge instances): when candidate routes share prefixes,
-        # first hop != route, so the defender walks hop-by-hop along the trie of candidate routes
-        # and its mixed strategy is the product of branch probabilities. children[prefix] = the
-        # allowed next hops at that node-sequence prefix (sorted: determinism dogma).
+        # Route-walk trie: when candidate routes share prefixes, first hop != route, so the
+        # defender walks hop-by-hop along the trie and its mixed strategy is the product of
+        # branch probabilities. children[prefix] = allowed next hops at that node-sequence
+        # prefix, sorted for determinism.
         self._prefix_children: dict[tuple, list[NodeId]] = {}
         self._route_by_path: dict[tuple, int] = {tuple(r): i for i, r in enumerate(self.game.routes)}
         for r in self.game.routes:
@@ -281,8 +274,8 @@ def make_interdiction_env(
 ) -> InterdictionEnv:
     """Build the single-convoy interdiction env on the Kaliningrad graph: base (depot, truck 0) ->
     FOB (demand), plus the NetworkX graph for the oracle/game core. Default OD 33->71 (edge-conn 6).
-    ``edge_vuln_band=(lo, hi)`` switches to heterogeneous soft interception: candidate-edge
-    vulnerabilities length-mapped into the band (the I3 asymmetric instances); None = hard."""
+    ``edge_vuln_band=(lo, hi)`` switches to heterogeneous soft interception, with candidate-edge
+    vulnerabilities length-mapped into the band; None = hard interception."""
     s, t = od
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
     if s not in nodes or t not in nodes:

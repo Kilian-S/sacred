@@ -1,24 +1,13 @@
-"""gen28 game v2: smooth curvature-bounded flight routes + hazard-rate line-integral exposure
-(the 'middle design', Kilian 2026-07-17: aeronautical realism WITHOUT giving up the finite
-matrix game the yardstick machinery needs).
+"""Smooth curvature-bounded flight routes with hazard-rate line-integral exposure.
 
-Routes are Catmull-Rom splines through lateral-offset control points at fixed depth stations
-(what a waypoint autopilot actually flies), curvature-bounded (bank limit), densely sampled.
-Exposure is a survival line integral: a hazard at centre c with radius r and effectiveness
-p_max contributes hazard RATE lambda(s) = kappa * max(0, 1 - d(s)/r) along the flight path,
-with kappa = -ln(1 - p_max) / r, so a STRAIGHT TRANSIT THROUGH THE CENTRE is intercepted with
-probability EXACTLY p_max (the calibration that keeps p_max's meaning from game v1; verified
-in tests). Total interception = 1 - exp(-sum over hazards of their integrals). This removes
-the arc-discretisation dependence of v1's per-arc Bernoulli and makes grazing exposure
-genuinely continuous.
-
-The menu is still a FINITE screened family (lane curves at CONTINUOUS lateral offsets first =
-the strengthened naive-heuristic support, then curvature-feasible diverse curves), so
-`InterdictionGame`, the LP, the greedy BR and the menu-select head all apply verbatim. Each
-curve carries a lattice node sequence (nearest unblocked waypoint per column) for the GNN
-menu head. Obstacles are axis-aligned blocked cells today; the rejection test is a generic
-point-in-rectangle check, so real terrain/building polygons are a drop-in extension (recorded
-in the ledger as the staged v3).
+Routes are Catmull-Rom splines through lateral-offset control points at fixed depth stations,
+curvature-bounded by a bank limit and densely sampled. A hazard at centre c with radius r and
+effectiveness p_max contributes hazard rate lambda(s) = kappa * max(0, 1 - d(s)/r) along the
+flight path, with kappa = -ln(1 - p_max) / r, so a straight transit through the centre is
+intercepted with probability exactly p_max; total interception is 1 - exp(-sum of the per-hazard
+integrals). The menu stays a finite screened family, so ``InterdictionGame``, the LP, the greedy
+best response and the menu-select head all apply unchanged, and each curve carries a lattice node
+sequence (nearest unblocked waypoint per column) for the GNN menu head.
 """
 
 from __future__ import annotations
@@ -30,7 +19,7 @@ import numpy as np
 from src.baselines.interdiction_oracle import InterdictionGame
 from src.envs.aerial_sector import SectorLattice
 
-N_SAMPLES = 72          # spline sample points (quadrature resolution; calibration test <=1%)
+N_SAMPLES = 72          # spline sample points (quadrature resolution)
 KAPPA_MAX = 1.5         # max curvature (1/turn-radius) a curve may demand: the bank limit
 
 
@@ -39,7 +28,7 @@ class CurveRoute:
     pts: np.ndarray          # [S, 2] sampled points (x=depth, y=lateral)
     length: float
     node_seq: tuple          # nearest unblocked lattice node per column (the GNN projection)
-    offsets: tuple           # the control offsets that generated it (provenance/dedup)
+    offsets: tuple           # the control offsets that generated it; also the dedup key
 
 
 def _catmull_rom(ctrl: np.ndarray, n: int = N_SAMPLES) -> np.ndarray:
@@ -70,8 +59,7 @@ def _max_curvature(pts: np.ndarray) -> float:
 
 
 def _blocked_rects(lat: SectorLattice) -> np.ndarray:
-    """Blocked waypoints as axis-aligned unit cells [(x0, y0, x1, y1)]. The generic obstacle
-    representation: terrain/building polygons later reduce to the same hit test."""
+    """Blocked waypoints as axis-aligned unit cells [(x0, y0, x1, y1)]."""
     return np.array([[i - 0.5, j - 0.5, i + 0.5, j + 0.5] for i, j in sorted(lat.blocked)]
                     ) if lat.blocked else np.empty((0, 4))
 
@@ -114,16 +102,18 @@ def make_curve(lat: SectorLattice, offsets, rects: np.ndarray | None = None,
 
 
 def lane_offsets(lat: SectorLattice, r: float) -> list[float]:
-    """CONTINUOUS lane offsets: n = floor(W / 2r) + 1 evenly spaced lateral positions (the
-    strengthened naive rule: the continuum lets lanes always space optimally)."""
+    """Continuous lane offsets: n = floor(W / 2r) + 1 evenly spaced lateral positions."""
     n = min(int(lat.W / (2.0 * r) + 1e-9) + 1, 9)
     return [float(v) for v in np.linspace(0.0, lat.W, n)]
 
 
 def all_lane_sets(lat: SectorLattice, menu: list[CurveRoute],
                   spacings=(0.8, 1.2, 1.6, 2.0)) -> dict[float, list[int]]:
-    """Menu indices of every canonical lane set (one per spacing radius): the COMPLETE naive
-    lane-rule family for baseline rows (min over spacings = the strongest lane rule)."""
+    """Menu indices of every canonical lane set, one per spacing radius.
+
+    This is the complete naive lane-rule family; the minimum over spacings is the strongest
+    lane rule available as a baseline.
+    """
     pos = {c.offsets: i for i, c in enumerate(menu)}
     out: dict[float, list[int]] = {}
     for rc in spacings:
@@ -140,7 +130,7 @@ def all_lane_sets(lat: SectorLattice, menu: list[CurveRoute],
 def lane_curve(lat: SectorLattice, offset: float, rects: np.ndarray | None = None
                ) -> CurveRoute | None:
     """The canonical lane at a continuous lateral offset: transition out over two stations,
-    hold the lane, transition back (the smooth analogue of v1's lane path)."""
+    hold the lane, transition back."""
     mid = float(lat.base[1])
     o = [mid + (offset - mid) * 0.65] + [offset] * 3 + [mid + (offset - mid) * 0.65]
     return make_curve(lat, o, rects)
@@ -148,9 +138,12 @@ def lane_curve(lat: SectorLattice, offset: float, rects: np.ndarray | None = Non
 
 def build_curve_menu(lat: SectorLattice, r: float, R: int = 40, seed: int = 0
                      ) -> tuple[list[CurveRoute], list[int]]:
-    """The finite route family: lane curves FIRST (this instance's naive-rule support), the
-    straight centre line, then curvature-feasible diverse curves (seeded, deterministic;
-    greedy max-min selection in offset space). Returns (menu, lane_indices)."""
+    """The finite route family: lane curves first, the straight centre line, then
+    curvature-feasible diverse curves by greedy max-min selection in offset space.
+
+    Returns:
+        (menu, lane_indices). Deterministic given ``seed``.
+    """
     rects = _blocked_rects(lat)
     menu: list[CurveRoute] = []
     seen: set[tuple] = set()
@@ -166,8 +159,7 @@ def build_curve_menu(lat: SectorLattice, r: float, R: int = 40, seed: int = 0
     for off in lane_offsets(lat, r):
         if add(lane_curve(lat, off, rects)):
             lane_idx.append(len(menu) - 1)
-    # v2.2 baseline completeness: the menu ALWAYS carries every canonical lane spacing, so the
-    # naive-rule set (min over spacings, `all_lane_sets`) is complete by construction.
+    # the menu always carries every canonical lane spacing, so `all_lane_sets` is complete
     for r_canon in (0.8, 1.2, 1.6, 2.0):
         for off in lane_offsets(lat, r_canon):
             add(lane_curve(lat, off, rects))
@@ -197,10 +189,12 @@ def build_curve_menu(lat: SectorLattice, r: float, R: int = 40, seed: int = 0
 
 def curve_survival_matrix(menu: list[CurveRoute], centres: np.ndarray, r,
                           p_max) -> np.ndarray:
-    """S[i, h] = exp(-integral of hazard rate along curve i for hazard h alone), with
-    kappa_h = -ln(1 - p_max_h) / r_h (dead-centre straight transit intercepted w.p. p_max_h).
-    ``r`` and ``p_max`` may each be scalar or per-position arrays [H] (mixed threat types:
-    large air-defence sites beside small ambush teams; v2.2 realism axis)."""
+    """S[i, h] = exp(-integral of hazard rate along curve i for hazard h alone).
+
+    kappa_h = -ln(1 - p_max_h) / r_h, so a dead-centre straight transit is intercepted with
+    probability p_max_h. ``r`` and ``p_max`` may each be scalar or per-position arrays [H],
+    allowing mixed threat types.
+    """
     pm = np.broadcast_to(np.asarray(p_max, float), (len(centres),))
     rr = np.broadcast_to(np.asarray(r, float), (len(centres),))
     kappa = -np.log(np.clip(1.0 - pm, 1e-12, 1.0)) / rr
@@ -215,13 +209,12 @@ def curve_survival_matrix(menu: list[CurveRoute], centres: np.ndarray, r,
 
 
 def dense_hazard_grid(lat: SectorLattice, step: float = 0.5, safe_r: float = 3.0) -> np.ndarray:
-    """Candidate hazard centres on a dense grid over the sector, excluding points inside
-    obstacles and inside the STANDOFF ZONES: no enemy emplacement within ``safe_r`` of the base
-    or the target (v2.1, Kilian 2026-07-17: friendly-controlled terminal airspace; also the
-    structural fix for the terminal-funnel degeneracy, where a hazard at the route convergence
-    point covers every route at once and trivialises routing - the aerial min-cut must live in
-    the CORRIDOR, as the road min-cut does). step=0.5 default; the convergence row sweeps step;
-    a safe_r sensitivity row is in the screen."""
+    """Candidate hazard centres on a dense grid over the sector.
+
+    Points inside obstacles are excluded, as are points within ``safe_r`` of the base or the
+    target: terminal airspace is friendly-controlled, and without the standoff a single hazard at
+    the route convergence point would cover every route at once and trivialise routing.
+    """
     xs = np.arange(1.0, lat.nx - 1 + 1e-9, step)
     ys = np.arange(0.0, lat.ny - 1 + 1e-9, step)
     rects = _blocked_rects(lat)

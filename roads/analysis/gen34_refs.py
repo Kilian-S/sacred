@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""gen34 family refs (oracle-only): per-instance exact yardsticks for the hidden-adversary act.
-
-For every gen34 pool instance (gen27 recipe: 3 cities x 6 train + 6 held-out Gdansk,
-pool-seed 0), computes the pre-registered exact references via analysis/dyn_exact.py:
-per-member omni optima, the type-blind cap (Karp on the mixture-averaged cost), the inference
-gap, and the naive-rule rows. Written once to models/runs/gen34_hidden_adversary/
-family_refs.json; the trainer LOADS this file (auditable, no solver in the trainer).
+"""gen34 family refs (oracle-only): computes per-instance exact yardsticks for the
+hidden-adversary act, for every pool instance (3 cities x 6 train + 6 held-out Gdansk), via
+analysis/dyn_exact.py: per-member omniscient optima, the type-blind cap, the inference gap, and
+the naive-rule rows. Written once to models/runs/gen34_hidden_adversary/family_refs.json, which
+the trainer loads directly.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. nice .venv/bin/python analysis/gen34_refs.py
 """

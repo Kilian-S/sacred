@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""gen43 BANK BUILDER: the forty-question placement exam (oracle-only, no model calls).
-Pinned by the gen43 pre-registration. Each item is a (theatre, field, S-slot subset, K)
-puzzle with EVERY combination valued exactly; ceiling, median and the full table are saved,
-and the prompt is built once here so every config sits byte-identical papers.
+"""Builds the gen43 forty-question placement exam, oracle only and with no model calls. Each
+item is a (theatre, field, S-slot subset, K) puzzle with every combination valued exactly, saving
+the ceiling, the median and the full table. The prompt is built once here so that every config
+sits an identical paper.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_bank.py
 """

@@ -1,7 +1,5 @@
-"""B0 contract test (CRITIQUE_PREFREEZE §5.2): a buffered GraphEnv observation must be INSENSITIVE
-to later env mutation (demand arrivals / congestion), i.e. observe() must snapshot the node/edge
-sub-dicts, not share references. Before the fix, mutating _obs_nodes / _obs_edges in place rewrote
-the demand/congestion columns of already-captured states (whose features are built lazily)."""
+"""A buffered GraphEnv observation must be insensitive to later env mutation, so observe() has to
+snapshot the node and edge sub-dicts rather than share references."""
 from __future__ import annotations
 
 from src.envs.interdiction import make_interdiction_env

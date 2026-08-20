@@ -1,9 +1,6 @@
 """Two-agent game loop for the first SACRED test environment.
 
-This is intentionally not a PettingZoo wrapper yet. It keeps the first
-adversarial loop easy to inspect while preserving the core API shape needed
-for a later wrapper: protagonist action, antagonist action, environment step,
-and per-agent rewards.
+Not a PettingZoo wrapper; keeps the protagonist/antagonist/step/reward loop easy to inspect.
 """
 
 from __future__ import annotations

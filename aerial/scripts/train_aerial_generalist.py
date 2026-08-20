@@ -1,28 +1,14 @@
 #!/usr/bin/env python3
-"""gen28 v3.0: the aerial FLEET generalist (N=3 drones, fleet-route menu-select, loss-averse
-MISSION objective P(>=1 intercepted)) - the road-proven gen16 register transplanted verbatim
-onto the curved aerial game (Kilian's 2026-07-17 mandate + framing sign-off). The v2.2 (N=1
-menu: saturating bandit) and v2.3 (walker: credit starvation) negatives are the measured
-reasons for this configuration; ledger experiments/gen28_aerial.md v3.0 record.
-
-ONE menu-select policy trained across aerial instances (random hidden-hazard effectiveness
-LAYOUTS on the base sector + the screened A1/A2 cells: pinch/banded/base lattices, K/r cells),
-conditioned on the instance through (a) the edge-vulnerability observation column (the layout's
-per-arc threat projection) and (b) per-route transferable head features [cost, layout exposure]
-(`route_feat_w`, dedicated lr; the gen11b/gen15 mechanism). NO route identity capacity.
-
-Adversary: per-instance SMOOTH fictitious play (each instance keeps its own trailing play
-window; softmax BR sampled fresh every sortie), exactly the proven gen15/16 recipe. Reward:
-analytic -interception_loss * interception probability of the flown route under the committed
-hazard set (N=1 mission == interception).
-
-Evaluation: EXACT leader route distribution per instance (one forward pass) under that
-instance's oracle BR, ratio to ITS equilibrium; TAP over the last 3 evals; select-on-train.
-Zero-shot rows = the 6 held-out layouts (seeds 2000-2005), scored beside their pre-registered
-naive rows (inv-risk-lane = the A3 comparator).
+"""Train the aerial fleet generalist: one menu-select policy shared across aerial instances, flying
+an N=3 fleet on a common route under the loss-averse mission objective. The policy sees the
+instance only through the edge-vulnerability observation column and per-route transferable head
+features, never through route identity, and the adversary plays per-instance smooth fictitious
+play. Evaluation takes the exact leader route distribution per instance under that instance's
+oracle best response and reports the ratio to its equilibrium, time-averaged over the last few
+evaluations.
 
 Run (per seed): PYTHONPATH=. python scripts/train_aerial_generalist.py --sorties 12000 --seed 0
-Timing probe (the B9 gate, not a training run): --sorties 30 --eval-every 10
+Timing probe (not a training run): --sorties 30 --eval-every 10
 """
 from __future__ import annotations
 
@@ -52,16 +38,18 @@ TAP_K = 3
 BASE = SectorLattice(ny=9, nx=13)
 PINCH = SectorLattice(ny=9, nx=13, blocked=frozenset(
     {(6, j) for j in range(9) if j not in (3, 4, 5)}))
-# staggered double pinch (v2.2): wall at x=4 open top, wall at x=8 open bottom -> forced S-turn;
-# NO lane curve exists here (the lane rule structurally dies; naive rows = full-menu stacks).
+# staggered double pinch: wall at x=4 open at the top, wall at x=8 open at the bottom, forcing an
+# S-turn. No lane curve exists here, so the naive rows are full-menu stacks.
 DBL = SectorLattice(ny=9, nx=13, blocked=frozenset(
     {(4, j) for j in range(9) if j < 5} | {(8, j) for j in range(9) if j > 3}))
 
 
 def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
                  band=(0.30, 0.95)) -> np.ndarray:
-    """The A3 layout sampler (identical to scratch/aerial_layout_probe.py: RBF Gaussian draw,
-    rank-mapped into the band; independent of lattice geometry by construction)."""
+    """Sample a hazard-effectiveness layout as an RBF Gaussian draw rank-mapped into ``band``.
+
+    The draw is independent of lattice geometry by construction.
+    """
     rng = np.random.default_rng(seed)
     d2 = ((centres[:, None, :] - centres[None, :, :]) ** 2).sum(-1)
     cov = np.exp(-d2 / (2.0 * length_scale ** 2)) + 1e-8 * np.eye(len(centres))
@@ -72,10 +60,12 @@ def random_field(centres: np.ndarray, seed: int, length_scale: float = 2.5,
 
 
 class AerialInstance:
-    """Game v3.0 (2026-07-17 night): N=3 fleet, MISSION objective, curved menu with the
-    complete naive set at FLEET level: STACK rules (fleet on one sampled route; lane sets per
-    spacing + full menu, uniform + inverse-risk) AND INDEPENDENT-mixing rules, all scored under
-    the mission best response. pmax: scalar | "banded" | array; r scalar or array."""
+    """One aerial instance: an N=3 fleet on a curved route menu under the mission objective.
+
+    Builds the complete naive comparator set at fleet level, both stack rules (the whole fleet on
+    one sampled route) and independent-mixing rules, each scored under the mission best response.
+    ``pmax`` is a scalar, ``"banded"``, or an array; ``r`` is a scalar or an array.
+    """
     N = 3
 
     def __init__(self, name: str, lat: SectorLattice, K: int, r, pmax, menu_r: float = 1.6):
@@ -136,32 +126,35 @@ class AerialInstance:
 
 
 def make_layout_instance(name: str, seed: int, fam: str = "base") -> AerialInstance:
-    """v3.0 layout families (fleet screen 2026-07-17 night): "dbl" = structured double-pinch
-    r=1.2 (fleet best-naive/eq 1.42-1.53 = Tier-2 primary ground); "base" = open sector r=1.6
-    (1.10-1.20 = the reported concession rows)."""
+    """Build a layout instance: ``"dbl"`` is the structured double pinch at r=1.2, ``"base"`` the
+    open sector at r=1.6."""
     lat = BASE if fam == "base" else DBL
     centres = dense_hazard_grid(lat, step=0.5)
     return AerialInstance(name, lat, K=1, r=(1.6 if fam == "base" else 1.2),
                           pmax=random_field(centres, seed))
 
 
-# the screened A1/A2 cells (GAME V2.2: standoff + complete naive set, 2026-07-17): headline
-# first; exact anchors pinned in the ledger from the pool-build printout BEFORE any training.
+# the screened instance cells, headline first
 CELLS = [
-    ("dblpinch_banded_K1_r1.2", DBL,  1, 1.2, "banded"),  # A1 headline (structure kills lanes)
+    ("dblpinch_banded_K1_r1.2", DBL,  1, 1.2, "banded"),  # structured cell: lane rules die here
     ("pinch_banded_K1_r1.6",   PINCH, 1, 1.6, "banded"),  # single-pinch point
     ("banded_K1_r1.6",         BASE,  1, 1.6, "banded"),  # open-sector banded point
-    ("base_K1_r0.8",           BASE,  1, 0.8, 0.9),       # low-phi honest point
-    ("base_K1_r1.2",           BASE,  1, 1.2, 0.9),       # low-gap honest point
-    # K=2 cell dropped at fleet scale (exact mission matrix = 11,480 occ x 42.8k isets ~ 4 GB);
-    # the K axis returns via the greedy yardstick post-positive (recorded, not scheduled).
+    ("base_K1_r0.8",           BASE,  1, 0.8, 0.9),       # low-phi point
+    ("base_K1_r1.2",           BASE,  1, 1.2, 0.9),       # low-gap point
+    # K=2 is omitted at fleet scale: the exact mission matrix is ~4 GB (11,480 occupancies x
+    # 42.8k interdiction sets).
 ]
 
 
 def exact_ratio(prot: ProtagonistSAC, inst: AerialInstance) -> tuple[float, np.ndarray]:
-    """EXACT fleet exploitability: leader route distribution -> stacked occupancy distribution
-    (fleet-route: followers copy) -> mission best response (one matvec). Returns
-    (ratio-to-eq, occupancy dist) - the road gen16 estimator on the aerial game."""
+    """Compute exact fleet exploitability in one forward pass.
+
+    The leader route distribution becomes a stacked occupancy distribution, since the followers
+    copy the leader, and one matvec gives the mission best response.
+
+    Returns:
+        The ratio to the instance equilibrium, and the occupancy distribution.
+    """
     env = inst.env
     env.reset()
     obs = env.observe()
@@ -202,7 +195,7 @@ def main():
     p.add_argument("--ckpt-dir", default="")
     args = p.parse_args()
     torch.set_num_threads(args.threads)
-    try:  # cap the INTER-op pool too (the 2026-07-16 system-time lesson: cap ALL pools)
+    try:  # cap the inter-op pool as well as the intra-op one
         torch.set_num_interop_threads(1)
     except RuntimeError:
         pass
@@ -212,9 +205,8 @@ def main():
 
     print("[gen28] building pool (layouts fixed across seeds: 1000+, test 2000+)...", flush=True)
     t0 = time.time()
-    # v3.0 pool: Tier-2 primary lives on the STRUCTURED family, so training weights it 2:1
-    # (12 dbl + 6 base layouts); held-out = 6 dbl (GATED) + 3 base (reported concession rows).
-    nb_base = args.n_layouts_train // 3          # 2:1 structured:open, honouring the arg
+    # training weights the structured family 2:1 against the open one
+    nb_base = args.n_layouts_train // 3
     train = [make_layout_instance(f"layoutB{1000 + s}", 1000 + s, "base")
              for s in range(nb_base)]
     train += [make_layout_instance(f"layoutD{1100 + s}", 1100 + s, "dbl")
@@ -222,8 +214,7 @@ def main():
     train += [AerialInstance(n, lat, K, r, pm) for n, lat, K, r, pm in CELLS]
     test = [make_layout_instance(f"holdoutD{2100 + s}", 2100 + s, "dbl") for s in range(6)]
     test_ctx = [make_layout_instance(f"holdoutB{2000 + s}", 2000 + s, "base") for s in range(3)]
-    # v3.1: a proper VALIDATION set for checkpoint selection (never trained, never tested;
-    # the gen24 val-stop precedent - train-mean selection measurably missed competent windows)
+    # validation set for checkpoint selection: never trained on, never tested on
     val = [make_layout_instance(f"valD{3000 + s}", 3000 + s, "dbl") for s in range(2)]
     val += [make_layout_instance(f"valB{3100 + s}", 3100 + s, "base") for s in range(2)]
     print(f"[gen28] pool built in {time.time() - t0:.1f}s: {len(train)} train, "
@@ -238,7 +229,7 @@ def main():
                           alpha_floor=args.alpha_floor)
     for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
         net.follow_w = torch.nn.Parameter(torch.tensor(1.0))
-        net.route_feat_w = torch.nn.Parameter(torch.zeros(1))   # v3.1: exposure only
+        net.route_feat_w = torch.nn.Parameter(torch.zeros(1))   # exposure only
         net.route_feats = None
     prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w]})
     prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w],
@@ -262,7 +253,7 @@ def main():
         pay = env.game.payoff[:, j]
         reward = -args.interception_loss * objective_value(
             np.asarray(occ), pay, env.config.N, env.config.objective, env.config.threshold_m)
-        # the road gen16 split: leader mixes (ent-frac 0.5), followers commit (0.05) after warmup
+        # the leader mixes, the followers commit, once past the warm-up
         leader_te = args.ent_frac * math.log(inst.R)
         follower_te = 0.05 * math.log(inst.R)
         for obs_j, ci_j, _, _ in steps:

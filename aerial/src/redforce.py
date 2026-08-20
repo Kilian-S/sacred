@@ -1,11 +1,8 @@
-"""gen33_llm_adversary: the LLM red-force I/O contract.
+"""LLM red-force I/O contract for the gen33 adversary experiment.
 
-- FORCE_SCHEMA: the frozen structured-output schema (guided JSON; the LLM emits a whole force).
-- serialise_theatre: real terrain + physics table + mission + doctrine -> a prose brief.
-- dry_force: a schema-valid synthetic force for pipeline validation without a live model.
-- resolve_force_to_sites: map an emitted force onto concrete candidate sites + doctrine params
-  (PROVISIONAL enemy semantics; the exact phase-2 joint-doctrine mapping is pinned by an oracle
-  screen during the build, per the ledger). Firepower is terrain-set here, never force-set.
+Provides the frozen guided-JSON force schema, the theatre-to-prose briefing, a schema-valid
+synthetic force for pipeline validation without a live model, and the mapping from an emitted force
+onto candidate sites and doctrine parameters. Firepower is terrain-set, never force-set.
 """
 from __future__ import annotations
 
@@ -17,8 +14,8 @@ ARCHETYPES = ["sniper_overwatch", "ambusher", "anticipator", "blocker", "forward
 REGIONS = ["near_base", "mid_corridor", "near_target_standoff", "chokepoint"]
 EMPLACE_TERRAIN = [k for k, v in TERRAIN.items() if v["emplace"] and k != "open"]  # field, forest
 
-# The frozen guided-JSON schema. team_id/team_role carry the phase-2 coordination; phase-1 forces
-# omit them (a single agent). decisiveness/memory bin the gen31 tau/window.
+# team_id/team_role carry coordination and are omitted for single-agent forces; decisiveness and
+# memory bin the enemy's tau and window respectively.
 FORCE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -65,10 +62,12 @@ TAU_BIN = {"decisive": 0.05, "balanced": 0.10, "hedged": 0.20}
 
 
 def force_schema(terrain: dict | None = None) -> dict:
-    """FORCE_SCHEMA for the table in force. The module constant's terrain enum was computed from
-    the v1 table at import, so under v2 a model could never choose URBAN although v2 makes it
-    emplaceable (and it is the strongest cover class). gen39 step 2 must pass its terrain table
-    here; the default returns the frozen v1 schema unchanged (gen33's contract)."""
+    """Return FORCE_SCHEMA with its terrain enum rebuilt for the terrain table in force.
+
+    Args:
+        terrain: The table actually in play. None returns the module constant unchanged, whose
+            enum was computed from the default table at import time.
+    """
     if terrain is None:
         return FORCE_SCHEMA
     import copy
@@ -92,13 +91,12 @@ def terrain_composition(th, n=44) -> dict:
 
 
 def _physics_table_text(range_scale: float, terrain: dict | None = None) -> str:
-    """The ground truth handed to the model. HIDING and SIGHT-BLOCKING are stated SEPARATELY.
+    """Render the physics ground truth handed to the model.
 
-    gen33's brief conflated them ("it conceals you (blocks line of sight)") off the single `los`
-    flag, which (a) described a concealment mechanic the simulator did not implement and (b) is
-    not what either flag means under v2. `reveal` is whether engaging gives your position away;
-    `los` is whether the ground masks sight lines crossing it. Woodland now does the first and
-    not the second. Disclosed in the gen33 ledger's terrain-mismatch appendix."""
+    Hiding and sight-blocking are stated separately because they are distinct flags: `reveal` is
+    whether engaging gives your position away, `los` is whether the ground masks sight lines
+    crossing it.
+    """
     rows = []
     for k, v in (terrain or TERRAIN).items():
         hides = v.get("reveal", True) is False
@@ -117,10 +115,12 @@ def _physics_table_text(range_scale: float, terrain: dict | None = None) -> str:
 
 def serialise_theatre(th, phase: str = "single", K: int = 1, range_scale: float = 1.0,
                       terrain: dict | None = None) -> tuple:
-    """Return (system, user) messages briefing the LLM to design the red force. Physics shown.
+    """Return the (system, user) messages briefing the LLM to design the red force.
 
-    terrain: the table actually in force. Defaults to v1 so gen33's briefs reproduce verbatim;
-    gen39 passes terrain_v2(...) so the model is briefed on the world it is playing in."""
+    Args:
+        terrain: The table actually in play, so the model is briefed on the world it plays in.
+            Defaults to the module table.
+    """
     comp = terrain_composition(th)
     comp_txt = ", ".join(f"{k} {v:.0f}%" for k, v in comp.items())
     coordinated = phase == "coordinated"
@@ -190,8 +190,10 @@ def dry_force(K: int = 1, seed: int = 0, coordinated: bool = False) -> dict:
 
 
 def _region_mask(th, coords, region: str) -> np.ndarray:
-    """Boolean mask over candidate sites in the given corridor region (along-axis thirds; the
-    chokepoint is the narrowest lateral band of emplaceable terrain, approximated by mid-corridor)."""
+    """Boolean mask over candidate sites in the given corridor region (along-axis thirds).
+
+    The chokepoint region is approximated by mid-corridor.
+    """
     v = th.target - th.base
     u = v / (np.linalg.norm(v) + 1e-9)
     along = (coords - th.base) @ u
@@ -205,11 +207,15 @@ def _region_mask(th, coords, region: str) -> np.ndarray:
 
 
 def resolve_force_to_sites(force: dict, th, coords, cls, exposure) -> dict:
-    """PROVISIONAL: map each agent to a candidate SITE (best-exposure site of its terrain in its
-    region) and doctrine params (normalised simplex, tau from decisiveness, window from memory).
-    Returns {sites:[idx], doctrine:[(q_rep,q_flee,q_eq,tau,w)], validity notes}. The support of the
-    emitted force is these sites; the enemy plays the gen31 doctrine over that support. The exact
-    phase-2 joint semantics are pinned by an oracle screen before the live scoring is trusted."""
+    """Map each emitted agent onto a candidate site and doctrine parameters.
+
+    Each agent takes the best-exposure site of its terrain within its region; doctrine weights are
+    normalised onto the simplex, tau comes from decisiveness and the window from memory.
+
+    Returns:
+        dict with `sites` (site indices), `doctrine` ((q_rep, q_flee, q_eq, tau, w) per agent) and
+        `notes` recording any fallback applied.
+    """
     cls = list(cls)
     sites, doctrine, notes = [], [], []
     for a in force["agents"]:

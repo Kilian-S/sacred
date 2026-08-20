@@ -1,12 +1,6 @@
-"""Numerical-equivalence guard for the batch-encode refactor of SAC.update().
-
-The optimization batches the GATv2 encoder across the whole minibatch in one
-`Batch.from_data_list` pass and then applies each network's `head(...)` per sample.
-Because the batched graph is a disjoint union (no cross-graph edges), this must be
-mathematically identical, in eval mode, to running `forward(...)` on each graph
-separately. These tests pin that invariant so the optimization cannot silently
-change learning behaviour.
-"""
+"""Numerical-equivalence guard for the batch-encoded SAC update. The batched graph is a disjoint
+union with no cross-graph edges, so encoding a minibatch in one pass must match encoding each
+graph separately in eval mode."""
 
 from __future__ import annotations
 
@@ -27,7 +21,7 @@ def _make_graph(n_nodes: int, n_undirected_edges: int, seed: int) -> Data:
     x = torch.randn(n_nodes, NODE_DIM, generator=g)
     src = torch.randint(0, n_nodes, (n_undirected_edges,), generator=g)
     dst = torch.randint(0, n_nodes, (n_undirected_edges,), generator=g)
-    # symmetric (undirected) directed edge index
+    # Symmetric directed edge index, so the graph is effectively undirected.
     edge_index = torch.stack([torch.cat([src, dst]), torch.cat([dst, src])])
     edge_attr = torch.randn(edge_index.size(1), EDGE_DIM, generator=g)
     return Data(x=x, edge_index=edge_index, edge_attr=edge_attr)

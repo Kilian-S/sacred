@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-"""gen31: the gen27 conversion trainer (ledger experiments/gen31_aerial_dyn.md; Phase 0
-pinned the operating point 2026-07-19).
-
-Enemy = the ANTICIPATORY MIXED DOCTRINE: softmax(tau=0.10) over Z[h] = 0.7 * E[dmg | window
-routes] + 0.3 * dmg[r_flee], where r_flee = the route a pattern-punished defender would
-obviously run to (argmin damage vs the pure-repeat aim). Fleet-route N=3 mission damage;
-40-sortie episodes; head columns per route: [exposure, window-frequency, DOCTRINE
-(this-window expected damage, min-max normalised)] - the information channel v4.0 lacked.
-Yardsticks per instance, ALL EXACT over the window chain: iid_eq, local static optimum, the
-payoff-blind dynamic family, the doctrine-informed fitted rules (dodge / softdodge /
-composed, disclosed caps), history_opt (lazy RVI). PRIMARY bar object = the STATIC CAP
-min(iid_eq, static_opt) (the gen27 shape); blind-family beats tracked as the aiming row.
-Protocol: dev-test = D2100-2102 (burned by the corridor hunt, iteration diagnostics only);
-GATED = D4100-4105 (pristine; evaluated ONLY at confirmation via --eval-gated).
+"""Train the aerial fleet against an anticipatory mixed doctrine: the enemy aims by softmax over a
+blend of the expected damage against the recent window of flown routes and the damage against the
+route a pattern-punished defender would obviously flee to. Each route carries three head columns,
+exposure, window frequency and the doctrine's expected damage for this window, and every
+per-instance yardstick is exact over the window chain (i.i.d. equilibrium, local static optimum,
+the payoff-blind dynamic family, the doctrine-informed fitted rules, and the history-optimal gain).
+The primary bar is the static cap, the smaller of the i.i.d. equilibrium and the static optimum,
+with the best payoff-blind rule tracked alongside as the aiming row.
 """
 from __future__ import annotations
 
@@ -87,7 +81,7 @@ class DynInstance:
         self.naive_dyn = self._naive_dyn_rows(lat, menu, game, S)
         self.hist_opt = self._rvi()
         self.fitted = self._fitted_rows()
-        self.cap = min(self.iid_eq, self.static_opt)              # the PRIMARY bar object
+        self.cap = min(self.iid_eq, self.static_opt)              # the primary bar
         self.best_blind = min(self.naive_dyn.values())            # the aiming row
         self.bar = self.cap
         self.window = tuple(np.random.default_rng(0).integers(self.R, size=W))
@@ -106,7 +100,7 @@ class DynInstance:
         return torch.tensor(np.stack([self.exposure, wf, doc], axis=1), dtype=torch.float32)
 
     def _fitted_rows(self) -> dict[str, float]:
-        """Doctrine-informed rules (information parity; fitted = disclosed caps)."""
+        """Doctrine-informed comparator rules, fitted per instance at information parity."""
         rows = {}
         dodge = {w: None for w in self.wins}
         for i, w in enumerate(self.wins):
@@ -159,9 +153,11 @@ class DynInstance:
         return float(best)
 
     def chain_value(self, dist_fn) -> float:
-        """Exact stationary damage of a window-conditioned rule dist_fn(window)->route dist.
-        Vectorised: windows are (a, b); the successor of ((a, b), r) is (b, r), so one power
-        iteration is nu[b, r] = sum_a mu[a, b] * P[a, b, r] (an einsum, ~64k ops)."""
+        """Exact stationary damage of a window-conditioned rule ``dist_fn(window) -> route dist``.
+
+        Windows are pairs (a, b) and the successor of ((a, b), r) is (b, r), so one power iteration
+        is ``nu[b, r] = sum_a mu[a, b] * P[a, b, r]``, a single einsum.
+        """
         R = self.R
         P = np.stack([dist_fn(w) for w in self.wins]).reshape(R, R, R)
         D = (P.reshape(-1, R) * self.stepdmg).sum(axis=1)
@@ -213,8 +209,8 @@ class DynInstance:
             Q = self.stepdmg + Vv[nxt]
             Vn = Q.min(axis=1)
             g = float(Vn.mean())
-            # aperiodicity (lazy) transform: near-periodic optimal policies make plain RVI
-            # oscillate above the true gain (caught by the rotation-beats-optimum test)
+            # lazy transform for aperiodicity: near-periodic optimal policies make plain RVI
+            # oscillate above the true gain
             Vd = 0.5 * Vv + 0.5 * (Vn - g)
             if np.abs(Vd - Vv).max() < 1e-11:
                 Vv = Vd
@@ -230,9 +226,9 @@ def make_pool(eval_gated=False):
     train += [DynInstance(f"layoutD{1100+s}", DBL, 1.2, 1100 + s) for s in range(12)]
     val = [DynInstance(f"valD{3000+s}", DBL, 1.2, 3000 + s) for s in range(2)]
     val += [DynInstance(f"valB{3100+s}", BASE, 1.6, 3100 + s) for s in range(2)]
-    # dev-test: burned by the Phase-0 corridor hunt; iteration diagnostics ONLY
+    # dev-test set: iteration diagnostics only
     test = [DynInstance(f"devtestD{2100+s}", DBL, 1.2, 2100 + s) for s in range(3)]
-    if eval_gated:  # the pristine gated set: confirmation runs only (the iteration protocol)
+    if eval_gated:  # the held-out gated set: confirmation runs only
         test = [DynInstance(f"gatedD{4100+s}", DBL, 1.2, 4100 + s) for s in range(6)]
     ctx = [DynInstance(f"ctxB{4000+s}", BASE, 1.6, 4000 + s) for s in range(2)]
     return train, val, test, ctx

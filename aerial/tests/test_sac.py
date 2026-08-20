@@ -19,7 +19,6 @@ class TestSAC(unittest.TestCase):
         buffer = ReplayBuffer(capacity=10)
         self.assertEqual(len(buffer), 0)
 
-        # Mock transition
         transition = SMDPTransition(
             agent="protagonist",
             state=self.obs,
@@ -53,12 +52,10 @@ class TestSAC(unittest.TestCase):
         obs_with_active = dict(self.obs)
         obs_with_active["active_truck"] = 0
 
-        # Test stochastic action selection
         action = agent.select_action(obs_with_active, action_mask, deterministic=False)
         self.assertIn(0, action)
         self.assertIn(action[0], ["a", "d", "hub"])
 
-        # Test deterministic action selection
         action_det = agent.select_action(obs_with_active, action_mask, deterministic=True)
         self.assertIn(0, action_det)
         self.assertIn(action_det[0], ["a", "d", "hub"])
@@ -79,7 +76,6 @@ class TestSAC(unittest.TestCase):
         next_obs_state = dict(self.obs)
         next_obs_state["active_truck"] = 1
 
-        # We construct transitions for replay buffer
         t1 = SMDPTransition(
             agent="protagonist",
             state=obs_state,
@@ -98,17 +94,15 @@ class TestSAC(unittest.TestCase):
             action={0: "d"},
             reward=-0.5,
             next_state=next_obs_state,
-            done=True,  # Test terminal state discounting
+            done=True,  # terminal state: no bootstrap in the target
             elapsed_ticks=2,
             action_mask={"protagonist": {0: ["a", "d", "hub"], 1: ["b", "c"]}},
             info={}
         )
 
-        # Push to buffer
         agent.replay_buffer.push(t1)
         agent.replay_buffer.push(t2)
 
-        # Update and check loss reporting
         metrics = agent.update(batch_size=2)
         self.assertIsNotNone(metrics)
         self.assertIn("protag_critic_loss", metrics)
@@ -116,7 +110,6 @@ class TestSAC(unittest.TestCase):
         self.assertIn("protag_alpha_loss", metrics)
         self.assertIn("protag_alpha", metrics)
 
-        # Losses should be valid numbers
         self.assertFalse(torch.isnan(torch.tensor(metrics["protag_critic_loss"])))
         self.assertFalse(torch.isnan(torch.tensor(metrics["protag_actor_loss"])))
 
@@ -135,17 +128,15 @@ class TestSAC(unittest.TestCase):
             "original_edges": self.original_edges
         }
 
-        # Test action selection (stochastic)
         action = agent.select_action(self.obs, action_mask, remaining_budget=50.0, deterministic=False)
         if action is not None:
             edge, level = action
             self.assertIn(edge, self.original_edges[:3])
             self.assertIn(level, [0.25, 0.5, 0.75, 1.0])
 
-        # Test budget limits masking: budget = 0.05, so only wait (None) or cheapest congestion option (level 0.25 cost = 0.25*12*0.015 = 0.045) should be valid
-        # Let's set extremely low budget (e.g. 0.01) so all level costs exceed remaining budget
+        # A budget below the cheapest level cost masks out every attack, leaving only "wait".
         action_low = agent.select_action(self.obs, action_mask, remaining_budget=0.01, deterministic=False)
-        self.assertIsNone(action_low)  # Must fall back to "wait" (None) because of budget constraint
+        self.assertIsNone(action_low)
 
     def test_antagonist_sac_update(self) -> None:
         agent = AntagonistSAC(
@@ -181,7 +172,7 @@ class TestSAC(unittest.TestCase):
         t2 = SMDPTransition(
             agent="antagonist",
             state=self.obs,
-            action=None,  # "wait" action
+            action=None,  # "wait"
             reward=0.0,
             next_state=self.obs,
             done=True,

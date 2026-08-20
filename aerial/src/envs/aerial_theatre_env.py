@@ -1,14 +1,9 @@
-"""SAC-trainable env adapter for the REAL vec-theatre (gen32). Presents a pre-built theatre
-InterdictionGame (routes = continuous flight polylines over real OSM terrain; a resampled hidden
-effectiveness field per instance) through the SAME observation/menu contract the lattice aerial
-env exposes, so `featurize_state`, `node_index_map`, the menu-select head and the whole
-ProtagonistSAC update path work UNCHANGED (the aerial_interdiction_env pattern, terrain-agnostic).
-
-The route "nodes" are coarse 0.5 km waypoint tokens (the same tokens build_theatre_game uses for
-its route-edge graph), zero-padded so featurize_state's sorted() row order is stable and
-`menu_route_node_idx` can never repeat the 2026-07-09 ordering bug. Per-route head features are
-set EXTERNALLY per window by the dynamic trainer (exposure + recency + doctrine); the env supplies
-the token graph, the static exposure default, and a per-edge threat projection for the GNN.
+"""SAC-trainable env adapter for the vector theatre (gen32). Presents a pre-built theatre
+``InterdictionGame`` (routes are continuous flight polylines over real OSM terrain) through the
+same observation and menu contract the lattice aerial env exposes, so feature extraction, the
+menu-select head and the protagonist update path work unchanged. Route "nodes" are coarse 0.5 km
+waypoint tokens, zero-padded so ``featurize_state``'s sorted row order is stable; per-route head
+features are set externally per window by the dynamic trainer.
 """
 from __future__ import annotations
 
@@ -24,7 +19,7 @@ def _tokens(route: np.ndarray) -> list[tuple[float, float]]:
 
 
 class TheatreEnv:
-    """Built from a theatre game + survival matrix + route polylines (all field-specific)."""
+    """Theatre game, survival matrix and route polylines, all specific to one field."""
 
     def __init__(self, routes: list[np.ndarray], game, S: np.ndarray, N: int = 3):
         self.routes = routes

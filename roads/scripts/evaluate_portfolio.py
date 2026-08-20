@@ -1,25 +1,13 @@
 #!/usr/bin/env python3
-"""Robustness-portfolio evaluation — the headline harness for the reframed thesis claim.
+"""Robustness-portfolio evaluation harness.
 
-For each protagonist ARM (greedy reference + learned checkpoints) and each ATTACKER in a
-portfolio, runs paired episodes and reports:
+For each protagonist arm (greedy reference + learned checkpoints) and each attacker in a
+portfolio, runs paired episodes on the same instances (common random numbers) and reports:
 
   W(arm, attack)               mean total_wait (lower = better)
   D(arm, attack)               degradation = W(attack) - W(none), paired per instance
-  dD(attack) = D(vanilla) - D(sacred)   the PRIMARY metric: > 0 => adversarial training bought
+  dD(attack) = D(vanilla) - D(sacred)   the primary metric: > 0 => adversarial training bought
                                         robustness (computed for every learned-arm pair)
-
-Design (per CRITIQUE.md §2/§6):
-  * every arm faces the SAME attacker set on the SAME instances (paired, common random numbers);
-  * learned protagonists act STOCHASTICALLY (they are max-entropy policies; argmax-ing them
-    destroys the mixed strategies adversarial training may have bought), seeded per episode for
-    reproducibility;
-  * attackers: none / random (seeded) / targeted (scripted heuristic) / br_<arm> (learned
-    best-response nets, trained per-policy via --train-antagonist-only);
-  * checkpoint selection (--select-best) happens on the VALIDATION attacker (targeted) over
-    VALIDATION instances; the best-response attackers + test instances stay held out;
-  * dynassign test instances start at seed 10_000_019 (validation at 20_000_019) — far from any
-    training run's demand-seed counter (seed*100003 + episode), so eval streams are held out.
 
 Usage (Phase 1, dynassign):
   PYTHONPATH=. python scripts/evaluate_portfolio.py --problem dynassign \
@@ -53,7 +41,7 @@ from src.baselines.greedy_dispatch import (
     run_episode,
 )
 
-# Held-out instance-seed bases (see module docstring).
+# Held-out instance-seed bases, chosen far from any training run's demand-seed counter.
 TEST_SEED_BASE = 10_000_019
 VAL_SEED_BASE = 20_000_019
 
@@ -79,7 +67,7 @@ def _problem_setup(problem: str, arrival_rate: float):
         mk = lambda seed: make_hybrid_assign_env  # static demand: the seed only drives rollouts
         return cfg, mk, hybrid_greedy_policy, True
     if problem == "contested":
-        # gen07 arena: dynassign dynamics + route reach (single source of truth in contested.py).
+        # dynassign dynamics + route reach.
         from src.envs.contested import contested_config, make_contested_env
 
         cfg = contested_config()
@@ -114,10 +102,9 @@ def _load_antagonist(path: str, cfg: SMDPConfig) -> AntagonistSAC:
 
 def sac_protagonist_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC, *,
                            deterministic: bool = False):
-    """Learned protagonist for EITHER decision model, with state projection + sequential claiming
-    (mirrors the trainer/prior eval policies). Handles destination-mode assignment and hybrid
-    (assignment vs routing branches by ``assigned_target``); stochastic by default — the eval
-    counterpart of the max-entropy policy actually trained."""
+    """Learned protagonist for either decision model, with sequential claiming so trucks do not
+    double-claim a node. Handles destination-mode assignment and hybrid (branches on
+    ``assigned_target``); stochastic by default, matching the trained max-entropy policy."""
 
     def policy(event: DecisionEvent):
         env = smdp.env
@@ -129,7 +116,7 @@ def sac_protagonist_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC, *,
         projected["trucks"] = {tid: dict(t) for tid, t in event.observation["trucks"].items()}
         for tid in sorted(mask):
             truck = env.trucks[tid]
-            # In hybrid mode a truck with an assigned target is ROUTING (no claiming); everything
+            # In hybrid mode a truck with an assigned target is routing (no claiming); everything
             # else is an assignment/destination decision subject to claiming.
             is_routing = smdp.config.routing_mode == "hybrid" and truck.assigned_target is not None
             opts = [n for n in mask[tid] if (is_routing or n not in claimed)]
@@ -152,7 +139,7 @@ def sac_protagonist_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC, *,
 
 
 def _sac_attacker(smdp: SMDPDecisionWrapper, agent: AntagonistSAC):
-    """Learned (best-response) attacker: deterministic — its strongest single response."""
+    """Learned best-response attacker; deterministic (its strongest single response)."""
     def policy(event: DecisionEvent):
         return agent.select_action(
             event.observation, event.antagonist_action_mask, smdp.budget.remaining,
@@ -169,11 +156,11 @@ def _make_attacker(name: str, smdp: SMDPDecisionWrapper, instance_seed: int,
     if name == "targeted":
         return targeted_block_policy(smdp)
     if name == "pathrand":
-        # gen06 training attacker (in-distribution row for the scripted arm; seeded per instance)
+        # in-distribution attacker for the scripted arm; seeded per instance
         return random_path_block_policy(smdp, seed=instance_seed)
     if name == "gateway":
-        # first-maskable-edge attacker — the HELD-OUT strong attack for the hybrid matrix
-        # (under route reach the mask does the aiming; +40..184% on greedy in the budget sweep)
+        # first-maskable-edge attacker: the held-out strong attack for the hybrid matrix
+        # (under route reach, the mask determines targeting)
         return mask_first_block_policy
     if name.startswith("br_"):
         return _sac_attacker(smdp, br_agents[name[3:]])
@@ -240,7 +227,7 @@ def summarize(results: dict[str, dict[str, list[float]]], reference_arm: str = "
     learned = [a for a in results if a != reference_arm]
     for i, arm_a in enumerate(learned):
         for arm_b in learned[i + 1:]:
-            # dD > 0 means arm_b degrades MORE than arm_a under this attack (arm_a more robust).
+            # dD > 0 means arm_b degrades more than arm_a under this attack (arm_a more robust).
             key = f"{arm_b}-minus-{arm_a}"
             out["dD"][key] = {}
             for attack in results[arm_a]:

@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
-"""A1: the GENERALIST interdiction policy (ZST step 1; DIRECTION_EXPANSION keystone).
+"""Trains one fleet-route policy across sampled instances (OD pairs with their own route menus
+and threat maps), conditioned on the instance through the edge-vulnerability observation column
+and per-route transferable features [cost, worst-vulnerability] via a shared learned weight
+vector (`route_feat_w`). No per-route identity capacity: identity does not transfer.
 
-Trains ONE fleet-route policy across SAMPLED instances (OD pairs with their own route menus and
-threat maps) on the Kaliningrad graph, conditioned on the instance through (a) the
-edge-vulnerability observation column (featurise edge col 4) and (b) per-route transferable
-features [cost, worst-vulnerability] delivered undiluted at both heads with a SHARED learned
-weight vector (`route_feat_w`, dedicated lr; the gen11b mechanism). NO per-route identity
-capacity (`route_bias` is deliberately absent: identity does not transfer). Menus and features
-ride ON each transition (state keys `menu_route_node_idx`/`menu_route_feats`), so replayed
-instance-i transitions are always scored under instance i's menu.
+The adversary is per-instance smooth fictitious play: each instance keeps its own trailing
+occupancy window, and the softmax best response is recomputed and sampled fresh every sortie.
 
-Adversary: per-instance SMOOTH fictitious play (each instance keeps its own trailing occupancy
-window; softmax best response recomputed and sampled fresh EVERY sortie - affordable at K=1).
-NOT a fixed equilibrium mixture (see DIRECTION_EXPANSION addendum §3b self-correction: fixed
-mixtures are exploitable-by-indifference).
-
-Evaluation: exact fleet occupancy distribution per instance (one forward pass), exploitability
-under each instance's own oracle BR, reported as the RATIO to that instance's equilibrium; the
-pre-registered primary is the held-out (zero-shot) mean best-checkpoint TAP ratio.
-
-Run: PYTHONPATH=. python scripts/train_generalist.py --sorties 12000 --seed 0
+Evaluation uses the exact fleet occupancy distribution per instance, exploitability under each
+instance's own oracle best response, reported as the ratio to that instance's equilibrium.
 """
 from __future__ import annotations
 
@@ -45,9 +34,8 @@ from src.envs.multiconvoy_interdiction import MultiConvoyInterdictionEnv, make_m
 
 TAP_K = 3
 
-# City registry (gen16 multi-city): name -> (nodes_path, edges_path). 'kaliningrad' = the training
-# graph every prior generation used; the others were extracted by scripts/extract_city.py (same
-# arterial-filter + 30m-consolidation pipeline) and length-repaired by scratch/repair_map_lengths.py.
+# City registry: name -> (nodes_path, edges_path). 'kaliningrad' is the original training graph;
+# the others are extracted city subgraphs with repaired edge lengths.
 from src.envs.multiconvoy_interdiction import _DEFAULT_EDGES, _DEFAULT_NODES  # noqa: E402
 
 CITY_PATHS = {
@@ -82,8 +70,8 @@ class Instance:
 
 def sample_instances(n_total: int, N: int, K: int, band, k_extra: int, seed: int,
                      r_range=(10, 14), city: str = "kaliningrad") -> list[Instance]:
-    """High-connectivity OD pool (the F3/screen recipe), filtered to comparable menu sizes;
-    sampled within the city's largest connected component."""
+    """High-connectivity OD pool, filtered to comparable menu sizes; sampled within the city's
+    largest connected component."""
     from src.utils.graph_utils import load_osm_graph_and_demands
     from src.envs.multiconvoy_interdiction import _DEFAULT_TASKS
     from src.baselines.interdiction_oracle import build_route_set
@@ -129,7 +117,7 @@ def exact_ratio(prot: ProtagonistSAC, inst: Instance) -> tuple[float, np.ndarray
     pyg.x = _clip_x(pyg.x, prot.node_in_dim)
     pyg.edge_attr = _clip_ea(pyg.edge_attr, prot.edge_in_dim)
     n2i = node_index_map(obs)
-    R = inst.env.game.n_routes   # robust to ad-hoc instance objects (A2/D3) that lack .R
+    R = inst.env.game.n_routes   # robust to ad-hoc instance objects that lack .R
     prot.actor.eval()
     with torch.no_grad():
         lead, _ = prot.actor(pyg, n2i[obs["trucks"][0]["current_node"]],
@@ -240,7 +228,7 @@ def main():
         inst = train[int(rng.integers(len(train)))]
         env = inst.env
         if args.vanilla:
-            # Obj-5 transfer control: NO adversary; reward = -normalised fleet travel cost.
+            # transfer control: no adversary; reward is negative normalised fleet travel cost
             env.reset()
             steps, occ, _ = route_one(prot, env, fleet_route=True)
             mean_cost = float(env.game.travel_cost.mean())
@@ -248,7 +236,7 @@ def main():
             reward = -args.interception_loss * (fleet_cost / (env.config.N * mean_cost))
         else:
             if args.dr:
-                # A4 DR control: uniform-random interdiction set (no best-response pressure)
+                # domain-randomisation control: uniform-random interdiction set (no best-response pressure)
                 j = int(rng.integers(env.obj_matrix.shape[1]))
             else:
                 # per-instance smooth FP: softmax BR to THIS instance's trailing play, sampled fresh

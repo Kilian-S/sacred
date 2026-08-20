@@ -1,26 +1,10 @@
-"""Stage-0 validation-rung environment factory (problem redesign §7.1).
+"""Stage-0 validation-rung environment factories on the Kaliningrad OSM graph.
 
-Stage 0 is a *validation rung*, not a research result: its only job is to prove
-the (now-stable) SAC+ATLA+GNN stack can learn a **consequential, adversarial**
-routing policy at all. It deliberately makes the per-step decision matter, unlike
-the diffuse static-demand OSM problem where ``Q_Spread`` collapsed to ~0.
-
-Design (confirmed with Kilian):
-  * Same Kaliningrad OSM graph as :func:`src.envs.osm_factory.make_osm_env`
-    (so the GNN node/edge feature schema is identical; ``node_in_dim=11`` carries).
-  * **1 truck / 1 depot.** **K=1**: a single tight demand cluster placed around the
-    densest hotspot node, with the depot ~20 distance units away so there is a real
-    corridor for the antagonist to congest.
-  * **Capacity-1 shuttle**: the truck carries one request, returns to the depot to
-    reload, and repeats. The learnable, consequential decision is therefore the
-    **serve order** of the outstanding requests (shortest-processing-time
-    scheduling), which the antagonist can attack by congesting the corridor.
-  * A short *fixed* set of unit-demand requests (no Poisson arrivals yet — that is
-    Stage 1). All requests are present at ``t=0``, so per-request ``arrival_tick`` is
-    0 and the latency reward (see ``smdp_wrapper``) telescopes to total wait time.
-
-This factory is **additive**: it does not touch :func:`make_osm_env` or the static
-demand path, which remain the documented baseline + ZST reference.
+One truck and one depot serve a single tight demand cluster, with the depot far enough away to
+leave a real corridor for the antagonist to congest. A capacity-1 shuttle means the truck carries
+one request and returns to reload, so the consequential decision is the serve order of the
+outstanding requests. Requests are fixed and all present at t=0, so per-request ``arrival_tick``
+is 0 and the latency reward telescopes to total wait time.
 """
 
 from __future__ import annotations
@@ -54,33 +38,26 @@ def make_stage0_env(
 ) -> GraphEnv:
     """Build the Stage-0 single-truck validation environment on the OSM graph.
 
-    Parameters
-    ----------
-    depot:
-        Node id used as the single depot / truck home. Defaults to ``"39"`` — a node
-        ~20 distance units from the demand hotspot, giving a meaningful corridor.
-    hotspot:
-        Node id at the centre of the K=1 demand cluster. ``None`` (default) picks the
-        node with the highest ``base_demand`` deterministically (tie-break by id).
-    cluster_size:
-        Number of unit-demand requests = the hotspot plus its ``cluster_size - 1``
-        nearest nodes by graph distance (a single tight K=1 region).
-    request_size:
-        Demand placed on each cluster node (1.0 = a unit request).
-    truck_capacity:
-        Truck capacity. ``1.0`` (default) forces a depot-reload shuttle, so the
-        consequential decision is the serve order of the cluster.
-    max_time:
-        Episode horizon in ticks. The SMDP wrapper overrides this with
-        ``SMDPConfig.max_ticks`` at reset, so this is only a standalone default.
+    Args:
+        depot: node id of the single depot and truck home. The default sits about 20 distance
+            units from the demand hotspot, giving a meaningful corridor.
+        hotspot: node id at the centre of the demand cluster. None picks the node with the
+            highest ``base_demand``, tie-broken by id.
+        cluster_size: number of unit-demand requests, being the hotspot plus its
+            ``cluster_size - 1`` nearest nodes by graph distance.
+        request_size: demand placed on each cluster node.
+        truck_capacity: 1.0 forces a depot-reload shuttle, so the consequential decision is the
+            serve order of the cluster.
+        max_time: episode horizon in ticks. The SMDP wrapper overrides this with
+            ``SMDPConfig.max_ticks`` at reset, so it only applies to standalone use.
     """
     if cluster_size < 1:
         raise ValueError("cluster_size must be at least 1")
 
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
 
-    # Build a lightweight NetworkX graph purely to resolve the hotspot + cluster by
-    # shortest-path distance (deterministic, tie-broken by node id).
+    # lightweight NetworkX graph purely to resolve the hotspot and cluster by shortest-path
+    # distance, deterministically and tie-broken by node id
     g = nx.Graph()
     for node_id, attrs in nodes.items():
         g.add_node(node_id, **attrs)
@@ -123,7 +100,7 @@ def make_stage0_env(
         truck_speed=truck_speed,
         max_time=max_time,
     )
-    # Expose the chosen geometry for logging/debugging (read-only metadata).
+    # read-only metadata: the chosen geometry, for logging
     env.stage0_hotspot = hotspot
     env.stage0_depot = depot
     env.stage0_cluster = tuple(cluster)

@@ -1,5 +1,5 @@
-"""Tests for the single-convoy interdiction env (gen08), incl. the G1 env-fidelity gate:
-the env reproduces the equilibrium oracle's loss_det / loss_mixed end-to-end."""
+"""Tests for the single-convoy interdiction environment, including the fidelity gate that it
+reproduces the equilibrium oracle's deterministic and mixed losses end to end."""
 
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ def test_G1_env_reproduces_oracle_kaliningrad():
     assert sol.gap >= 0.8 - 1e-9                        # the large robustness gap survives in the env
 
 
-# --- I1b: the SAC-trainable env (GraphEnv-backed observation + masks) ---
+# --- The SAC-trainable env: GraphEnv-backed observation and masks ---
 
 def test_factory_builds_sac_observation():
     from src.envs.interdiction import make_interdiction_env
@@ -100,7 +100,7 @@ def test_factory_builds_sac_observation():
         assert fh in env.graph["33"]
 
 
-# --- B2 (class b): route-walk over the candidate-route trie (shared-edge instances) ---
+# --- Route walk over the candidate-route trie, for shared-edge instances ---
 
 
 def _shared_prefix_graph():
@@ -166,10 +166,9 @@ def test_walk_distribution_exact_product():
 
 
 def test_B2_shared_edge_kaliningrad_gate():
-    """The B2 primary instance (33->71, k_extra=8, hard, K=1), anchors pinned by
-    scratch/shared_edge_probe.py: 11 routes, first-hop collisions (walk required), equilibrium
-    1/6 over the disjoint routes, uniform mixing >2.5x suboptimal (mass stacks on shared edges),
-    and the walk expresses exactly the candidate route set."""
+    """The shared-edge Kaliningrad instance has 11 routes with first-hop collisions, an
+    equilibrium value of 1/6, uniform mixing more than 2.5x suboptimal because mass stacks on the
+    shared edges, and a walk that expresses exactly the candidate route set."""
     from src.envs.interdiction import make_interdiction_env
     env = make_interdiction_env(od=("33", "71"), K=1, k_extra_routes=8)
     assert env.game.n_routes == 11
@@ -182,7 +181,7 @@ def test_B2_shared_edge_kaliningrad_gate():
     assert expl_uni / sol.value > 2.5
     for i, r in enumerate(env.game.routes):
         assert _walk_route(env, r) == i
-    # SAC plumbing: an untrained protagonist walks a full sortie against a committed interdiction.
+    # An untrained protagonist walks a full sortie against a committed interdiction.
     from src.agents.sac import ProtagonistSAC
     prot = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=32, num_layers=2, heads=2, device="cpu")
     env.commit(0)
@@ -197,7 +196,7 @@ def test_B2_shared_edge_kaliningrad_gate():
     assert out.defender_reward <= 0.0 and isinstance(out.intercepted, bool)
 
 
-# --- I3: heterogeneous edge vulnerability (soft interception) ---
+# --- Heterogeneous edge vulnerability: soft interception ---
 
 
 def test_resolve_bernoulli_seeded_and_hard_limits():
@@ -217,7 +216,7 @@ def test_resolve_bernoulli_seeded_and_hard_limits():
             out.append(env2.resolve(route).intercepted)
         return out
 
-    # same seed -> identical outcome sequence (determinism dogma); the empirical rate matches p.
+    # Same seed gives an identical outcome sequence, and the empirical rate matches p.
     a, b = draws(sa, r1, 4000, seed=7), draws(sa, r1, 4000, seed=7)
     assert a == b
     assert np.mean(a) == pytest.approx(0.5, abs=0.04)
@@ -226,23 +225,21 @@ def test_resolve_bernoulli_seeded_and_hard_limits():
 
 
 def test_G3_soft_env_reproduces_oracle_kaliningrad():
-    """The I3 primary asymmetric instance, pinned by scratch/vuln_band_probe.py: Kaliningrad
-    33->71, edge-disjoint routes, K=1, length band (0.15, 0.95). Gate: the factory-built env
-    reproduces the oracle's NON-uniform equilibrium end-to-end (Monte Carlo over Bernoulli
-    interception), and uniform mixing is measurably suboptimal (the vanilla-vs-SACRED gap)."""
+    """On the asymmetric soft-interception instance the factory-built environment reproduces the
+    oracle's non-uniform equilibrium end to end, and uniform mixing is measurably suboptimal."""
     from src.envs.interdiction import make_interdiction_env
     env = make_interdiction_env(od=("33", "71"), K=1, k_extra_routes=0,
                                 edge_vuln_band=(0.15, 0.95), seed=3)
     P = env.game.payoff
     assert ((P > 0.0) & (P < 1.0)).any()                      # genuinely soft interception
     sol = solve(env.game)
-    assert sol.value == pytest.approx(0.063, abs=0.005)        # probe-pinned equilibrium value
+    assert sol.value == pytest.approx(0.063, abs=0.005)        # equilibrium value of this instance
     d = sol.defender_strategy
     assert d.min() > 0.03 and d.max() / d.min() > 2.0          # strongly non-uniform equilibrium
     uni = np.ones(env.game.n_routes) / env.game.n_routes
     _, expl_uni = best_response_attacker(env.game, uni)
     assert expl_uni / sol.value > 2.0                          # uniform mixing ~2.5x suboptimal
-    # env fidelity (G3): equilibrium vs equilibrium Monte Carlo -> the minimax value.
+    # Equilibrium against equilibrium, by Monte Carlo, recovers the minimax value.
     emp = _empirical_interception(env, sol.defender_strategy, sol.attacker_strategy, n=40000, seed=4)
     assert emp == pytest.approx(sol.value, abs=0.01)
 

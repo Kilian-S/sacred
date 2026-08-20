@@ -1,25 +1,12 @@
-"""Aerial free-flight interdiction sector (gen28: the continuous-coverage act).
+"""Aerial free-flight interdiction sector (gen28).
 
-A UAV crosses a 2D sector (width W lateral x depth D) discretised as a waypoint lattice with
-forward-progress arcs (a DAG base -> target: forward and diagonal-forward moves only, so the
-route set is finite and enumerable). The interdictor commits K hazard CENTRES from a candidate
-grid (hidden, pre-committed); an arc passing within a hazard's effective radius r carries a
-PROXIMITY-GRADED interception probability (linear taper primary, truncated Gaussian sensitivity
-variant); every (arc, hazard) exposure is survived independently, so route interception is a
-union-of-events coverage objective (the submodularity the greedy BR relies on; tested, not
-assumed, in tests/test_aerial_sector.py).
-
-The game is built AS an `InterdictionGame` (routes = lattice paths; interdiction sets = K-tuples
-of hazard-centre INDICES; payoff = the proximity survival product), so the road machinery
-(`solve`, `best_response_attacker`, `cost_constrained_value`, `objective_matrix` /
-`solve_multiconvoy` for the fleet extension) applies verbatim.
-
-Observable weather cells (known to the defender) are pure detour COST: an additive, proximity-
-shaped penalty folded into `travel_cost`; they never touch the interception payoff. The hidden
-hazards are the strategic component the defender hedges over.
-
-The continuous boundary parameter is the coverage fraction phi = 2 K r / W (the aerial analogue
-of K -> min-cut on roads). Ledger: experiments/gen28_aerial.md.
+A UAV crosses a 2D sector discretised as a waypoint lattice with forward-progress arcs only, so
+the route set is finite and enumerable. The interdictor commits K hidden hazard centres from a
+candidate grid; arcs within a hazard's effective radius r carry a proximity-graded interception
+probability, survived independently, so route interception is a union-of-events coverage
+objective. The game is built as an ``InterdictionGame`` (interdiction sets are K-tuples of
+hazard-centre indices), so the road solver machinery applies unchanged. Observable weather cells
+are pure detour cost and never touch the interception payoff.
 """
 
 from __future__ import annotations
@@ -90,9 +77,9 @@ def arc_midpoints(path: Path) -> np.ndarray:
 
 
 def lane_path(lat: SectorLattice, row: int) -> Path | None:
-    """The canonical LANE path via row ``row``: diagonal out to the lane as early as possible,
-    straight along it, diagonal back to the target row as late as possible. None if it would
-    cross a blocked waypoint or the depth cannot accommodate the excursion."""
+    """The canonical lane path via row ``row``: diagonal out as early as possible, straight along
+    the lane, diagonal back as late as possible. None if it would cross a blocked waypoint or the
+    depth cannot accommodate the excursion."""
     mid = lat.base[1]
     off = abs(row - mid)
     if 2 * off > lat.nx - 1:
@@ -107,10 +94,8 @@ def lane_path(lat: SectorLattice, row: int) -> Path | None:
 
 
 def build_aerial_menu(lat: SectorLattice, R: int = 40) -> list[Path]:
-    """Candidate route menu: the LANE paths first (one per reachable row: the aerial analogue of
-    build_route_set's edge-disjoint prefix, so every lane heuristic is a strategy over menu
-    members), then k-shortest-by-length padding up to R routes (near-duplicate realism, exactly
-    as the road menus pad with k-shortest)."""
+    """Candidate route menu: the lane paths first (one per reachable row), then
+    k-shortest-by-length padding up to ``R`` routes."""
     menu: list[Path] = []
     seen: set[Path] = set()
     for row in range(lat.ny):
@@ -148,12 +133,12 @@ def hazard_grid(lat: SectorLattice, cols: tuple[int, ...] | None = None,
 
 def arc_hazard_prob(mids: np.ndarray, centres: np.ndarray, r: float,
                     p_max: float | np.ndarray, taper: str = "linear") -> np.ndarray:
-    """[n_arcs, H] per-(arc, hazard) interception probability. ``linear`` (pinned primary):
-    p = p_max * max(0, 1 - d/r). ``gauss`` (sensitivity): p = p_max * exp(-d^2 / (2 sigma^2)),
-    sigma = r/2, truncated to 0 beyond r (the pinned 'outside every radius is safe' rule).
-    ``p_max`` may be a scalar or a per-position array [H] (heterogeneous hazard effectiveness:
-    terrain masking makes some ambush positions better, the aerial analogue of the road
-    vulnerability band and the screen's game-side asymmetry axis)."""
+    """[n_arcs, H] per-(arc, hazard) interception probability.
+
+    ``linear``: p = p_max * max(0, 1 - d/r). ``gauss``: p = p_max * exp(-d^2 / (2 sigma^2)) with
+    sigma = r/2, truncated to zero beyond r. ``p_max`` may be scalar or a per-position array [H]
+    for heterogeneous hazard effectiveness.
+    """
     d = np.linalg.norm(mids[:, None, :] - centres[None, :, :], axis=2)
     pm = np.asarray(p_max, dtype=float)                     # scalar or [H]; broadcasts over arcs
     if taper == "linear":
@@ -166,11 +151,8 @@ def arc_hazard_prob(mids: np.ndarray, centres: np.ndarray, r: float,
 
 def banded_pmax(centres: np.ndarray, ny: int, band: tuple[float, float] = (0.5, 0.95)
                 ) -> np.ndarray:
-    """Per-position hazard effectiveness: an affine map of the centre's LATERAL position into
-    ``band`` (row 0 -> band[1], row ny-1 -> band[0]: 'the south side is better ambush country').
-    Deterministic and disclosed, exactly as the road length-band; decorrelated from route COST
-    only partially (edge lanes are long AND one of them is safe), which is the point of the
-    screen axis: does game-side asymmetry open a lane-heuristic gap without a cost confound?"""
+    """Per-position hazard effectiveness: an affine map of the centre's lateral position into
+    ``band`` (row 0 -> band[1], row ny-1 -> band[0])."""
     lo, hi = band
     y = centres[:, 1]
     return hi - (hi - lo) * y / float(ny - 1)
@@ -235,15 +217,17 @@ def build_aerial_game(lat: SectorLattice, menu: list[Path], centres: np.ndarray,
 
 
 def coverage_fraction(K: int, r: float, W: float) -> float:
-    """phi = 2 K r / W: the continuous boundary parameter (the K -> min-cut analogue)."""
+    """phi = 2 K r / W: the continuous coverage boundary parameter."""
     return 2.0 * K * r / W
 
 
 def greedy_br_hazards(S: np.ndarray, defender: np.ndarray, K: int) -> tuple[tuple[int, ...], float]:
-    """Matrix-free greedy best-response interdictor over hazard centres: expected interception of
-    the defender route mixture is monotone submodular in the hazard set (independent-survival
-    coverage), so greedy carries the (1 - 1/e) guarantee. Exactness at K=1 and the K<=2 bound are
-    regression-tested. Cost O(K * H * R)."""
+    """Matrix-free greedy best-response interdictor over hazard centres.
+
+    Expected interception of the defender's route mixture is monotone submodular in the hazard
+    set (independent-survival coverage), so greedy carries the (1 - 1/e) guarantee. Cost
+    O(K * H * R).
+    """
     d = np.asarray(defender, dtype=float)
     logS = np.log(np.clip(S, 1e-300, 1.0))
     cur = np.zeros(S.shape[0])                    # summed log-survival of chosen set, per route
@@ -259,9 +243,14 @@ def greedy_br_hazards(S: np.ndarray, defender: np.ndarray, K: int) -> tuple[tupl
 
 
 def solve_cost_weighted(game: InterdictionGame, lam: float):
-    """Defender minimises worst-case interception + lam * (expected detour premium), attacker
-    best-responds to interception (the screen's detour-cost-weight axis). Premium is
-    dimensionless: E[cost]/c_min - 1. Returns (worst_interception, expected_cost, strategy)."""
+    """Defender minimises worst-case interception + lam * expected detour premium, attacker
+    best-responds to interception.
+
+    The premium is dimensionless: E[cost]/c_min - 1.
+
+    Returns:
+        (worst_interception, expected_cost, strategy).
+    """
     from scipy.optimize import linprog
     n, m = game.payoff.shape
     c_min = float(game.travel_cost.min())

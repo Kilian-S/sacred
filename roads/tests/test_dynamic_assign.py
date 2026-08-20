@@ -1,9 +1,5 @@
-"""Step-1 tests for dynamic (Poisson) demand arrivals — the Stage-1.5 env mechanic.
-
-Covers: seeded reproducibility, arrival-rate calibration, reset hygiene, dynamic termination
-(only at max_time, never on a transient empty queue), and the latency-telescoping invariant
-that the potential-based reward relies on.
-"""
+"""Tests for dynamic (Poisson) demand arrivals: reproducibility, arrival rates, reset hygiene,
+termination, and the latency-telescoping invariant the potential-based reward relies on."""
 
 from __future__ import annotations
 
@@ -60,8 +56,8 @@ def test_reset_clears_dynamic_state():
 def test_dynamic_terminates_only_at_max_time():
     env = make_dynamic_assign_env(max_time=200, arrival_rate=0.05)
     env.reset(demand_seed=4)
-    # At t=0 the queue is empty (no demand yet) but the episode must NOT be done — under the
-    # static rule (remaining==0 and trucks home) it would terminate immediately.
+    # At t=0 the queue is empty but the episode must not be done; the static rule
+    # (remaining == 0 and trucks home) would terminate it immediately.
     assert env.remaining_demand == 0.0
     assert not env.is_done()
     done_tick = None
@@ -74,12 +70,7 @@ def test_dynamic_terminates_only_at_max_time():
 
 
 def test_latency_telescoping_invariant():
-    """With no deliveries, Σ_t remaining_demand == Σ_requests (T − arrival_tick + 1).
-
-    This is exactly the telescoping the potential-based latency reward depends on: a unit
-    outstanding from its arrival tick to the horizon contributes its full wait. Validates
-    injection timing and outstanding-count accounting end to end.
-    """
+    """With no deliveries, sum_t remaining_demand equals sum_requests (T - arrival_tick + 1)."""
     horizon = 250
     env = make_dynamic_assign_env(max_time=horizon, arrival_rate=0.1)
     env.reset(demand_seed=11)
@@ -96,9 +87,8 @@ def test_latency_telescoping_invariant():
 
 
 def test_delivered_latency_recorded():
-    """Drive one truck to a known arrival and check delivered latency = delivery − arrival."""
-    # Single depot + single hotspot so the route is deterministic; small graph slice via the
-    # real factory but forcing one hotspot keeps the assertion simple.
+    """Drive one truck to a known arrival and check delivered latency = delivery - arrival."""
+    # One depot and one hotspot, so the route is deterministic.
     env = make_dynamic_assign_env(
         max_time=400, arrival_rate=0.05, depots=("110",), hotspot_nodes=("237",)
     )
@@ -120,7 +110,7 @@ def test_delivered_latency_recorded():
 
 
 def test_featurize_dynamic_columns_populated():
-    """The 2 new node-feature columns (age, ETA) are wired through to the GNN input."""
+    """The dynamic node-feature columns (age, ETA) are wired through to the GNN input."""
     from src.agents.networks import featurize_state, NODE_FEATURE_DIM
 
     env = make_dynamic_assign_env(max_time=400, arrival_rate=0.1)
@@ -180,7 +170,7 @@ def test_run_episode_dynamic_metrics():
 
 
 def test_eval_dynamic_cells_deterministic_and_structured():
-    """The multi-seed fixed-adversary eval is reproducible and gap = learned − greedy."""
+    """The multi-seed fixed-adversary eval is reproducible and gap = learned - greedy."""
     import torch
     from scripts.evaluate_dynamic_assign import eval_dynamic_cells, _new_protag, _new_antag, make_env_for_seed_fn
 
@@ -267,12 +257,8 @@ def test_antag_per_event_cap_limits_congestions():
 
 
 def test_full_block_antagonist_attacks_and_updates():
-    """Regression for two latent hardcoded-level bugs exposed by congestion_levels=(1.0,):
-    (a) select_action must return level 1.0 (in the mask), not the hardcoded 0.25 -> else every
-        attack is silently rejected and budget stays 0;
-    (b) the antagonist update must map the level value back to the right index -> else an IndexError
-        crashes the antagonist phase.
-    """
+    """With congestion_levels=(1.0,) the antagonist selects level 1.0 and its update maps that
+    level back to the right index."""
     from src.env.smdp_wrapper import SMDPDecisionWrapper, DecisionType
     from scripts.evaluate_dynamic_assign import dynassign_config, _new_antag
 
@@ -292,7 +278,7 @@ def test_full_block_antagonist_attacks_and_updates():
             if a is not None:
                 chosen_levels.append(a[1])
             ev, tr = smdp.step_antagonist(a)
-            # Minimal trainer-style enrichment so the update can parse the transition (guards (b)).
+            # Minimal trainer-style enrichment so the update can parse the transition.
             st = dict(tr.state)
             st["allowed_destinations"] = {"antagonist": {
                 "allowed_edges": list(mask.get("levels_by_edge", {}).keys()),
@@ -314,4 +300,4 @@ def test_full_block_antagonist_attacks_and_updates():
     assert chosen_levels, "antagonist never chose to attack"
     assert all(lvl == 1.0 for lvl in chosen_levels), f"expected only level 1.0, got {set(chosen_levels)}"
     assert smdp.budget.used > 0, "attacks were rejected -> budget unspent (the select_action bug)"
-    antag.update(batch_size=8)  # must not IndexError (the update level-index bug)
+    antag.update(batch_size=8)  # must not raise IndexError

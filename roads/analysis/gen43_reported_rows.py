@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""gen43 REPORTED rows (eval-only; pre-registered ungated in experiments/gen43_unified_kboundary.md):
+"""gen43 reported rows (eval-only).
 
-1. TABULAR window-Q at matched budget (8000 sorties, same analytic loss signal), greedy
-   policy evaluated exactly every 500 sorties, best value, 3 seeds, at the NEW dynamic
-   cells K=1 and K=4 (the gen35 machinery verbatim).
-2. WORST-CASE COMMITTING row at K=1 and K=4: best seed's best checkpoint rolled 2000
-   sorties vs the pattern-of-life enemy; realised route marginal scored against the
-   one-shot oracle best response, beside the one-shot v_eq.
-
-Pinned refs (exact): K=1 v_eq 0.1276, optimum 0.0313; K=4 v_eq 0.5106, optimum 0.1386
-(gen43 probe + gen40 ext artefacts; the trainer's internal history_opt is defective and
-never cited).
+Computes two rows per dynamic K cell (K=1 and K=4): (1) tabular window-Q at matched budget
+(8000 sorties), greedy policy evaluated every 500 sorties, best value over 3 seeds; and (2) a
+worst-case committing row using the best seed's best checkpoint rolled 2000 sorties against the
+pattern-of-life enemy, with the realised route marginal scored against the one-shot oracle best
+response and v_eq.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
     analysis/gen43_reported_rows.py
@@ -82,7 +77,7 @@ def main():
         env = make_multiconvoy_env(od=("71", "33"), N=N, K=K, k_extra_routes=KX,
                                    menu_select=True, edge_vuln_band=BAND,
                                    interception_loss=10.0)
-        # closed form, verified equal to the trainer's stacked_L to 6.7e-16 (high-K probe)
+        # closed form, verified equal to the trainer's stacked_L
         L = 1.0 - (1.0 - env.game.payoff) ** N
         cost, n, R, pw = build_window_mdp(L, TAU, W)
         tq = [tabular_q(L, cost, n, R, pw, seed=s) for s in (0, 1, 2)]

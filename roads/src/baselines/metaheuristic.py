@@ -13,20 +13,15 @@ from src.env.graph_env import GraphEnv, NodeId, EdgeId
 
 
 class AdaptiveLargeNeighborhoodSearchVRP:
-    """State-of-the-art Adaptive Large Neighborhood Search (ALNS) solver for the CVRP on graphs.
+    """ALNS solver for the CVRP on graphs (destroy/repair search with simulated-annealing
+    acceptance).
 
-    Parameters
-    ----------
-    env:
-        The GraphEnv environment instance defining topology and truck speeds.
-    iterations:
-        Number of ALNS search iterations (default: 300).
-    decay:
-        Adaptive weight decay factor (default: 0.8).
-    annealing_temp:
-        Initial temperature for Simulated Annealing acceptance (default: 100.0).
-    cooling_rate:
-        Cooling rate for Simulated Annealing (default: 0.98).
+    Args:
+        env: GraphEnv instance defining topology and truck speeds.
+        iterations: Number of ALNS search iterations.
+        decay: Adaptive operator-weight decay factor.
+        annealing_temp: Initial simulated-annealing temperature.
+        cooling_rate: Simulated-annealing cooling rate.
     """
 
     def __init__(
@@ -47,12 +42,10 @@ class AdaptiveLargeNeighborhoodSearchVRP:
         self.num_trucks = env.num_trucks
         self.capacity = env.truck_capacity
 
-        # 1. Precompute shortest paths and distances using NetworkX
         self.distances = dict(nx.all_pairs_dijkstra_path_length(env.graph, weight="distance"))
         self.paths = dict(nx.all_pairs_dijkstra_path(env.graph, weight="distance"))
 
-        # 2. Featurize tasks (partition demands into 1.0 capacity chunks)
-        # Each task is a tuple: (customer_node, task_index_for_node, demand_value)
+        # A task is (customer_node, task_index_for_node, demand_value).
         self.tasks: list[tuple[NodeId, int, float]] = []
         depot_comp = env.node_to_component[self.depot]
         for node in sorted(list(env.graph.nodes), key=lambda x: str(x)):
@@ -62,16 +55,15 @@ class AdaptiveLargeNeighborhoodSearchVRP:
             if env.node_to_component.get(node, -1) != depot_comp:
                 continue
             demand = float(data["demand"])
-            # Break demand into chunks of size <= 1.0 (truck capacity)
+            # chunk size <= 1.0, i.e. truck capacity
             num_chunks = math.ceil(demand)
             for i in range(num_chunks):
                 chunk_demand = min(1.0, demand - i * 1.0)
                 if chunk_demand > 0.001:
                     self.tasks.append((node, i, chunk_demand))
 
-        # 3. Initialize destroy and repair operator weights for Adaptive Engine
-        # Destroy operators: 0 = Random, 1 = Worst Cost, 2 = Shaw (Similarity)
-        # Repair operators: 0 = Greedy, 1 = Regret-2
+        # Destroy operators: 0 = random, 1 = worst-cost, 2 = Shaw (similarity).
+        # Repair operators: 0 = greedy, 1 = regret-2.
         self.destroy_weights = np.array([1.0, 1.0, 1.0], dtype=np.float32)
         self.repair_weights = np.array([1.0, 1.0], dtype=np.float32)
         
@@ -86,47 +78,41 @@ class AdaptiveLargeNeighborhoodSearchVRP:
         if not self.tasks:
             return {t_id: [] for t_id in range(self.num_trucks)}
 
-        # 1. Generate constructive initial solution
         current_sol = self._nearest_neighbor_initial()
         current_cost = self._evaluate_solution(current_sol)
 
         best_sol = {k: list(v) for k, v in current_sol.items()}
         best_cost = current_cost
 
-        # Determine number of tasks to destroy (typically 20% to 30% of tasks)
+        # Destroy ~25% of tasks per iteration, never more than half.
         n_remove = max(1, min(len(self.tasks) // 2, int(len(self.tasks) * 0.25)))
 
         for r in range(self.iterations):
-            # A. Select destroy and repair operators using roulette wheel selection
             d_op = self._roulette_wheel_select(self.destroy_weights)
             r_op = self._roulette_wheel_select(self.repair_weights)
 
             self.destroy_counts[d_op] += 1
             self.repair_counts[r_op] += 1
 
-            # B. Apply Destroy
             partial_sol, removed = self._apply_destroy(current_sol, d_op, n_remove)
 
-            # C. Apply Repair
             candidate_sol = self._apply_repair(partial_sol, r_op, removed)
             candidate_cost = self._evaluate_solution(candidate_sol)
 
-            # D. Evaluate acceptance (Simulated Annealing)
+            # Simulated-annealing acceptance: always take a new best or an improving move;
+            # otherwise accept a worse move with probability exp(-delta / temp).
             score = 0
             if candidate_cost < best_cost - 1e-6:
-                # New global best
                 best_sol = {k: list(v) for k, v in candidate_sol.items()}
                 best_cost = candidate_cost
                 current_sol = {k: list(v) for k, v in candidate_sol.items()}
                 current_cost = candidate_cost
                 score = 3
             elif candidate_cost < current_cost - 1e-6:
-                # Improving current solution
                 current_sol = {k: list(v) for k, v in candidate_sol.items()}
                 current_cost = candidate_cost
                 score = 2
             else:
-                # Acceptance threshold under Simulated Annealing criteria
                 delta = candidate_cost - current_cost
                 prob = math.exp(-delta / max(1e-6, self.temp))
                 if random.random() < prob:
@@ -134,14 +120,11 @@ class AdaptiveLargeNeighborhoodSearchVRP:
                     current_cost = candidate_cost
                     score = 1
 
-            # E. Update Operator Scores
             self.destroy_scores[d_op] += score
             self.repair_scores[r_op] += score
 
-            # Cool the temperature
             self.temp *= self.cooling_rate
 
-            # Periodically update adaptive weights (every 50 iterations)
             if (r + 1) % 50 == 0:
                 self._update_adaptive_weights()
 
@@ -153,23 +136,18 @@ class AdaptiveLargeNeighborhoodSearchVRP:
         curr_load = self.capacity
 
         for node, _, demand in task_sequence:
-            # Check capacity: if depleted, we must reload at the depot first
             if curr_load < demand - 1e-6:
-                # Travel back to depot to reload
                 if route[-1] != self.depot:
                     subpath = self.paths[route[-1]][self.depot]
                     route.extend(subpath[1:])
                 curr_load = self.capacity
 
-            # Travel to target node
             if route[-1] != node:
                 subpath = self.paths[route[-1]][node]
                 route.extend(subpath[1:])
-            
-            # Fulfill demand
+
             curr_load -= demand
 
-        # Finally, return back to depot to complete the VRP cycle
         if route[-1] != self.depot:
             subpath = self.paths[route[-1]][self.depot]
             route.extend(subpath[1:])
@@ -182,20 +160,16 @@ class AdaptiveLargeNeighborhoodSearchVRP:
         curr_load = self.capacity
 
         for node, _, demand in task_sequence:
-            # Check capacity: if depleted, we must reload at the depot first
             if curr_load < demand - 1e-6:
                 if not destinations or destinations[-1] != self.depot:
                     destinations.append(self.depot)
                 curr_load = self.capacity
 
-            # Travel to target node
             if not destinations or destinations[-1] != node:
                 destinations.append(node)
-            
-            # Fulfill demand
+
             curr_load -= demand
 
-        # Finally, return back to depot to complete the VRP cycle
         if not destinations or destinations[-1] != self.depot:
             destinations.append(self.depot)
 

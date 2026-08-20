@@ -14,24 +14,18 @@ def make_osm_env(
     truck_capacity: float = 40.0,
     episode_packages: int = 150
 ) -> GraphEnv:
-    """
-    Factory function to build a GraphEnv using the Kaliningrad OSM data.
-    """
-    # 1. Load the raw OSM graph and base heatmap
+    """Build a GraphEnv from the Kaliningrad OSM data."""
     nodes_dict, edges_list = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
-    
-    # 2. Sample a random Micro-Shift (e.g., 150 packages) based on the heatmap
+
+    # sample one episode's package placement from the base heatmap
     nodes_dict = generate_stochastic_demand(nodes_dict, total_episode_packages=episode_packages)
-    
-    # 3. Inject the static Depots
+
     for depot_id in depots:
         if depot_id in nodes_dict:
             nodes_dict[depot_id]['has_depot'] = True
-            
-    # Distribute trucks evenly across the available depots
+
     starting_nodes = [depots[i % len(depots)] for i in range(num_trucks)]
 
-    # 4. Initialize the PyTorch Environment
     env = GraphEnv(
         nodes=nodes_dict,
         edges=edges_list,

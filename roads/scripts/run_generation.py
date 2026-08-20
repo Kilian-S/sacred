@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""Launch a *generation* of seeded training runs in parallel (experiment management).
-
-A "generation" = one git-committed code state + one experiment group answering one question,
-containing one-or-more config recipes x several seeds. Runs nest under
-logs/tb_runs/<group>/ and models/runs/<group>/ (TensorBoard groups them), and a ledger with
-the git SHA + spec is written to experiments/<group>.md so runs stay reproducible and
-comparable (only compare *within* a generation / code state).
-
-Example (the gen01 ERB ablation: assign with vs without ERB seeding, 3 seeds each = 6 runs):
-    PYTHONPATH=. python scripts/run_generation.py --group gen01_erb_ablation \
-        --configs assign_erb,assign_noerb --seeds 0,1,2 \
-        --episodes 1000 --switch-every 50 --eval-every 50 --threads 3 --max-concurrent 3
+"""Launches a "generation" of seeded training runs in parallel: one git-committed code state and
+one experiment group answering one question, containing one or more config recipes times several
+seeds. Runs nest under logs/tb_runs/<group>/ and models/runs/<group>/, and a ledger with the git
+SHA and spec is written to experiments/<group>.md so runs stay reproducible and comparable (only
+compare within a generation / code state).
 """
 
 from __future__ import annotations
@@ -26,17 +19,17 @@ RECIPES = {
     "assign_erb": ["--problem", "assign", "--erb-path", "data/erb_assign.pt"],
     "assign_noerb": ["--problem", "assign"],
     "stage0": ["--problem", "stage0"],
-    # Stage 1.5 dynamic assignment at the gate's rho~1 point + load-scaled antagonist budget.
+    # Dynamic assignment at the gate's rho~1 point, with a load-scaled antagonist budget.
     "dynassign": ["--problem", "dynassign", "--arrival-rate", "0.06",
                   "--congestion-budget", "4000"],
-    # gen03 Phase-1: the NON-adversarial control (identical to dynassign but the antagonist is
-    # inert and the protagonist trains every episode) — see experiments/gen03_robustness_dynassign.md.
+    # The non-adversarial control: identical to dynassign but the antagonist is inert and the
+    # protagonist trains every episode.
     "vanilla": ["--problem", "dynassign", "--arrival-rate", "0.06",
                 "--congestion-budget", "4000", "--vanilla"],
-    # gen05 Phase-3 hybrid matrix arms (budget 1500 is set by the hybrid branch itself).
+    # Hybrid matrix arms (budget 1500 is set by the hybrid branch itself).
     "hybrid_vanilla": ["--problem", "hybrid", "--vanilla"],
     "hybrid_scripted": ["--problem", "hybrid", "--scripted-adversary"],
-    # gen06 dynassign matrix: scripted-adversarial arm trains vs pathrand ('targeted' held out).
+    # Scripted-adversarial arm trains vs pathrand ('targeted' held out).
     "dynassign_scripted": ["--problem", "dynassign", "--arrival-rate", "0.06",
                            "--congestion-budget", "4000", "--scripted-adversary",
                            "--scripted-attacker", "pathrand"],

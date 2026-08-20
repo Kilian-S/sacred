@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""gen45 attempt-wave gate (mechanical form of the pre-registered 'read the attempt
-diagnostics before spending the confirmation wave').
+"""Decides whether the gen45 attempt wave is strong enough to spend the confirmation wave on.
 
-The confirmation wave evaluates the PRISTINE gated set once, so it may only fire on an
-unambiguously strong attempt. This script reads the three attempt artefacts, takes each
-seed's VALIDATION-SELECTED eval point (best VAL ratio, the protocol's own selection rule)
-and requires, at that point, beats-CAP on both dev fields AND beats-BLIND on both, for all
-three seeds. Anything less exits non-zero and the confirmation stays unspent for the analyst
-to judge by eye.
-
-Exit 0 = PASS (fire the confirmation), 1 = FAIL/AMBIGUOUS (do not fire), 2 = artefacts absent.
+At each seed's validation-selected eval point, requires beats-cap and beats-blind on both dev
+fields for all three seeds. Exit 0 = pass, 1 = fail or ambiguous, 2 = artefacts absent.
 """
 from __future__ import annotations
 

@@ -1,9 +1,5 @@
-"""H1 tests — the hybrid (assignment + next-hop routing) truck state machine.
-
-Drives the hybrid wrapper with a minimal hybrid-greedy policy and checks that a truck cycles
-through assignment -> route to target (next-hop) -> serve -> route home -> reload -> reassign,
-delivers all demand, and never serves a request it wasn't assigned.
-"""
+"""Tests for the hybrid truck state machine, which pairs request assignment with next-hop
+routing: assign, route to target, serve, route home, reload, reassign."""
 
 from __future__ import annotations
 
@@ -112,8 +108,7 @@ def test_hybrid_no_opportunistic_serving():
 
 
 def test_hybrid_greedy_baseline_delivers():
-    """H4: the hybrid greedy baseline (assignment + reactive next-hop routing) delivers all demand
-    on the chokepoint geometry, no attack."""
+    """The hybrid greedy baseline delivers all demand on the chokepoint geometry, with no attack."""
     from src.baselines.greedy_dispatch import hybrid_greedy_policy, no_antagonist_policy, run_episode
 
     cfg = _hybrid_cfg(1200)
@@ -125,8 +120,8 @@ def test_hybrid_greedy_baseline_delivers():
 
 
 def test_route_reach_targets_gateway_and_is_bounded():
-    """H3: route-reach exposes exactly the edges on a truck's shortest path to its target (incl. the
-    ('0','1') gateway), not a blob around it."""
+    """Route reach exposes exactly the edges on a truck's shortest path to its target, and no
+    others."""
     from dataclasses import replace
 
     cfg = replace(_hybrid_cfg(), antag_reach="route")
@@ -146,8 +141,8 @@ def test_route_reach_targets_gateway_and_is_bounded():
 
 
 def test_hybrid_route_reach_antagonist_runs_and_attacks():
-    """H3: greedy vs the route-reach antagonist runs to completion; the antagonist lands blocks, and
-    greedy still routes around them to deliver all demand (higher latency)."""
+    """Greedy against the route-reach antagonist runs to completion; the antagonist lands blocks
+    and greedy still routes around them to deliver all demand."""
     from dataclasses import replace
     from src.baselines.greedy_dispatch import hybrid_greedy_policy, run_episode
 
@@ -168,8 +163,8 @@ def test_hybrid_route_reach_antagonist_runs_and_attacks():
 
 
 def test_eval_hybrid_cells_deterministic_and_structured():
-    """H6: the hybrid eval harness (learned vs greedy, no-attack/attack) is deterministic (static)
-    and gap = learned - greedy."""
+    """The hybrid evaluation harness is deterministic on static problems, with gap = learned -
+    greedy."""
     import torch
     from dataclasses import replace
     from scripts.evaluate_hybrid import hybrid_config, eval_hybrid_cells, _new_protag, _new_antag

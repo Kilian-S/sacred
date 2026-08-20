@@ -1,2 +1,2 @@
-"""Objective 4: surrogate-based optimization."""
+"""Objective 4: surrogate-based optimisation."""
 

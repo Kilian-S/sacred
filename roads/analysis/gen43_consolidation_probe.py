@@ -1,22 +1,11 @@
 #!/usr/bin/env python3
-"""gen43 consolidation probe (2026-08-08, ORACLE/EVAL-ONLY, no training).
+"""gen43 consolidation probe (oracle/eval-only, no training).
 
-Free pre-registration work for the proposed unified Act-2 K-ladder on 71-33 (m=6, R=11,
-kx=8, N=3, band 0.15-0.95, mission objective), asked by Kilian 2026-08-08:
-
-S. STATIC SATURATION: greedy-yardstick values of every naive stack + static_det + tabular
-   smooth FP at K = 5..10. Question: do K = 7-10 cells stay alive (defender spread persists)
-   or does the game saturate dead, the 35-159 K=4/5 pattern? Sanity: K=5/6 rows must
-   reproduce the gen26 ledger (0.705/0.638/0.666/0.667 and 0.800/0.766/0.739/0.730; FP
-   0.621/0.690).
-
-X. EXACT SIDE: exact equilibrium v* on 71-33 at K = 1..4 via objective_matrix +
-   _row_minimiser (K=4 is the 286 x 123,410 borderline cell, timed, memory-guarded), exact
-   stack values, and greedy-vs-exact stack fidelity at K = 1..4 (extends the gen26 <= 1.8%
-   record to K=4).
-
-D. DYNAMIC K=4 COST: build the K=4 env, time stacked_L, per-sortie softmax_br, a
-   500-step eval-style loop and oracle_refs, then project the 8000-sortie 3-seed cell.
+Checks the unified Act-2 K-ladder on 71-33 (m=6, R=11, kx=8, N=3, band 0.15-0.95, mission
+objective): (S) greedy-yardstick values of naive stacks, static_det, and tabular smooth FP
+at K=5..10; (X) exact equilibrium value, exact stack values, and greedy-vs-exact fidelity at
+K=1..4; (D) a dynamic K=4 cost model that times stacked_L, softmax_br, and an eval-style loop
+to project the 8000-sortie 3-seed training cost.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
      analysis/gen43_consolidation_probe.py
@@ -191,8 +180,7 @@ def part_d():
         counts = np.bincount(rng.integers(0, R, size=3), minlength=R).astype(float)
         softmax_br(counts, L, 0.15)
     t_call = (time.time() - t0) / n_calls
-    # eval-style loop (2000 steps in the real eval; net forward excluded, measured separately
-    # by the K-invariant gen35 record)
+    # eval-style loop (2000 steps in the real eval; net forward excluded, timed separately)
     t0 = time.time()
     window = []
     for _ in range(500):

@@ -1,9 +1,6 @@
-"""H1 tests — the hybrid (assignment + next-hop routing) truck state machine.
-
-Drives the hybrid wrapper with a minimal hybrid-greedy policy and checks that a truck cycles
-through assignment -> route to target (next-hop) -> serve -> route home -> reload -> reassign,
-delivers all demand, and never serves a request it wasn't assigned.
-"""
+"""Tests for the hybrid (assignment plus next-hop routing) truck state machine: a truck cycles
+through assignment, routing, serving, going home and reloading, delivers all demand, and never
+serves a request it was not assigned."""
 
 from __future__ import annotations
 
@@ -22,8 +19,8 @@ def _hybrid_cfg(max_ticks: int = 800) -> SMDPConfig:
 
 
 def _hybrid_greedy(smdp: SMDPDecisionWrapper):
-    """Minimal hybrid policy: assignment = nearest unclaimed request (sequential claiming);
-    routing = the neighbour on the (congestion-aware) shortest path to the assigned target."""
+    """Minimal hybrid policy that assigns the nearest unclaimed request and routes via the
+    neighbour on the congestion-aware shortest path to the assigned target."""
     def policy(event):
         env = smdp.env
         actions, claimed = {}, set()
@@ -78,10 +75,10 @@ def test_hybrid_full_cycle_delivers_all():
         t0_targets.append(smdp.env.trucks[0].assigned_target)
 
     assert saw_assignment and saw_routing, "expected BOTH assignment and routing decisions"
-    # truck 0 went through a full cycle: assigned a demand node -> flipped to home depot -> cleared
+    # Truck 0 completes a cycle: a demand node, then the home depot, then cleared.
     assert any(t in demand_nodes for t in t0_targets if t is not None), "truck 0 never got a request"
     assert home0 in t0_targets, "truck 0 never routed home (post-serve flip)"
-    # all demand delivered (each truck serves only its assigned target, so this needs the full cycle)
+    # Each truck serves only its assigned target, so full delivery requires the full cycle.
     delivered = sum(t.delivered_total for t in smdp.env.trucks.values())
     assert delivered >= total_demand - 1e-6, f"delivered {delivered} of {total_demand}"
     assert smdp.env.is_done()
@@ -96,11 +93,10 @@ def test_hybrid_no_opportunistic_serving():
     steps = 0
     while not event.done and steps < 20000:
         steps += 1
-        # every delivery must be at the serving truck's assigned target
+        # Every delivery must be at the serving truck's assigned target.
         for tick_info in event.info.get("events", []):
             for dv in tick_info.get("deliveries", []):
                 tid = dv["truck_id"]
-                # after serving, assigned_target flips to home_depot; the served node was the target
                 assert dv["node"] in set(smdp.env.assignment_demand)
         if event.decision_type in (DecisionType.PROTAGONIST_DECISION, DecisionType.BOTH_DECISION):
             event, _ = smdp.step_protagonist(pol(event))

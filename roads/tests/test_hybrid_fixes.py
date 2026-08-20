@@ -1,11 +1,5 @@
-"""Regression tests for the 2026-07-02 hybrid-rung fixes (see CRITIQUE.md §3 / Probe A).
-
-Covers: cross-event assignment claiming (no double assignment across decision events), release of
-a stranded truck when its assigned request is served by another truck (the zombie-orbit bug),
-assignment clearing on depot arrival at full load, the send-home fallback when no unclaimed
-request remains, early episode termination, and the new observability features
-(assigned_target / goal-distance field / antagonist commitment view / narrow-checkpoint slicing).
-"""
+"""Regression tests for the hybrid rung, covering assignment claiming across decision events,
+release and clearing of assignments, early termination, and the hybrid observability features."""
 
 from __future__ import annotations
 
@@ -66,7 +60,7 @@ def test_serve_releases_other_truck_assigned_to_same_node():
     node = sorted(env.assignment_demand)[0]
     server, stranded = env.trucks[0], env.trucks[1]
     server.assigned_target = node
-    stranded.assigned_target = node  # simulated pre-fix cross-event double assignment
+    stranded.assigned_target = node  # simulate a cross-event double assignment
     info = {"deliveries": [], "reloads": []}
     env._serve_demand(server, node, info)
     assert env.graph.nodes[node]["demand"] == 0.0
@@ -85,9 +79,8 @@ def test_depot_arrival_clears_assignment_even_at_full_load():
 
 
 def test_hybrid_greedy_no_double_assignment_and_early_termination():
-    """End-to-end regression for Probe A: with the fixes, a greedy episode assigns each request to
-    exactly one truck, strands no truck on a zero-demand target, and terminates well before the
-    horizon (previously every episode ran to max_ticks with a zombie truck orbiting)."""
+    """A greedy episode assigns each request to exactly one truck, strands no truck on a
+    zero-demand target, and terminates before the horizon."""
     smdp = SMDPDecisionWrapper(env_factory=make_hybrid_assign_env, config=_cfg())
     policy = hybrid_greedy_policy(smdp)
     event = smdp.reset_decision_env()
@@ -126,7 +119,7 @@ def test_hybrid_observation_and_goal_features():
     target = "46"
     env.trucks[0].assigned_target = target
     obs = env.observe()
-    # static hybrid env ships the queue/ETA/goal blocks (expose_queue_features=True)
+    # The static hybrid env ships the queue, ETA and goal blocks.
     assert "truck_etas" in obs and "goal_dists" in obs
     assert obs["trucks"][0]["assigned_target"] == target
     assert 0 in obs["goal_dists"] and obs["goal_dists"][0][target] == 0.0
@@ -142,16 +135,16 @@ def test_hybrid_observation_and_goal_features():
     assert float(gcol.max()) > 0.0                     # positive distances elsewhere
     assert float(gcol.max()) <= 10.0 + 1e-6            # clamped
 
-    # the ANTAGONIST view (no active truck) now sees commitments: col 7 marks the target
+    # The antagonist view has no active truck; column 7 marks the committed target.
     data_a = featurize_state(obs, active_truck_id=None)
     assert float(data_a.x[node_ids.index(target), 7]) == 1.0, (
         "antagonist featurization must see truck commitments")
-    assert float(data_a.x[:, 11].abs().max()) == 0.0  # but has no active-truck goal columns
+    assert float(data_a.x[:, 11].abs().max()) == 0.0  # no active-truck goal columns
 
 
 def test_narrow_checkpoint_slicing_compat():
-    """A pre-bump (11-node / 2-edge dim) agent must consume current 13/4-wide features: sliced
-    inputs reproduce the old featurization exactly (new columns are appended last)."""
+    """A narrower agent (11 node dims, 2 edge dims) consumes 13/4-wide features by slicing,
+    which is exact because added columns are appended last."""
     from src.agents.sac import _clip_ea, infer_edge_in_dim
 
     x = torch.randn(7, 13)
@@ -173,8 +166,8 @@ def test_narrow_checkpoint_slicing_compat():
 
 
 def test_edge_occupancy_features_encode_motion():
-    """gen04 antagonist-observability fix: a truck traversing an edge appears on that DIRECTED
-    edge's feature row (count + progress fraction); the reverse direction stays zero."""
+    """A truck traversing an edge appears on that directed edge's feature row, as a count and a
+    progress fraction, while the reverse direction stays zero."""
     from src.agents.networks import EDGE_FEATURE_DIM
 
     smdp = _fresh()
@@ -186,8 +179,8 @@ def test_edge_occupancy_features_encode_motion():
     env.step()                             # advance one tick so edge_progress > 0
 
     obs = env.observe()
-    data = featurize_state(obs, active_truck_id=None)  # the ANTAGONIST's view
-    assert data.edge_attr.shape[1] == EDGE_FEATURE_DIM == 5  # col 4 = vulnerability (A1 bump)
+    data = featurize_state(obs, active_truck_id=None)  # the antagonist's view
+    assert data.edge_attr.shape[1] == EDGE_FEATURE_DIM == 5  # column 4 is edge vulnerability
 
     node_ids = sorted(obs["nodes"].keys())
     idx = {n: i for i, n in enumerate(node_ids)}

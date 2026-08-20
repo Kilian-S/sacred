@@ -1,20 +1,8 @@
 #!/usr/bin/env python3
-"""Exploitability BR gate: train a best-response attacker against a FROZEN GREEDY victim, then
-(via evaluate_portfolio) check it beats random + the reactive scripted attacker.
-
-The pivotal go/no-go for the gen07 exploitability direction (2026-07-06). The first gate run
-(hybrid arena, NO fixes) reproduced gen04's entropy-pinning failure (BR 871 < random 1031) -- but
-that was the UNFIXED attacker. The corrected gate applies the fixes that target that exact failure:
-  * --reward-baseline twin : the counterfactual/difference reward. Because the game is zero-sum,
-    the attacker's reward becomes +(remaining - clean-greedy baseline) = its MARGINAL damage,
-    stripped of the exogenous queue baseline that buried the signal (the SNR fix, B1).
-  * --antag-target-entropy : lower absolute target so a policy with real Q-spread can COMMIT
-    instead of being held near-uniform (the entropy-pinning fix, B2 / gen04b).
-  * --gamma 0.997          : credit horizon for the delayed effect of a block (B5).
-
-Arena: `contested` (dynassign + route reach, twin reward wired, large attack surface: scripted
-targeted ~5000 vs greedy) or `hybrid` (static, no twin). Existing flat antagonist head + route-reach
-mask (gen05 showed the mask aims; the factored head is deferred unless this comes in marginal).
+"""Exploitability BR gate: trains a best-response attacker against a frozen greedy protagonist,
+producing an antagonist checkpoint that evaluate_portfolio can compare against random and the
+reactive scripted attacker. Arena: `contested` (dynassign dynamics + route reach, twin reward) or
+`hybrid` (static, no twin reward).
 
     PYTHONPATH=. python scripts/br_gate.py --arena contested --reward-baseline twin \
         --antag-target-entropy 0.5 --gamma 0.997 --episodes 300 --tag br_vs_greedy_fixed

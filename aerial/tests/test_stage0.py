@@ -1,11 +1,6 @@
-"""Tests for the Stage-0 validation rung: latency reward + env factory.
-
-Stage 0 (problem redesign §7.1) is the single-truck validation rung. These tests pin
-the two new, behaviour-bearing pieces:
-  * the latency reward mode telescopes to total delivery latency, and
-  * the K=1 cluster factory builds the intended geometry,
-while confirming the legacy (static-problem) reward path is untouched by default.
-"""
+"""Tests for the single-truck Stage-0 rung: the latency reward telescopes to total delivery
+latency, the cluster factory builds the intended geometry, and the legacy reward path stays the
+default."""
 
 import math
 import unittest
@@ -55,13 +50,11 @@ def _latency_config(max_ticks: int = 200) -> SMDPConfig:
 
 class LatencyRewardTest(unittest.TestCase):
     def test_default_reward_mode_is_legacy(self) -> None:
-        # The static-problem baseline must be untouched unless latency is opted into.
         self.assertEqual(SMDPConfig().reward_mode, "legacy")
 
     def test_latency_reward_telescopes_to_total_latency(self) -> None:
-        # Drive greedy to full completion, then check the exact telescoping identity:
-        # sum over ticks of outstanding-count == sum over requests of (delivery_tick - 1),
-        # i.e. total_wait == sum(delivery_ticks) - num_requests  (all arrivals at t=0).
+        # Telescoping identity, with all arrivals at t=0:
+        # total_wait == sum(delivery_ticks) - num_requests.
         smdp = SMDPDecisionWrapper(env_factory=_tiny_shuttle_env, config=_latency_config())
         num_requests = smdp._outstanding_requests()
 
@@ -91,12 +84,10 @@ class LatencyRewardTest(unittest.TestCase):
         total_wait = -ep_reward
         self.assertEqual(len(delivery_ticks), num_requests, "not all requests delivered")
         self.assertAlmostEqual(total_wait, sum(delivery_ticks) - num_requests, places=6)
-        # Latency reward is non-positive every tick, so total_wait is strictly positive here.
         self.assertGreater(total_wait, 0.0)
 
     def test_latency_reward_zero_without_demand(self) -> None:
-        # With no outstanding requests, the per-tick latency reward is exactly zero.
-        # A depot plus a single non-demand node so the graph has an edge to tick along.
+        # A depot plus one non-demand node, so the graph has an edge to tick along.
         def idle_env() -> GraphEnv:
             return GraphEnv(
                 nodes={
@@ -115,7 +106,7 @@ class LatencyRewardTest(unittest.TestCase):
         self.assertEqual(res["num_requests"], 0)
 
     def test_legacy_reward_formula_unchanged(self) -> None:
-        # One legacy step must equal delivery_reward*delivered - time_penalty - penalty*remaining.
+        # delivery_reward*delivered - time_penalty - remaining_demand_penalty*remaining
         cfg = SMDPConfig(max_ticks=50, delivery_reward=10.0, time_penalty=1.0, remaining_demand_penalty=0.5)
         smdp = SMDPDecisionWrapper(env_factory=_tiny_shuttle_env, config=cfg)
         smdp.reset_decision_env()
@@ -129,13 +120,12 @@ class LatencyRewardTest(unittest.TestCase):
 class Stage0FactoryTest(unittest.TestCase):
     def test_factory_geometry(self) -> None:
         env = make_stage0_env(cluster_size=8)
-        # One truck, one depot, capacity-1 shuttle.
         self.assertEqual(env.num_trucks, 1)
         self.assertEqual(env.truck_capacity, 1.0)
         self.assertEqual(env.depot_node, env.stage0_depot)
-        # Deterministic hotspot = densest node on the Kaliningrad heatmap.
+        # The hotspot is the densest node on the Kaliningrad demand heatmap.
         self.assertEqual(env.stage0_hotspot, "284")
-        # Exactly cluster_size unit requests; depot carries none.
+        # Exactly cluster_size unit requests; the depot carries none.
         self.assertEqual(len(env.stage0_cluster), 8)
         self.assertNotIn(env.stage0_depot, env.stage0_cluster)
         self.assertAlmostEqual(env.remaining_demand, 8.0, places=6)
@@ -156,8 +146,7 @@ class NextHopTest(unittest.TestCase):
                           congestion_cooldown=0, congestion_cost=0.1, congestion_levels=(0.25, 0.5, 0.75, 1.0))
 
     def test_dispatch_truck_edge_forces_direct_edge(self) -> None:
-        # The anti-A* invariant: next-hop must commit to the chosen direct edge even when a
-        # detour is strictly shorter (otherwise the policy never learns to route around).
+        # Next-hop must commit to the chosen direct edge even when a detour is strictly shorter.
         env = GraphEnv(
             nodes={"A": {"x": 0, "y": 0, "demand": 0, "has_depot": True},
                    "B": {"x": 2, "y": 0, "demand": 1, "has_depot": False},
@@ -177,7 +166,7 @@ class NextHopTest(unittest.TestCase):
         depot = smdp.env.stage0_depot
         expected = sorted(smdp.env.graph.neighbors(depot), key=repr)
         self.assertEqual(mask[0], expected)
-        # The 14->82 corridor: depot has exactly the two route entrances.
+        # On the 14->82 corridor the depot has exactly the two route entrances.
         self.assertEqual(set(mask[0]), {"11", "15"})
 
     def test_next_hop_episode_delivers_and_telescopes(self) -> None:

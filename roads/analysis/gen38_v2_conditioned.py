@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""gen38 Step V2 (gated on V1 PASS; pre-registered experiments/gen38_llm_enemy_id.md): the full
-"SACRED enhanced via LLM" claim - a TRAINED type-conditioned SACRED policy, handed the LLM's
-type call, crosses the gen34 blind wall that the trained agent alone could not.
-
-Self-contained (no edit to the banked gen34 trainer). Same gen34 pool/config; the head gains a
-per-route TYPE-THREAT column (the believed type's expected per-route loss next sortie; a
-broadcast one-hot is inert - see feats_cond). Training TELLS the policy the true type each
-episode (an easier task than blind inference). Two evals on held-out Gdansk:
-  - told-TRUE-type  = the trained ceiling ("if you knew the type"); target ~ omni_cap.
-  - told-LLM-type   = the deployment number: feed the V1 LLM predictions
-                      (models/runs/gen38_llm_enemy_id/transcripts/) as the conditioning type.
-vs the banked blind_cap (the wall) and the gen34 blind trained generalist (1.373x it).
-
-Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python analysis/gen38_v2_conditioned.py --seed 0 \
-  --json-out models/runs/gen38_llm_enemy_id/v2_seed0.json
+"""gen38 Step V2: trains a type-conditioned SACRED policy whose menu-route features include a
+per-route TYPE-THREAT column (the believed enemy type's expected loss next sortie), training the
+policy with the true type told each episode. Evaluates on held-out Gdansk cells both when told
+the true enemy type and when told the LLM's predicted type (from V1), against the gen34 blind
+wall.
 """
 from __future__ import annotations
 
@@ -53,13 +43,11 @@ def prep(it, refs):
 
 
 def feats_cond(it, counts, w, j_last, ewma, member_idx):
-    """5 base cols (gen34) + 1 TYPE-CONDITIONING col: the believed type's expected per-route
-    threat NEXT sortie, threat_m[r] = (L @ q_m(counts))[r], where q_m is the conditioned
-    member's response to the current window. This is per-route AND type-dependent, so it
-    actually discriminates routes (a broadcast one-hot adds a constant to every route logit and
-    cancels in the softmax - the 2026-07-24 V2 bug). It hands the policy the doctrine's
-    immediate threat model, NOT its optimal policy; the multi-step anti-repeat hedge must still
-    be learned (as gen19/27 did from the window feature)."""
+    """Builds the 6 menu-route feature columns: 5 base columns (gen34) plus a per-route
+    type-conditioning column, the believed type's expected loss next sortie
+    (threat_m[r] = (L @ q_m(counts))[r], with q_m the conditioned member's response to the
+    current window). Unlike a broadcast one-hot, this is per-route and type-dependent, so it
+    actually discriminates between routes."""
     mm = lambda x: (x - x.min()) / (x.max() - x.min()) if x.max() > x.min() else np.zeros_like(x)
     freq = counts / w if counts.sum() > 0 else np.zeros_like(counts)
     intel1 = mm(it.L[:, j_last]) if j_last is not None else np.zeros(it.nR)

@@ -1,18 +1,10 @@
-"""gen28 v2.3: the WALKER game (the pre-registered structural re-aim after the v2.2 fail).
-
-The policy is a NEXT-WAYPOINT walker on the forward DAG (the proven road single-vehicle
-pattern, B2-P3): 12 position-conditioned decisions per sortie instead of one menu pick, so
-replay-state diversity is structural (the v2.2 failure was the pre-flagged saturating-bandit
-cell: N=1 x menu-select = one state per instance).
-
-GEOMETRY CLASS (v2.3, disclosed): every strategy - the walker's flights AND every reference
-row (equilibrium, lane rules, menu stacks, tabular FP) - is scored as a WAYPOINT-LEG POLYLINE
-under the same hazard-rate line integral (kappa = -ln(1-p_max)/r; the dead-centre calibration
-is exact on a straight leg). Legs make survival ARC-SEPARABLE, which is what gives the walker
-an EXACT exploitability via dynamic programming over the lattice (no Monte Carlo anywhere).
-Spline rendering remains cosmetic in the viz; the payoff geometry is the legs. The menu class
-is a strict subset of the walker class (disclosed: the walker may in principle beat the
-menu-restricted equilibrium; it is a reference anchor, not the walker's optimum).
+"""The walker game (gen28): the policy is a next-waypoint walker on the forward DAG, giving
+position-conditioned decisions per sortie rather than one menu pick. Every strategy, the
+walker's flights and every reference row alike, is scored as a waypoint-leg polyline under the
+hazard-rate line integral (kappa = -ln(1-p_max)/r). Legs make survival arc-separable, which
+gives the walker an exact exploitability by dynamic programming over the lattice, with no Monte
+Carlo. The menu class is a strict subset of the walker class, so the menu-restricted equilibrium
+is a reference anchor rather than the walker's optimum.
 """
 
 from __future__ import annotations
@@ -34,9 +26,13 @@ def _nid(n) -> str:
 
 def build_arc_survival(lat: SectorLattice, centres: np.ndarray, r, p_max,
                        n_quad: int = 9) -> tuple[list, dict, np.ndarray]:
-    """Per-arc single-hazard survival: arcs = the DAG's directed arcs; A[a, h] =
-    exp(-integral of hazard h's rate along leg a) via n_quad-point midpoint quadrature.
-    Returns (arcs, arc_index, A)."""
+    """Per-arc single-hazard survival by n_quad-point midpoint quadrature.
+
+    A[a, h] = exp(-integral of hazard h's rate along leg a), over the DAG's directed arcs.
+
+    Returns:
+        (arcs, arc_index, A).
+    """
     pm = np.broadcast_to(np.asarray(p_max, float), (len(centres),))
     rr = np.broadcast_to(np.asarray(r, float), (len(centres),))
     kappa = -np.log(np.clip(1.0 - pm, 1e-12, 1.0)) / rr
@@ -62,7 +58,7 @@ def path_survival(path: tuple, arc_index: dict, A: np.ndarray) -> np.ndarray:
 
 def build_polyline_game(lat: SectorLattice, node_paths: list[tuple], centres: np.ndarray,
                         K: int, arc_index: dict, A: np.ndarray) -> InterdictionGame:
-    """The menu-restricted reference game in the v2.3 geometry class: routes = node paths,
+    """The menu-restricted reference game: routes are node paths and
     payoff[i, iset] = 1 - prod over the path's legs of the iset's joint survival."""
     S1 = np.stack([path_survival(p, arc_index, A) for p in node_paths])   # [R, H]
     H = len(centres)
@@ -81,10 +77,12 @@ def build_polyline_game(lat: SectorLattice, node_paths: list[tuple], centres: np
 
 
 class AerialWalkerEnv:
-    """Next-waypoint walker env presenting the road observation contract in NODE mode
-    (no menu keys anywhere: select_action scores candidate NODES). One UAV; the sortie is a
-    column-by-column walk base -> target; interception is resolved analytically by the trainer
-    from the realised path (the env carries the survival machinery)."""
+    """Next-waypoint walker env presenting the road observation contract in node mode.
+
+    There are no menu keys anywhere: ``select_action`` scores candidate nodes. One UAV walks
+    column by column from base to target, and interception is resolved analytically by the
+    trainer from the realised path.
+    """
 
     def __init__(self, lat: SectorLattice, centres: np.ndarray, *, K: int = 1, r, p_max=0.9):
         self.lat = lat
@@ -93,12 +91,12 @@ class AerialWalkerEnv:
         self.r, self.p_max = r, p_max
         self.G = lat.graph()
         self.arcs, self.arc_index, self.A = build_arc_survival(lat, centres, r, p_max)
-        # crash-proof topology (the repo dogma): only nodes that can still REACH the target are
-        # legal, which both prunes dead ends behind obstacles and funnels the final columns home.
+        # only nodes that can still reach the target are legal, which prunes dead ends behind
+        # obstacles and funnels the final columns home
         canreach = nx.ancestors(self.G, lat.target) | {lat.target}
         self._succ = {n: sorted(t for t in self.G.successors(n) if t in canreach)
                       for n in canreach if n != lat.target}
-        # goal-distance field (featurise col 12): shortest leg-length to target on the DAG
+        # goal-distance field (feature column 12): shortest leg-length to target on the DAG
         rev = self.G.reverse()
         dist = nx.single_source_dijkstra_path_length(rev, lat.target, weight="w")
         self._goal = {_nid(n): float(dist.get(n, 99.0)) for n in self.G.nodes}
@@ -149,10 +147,14 @@ class AerialWalkerEnv:
 
 def build_dag_menu(env: AerialWalkerEnv, R: int = 40, seed: int = 0
                    ) -> tuple[list[tuple], dict[float, list[int]]]:
-    """The v2.3 reference menu as NATIVE DAG paths: canonical lane paths per spacing (rounded
-    to lattice rows; absent where blocked - on the double pinch no lane exists, correctly),
-    then seeded diverse legal walks (greedy max-min on row vectors) up to R. Returns
-    (paths, lane_sets by spacing)."""
+    """The reference menu as native DAG paths.
+
+    Canonical lane paths per spacing come first (rounded to lattice rows, and absent where
+    blocked), then seeded diverse legal walks by greedy max-min on row vectors, up to ``R``.
+
+    Returns:
+        (paths, lane_sets keyed by spacing).
+    """
     from src.envs.aerial_curves import lane_offsets
     from src.envs.aerial_sector import lane_path
     lat = env.lat
@@ -203,8 +205,10 @@ def build_dag_menu(env: AerialWalkerEnv, R: int = 40, seed: int = 0
 
 
 def walker_policy_probs(prot, env: AerialWalkerEnv):
-    """pi(next | node) for every non-terminal node from ONE encoder pass (the head is applied
-    per node on shared embeddings; exact, no sampling)."""
+    """pi(next | node) for every non-terminal node from one encoder pass.
+
+    The head is applied per node on shared embeddings, so the result is exact, not sampled.
+    """
     import torch
     from src.agents.networks import featurize_state, node_index_map
     from src.agents.sac import _clip_ea, _clip_x
@@ -229,9 +233,14 @@ def walker_policy_probs(prot, env: AerialWalkerEnv):
 
 def walker_exploitability(prot, env: AerialWalkerEnv, isets: list[tuple] | None = None,
                           chunk: int = 4000) -> tuple[float, float]:
-    """EXACT worst-case interception of the walker policy: expected joint survival per
-    interdiction set by backward DP over the DAG (arc-separable legs), maximised over isets.
-    Also returns the expected path length (the fleet-cost column). No Monte Carlo."""
+    """Exact worst-case interception of the walker policy.
+
+    Expected joint survival per interdiction set is computed by backward dynamic programming
+    over the DAG (legs are arc-separable) and maximised over isets. No Monte Carlo.
+
+    Returns:
+        (worst-case interception, expected path length).
+    """
     pi = walker_policy_probs(prot, env)
     H = len(env.centres)
     if isets is None:

@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-"""Evaluate a trained assignment-probe protagonist vs greedy-insertion (3b).
-
-Headline check: under the trained antagonist, does the learned multi-truck assignment policy
-achieve lower total delivery latency than reactive greedy-insertion? The static cell is
-reported too (expected near-0 gap — assignment headroom here is adversarial, see the gate).
+"""Evaluate a trained assignment protagonist against greedy insertion, with and without the
+trained antagonist.
 
 Usage:
     PYTHONPATH=. python scripts/evaluate_assignment.py --run models/runs/<run_name>
@@ -23,7 +20,7 @@ from src.baselines.greedy_dispatch import greedy_insertion_policy, no_antagonist
 
 
 def assignment_config() -> SMDPConfig:
-    """Must match the assign branch in scripts/train_sacred.py."""
+    """SMDP configuration for the assignment probe."""
     return SMDPConfig(
         max_ticks=800, antagonist_interval=20, congestion_duration=30,
         congestion_budget=400.0, congestion_cooldown=0, congestion_cost=0.1,
@@ -32,9 +29,11 @@ def assignment_config() -> SMDPConfig:
 
 
 def sac_assignment_policy(agent: ProtagonistSAC, env_ref=None):
-    """Learned multi-truck assignment with STATE PROJECTION + SEQUENTIAL CLAIMING (mirrors the
-    trainer): each waiting truck decides in turn; its chosen request is removed from later trucks'
-    masks so two trucks can't be assigned the same demand node (depots are never claimed)."""
+    """Learned multi-truck assignment with state projection and sequential claiming.
+
+    Each waiting truck decides in turn and its chosen request is removed from later trucks' masks,
+    so two trucks cannot be assigned the same demand node. Depots are never claimed.
+    """
     def policy(event: DecisionEvent):
         mask = event.protagonist_action_mask
         nodes = event.observation["nodes"]
@@ -70,9 +69,12 @@ def sac_antagonist_policy(smdp: SMDPDecisionWrapper, agent: AntagonistSAC):
 
 
 def eval_cells_assignment(protag, antag, make_env, cfg: SMDPConfig) -> dict:
-    """4-cell {greedy-insertion, learned} x {no-attack, attack} eval -> total_wait per cell +
-    gaps. Reusable for the CLI and periodic in-training eval. ``gap_atk`` < 0 means the learned
-    policy beats greedy-insertion under the trained antagonist (the headline)."""
+    """Run the four-cell {greedy-insertion, learned} x {no-attack, attack} evaluation.
+
+    Returns:
+        Total wait per cell plus the two gaps. ``gap_atk`` < 0 means the learned policy beats
+        greedy insertion under the trained antagonist.
+    """
     def fresh() -> SMDPDecisionWrapper:
         return SMDPDecisionWrapper(env_factory=make_env, config=cfg)
 

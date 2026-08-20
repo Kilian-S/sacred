@@ -1,38 +1,11 @@
 #!/usr/bin/env python3
-"""gen34 DESIGN PROBE (oracle-only, no training): the hidden-adversary-type family.
-
-The gen27/31/32 positives share one legitimacy caveat: the adaptive enemy is a SINGLE
-hand-chosen rule the defender can be tuned to. gen34's proposed repair: the enemy TYPE is drawn
-per episode, hidden, from a small doctrine family; the defender must infer the type from what it
-observes (its own window + the realised interdiction placements) and adapt. This probe computes
-the exact landscape that decides whether that game is worth training on:
-
-  - OMNI cap: expected exact optimum when the type is KNOWN each episode (mean over members of
-    each member's exact dynamic optimum; Karp on each member's window MDP).
-  - BLIND cap: the exact optimum over ALL type-blind window policies (window transitions are
-    defender-controlled, so the optimum vs the uniform type mixture = Karp on the
-    mixture-averaged cost). Every static object, composed rule and window-only policy is
-    bounded below by the BLIND cap by construction.
-  - The INFERENCE GAP = blind - omni: the value that only type-inference (from placement
-    observations) can unlock. This is the act's PRIMARY headroom, the gen27 "beat the static
-    cap" structure lifted one level.
-  - Brittleness cross-table: each member's specialist optimal policy evaluated against every
-    other member (off-diagonal blow-ups = why no fixed doctrine-counter works).
-  - Naive rules (rotation / anti-repeat / iid_eq mixture / best fixed route) vs the mixture.
-  - The FITTED "playbook" row: Bayes-MAP over members from observed placements, then play the
-    MAP specialist (requires knowing the member set + functional forms = the disclosed
-    oracle-fitted cap analogue, MC over finite episodes).
-
-Members (all on the same L, K=1; window w=3 unless stated):
-  M1 reactive      softmax-BR tau=0.15 to window counts (the gen19/27 incumbent)
-  M2 sharp         softmax-BR tau=0.05 (near-argmax reactive)
-  M3 anticipatory  predicts next route = uniform over routes NOT in window (anti-repeat
-                   assumption), softmax-BRs (tau=0.15) to that prediction (the gen31 q_flee
-                   analogue on roads)
-  M4 doctrine      window-independent: softmax-BR (tau=0.15) to the defender's static
-                   equilibrium mixture (aims at your long-run doctrine)
-  M5 scattergun    uniform over interdiction sets (best answer is DETERMINISTIC: punishes
-                   blanket randomisation)
+"""gen34 design probe (oracle-only, no training): computes the exact landscape for a
+hidden-adversary-type game, where the enemy's doctrine (reactive, sharp, anticipatory,
+doctrine-seeking, or scattergun) is drawn per episode, hidden, from a small family, and the
+defender must infer it from its window observations and the realised interdiction placements.
+Computes the omniscient cap (type known each episode), the type-blind cap, the resulting
+inference gap, a brittleness cross-table between specialists, naive-rule reference rows, and a
+fitted Bayes-MAP "playbook" row.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python analysis/gen34_family_probe.py
 Writes models/runs/gen34_family_probe.json

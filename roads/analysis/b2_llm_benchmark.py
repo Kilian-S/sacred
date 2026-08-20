@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """B2: the agentic-LLM exploitability benchmark (EVAL-ONLY; needs an API key to run live).
 
-Three pre-registered registers on the 35-159 headline game (N=3, K=1, band 0.15-0.95, 12 routes):
-  (a) deterministic  - "choose ONE route for the stacked fleet"            -> scored under oracle BR
-  (b) stated-strategy - "output a probability distribution over the menu"  -> exact mixture under oracle BR
-  (c) agentic-sequential - T sorties vs the gen19 pattern-of-life adversary (w=3, tau=0.15) with
-      per-sortie interception feedback -> realised mean mission-failure vs the computable ladder
-      (static_det 0.613 / iid_eq 0.147 / SACRED 0.050 / history_opt 0.049).
+Three registers on the 35-159 headline game (N=3, K=1, band 0.15-0.95, 12 routes):
+  (a) deterministic - choose one route for the stacked fleet, scored under oracle BR.
+  (b) stated-strategy - output a probability distribution over the menu, scored as an exact
+      mixture under oracle BR.
+  (c) agentic-sequential - T sorties against the pattern-of-life adversary (w=3, tau=0.15) with
+      per-sortie interception feedback, scored as realised mean mission-failure.
 
-No tools are offered to the model (the no-tools register is the informative one: with code
-execution a frontier model would simply solve the LP). Transcripts are logged verbatim as the
-reproducibility record. `--provider dry` runs the full pipeline with a uniform-random synthetic
-agent (validates scoring end-to-end without any API).
+No tools are offered to the model: with code execution a frontier model would simply solve the
+LP, so the no-tools register is the informative one. Transcripts are logged verbatim.
+`--provider dry` runs the full pipeline with a uniform-random synthetic agent to validate scoring
+end-to-end without any API.
 
 Usage:
   PYTHONPATH=. .venv/bin/python analysis/b2_llm_benchmark.py --provider dry
@@ -54,8 +54,8 @@ def game_spec(env) -> str:
     for i, r in enumerate(g.routes):
         segs = [f"[{u}-{v}: {G[u][v]['w']:.0f}m, p={ev(u, v):.2f}]" for u, v in zip(r, r[1:])]
         lines.append(f"Route {i}: " + " ".join(segs))
-    # explicit shared-segment table (amendment 2026-07-16: the strategic structure must be
-    # READABLE from the prompt; whether the model USES it is what the benchmark measures)
+    # the shared-segment structure must be readable from the prompt; whether the model
+    # uses it is what the benchmark measures
     shared = {}
     for i, re_ in enumerate(g.route_edges):
         for e in re_:
@@ -88,8 +88,8 @@ def gate_questions(env):
          "Answer format, three lines exactly: Q1: ... / Q2: ... / Q3: ...")
 
     def check(reply):
-        # LAST occurrence of each answer line (reasoning models restate the questions early;
-        # the first-match version misgraded correct answers — live-test fix, 2026-07-16)
+        # use the LAST occurrence of each answer line: reasoning models restate the
+        # questions early, so the first match can be a misgrade
         ok = 0
         m = re.findall(r"q1[:\s]*([^\n]*)", reply, re.I)
         if m:
@@ -119,15 +119,14 @@ def call_llm(provider, model, key, messages, max_tokens=1000, base="", temperatu
         body = {"model": model, "max_tokens": max_tokens,
                 "temperature": temperature, "messages": messages}
         if thinking:
-            # the proven aerial convention (gen39_phase1e_thinking.py / step-5c prep):
             # explicit opt-in beats the gateway's default_thinking=false injection
             body["chat_template_kwargs"] = {"enable_thinking": True}
         req = urllib.request.Request(
             host + "/chat/completions",
             data=json.dumps(body).encode(),
             headers={"Authorization": f"Bearer {key}", "content-type": "application/json"})
-        # long-reasoning models at 12k-token budgets need minutes, not 120 s (live test 2026-07-16);
-        # thinking mode under concurrent streams needs more still (ops robustness, 2026-08-13)
+        # long-reasoning models at 12k-token budgets need minutes, not 120 s; thinking mode
+        # under concurrent streams needs more still
         with urllib.request.urlopen(req, timeout=(1800 if thinking else 900)) as r:
             return json.load(r)["choices"][0]["message"]["content"]
     raise ValueError(provider)
@@ -194,7 +193,7 @@ def main():
     eq_val = sol.loss_mixed if sol is not None else float("nan")  # no exact eq past the wall
     R = env.game.n_routes
     L = stacked_L(env.game, N)
-    # per-instance register-(c) dynamic anchors (gen19 oracle: static_det, iid_eq cap, history_opt)
+    # per-instance register-(c) dynamic anchors: static_det, iid_eq cap, history_opt
     crefs = oracle_refs(L, TAU, W) if "c" in a.register else {"static_det": float("nan"),
                                                               "iid_eq": float("nan"), "history_opt": float("nan")}
     spec = game_spec(env)
@@ -213,8 +212,8 @@ def main():
             reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
                              base=a.base, temperature=a.temperature, thinking=a.thinking)
             if reply is None or not reply.strip():
-                # thinking overrun leaves null/empty content (the 5c lesson); one loud
-                # turn-level retry, then fail so the runner-level retry fires
+                # thinking overrun leaves null/empty content; one turn-level retry,
+                # then fail so the runner-level retry fires
                 transcript[-1]["empty_retry"] = True
                 time.sleep(2)
                 reply = call_llm(a.provider, a.model, key, messages, max_tokens=a.max_tokens,
@@ -271,7 +270,7 @@ def main():
         return
 
     out = {"model": a.model, "provider": a.provider, "od": a.od, "K": a.K, "city": a.city,
-           "thinking": a.thinking, "max_tokens": a.max_tokens,  # decoding provenance (gen43-exam lesson)
+           "thinking": a.thinking, "max_tokens": a.max_tokens,  # decoding provenance
            "anchors": {"loss_det": (sol.loss_det if sol is not None else None), "eq": eq_val,
                        "uniform_stack": None,
                        "static_det_c": crefs["static_det"], "iid_eq_c": crefs["iid_eq"],
@@ -316,9 +315,9 @@ def main():
                            "gate": gate_b, "probe": probe_b[:1500]}
 
     # (c) agentic-sequential register vs the pattern-of-life adversary (w=3, tau=0.15):
-    # ONE conversation per episode (in-context adaptation is the phenomenon under test);
-    # the mechanism is described QUALITATIVELY (giving the softmax formula would invite
-    # in-head BR arithmetic, a different register; design decision ledgered 2026-07-16).
+    # one conversation per episode (in-context adaptation is the phenomenon under test);
+    # the mechanism is described qualitatively, since giving the softmax formula would
+    # invite in-head BR arithmetic, a different register.
     counts = np.zeros(R)
     fails, choices = [], []
     if "c" in a.register:

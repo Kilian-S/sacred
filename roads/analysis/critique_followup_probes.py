@@ -1,28 +1,15 @@
 #!/usr/bin/env python3
-"""Critique follow-up probes (2026-07-16, second critic pass; ORACLE/EVAL-ONLY, no training).
+"""Analytic baselines for the multi-convoy interdiction game (ORACLE/EVAL-ONLY, no training).
 
-Three checks of the Block-R rescue claims, none in any prior comparison set:
+Three probes: (A) naive dynamic baselines, deterministic rotation and stochastic anti-repeat
+over the edge-disjoint routes, against the pattern-of-life adversary (softmax best-response to
+the trailing w-sortie window), compared against the iid-equilibrium and history-optimal values;
+(B) full-menu naive stacks (uniform and inverse-vulnerability weighted) at high interdiction
+budgets K under the greedy best-response oracle; (C) tabular smooth fictitious play
+(multiplicative-weights defender vs greedy best-response attacker, no neural network) using
+the same oracle.
 
-A. NAIVE-DYNAMIC baseline for the gen19/gen27 register: deterministic ROTATION (round-robin over
-   the edge-disjoint routes) and stochastic ANTI-REPEAT (uniform over disjoint routes not played
-   in the last w sorties), both computable exactly against the pattern-of-life adversary
-   (softmax-BR tau=0.15 to the trailing w=3 window). Both need only the route list (zero
-   training, transfers trivially). If they approach history_opt, gen27's "no standard algorithm"
-   wording must be scoped the same way the static acts were.
-
-B. FULL-MENU naive stacks at K = m-1 and K = m on the gen26 step-3 instance (71-33, m=6, R=11),
-   under the SAME greedy yardstick: uniform-over-menu and inv-vuln-over-menu (the disjoint
-   variants saturate at K ~ m by construction; the shared-edge menu is exactly where the escape
-   mass lives, so the strongest naive stack at high K may not be the disjoint one).
-
-C. TABULAR smooth fictitious play with the SAME greedy-BR oracle SACRED trains against
-   (no neural network, ~20 lines): multiplicative-weights defender over the stacked routes,
-   attacker = greedy BR to the running average. Tests the gen26 wording "trained where ...
-   only self-play can follow": if a trivial no-net learner using the same oracle reaches
-   SACRED's value, the surviving claim is amortisation/generalisation, not sole trainability.
-
-Run: PYTHONPATH=. .venv/bin/python analysis/critique_followup_probes.py
-(single-threaded; safe beside the running gen27 batch)
+Run: PYTHONPATH=. .venv/bin/python analysis/critique_followup_probes.py (single-threaded)
 """
 from __future__ import annotations
 
@@ -101,8 +88,8 @@ def antirepeat_value(dis, L, tau=TAU, w=W, iters=600):
 
 
 def history_opt_rvi(L, tau=TAU, w=W, iters=4000, tol=1e-10):
-    """Exact average-cost optimum of the window MDP (RVI over R^w states), on THIS L —
-    the same-convention anchor for the rotation/anti-repeat rows."""
+    """Exact average-cost optimum of the window MDP (RVI over R^w states) on this L; the
+    same-convention anchor for the rotation/anti-repeat rows."""
     R = L.shape[0]
     states = list(itertools.product(range(R), repeat=w))
     idx = {s: i for i, s in enumerate(states)}
@@ -133,7 +120,6 @@ def history_opt_rvi(L, tau=TAU, w=W, iters=4000, tol=1e-10):
 def part_a():
     print("=== A. naive-DYNAMIC baselines vs the pattern-of-life adversary (w=3, tau=0.15) ===")
     rows = []
-    # gen19 instance (35-159): ledger anchors static_det 0.613, iid_eq 0.147, history_opt 0.049
     env = make_multiconvoy_env(("35", "159"), N=N, K=1, k_extra_routes=KX, edge_vuln_band=BAND,
                                absolute_vuln_norm=True, menu_select=True, objective="mission")
     insts = [("35-159 (gen19 instance)", env.game)]

@@ -1,27 +1,12 @@
 #!/usr/bin/env python3
-"""Robustness-portfolio evaluation — the headline harness for the reframed thesis claim.
+"""Robustness-portfolio evaluation: every protagonist arm faces every attacker in the portfolio on
+the same instances (paired, common random numbers), reporting mean total wait ``W``, degradation
+``D(attack) = W(attack) - W(none)``, and the primary paired metric ``dD``, which is positive when
+adversarial training bought robustness. Learned protagonists act stochastically, seeded per
+episode, and ``--select-best`` ranks snapshots on validation instances under a validation
+attacker, so the best-response attackers and the test instances stay held out.
 
-For each protagonist ARM (greedy reference + learned checkpoints) and each ATTACKER in a
-portfolio, runs paired episodes and reports:
-
-  W(arm, attack)               mean total_wait (lower = better)
-  D(arm, attack)               degradation = W(attack) - W(none), paired per instance
-  dD(attack) = D(vanilla) - D(sacred)   the PRIMARY metric: > 0 => adversarial training bought
-                                        robustness (computed for every learned-arm pair)
-
-Design (per CRITIQUE.md §2/§6):
-  * every arm faces the SAME attacker set on the SAME instances (paired, common random numbers);
-  * learned protagonists act STOCHASTICALLY (they are max-entropy policies; argmax-ing them
-    destroys the mixed strategies adversarial training may have bought), seeded per episode for
-    reproducibility;
-  * attackers: none / random (seeded) / targeted (scripted heuristic) / br_<arm> (learned
-    best-response nets, trained per-policy via --train-antagonist-only);
-  * checkpoint selection (--select-best) happens on the VALIDATION attacker (targeted) over
-    VALIDATION instances; the best-response attackers + test instances stay held out;
-  * dynassign test instances start at seed 10_000_019 (validation at 20_000_019) — far from any
-    training run's demand-seed counter (seed*100003 + episode), so eval streams are held out.
-
-Usage (Phase 1, dynassign):
+Usage (dynassign):
   PYTHONPATH=. python scripts/evaluate_portfolio.py --problem dynassign \
       --policy sacred=models/runs/gen02_dynassign/dynassign_seed0/snapshots/protagonist_ep550.pt \
       --policy vanilla=models/runs/gen03_vanilla/vanilla_seed0/snapshots/protagonist_ep550.pt \
@@ -53,7 +38,7 @@ from src.baselines.greedy_dispatch import (
     run_episode,
 )
 
-# Held-out instance-seed bases (see module docstring).
+# Held-out instance-seed bases, far from any training run's demand-seed counter.
 TEST_SEED_BASE = 10_000_019
 VAL_SEED_BASE = 20_000_019
 
@@ -79,7 +64,7 @@ def _problem_setup(problem: str, arrival_rate: float):
         mk = lambda seed: make_hybrid_assign_env  # static demand: the seed only drives rollouts
         return cfg, mk, hybrid_greedy_policy, True
     if problem == "contested":
-        # gen07 arena: dynassign dynamics + route reach (single source of truth in contested.py).
+        # dynassign dynamics with route reach; contested.py is the single source of truth.
         from src.envs.contested import contested_config, make_contested_env
 
         cfg = contested_config()
@@ -114,10 +99,11 @@ def _load_antagonist(path: str, cfg: SMDPConfig) -> AntagonistSAC:
 
 def sac_protagonist_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC, *,
                            deterministic: bool = False):
-    """Learned protagonist for EITHER decision model, with state projection + sequential claiming
-    (mirrors the trainer/prior eval policies). Handles destination-mode assignment and hybrid
-    (assignment vs routing branches by ``assigned_target``); stochastic by default — the eval
-    counterpart of the max-entropy policy actually trained."""
+    """Learned protagonist for either decision model, with state projection and sequential claiming.
+
+    Handles destination-mode assignment and hybrid, branching on ``assigned_target``. Stochastic by
+    default, matching the max-entropy policy that was trained.
+    """
 
     def policy(event: DecisionEvent):
         env = smdp.env
@@ -152,7 +138,7 @@ def sac_protagonist_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC, *,
 
 
 def _sac_attacker(smdp: SMDPDecisionWrapper, agent: AntagonistSAC):
-    """Learned (best-response) attacker: deterministic — its strongest single response."""
+    """Learned best-response attacker, played deterministically as its strongest single response."""
     def policy(event: DecisionEvent):
         return agent.select_action(
             event.observation, event.antagonist_action_mask, smdp.budget.remaining,
@@ -169,11 +155,9 @@ def _make_attacker(name: str, smdp: SMDPDecisionWrapper, instance_seed: int,
     if name == "targeted":
         return targeted_block_policy(smdp)
     if name == "pathrand":
-        # gen06 training attacker (in-distribution row for the scripted arm; seeded per instance)
         return random_path_block_policy(smdp, seed=instance_seed)
     if name == "gateway":
-        # first-maskable-edge attacker — the HELD-OUT strong attack for the hybrid matrix
-        # (under route reach the mask does the aiming; +40..184% on greedy in the budget sweep)
+        # first-maskable-edge attacker: under route reach the mask does the aiming
         return mask_first_block_policy
     if name.startswith("br_"):
         return _sac_attacker(smdp, br_agents[name[3:]])
@@ -227,7 +211,7 @@ def _mean_sem(xs: list[float]) -> tuple[float, float]:
 
 
 def summarize(results: dict[str, dict[str, list[float]]], reference_arm: str = "greedy") -> dict:
-    """W / D tables + the paired-primary dD for every learned-arm pair."""
+    """Build the W and D tables plus the paired primary dD for every learned-arm pair."""
     out: dict[str, Any] = {"W": {}, "D": {}, "dD": {}}
     for arm, per_attack in results.items():
         out["W"][arm] = {a: _mean_sem(v) for a, v in per_attack.items()}
@@ -280,9 +264,10 @@ def print_summary(summary: dict) -> None:
 def select_best_under_attack(run_dir: str, cfg: SMDPConfig, make_env_for_seed,
                              greedy_factory, instance_seeds: list[int],
                              rollouts: int = 1, attacker: str = "targeted") -> list[dict]:
-    """Rank a run's protagonist snapshots by mean total_wait under the VALIDATION attacker
-    (configurable — gen06 selects on `pathrand` because `targeted` is its held-out test attack).
-    Selection never sees the test attackers or the test instances."""
+    """Rank a run's protagonist snapshots by mean total wait under the validation attacker.
+
+    Selection never sees the test attackers or the test instances.
+    """
     import glob
     import os
     import re

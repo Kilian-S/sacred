@@ -1,22 +1,13 @@
 #!/usr/bin/env python3
-"""gen43 dynamic high-K probe (2026-08-08, ORACLE/EVAL-ONLY, no training).
+"""gen43 dynamic high-K probe (oracle/eval-only, no training).
 
-Kilian asked for the dynamic arm to extend past K=4. gen40's extension sweep skipped
-dynamic K=5 at kx=8 under its pre-committed WORK GUARD (state-x-column <= 6e9), not because
-the exact game ends there; its tier-E finding (heuristic adversary proxies CHANGE the game,
-binding) rules out proxy extensions, so the only honest extension is the EXACT softmax game
-itself, paid in compute. This probe measures whether that is affordable and whether the
-cells are alive:
-
-  For K in {5, 6} on 71-33 (m=6, R=11, kx=8, N=3, band 0.15-0.95, w=3, tau=0.15):
-    exact optimum (Karp minimum mean cycle, damped-RVI crosscheck), best-of-20-orders
-    disjoint rotation, composed anti-repeat (core), iid_eq (via the exact one-shot LP),
-    static_det, all derived from ONE window-MDP cost matrix; wall-clock for every phase;
-    K=7/8 extrapolations printed from the measured per-column costs.
-
-The loss matrix uses the closed form L = 1 - (1 - payoff)^N (all N convoys stacked on one
-route, mission objective), verified against the trainer's stacked_L exactly at K=4 before
-any new number is read.
+Extends the dynamic arm to K=5 and K=6 on 71-33 (m=6, R=11, kx=8, N=3, band 0.15-0.95, w=3,
+tau=0.15) by solving the exact softmax game directly. For each K, builds the closed-form loss
+matrix L = 1 - (1 - payoff)^N (verified against the trainer's stacked_L at K=4) and the
+window-MDP cost matrix, then computes the exact optimum (Karp minimum mean cycle, cross-checked
+by damped relative value iteration), best-of-20-orders disjoint rotation, a composed anti-repeat
+policy, and the one-shot iid equilibrium value, with wall-clock timing throughout. K=7 and K=8
+costs are extrapolated from the measured per-column cost.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
     analysis/gen43_dyn_highk_probe.py

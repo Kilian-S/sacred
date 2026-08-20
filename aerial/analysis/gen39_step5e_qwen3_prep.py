@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""gen39 step 5E: the THIRD qwenthink16 curriculum (authoring roll 3 of the grid), the
-step-5d wrapper pattern verbatim with roll-3 output paths. Pre-registered in the ledger's
-step-5e section before any call.
+"""Authors the third qwenthink16 curriculum for gen39 step 5e.
 
     PYTHONPATH=. OMP_NUM_THREADS=1 ../sacred/.venv/bin/python analysis/gen39_step5e_qwen3_prep.py
 """

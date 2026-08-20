@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
-"""gen45 CONFIRMATION scorer: the pre-registered bars, computed from the confirmation
-artefacts exactly as experiments/gen45_unified_corridor.md registered them.
+"""Scores the gen45 confirmation artefacts against the pre-registered bars.
 
-Selection is by VALIDATION (fields 45400-45403), never by the gated set, so nothing here
+Selection is by validation (fields 45400-45403) and never by the gated set, so nothing here
 selects on test. For each arm the validation-selected checkpoint is taken and its gated-field
 values are scored against that field's own exact references.
-
-Bars (verbatim from the pre-registration):
-  PRIMARY  zero-shot per-field damage < that field's static CAP on >= 4/6 gated fields,
-           on >= 2/3 confirmation seeds, and pooled below the pooled cap.
-  STRONG   pooled <= 2.5x the exact dynamic optimum.
-  CAUSAL   the blinded control beats the cap on 0/6 fields.
-  REPORTED beats-payoff-blind-family count over the 18 seed-field cells; the fitted-rule
-           ladder; drift from the selected checkpoint to the final iterate.
 """
 from __future__ import annotations
 

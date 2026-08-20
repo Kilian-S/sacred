@@ -1,23 +1,10 @@
-"""gen33_llm_adversary: the force scorer under the PINNED enemy semantics.
+"""Scorer for red forces under the pinned enemy semantics.
 
-Semantics (pinned in the ledger BUILD RECORD, confirmed by the oracle screen before any live
-scoring is trusted): a force of K agents induces ONE dynamic enemy that plays the gen31/gen32
-doctrine machinery over the FULL candidate-site grid under a soft site prior. Per agent k:
-
-  prior_k(h)  = RBF kernel over site coordinates centred at the agent's resolved site (sigma km),
-                normalised over the grid (the "concentration"; sigma=None = flat).
-  Z_k(s, h)   = q_rep * Vw_k + q_flee * dmg[rflee_k] + q_eq * Vstat   (raw damage scale, gen31)
-  A_k(s, .)   = softmax_h(Z_k / tau_k) shaped multiplicatively by prior_k, per window state s.
-                Vw_k uses the agent's OWN memory w_k (the last w_k window entries); rflee_k is the
-                myopic escape route against the agent's own prior-shaped repeat aim; Vstat is the
-                site value against the static equilibrium route mix (the hold-static component).
-  A           = (1/K) sum_k A_k     (the mixture over agents = "summed agent concentrations").
-
-The induced game value of a force = the BEST-RESPONDING history-aware defender's stationary
-damage (relative value iteration on the window chain), exactly the gen32 yardstick. Flat prior +
-single agent + (q_rep, q_flee, 0) reproduces scratch DynTheatre exactly (regression-tested).
-Baseline force constructors (random floor / two-line doctrine heuristic / oracle search) live
-here too so every ladder is built against the same machinery.
+A force of K agents induces one dynamic enemy whose aim is the mean over agents of prior-shaped
+softmax aims: each agent scores sites by q_rep * Vw + q_flee * dmg[rflee] + q_eq * Vstat, shaped by
+an RBF prior centred on its resolved site. The value of a force is the best-responding
+history-aware defender's stationary damage. Baseline force constructors (random floor, doctrine
+heuristic, oracle search) live here so every ladder is built against the same machinery.
 """
 from __future__ import annotations
 
@@ -31,12 +18,11 @@ from src.envs.aerial_theatre_vec import (build_theatre_game, lateral_width, load
                                          route_survival)
 
 N = 3
-GEN32_DOCTRINE = (0.7, 0.3, 0.0, 0.10, 2)      # the screened operating point (q_rep,q_flee,q_eq,tau,w)
+GEN32_DOCTRINE = (0.7, 0.3, 0.0, 0.10, 2)      # (q_rep, q_flee, q_eq, tau, w)
 
 
 def resample_field(coords, seed, length_scale=6.0, band=(0.30, 0.95)):
-    """The gen32 hidden effectiveness field (RBF draw, rank-mapped into the band). Identical to
-    scratch/gen32_theatre_hunt.resample_field so field seeds mean the same thing everywhere."""
+    """Draw the hidden effectiveness field: an RBF sample rank-mapped into the band."""
     rng = np.random.default_rng(seed)
     d2 = ((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1)
     cov = np.exp(-d2 / (2.0 * length_scale ** 2)) + 1e-8 * np.eye(len(coords))
@@ -90,7 +76,7 @@ class ScoreBase:
                 d_eq[o[0]] += sol.defender_strategy[i]
         d_eq = d_eq / d_eq.sum() if d_eq.sum() > 0 else np.full(self.R, 1.0 / self.R)
         fc = FieldCore(self, seed, dmg, d_eq, float(sol.loss_mixed))
-        fc.game, fc.S = game, S                      # kept for env builds (the trainer path)
+        fc.game, fc.S = game, S                      # kept for env builds
         self._fields[seed] = fc
         return fc
 
@@ -154,8 +140,7 @@ def force_aim(fc: FieldCore, sites, doctrine, sigma_km):
 
 
 def history_opt(stepdmg, succ, iters=4000, tol=1e-12):
-    """Best-responding history-aware defender: average damage under relative value iteration
-    (the gen31/gen32 math, verbatim)."""
+    """Average damage to a best-responding history-aware defender, by relative value iteration."""
     V = np.zeros(stepdmg.shape[0])
     for _ in range(iters):
         Q = stepdmg + V[succ]
@@ -175,11 +160,11 @@ def force_value(fc: FieldCore, sites, doctrine, sigma_km, iters=4000, tol=1e-12)
     return history_opt(stepdmg, ctx.succ, iters=iters, tol=tol)
 
 
-# ---------- baseline force constructors (the pre-registered ladder) ----------
+# ---------- baseline force constructors ----------
 
 def random_force(base: ScoreBase, K, rng):
-    """The know-nothing floor: iid uniform sites (stacking allowed, as the schema allows),
-    Dirichlet doctrine, uniform tau bin and memory."""
+    """Know-nothing floor: iid uniform sites (stacking allowed), Dirichlet doctrine, uniform tau
+    bin and memory."""
     sites = rng.choice(base.H, size=K, replace=True)
     doctrine = []
     for _ in range(K):
@@ -191,17 +176,15 @@ def random_force(base: ScoreBase, K, rng):
 
 
 def heuristic_force(base: ScoreBase, K):
-    """The two-line doctrine heuristic (the beat-me baseline): the K highest-value sites the
-    rulebook implies (terrain-implied exposure, field-blind), all agents the screened gen32
-    anticipator operating point."""
+    """Two-line doctrine heuristic: the K highest-exposure sites the rulebook implies, every agent
+    on the screened anticipator operating point."""
     sites = list(np.argsort(-base.site_exposure)[:K])
     return [int(s) for s in sites], [GEN32_DOCTRINE] * K
 
 
 def oracle_force(base: ScoreBase, K, sigma_km, seed=5100, n_random=48, n_ascent=12, rng_seed=0):
-    """The oracle-optimised ceiling (disclosed budget): random search over schema-legal forces
-    (exposure-biased sites, doctrine grid) then greedy per-agent site ascent, all scored on the
-    search field seed; the WINNER is what callers re-score on the evaluation seeds."""
+    """Oracle-optimised ceiling: random search over schema-legal forces then greedy per-agent site
+    ascent, all scored on the search field seed. Callers re-score the winner on evaluation seeds."""
     rng = np.random.default_rng(rng_seed)
     fc = base.field(seed)
     docs = [(1.0, 0.0, 0.0), (0.7, 0.3, 0.0), (0.5, 0.5, 0.0), (0.34, 0.33, 0.33),

@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
-"""A3.1 (ROADMAP): reproduce the gen06 arm-comparison training telemetry.
-
-Post-hoc analysis of the CLOSED gen06 generation (primary untouched): windowed means of key
-training scalars, vanilla vs scripted-adversarial arms, from the tfevents on disk. First
-reported as a session analysis on 2026-07-06 (DIRECTION.md §4); this script is the committed
-reproduction. Output feeds the gen06 ledger's post-hoc appendix.
+"""gen06: computes windowed means of key training scalars, vanilla vs scripted-adversarial arms,
+from the gen06 tfevents logs on disk.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/gen06_telemetry_probe.py
 """

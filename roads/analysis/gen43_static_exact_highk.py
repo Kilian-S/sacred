@@ -1,31 +1,14 @@
 #!/usr/bin/env python3
-"""gen43 static exact extension, K = 5 and K = 6 (2026-08-10, ORACLE/EVAL-ONLY, no training).
+"""gen43 static exact extension, K = 5 and K = 6 (oracle/eval-only, no training).
 
-WHY (Kilian, 2026-08-10). The unified Act-2 instrument's static ladder reports the exact
-equilibrium value v* only to K = 4, and finding 4's death-of-mixing curve past the wall was
-computed under the CERTIFIED GREEDY best response. The recorded reason for stopping was the
-286 x n_isets occupancy payoff matrix (~2.2 GB at K=5, ~14 GB at K=6), which is a TRAINING
-constraint (three seeds in parallel on a 24 GB machine), not a solving constraint.
-
-THE OBSERVATION THAT MAKES THIS CHEAP. Proposition "equilibria supported on stacks" (thesis
-Prop 3.2; theory appendix F, prop:stacked) proves the mission objective is concave in the
-occupancy, so restricting the defender to STACKS leaves the game value unchanged. The exact
-game value therefore needs only the R x n_isets stacked matrix, not the 286 x n_isets
-occupancy matrix: 26x smaller, i.e. ~85 MB at K=5 and ~540 MB at K=6.
-
-WHAT THIS COMPUTES (nothing here changes any banked verdict; it fills reference rows).
-  A. ANCHORS, read BEFORE any new number. At K = 1..4, (i) the stacked LP value must equal
-     the banked exact v* (0.1276 / 0.2553 / 0.3829 / 0.5106) and (ii) the stacked LP value
-     must equal the FULL-OCCUPANCY LP value, which is a numerical verification of Prop 3.2
-     on this instance. If either fails, nothing below is read.
-  B. NEW: exact v* at K = 5 and K = 6 via the stacked LP.
-  C. NEW: the exact value of every naive stack and of static_det at K = 5 and K = 6, and the
-     measured greedy-vs-exact FIDELITY there. This is what licenses putting an exact number
-     into a row whose other entries were scored under the greedy response; below the wall
-     that fidelity was 0.0000 on the stack arms, and this measures it for the first time
-     ABOVE the wall.
-  D. NEW: the exact best-mixed-over-det ratio at K = 5 and K = 6, the death-of-mixing curve's
-     first exactly computed points (finding 4 reports 0.746 / 0.829 under greedy).
+The mission objective is concave in the occupancy (thesis Prop 3.2), so restricting the
+defender to stacks leaves the game value unchanged: the exact game value needs only the
+R x n_isets stacked matrix rather than the 286 x n_isets full-occupancy matrix (about 26x
+smaller, ~85 MB at K=5 and ~540 MB at K=6). This computes, via the stacked LP: (A) an anchor
+check that the stacked LP reproduces the banked exact v* at K=1..4 and agrees with the
+full-occupancy LP (a numerical check of Prop 3.2); (B) the exact v* at K=5 and K=6; (C) the
+exact value of every naive stack and of static_det at K=5 and K=6, with greedy-vs-exact
+fidelity; (D) the resulting exact best-mixed-over-det ratio.
 
 Run (single process, all thread pools capped):
   OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
@@ -47,9 +30,7 @@ from src.envs.multiconvoy_interdiction import make_multiconvoy_env
 N, BAND, KX = 3, (0.15, 0.95), 8
 
 # Banked anchors that must reproduce before any new number is read.
-# [ledger: gen43_unified_kboundary.md, free-work finding 1]
 V_STAR_BANKED = {1: 0.1276, 2: 0.2553, 3: 0.3829, 4: 0.5106}
-# [ledger: gen43_unified_kboundary.md, pinned stack anchors + finding 4]
 GREEDY_BANKED = {
     2: {"uniform_disjoint": 0.3288, "inv_vuln_disjoint_budgetmax": 0.2978,
         "uniform_full": 0.3812, "inv_vuln_full_budgetmax": 0.3979},

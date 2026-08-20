@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen39 step 1 read-out (see experiments/gen39_concealment.md RESULTS).
+"""Reads out the gen39 step-1 scoping sweep: degeneracy by map, and hidden-versus-open ratios.
 
     PYTHONPATH=. python analysis/gen39_read_scoping.py
 """

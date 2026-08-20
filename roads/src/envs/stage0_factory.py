@@ -1,26 +1,8 @@
-"""Stage-0 validation-rung environment factory (problem redesign §7.1).
+"""Stage-0 single-truck validation-rung environment factory.
 
-Stage 0 is a *validation rung*, not a research result: its only job is to prove
-the (now-stable) SAC+ATLA+GNN stack can learn a **consequential, adversarial**
-routing policy at all. It deliberately makes the per-step decision matter, unlike
-the diffuse static-demand OSM problem where ``Q_Spread`` collapsed to ~0.
-
-Design (confirmed with Kilian):
-  * Same Kaliningrad OSM graph as :func:`src.envs.osm_factory.make_osm_env`
-    (so the GNN node/edge feature schema is identical; ``node_in_dim=11`` carries).
-  * **1 truck / 1 depot.** **K=1**: a single tight demand cluster placed around the
-    densest hotspot node, with the depot ~20 distance units away so there is a real
-    corridor for the antagonist to congest.
-  * **Capacity-1 shuttle**: the truck carries one request, returns to the depot to
-    reload, and repeats. The learnable, consequential decision is therefore the
-    **serve order** of the outstanding requests (shortest-processing-time
-    scheduling), which the antagonist can attack by congesting the corridor.
-  * A short *fixed* set of unit-demand requests (no Poisson arrivals yet — that is
-    Stage 1). All requests are present at ``t=0``, so per-request ``arrival_tick`` is
-    0 and the latency reward (see ``smdp_wrapper``) telescopes to total wait time.
-
-This factory is **additive**: it does not touch :func:`make_osm_env` or the static
-demand path, which remain the documented baseline + ZST reference.
+Builds a minimal, consequential adversarial routing scenario on the Kaliningrad OSM graph:
+one truck and one depot, with either a capacity-1 demand cluster (a serve-order decision) or
+a next-hop route choice between a fast and a safe route.
 """
 
 from __future__ import annotations
@@ -54,25 +36,17 @@ def make_stage0_env(
 ) -> GraphEnv:
     """Build the Stage-0 single-truck validation environment on the OSM graph.
 
-    Parameters
-    ----------
-    depot:
-        Node id used as the single depot / truck home. Defaults to ``"39"`` — a node
-        ~20 distance units from the demand hotspot, giving a meaningful corridor.
-    hotspot:
-        Node id at the centre of the K=1 demand cluster. ``None`` (default) picks the
-        node with the highest ``base_demand`` deterministically (tie-break by id).
-    cluster_size:
-        Number of unit-demand requests = the hotspot plus its ``cluster_size - 1``
-        nearest nodes by graph distance (a single tight K=1 region).
-    request_size:
-        Demand placed on each cluster node (1.0 = a unit request).
-    truck_capacity:
-        Truck capacity. ``1.0`` (default) forces a depot-reload shuttle, so the
-        consequential decision is the serve order of the cluster.
-    max_time:
-        Episode horizon in ticks. The SMDP wrapper overrides this with
-        ``SMDPConfig.max_ticks`` at reset, so this is only a standalone default.
+    Args:
+        depot: Node id for the single depot / truck home.
+        hotspot: Node id at the centre of the demand cluster. None picks the node with the
+            highest ``base_demand`` deterministically (tie-break by id).
+        cluster_size: Number of unit-demand requests: the hotspot plus its
+            ``cluster_size - 1`` nearest nodes by graph distance.
+        request_size: Demand placed on each cluster node (1.0 = a unit request).
+        truck_capacity: Truck capacity; 1.0 forces a depot-reload shuttle, so the
+            consequential decision is the serve order of the cluster.
+        max_time: Episode horizon in ticks (overridden by ``SMDPConfig.max_ticks`` at reset
+            when using the SMDP wrapper).
     """
     if cluster_size < 1:
         raise ValueError("cluster_size must be at least 1")
@@ -144,16 +118,15 @@ def make_stage0_nexthop_env(
 ) -> GraphEnv:
     """Build the next-hop route-choice validation environment on the OSM graph.
 
-    Focused demand (the redesign's design — *not* spread): all ``demand`` placed on a single
-    target node, with a capacity-1 shuttle so the truck makes repeated depot<->target trips,
-    each requiring a route choice. ``depot`` and ``target`` are joined by two disjoint routes
-    (a shorter "fast" route and a longer "safe" route); the default pair ``14 -> 82`` has two
-    edge-disjoint 5-hop routes (fast 6.4 / safe 7.4, ratio 1.16). Greedy defaults to the fast
-    route; the robust policy learns to take the safe route when the antagonist congests fast.
+    All ``demand`` is placed on a single target node, with a capacity-1 shuttle so the truck
+    makes repeated depot<->target trips, each requiring a route choice. ``depot`` and
+    ``target`` are joined by two disjoint routes (a shorter "fast" route and a longer "safe"
+    route); the default pair ``14 -> 82`` has two edge-disjoint 5-hop routes (fast 6.4 / safe
+    7.4, ratio 1.16). Greedy defaults to the fast route; a robust policy learns to take the
+    safe route when the antagonist congests it.
 
     The action model is selected by ``SMDPConfig.routing_mode="next_hop"`` in the wrapper;
-    this factory only sets up the geometry. Built on the full OSM graph so the GNN sees the
-    real topology. The static OSM problem and :func:`make_stage0_env` are left untouched.
+    this factory only sets up the geometry.
     """
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
     if depot not in nodes:

@@ -1,6 +1,5 @@
-"""Phase 1d bar B3, CORRECTED: the evolved LLM forces vs the heuristic force against TRAINED
-SACRED defenders, across ALL SIX held-out fields (the first version used one field and picked a
-favourable one; per-field spread is large and disclosed)."""
+"""Scores the gen39 phase-1d bar B3: evolved LLM forces against trained SACRED defenders,
+compared with the heuristic force, over all six held-out fields."""
 import json, os, numpy as np, torch
 for v in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","VECLIB_MAXIMUM_THREADS"):
     os.environ.setdefault(v,"1")

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """B2 71-33 cell: anchor reproduction probe (ORACLE/EVAL-ONLY, free; no model calls).
 
-Builds the 71-33 game EXACTLY as analysis/b2_llm_benchmark.py does (same env call, same
-stacked scoring path) and reproduces every banked anchor the B2 extension pins, BEFORE any
-live call fires. Banked sources: gen43_unified_kboundary.md (one-shot v* and stack anchors,
-K=1) and the gen35/gen40 exact dynamic anchors (opt / rotation / iid_eq at w=3, tau=0.15).
+Builds the 71-33 game exactly as analysis/b2_llm_benchmark.py does (same env call, same
+stacked scoring path) and reproduces the banked one-shot (v*, stack) and dynamic
+(opt / rotation / iid_eq at w=3, tau=0.15) anchors, before any live call fires.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
      analysis/b2_7133_anchor_probe.py
@@ -30,15 +29,15 @@ torch.set_num_threads(2)
 N, K, KX, BAND = 3, 1, 8, (0.15, 0.95)
 W, TAU = 3, 0.15
 
-# banked expectations (source ledger, 4 dp where banked so)
+# banked expectations, 4 dp where banked so
 EXPECT = {
     "R": 11, "m": 6,
-    "v_eq": 0.1276,                 # gen43 finding 1 (exact LP)
-    "stack_uniform_disjoint": 0.1666,   # gen43 pinned stack anchors, K=1
+    "v_eq": 0.1276,                     # exact LP
+    "stack_uniform_disjoint": 0.1666,
     "stack_invvuln_disjoint": 0.1276,   # = v* (worst-edge and budget-max coincide at K=1)
     "stack_uniform_full": 0.2252,
     "stack_invvuln_full": 0.2502,
-    "dyn_opt": 0.0313,              # gen43 dynamic anchors (Karp, exact)
+    "dyn_opt": 0.0313,                  # Karp, exact
     "dyn_rotation": 0.0387,
     "dyn_iid_eq": 0.0967,
 }

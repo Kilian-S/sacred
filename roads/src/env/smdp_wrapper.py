@@ -44,43 +44,37 @@ class SMDPConfig:
     time_penalty: float = 1.0
     remaining_demand_penalty: float = 0.5
     congestion_cost: float = 0.02
-    # Reward shaping selector. "legacy" = the static-problem delivery/time/remaining-demand
-    # shaping above (unchanged baseline). "latency" = the Stage-0 redesign reward: per tick,
-    # protagonist_reward = -(outstanding arrived-but-undelivered request count), which
-    # telescopes over the episode to the total delivery latency (sum of per-request waits).
+    # Reward shaping selector. "legacy" = the static delivery/time/remaining-demand shaping above.
+    # "latency" = per tick, protagonist_reward = -(outstanding arrived-but-undelivered request
+    # count), which telescopes over the episode to the total delivery latency (sum of per-request
+    # waits).
     reward_mode: str = "legacy"
-    # Protagonist action model. "destination" = pick a target node, env routes there via A*
-    # (the baseline). "next_hop" = pick the next adjacent node, one edge at a time, so the
-    # *policy* chooses the route and the antagonist's congestion becomes a learned, exploitable
-    # decision (route-around-the-adversary). See dispatch_truck_edge in graph_env.
+    # Protagonist action model. "destination" = pick a target node; env routes there via A*.
+    # "next_hop" = pick the next adjacent node, one edge at a time, so the policy chooses the
+    # route and the antagonist's congestion becomes something it can route around. See
+    # dispatch_truck_edge in graph_env.
     routing_mode: str = "destination"
     # Next-hop only: a next-hop is allowed if the route through it stays within this factor of
-    # the shortest static distance to the goal. >1.0 keeps near-shortest *alternatives* (the
-    # safe route) in the choice set while excluding genuine detours/backtracking that would let
-    # the truck wander the whole map. 1.5 keeps any route up to 50% longer than optimal.
+    # the shortest static distance to the goal. Keeps near-shortest alternatives (the safe route)
+    # in the choice set while excluding detours/backtracking that would let the truck wander the
+    # whole map. 1.5 keeps any route up to 50% longer than optimal.
     routing_corridor_slack: float = 1.5
-    # Antagonist sequential-epoch cap: max congestion sub-actions per decision event (0 = unlimited
-    # = legacy). Each sub-action is a stored transition + (in the antagonist phase) a gradient
-    # update, so a large budget spawning ~133 sub-actions/episode made the antagonist phase ~6.6x
-    # slower than the protagonist. Capping to 1 makes the adversary place ONE strategic full
-    # roadblock per event (reactive; sustained via congestion_duration), keeping its update count
-    # ~= the protagonist's. See the dynassign config.
+    # Antagonist sequential-epoch cap: max congestion sub-actions per decision event (0 =
+    # unlimited). Capping to 1 makes the adversary place one strategic roadblock per event
+    # (reactive; sustained via congestion_duration) instead of chaining many sub-actions within
+    # a single event.
     max_antag_actions_per_event: int = 0
-    # Antagonist REACH — which edges it may block. "leashed" (default) = the 3-hop radius around
-    # trucks (reactive: block right in front). "route" = the edges on each truck's shortest path to
-    # its target, so it can pre-block the gateway *ahead* of the truck (anticipation). Route-reach is
-    # the Stage-2 hybrid setting; a leashed adversary gives the protagonist nothing to anticipate.
+    # Antagonist reach: which edges it may block. "leashed" (default) = the 3-hop radius around
+    # trucks (reactive: block right in front). "route" = the edges on each truck's shortest path
+    # to its target, so it can pre-block the gateway ahead of the truck (anticipation).
     antag_reach: str = "leashed"
-    # Reward baseline (B1, gen07). "none" (default) = the raw latency reward, unchanged for every
-    # historical run. "twin" = subtract a per-tick action-INDEPENDENT baseline b(t) from the
-    # latency reward, so protagonist_reward = -(remaining_demand - b(t)). b(t) is supplied by a
-    # baseline_provider injected into the wrapper (gen07 uses the remaining-demand trace of a
-    # deterministic greedy, no-attack rollout replaying the same arrivals). Since b(t) does not
-    # depend on either agent's in-episode actions, the episode reward telescopes to
-    # total_wait - sum_t b(t) = total_wait minus a per-episode constant: the zero-sum game and its
-    # equilibrium are preserved (antagonist_reward = -protagonist_reward throughout), only the
-    # gradient variance changes (strips the arrival trend + the unavoidable-under-clean-greedy
-    # damage that floods the signal under attack — the gen06 M1 SNR pathology).
+    # Reward baseline. "none" (default) = the raw latency reward. "twin" = subtract a per-tick
+    # action-independent baseline b(t) from the latency reward, so protagonist_reward =
+    # -(remaining_demand - b(t)); b(t) is supplied by a baseline_provider injected into the
+    # wrapper. Since b(t) does not depend on either agent's in-episode actions, the episode
+    # reward telescopes to total_wait - sum_t b(t): the zero-sum game and its equilibrium are
+    # preserved (antagonist_reward = -protagonist_reward throughout), only the gradient variance
+    # changes.
     reward_baseline: str = "none"
 
 
@@ -97,21 +91,20 @@ class SMDPTransition:
     elapsed_ticks: int
     action_mask: dict[str, Any]
     info: dict[str, Any] = field(default_factory=dict)
-    # Lazily-populated cache of featurized graphs (keyed "state"/"next"), filled on first
-    # SAC.update() that samples this transition and reused thereafter. featurize_state is a
-    # pure function of the (immutable, buffered) state, so this is behaviour-preserving. The
-    # cache is freed with the transition when it is evicted from the replay buffer.
+    # Lazily-populated cache of featurized graphs (keyed "state"/"next"), filled on first use
+    # and reused thereafter. featurize_state is a pure function of the (immutable, buffered)
+    # state, so this is behaviour-preserving. Freed with the transition when it is evicted
+    # from the replay buffer.
     feature_cache: dict[str, Any] = field(default_factory=dict)
 
     def __getstate__(self) -> dict[str, Any]:
-        # Exclude the (potentially multi-GB) featurization cache from pickling so that
-        # serializing the replay buffer into a checkpoint stays small. The live in-memory
-        # cache is untouched; it is simply rebuilt lazily after a resume.
+        # Exclude the featurization cache from pickling so serialised replay-buffer checkpoints
+        # stay small. The live in-memory cache is untouched; it is rebuilt lazily after a resume.
         return {f.name: getattr(self, f.name) for f in fields(self) if f.name != "feature_cache"}
 
     def __setstate__(self, state: Any) -> None:
-        # `state` is a plain dict (new format) or a `(None, slot_dict)` tuple (older pickles
-        # of this slotted dataclass, e.g. data/erb_transitions.pt). Handle both.
+        # `state` is a plain dict (current format) or a `(None, slot_dict)` tuple (older
+        # pickles of this slotted dataclass). Handle both.
         if isinstance(state, tuple):
             state = state[1] or {}
         for key, value in state.items():
@@ -166,11 +159,11 @@ class SMDPDecisionWrapper:
         self.env_factory = env_factory
         self.config = config or SMDPConfig()
         self.env = self.env_factory()
-        # B1 reward baseline (see SMDPConfig.reward_baseline). `baseline_provider(env) ->
+        # Reward baseline (see SMDPConfig.reward_baseline). `baseline_provider(env) ->
         # (series, last)` maps post-step env.time -> b(t) plus a pad value for ticks past the
         # provider's range; called once per reset when reward_baseline != "none". `_baseline_record`
-        # is a recording buffer used to CAPTURE a series during a provider's own rollout (set
-        # externally, never by reset) — one mechanism does double duty (record then subtract).
+        # is a recording buffer used to capture a series during a provider's own rollout (set
+        # externally, never by reset).
         self._baseline_provider = baseline_provider
         self._reward_baseline_series: dict[int, float] | None = None
         self._reward_baseline_last: float = 0.0
@@ -213,10 +206,10 @@ class SMDPDecisionWrapper:
         self._in_sequential_epoch = False
         self._antag_epoch_actions = 0
         self._goal_dist_cache = {}
-        # B1: compute this episode's action-independent baseline from the freshly-generated
-        # arrivals (the provider replays them clean under greedy). Skipped when disabled or when
-        # this wrapper is itself a provider's twin (no provider injected). `_baseline_record` is
-        # left untouched so a provider can capture a series across this reset.
+        # Compute this episode's action-independent baseline from the freshly-generated arrivals
+        # (the provider replays them clean under greedy). Skipped when disabled or when this
+        # wrapper is itself a provider's twin (no provider injected). `_baseline_record` is left
+        # untouched so a provider can capture a series across this reset.
         if self.config.reward_baseline == "twin" and self._baseline_provider is not None:
             self._reward_baseline_series, self._reward_baseline_last = \
                 self._baseline_provider(self.env)
@@ -288,8 +281,8 @@ class SMDPDecisionWrapper:
             )
             
             # GPS-style dynamic rerouting for trucks affected by this newly injected congestion.
-            # Only in destination mode: in next_hop mode the *policy* owns rerouting, so auto-
-            # rerouting would erase the very decision the protagonist must learn.
+            # Only in destination mode: in next_hop mode the policy owns rerouting, so
+            # auto-rerouting would erase the decision the protagonist must learn.
             if level > 0.0 and self.config.routing_mode == "destination":
                 for truck_id, truck in self.env.trucks.items():
                     if truck.is_idle or not truck.path:
@@ -441,7 +434,7 @@ class SMDPDecisionWrapper:
                     if unassigned_demand > 0.0:
                         destinations.append(n)
                 
-                # Only allow depot if load < capacity, OR if the truck is NOT already at the depot!
+                # Only allow depot if load < capacity, or if the truck is not already at the depot.
                 if truck.load < truck.capacity or current_node != truck.home_depot:
                     if can_reach_depot:
                         destinations.append(truck.home_depot)
@@ -453,16 +446,14 @@ class SMDPDecisionWrapper:
         return mask
 
     def _next_hop_action_mask(self) -> dict[int, list[NodeId]]:
-        """Next-hop routing: each idle truck may step to a *forward* neighbour — one that
-        makes topological progress toward its goal (nearest demand if loaded, else the home
-        depot), by static congestion-free distance.
+        """Next-hop routing: each idle truck may step to a forward neighbour, one that makes
+        topological progress toward its goal (nearest demand if loaded, else the home depot),
+        by static congestion-free distance.
 
-        This bounds exploration to the corridor (the truck can't wander the whole map) while
-        preserving the route choice: at a branch, both the fast and the safe route are
-        forward, so they both appear and the policy decides between them. Congestion is read
-        from the observation, not the mask, so the antagonist can still make the fast route
-        costly. Falls back to all neighbours if no neighbour is strictly closer (shouldn't
-        happen on a connected graph for a non-goal node).
+        Bounds exploration to a corridor while preserving route choice: at a branch, both the
+        fast and the safe route are forward, so both appear and the policy decides between them.
+        Congestion is read from the observation, not the mask, so the antagonist can still make
+        the fast route costly. Falls back to all neighbours if none is strictly closer.
         """
         mask: dict[int, list[NodeId]] = {}
         for truck_id, truck in self.env.trucks.items():
@@ -514,12 +505,11 @@ class SMDPDecisionWrapper:
 
     def _assignment_candidates(self, truck: Any) -> list[NodeId]:
         """Pending request nodes reachable from the truck (same component), excluding requests
-        another truck is already assigned to (CROSS-EVENT claiming — same-event claiming is still
-        applied by the trainer/eval). Without this, a request could be double-assigned across
-        decision events; once the first truck served it, the second was stranded orbiting a
-        zero-demand node. If no unclaimed request remains, the truck is sent home (assignment =
-        its own depot) so the episode can terminate; the env clears the assignment on depot
-        arrival, so it re-enters assignment if new work appears."""
+        another truck is already assigned to (cross-event claiming; same-event claiming is still
+        applied by the trainer/eval). Prevents a request being double-assigned across decision
+        events. Falls back to the truck's own depot if no unclaimed request remains, so the
+        episode can terminate; the env clears the assignment on depot arrival, so it re-enters
+        assignment if new work appears."""
         comp = self.env.node_to_component.get(truck.current_node)
         customers = getattr(self.env, "valid_customers_by_comp", {}).get(comp, {})
         taken = {
@@ -580,11 +570,11 @@ class SMDPDecisionWrapper:
                     self.env.dispatch_truck_edge(truck_id, options[0])
 
     def _route_reach_edges(self) -> set:
-        """Route-reach: the edges on each truck's STATIC shortest path to its target -> lets the
-        adversary pre-block the gateway AHEAD on a truck's committed route (anticipation). Static
-        (congestion-free) distance = the truck's *intended* route, so a block forces the truck to
-        react (detour) rather than the adversary chasing the reroute. A truck with no target (e.g. at
-        a depot awaiting assignment) is not yet committed and contributes no edges."""
+        """Route-reach: the edges on each truck's static shortest path to its target, letting the
+        adversary pre-block the gateway ahead on a truck's committed route (anticipation). Static
+        (congestion-free) distance is the truck's intended route, so a block forces the truck to
+        react (detour) rather than the adversary chasing the reroute. A truck with no target (e.g.
+        at a depot awaiting assignment) is not yet committed and contributes no edges."""
         edges: set = set()
         for truck in self.env.trucks.values():
             target = getattr(truck, "assigned_target", None) or truck.destination
@@ -604,12 +594,12 @@ class SMDPDecisionWrapper:
         return edges
 
     def antagonist_action_mask(self) -> dict[str, Any]:
-        """Return valid antagonist action choices at the current event with 3-road Action Masking."""
+        """Return the antagonist's valid action choices (edges and levels) at the current event."""
 
         if not getattr(self, "_in_sequential_epoch", False) and self.cooldown_remaining > 0:
             return {"can_wait": True, "levels_by_edge": {}}
 
-        # 1. Action-Space Masking — which edges the antagonist may block (its reach).
+        # 1. Action-space masking: which edges the antagonist may block (its reach).
         if self.config.antag_reach == "route":
             nearby_edges = self._route_reach_edges()
         else:
@@ -726,20 +716,21 @@ class SMDPDecisionWrapper:
 
     def _accumulate_step(self, step_result: StepResult, antagonist_action: Mapping[EdgeId, float]) -> None:
         if self.config.reward_mode == "latency":
-            # Delivery-latency objective (Stage-0 redesign): pay -1 per tick per outstanding
-            # demand *unit* (arrived but not yet delivered). Measured AFTER this tick's
-            # deliveries (step_result is post-step), so completing a unit immediately stops
-            # accruing its penalty. Summed over the episode this telescopes to total latency,
-            # i.e. sum over units of (delivery_tick - arrival_tick). Using units (not nodes)
-            # keeps it correct when a single node holds many units (the next-hop target).
+            # Delivery-latency objective: pay -1 per tick per outstanding demand unit (arrived but
+            # not yet delivered). Measured after this tick's deliveries (step_result is post-step),
+            # so completing a unit immediately stops accruing its penalty. Summed over the episode
+            # this telescopes to total latency, i.e. sum over units of (delivery_tick -
+            # arrival_tick). Using units (not nodes) keeps it correct when a single node holds
+            # many units (the next-hop target).
             remaining = float(self.env.remaining_demand)
-            # B1 recording pass: capture this tick's remaining_demand for a provider's twin series.
+            # Recording pass: capture this tick's remaining_demand for a provider's twin series.
             if self._baseline_record is not None:
                 self._baseline_record.append((int(self.env.time), remaining))
-            # B1 subtraction pass: strip the action-independent baseline b(t). Ticks past the
+            # Subtraction pass: strip the action-independent baseline b(t). Ticks past the
             # provider's range (the real episode ran longer under attack than the clean twin) pad
-            # with the twin's final value. b(t) is constant in both agents' actions -> zero-sum and
-            # the telescoped total shift by exactly sum_t b(t) (a per-episode constant).
+            # with the twin's final value. b(t) is constant in both agents' actions, so the game
+            # stays zero-sum and the telescoped total shifts by exactly sum_t b(t) (a per-episode
+            # constant).
             if self._reward_baseline_series is not None:
                 remaining = remaining - self._reward_baseline_series.get(
                     int(self.env.time), self._reward_baseline_last)
@@ -776,9 +767,9 @@ class SMDPDecisionWrapper:
     def _outstanding_requests(self) -> int:
         """Count requests that have arrived but are not yet delivered.
 
-        For Stage 0 all requests are present from t=0, so this is simply the number of
-        non-depot nodes with positive remaining demand. The env maintains this set in
-        ``valid_customers_by_comp`` (O(1) per tick); fall back to a graph scan if absent.
+        When all requests are present from t=0, this is simply the number of non-depot nodes
+        with positive remaining demand. Uses ``valid_customers_by_comp`` when available (O(1)
+        per tick), else falls back to a graph scan.
         """
         valid_customers_by_comp = getattr(self.env, "valid_customers_by_comp", None)
         if valid_customers_by_comp is not None:

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Score the B2 71-33 batch (pre-registered 2026-08-12; anchors in b2_7133_anchors.json).
+"""Score the B2 71-33 batch (anchors in b2_7133_anchors.json).
 
 Aggregates models/runs/b2_llm/batch_7133/*.json into per-model rows: register (a) mean
-worst-case, (b) mean +/- sd exploitability with the pre-registered core-mass/distance
-readout, (c) mean +/- sd realised mission failure with best episode and repeat rate.
+worst-case, (b) mean +/- sd exploitability with core-mass/distance readout, (c) mean +/- sd
+realised mission failure with best episode and repeat rate.
 Writes models/runs/b2_llm/batch_7133_scored.json.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/b2_score_7133.py

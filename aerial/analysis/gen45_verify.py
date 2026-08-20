@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""gen45 second-instance verification (2026-08-10): recompute every digit the confirmation
-section of experiments/gen45_unified_corridor.md banks, directly from the raw artefacts,
-with selection logic written independently of analysis/gen45_score.py."""
+"""Recomputes the banked gen45 confirmation figures from the raw artefacts, with selection
+logic written independently of analysis/gen45_score.py."""
 from __future__ import annotations
 
 import json

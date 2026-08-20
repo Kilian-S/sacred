@@ -39,8 +39,8 @@ class TestProtagonistRefactoring(unittest.TestCase):
         self.assertNotIn("depot", allowed)
         self.assertIn("a", allowed)
         self.assertIn("b", allowed)
-        self.assertNotIn("hub", allowed)  # hub has 0.0 demand, should NOT be in mask!
-        self.assertNotIn("bridge", allowed)  # bridge has 0.0 demand, should NOT be in mask!
+        self.assertNotIn("hub", allowed)  # zero demand, so out of the mask
+        self.assertNotIn("bridge", allowed)  # zero demand, so out of the mask
 
     def test_sequential_dispatch_and_state_projection(self) -> None:
         event = self.smdp.reset_decision_env()
@@ -106,8 +106,8 @@ class TestProtagonistRefactoring(unittest.TestCase):
         antag_action = (congestion_edge, 1.0)
         smdp.step_antagonist(antag_action)
 
-        # The antagonist step should have intercepted Truck 0 and truncated its path!
-        # It should now be heading to the intersection ('a') before the congested edge, not 'b'.
+        # The antagonist step truncates Truck 0's path, so it now heads to the intersection
+        # ('a') before the congested edge rather than to 'b'.
         self.assertEqual(truck0.destination, "a")
         self.assertFalse(truck0.is_idle)
         self.assertIsNone(truck0.current_node)
@@ -128,7 +128,7 @@ class TestProtagonistRefactoring(unittest.TestCase):
         # Now evaluate mask for Truck 1 (which is idle and still deciding)
         mask_new = self.smdp.protagonist_action_mask()
         
-        # Customer 'a' should be dynamically excluded from Truck 1's action mask because unassigned demand is 0!
+        # Customer 'a' drops out of Truck 1's mask because its unassigned demand is now zero.
         self.assertNotIn("a", mask_new[1])
         self.assertIn("b", mask_new[1])  # 'b' has demand 2.0, remains available
 

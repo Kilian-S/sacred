@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""A3.2 (ROADMAP): robustness-vs-training-time for all gen06 arms.
-
-Post-hoc analysis of the CLOSED gen06 generation (primary untouched). Evaluates EVERY protagonist
-snapshot of all six runs under the pathrand and targeted attackers on the 8 VALIDATION instances
-(seed base 20_000_019; test instances stay untouched), i.e. the same machinery checkpoint
-selection used, swept over training time and both aimed attacks. Motivated by the selection
-outcome (two of three vanilla arms selected ep100): does aimed-attack robustness DECLINE with
-training time, and does it decline differently in the adversarially-trained arms?
+"""gen06: robustness-vs-training-time for all gen06 arms. Evaluates every protagonist snapshot of
+the six runs under the pathrand and targeted attackers on the 8 validation instances, using the
+same checkpoint-selection machinery swept over training time, to check whether aimed-attack
+robustness declines with training time and whether it declines differently between the
+adversarially-trained and vanilla arms.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/gen06_snapshot_robustness.py  (~10-20 min, eval only)
 """
@@ -54,7 +51,6 @@ def main() -> None:
                                 "results": out}, indent=1))
     print(f"\nWrote {path}")
 
-    # Compact trend summary: early (ep50-200) vs late (ep650-800) window means per run/attacker.
     print("\n=== attacked validation wait, early (ep50-200) vs late (ep650-800) ===")
     for run in RUNS:
         for attacker in ATTACKERS:

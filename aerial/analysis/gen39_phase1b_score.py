@@ -1,6 +1,5 @@
-"""gen39 Phase 1b: score the 61-force population per model, on BOTH yardsticks, and report the
-axis Phase 1a identified: threat vs PERFECT play (the curriculum predictor) alongside threat vs
-the observing rule (what step 2 scored). Also: terrain posture mix and doctrine diversity."""
+"""Scores the gen39 phase-1b force population per model on both yardsticks, threat against
+perfect play and against the observing rule, with terrain posture mix and doctrine diversity."""
 import json, os, collections
 for v in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","VECLIB_MAXIMUM_THREADS"):
     os.environ.setdefault(v,"1")
