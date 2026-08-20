@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Authors a fresh llama llm16 curriculum for gen39 step 5e, reusing the step-5 search
 unchanged so a roll differs only by the search's own stochasticity. The output carries all four
-banked family keys unaltered and puts the fresh roll under "llm16r", so the trainer's test set,
+existing family keys unaltered and puts the fresh roll under "llm16r", so the trainer's test set,
 which reads the family keys from the same file, is preserved. Per-field progress persists and an
 existing roll is never overwritten.
 
@@ -38,7 +38,7 @@ def main():
     out = Path(f"models/runs/gen39_step5/curricula_llama{a.roll}.json")
     progress = Path(f"models/runs/gen39_step5/llama{a.roll}_progress.json")
     if out.exists():
-        raise SystemExit(f"{out} already exists; refusing to overwrite a banked curriculum")
+        raise SystemExit(f"{out} already exists; refusing to overwrite an existing curriculum")
     base = narva_base()
     pp0 = base.lethality(resample_field(base.coords, 1000), hidden_leth=1.0)
     digest = map_digest(base, pp0)
@@ -67,7 +67,7 @@ def main():
     assert all(chk[k] == banked[k] for k in ("llm16", "local16", "random16", "tuned"))
     tr = np.median([new[str(f)][0][1] for f in TRAIN_FIELDS])
     print(f"\nllama roll {a.roll} train-field median best {tr:.4f}\n[written] {out} "
-          f"(all four banked family keys byte-identical; llm16r key = THIS roll)")
+          f"(all four existing family keys byte-identical; llm16r key = THIS roll)")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 
 Three cells (71-33, 35-159, Gdansk 249-95), qwen3-27b thinking ON. Registers (a)/(c) come
 from the 16k gateway phase; register (b) comes from the direct-port 32k phase only (16k (b)
-sidecars are excluded). Off-mode comparison rows come from the banked scored artefacts.
+sidecars are excluded). Off-mode comparison rows come from the recorded scored artefacts.
 Validity rows report per-register n, empty-content turn retries, and gate means.
 
 Run: PYTHONPATH=. .venv/bin/python analysis/b2_score_think.py

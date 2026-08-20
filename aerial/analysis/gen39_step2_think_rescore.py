@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Applies the step-2 headline aggregation, the per-arm median over forces and fields of the
-vs-best-observing-defender column, to the banked step-2 record and to the gen42 thinking-off and
-thinking-on arms. The banked record is the consistency anchor and must reproduce exactly.
+vs-best-observing-defender column, to the recorded step-2 table and to the gen42 thinking-off and
+thinking-on arms. The recorded table is the consistency anchor and must reproduce exactly.
 
 Run: PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_step2_think_rescore.py
 Writes models/runs/gen42_ladder/step2_rescore.json
@@ -80,7 +80,7 @@ def main():
     for arm, exp in ANCHOR.items():
         got = bt[arm]["pooled_median_vs_observing"]
         anchor_verdicts[arm] = "PASS" if abs(got - exp) < 5e-5 else \
-            f"FAIL (got {got:.4f} vs banked {exp})"
+            f"FAIL (got {got:.4f} vs recorded {exp})"
     out["anchor_verdicts"] = anchor_verdicts
     out["anchor_all_pass"] = all(v == "PASS" for v in anchor_verdicts.values())
 

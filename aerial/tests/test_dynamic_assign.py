@@ -57,7 +57,7 @@ def test_reset_clears_dynamic_state():
 def test_dynamic_terminates_only_at_max_time():
     env = make_dynamic_assign_env(max_time=200, arrival_rate=0.05)
     env.reset(demand_seed=4)
-    # At t=0 the queue is empty (no demand yet) but the episode must NOT be done — under the
+    # At t=0 the queue is empty (no demand yet) but the episode must NOT be done - under the
     # static rule (remaining==0 and trucks home) it would terminate immediately.
     assert env.remaining_demand == 0.0
     assert not env.is_done()

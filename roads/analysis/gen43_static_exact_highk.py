@@ -5,7 +5,7 @@ The mission objective is concave in the occupancy (thesis Prop 3.2), so restrict
 defender to stacks leaves the game value unchanged: the exact game value needs only the
 R x n_isets stacked matrix rather than the 286 x n_isets full-occupancy matrix (about 26x
 smaller, ~85 MB at K=5 and ~540 MB at K=6). This computes, via the stacked LP: (A) an anchor
-check that the stacked LP reproduces the banked exact v* at K=1..4 and agrees with the
+check that the stacked LP reproduces the recorded exact v* at K=1..4 and agrees with the
 full-occupancy LP (a numerical check of Prop 3.2); (B) the exact v* at K=5 and K=6; (C) the
 exact value of every naive stack and of static_det at K=5 and K=6, with greedy-vs-exact
 fidelity; (D) the resulting exact best-mixed-over-det ratio.
@@ -77,9 +77,8 @@ def stacked_matrix(game):
 def arms_for(game, vuln_fs):
     """The naive stack family, with BOTH inverse-vulnerability conventions.
 
-    DISCLOSURE (found 2026-08-10 by this probe). The banked ladder uses two different
-    definitions of the inverse-vulnerability weights, because the consolidation probe's two
-    halves computed them differently:
+    The recorded ladder uses two different definitions of the inverse-vulnerability
+    weights:
 
       * `worstedge` (part_s, the K >= 5 rows): weights from each route's WORST SINGLE EDGE,
         1/(1 - (1 - max_e p_e)^N), a property of the map alone and therefore FIXED as K
@@ -187,7 +186,7 @@ def run_budget(k, do_occupancy_check, od=("71", "33")):
         banked = GREEDY_BANKED.get(k, {}).get(name)
         extra = ""
         if banked is not None:
-            extra = f"  (banked greedy {banked}, dev {abs(float(v_greedy) - banked):.4f})"
+            extra = f"  (recorded greedy {banked}, dev {abs(float(v_greedy) - banked):.4f})"
         print(f"  {name:<20s} exact {v_exact:.4f}   greedy {float(v_greedy):.4f}   "
               f"fidelity {row[name + '_fidelity'] * 100:.2f}%{extra}", flush=True)
 
@@ -203,7 +202,7 @@ def run_budget(k, do_occupancy_check, od=("71", "33")):
     row["best_stack_over_det_exact"] = round(row["best_stack_exact"] / max(det_exact, 1e-9), 6)
     print(f"  static_det exact {det_exact:.4f} (banked greedy {DET_BANKED})", flush=True)
     print(f"  best-mixed-over-det EXACT {row['best_mixed_over_det_exact']:.4f}"
-          + (f"  (greedy-yardstick banked {BEST_MIXED_OVER_DET_GREEDY[k]})"
+          + (f"  (greedy benchmark {BEST_MIXED_OVER_DET_GREEDY[k]})"
              if k in BEST_MIXED_OVER_DET_GREEDY else ""), flush=True)
     return row
 

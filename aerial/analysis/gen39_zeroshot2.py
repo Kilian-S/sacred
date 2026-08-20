@@ -58,7 +58,7 @@ def build(maps, families, workers):
                 art[name].setdefault(key, {})
                 todo = [fam for fam in families if fam not in art[name][key]]
                 if not todo:
-                    print(f"  {name} field {f}: already banked {sorted(art[name][key])}",
+                    print(f"  {name} field {f}: already stored {sorted(art[name][key])}",
                           flush=True)
                     continue
                 t0 = time.time()
@@ -118,7 +118,7 @@ def score(workers, out_path=None, only_maps=None):
     if only_maps:
         maps = [m for m in maps if m in only_maps]
     if not maps:
-        raise SystemExit("no (selected) map has all four families banked yet; run --build first")
+        raise SystemExit("no (selected) map has all four families stored yet; run --build first")
     print(f"scoring maps: {maps}")
     ckpts = load_ckpts_all()
     print(f"checkpoints loaded: {len(ckpts)}")

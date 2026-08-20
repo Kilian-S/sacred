@@ -2,7 +2,7 @@
 """B2 71-33 cell: anchor reproduction probe (ORACLE/EVAL-ONLY, free; no model calls).
 
 Builds the 71-33 game exactly as analysis/b2_llm_benchmark.py does (same env call, same
-stacked scoring path) and reproduces the banked one-shot (v*, stack) and dynamic
+stacked scoring path) and reproduces the recorded one-shot (v*, stack) and dynamic
 (opt / rotation / iid_eq at w=3, tau=0.15) anchors, before any live call fires.
 
 Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
@@ -29,7 +29,7 @@ torch.set_num_threads(2)
 N, K, KX, BAND = 3, 1, 8, (0.15, 0.95)
 W, TAU = 3, 0.15
 
-# banked expectations, 4 dp where banked so
+# reference expectations, 4 dp so
 EXPECT = {
     "R": 11, "m": 6,
     "v_eq": 0.1276,                     # exact LP
@@ -92,7 +92,7 @@ def main():
     for k, exp in EXPECT.items():
         v = got[k]
         ok = (v == exp) if isinstance(exp, int) else abs(v - exp) < 5e-4
-        verdicts[k] = "PASS" if ok else f"FAIL (got {v:.4f} vs banked {exp})"
+        verdicts[k] = "PASS" if ok else f"FAIL (got {v:.4f} vs recorded {exp})"
     out = {"got": got, "expect": EXPECT, "verdicts": verdicts,
            "all_pass": all(v == "PASS" for v in verdicts.values())}
     print(json.dumps(out, indent=2))

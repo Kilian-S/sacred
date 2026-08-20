@@ -121,7 +121,7 @@ def make_stage0_nexthop_env(
 ) -> GraphEnv:
     """Build the next-hop route-choice validation environment on the OSM graph.
 
-    Focused demand (the redesign's design — *not* spread): all ``demand`` placed on a single
+    Focused demand (the redesign's design - *not* spread): all ``demand`` placed on a single
     target node, with a capacity-1 shuttle so the truck makes repeated depot<->target trips,
     each requiring a route choice. ``depot`` and ``target`` are joined by two disjoint routes
     (a shorter "fast" route and a longer "safe" route); the default pair ``14 -> 82`` has two

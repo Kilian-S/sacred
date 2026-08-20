@@ -12,7 +12,7 @@ PROGRESS = Path("models/runs/gen39_step5/qwenthink3_progress.json")
 
 if __name__ == "__main__":
     if OUT.exists():
-        raise SystemExit(f"{OUT} already exists; refusing to overwrite a banked curriculum")
+        raise SystemExit(f"{OUT} already exists; refusing to overwrite an existing curriculum")
     p5c.OUT = OUT
     p5c.PROGRESS = PROGRESS
     print(f"[step-5e] third qwenthink16 curriculum -> {OUT}", flush=True)

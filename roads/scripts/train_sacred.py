@@ -111,7 +111,7 @@ def main() -> None:
             "'dynassign' = Stage 1.5 dynamic assignment (Poisson arrivals, 2 trucks, latency). "
             "'hybrid' = Stage 2 hybrid (assignment + next-hop routing, chokepoint geometry, static). "
             "'contested' = gen07 contested-resupply arena (dynassign dynamics + route-reach "
-            "antagonist; the exploitability headline arena — see src/envs/contested.py)."
+            "antagonist; the exploitability arena - see src/envs/contested.py)."
         ),
     )
     parser.add_argument(

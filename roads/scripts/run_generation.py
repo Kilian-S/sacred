@@ -47,7 +47,7 @@ def write_ledger(group: str, configs: list[str], seeds: list[int], common: list[
     os.makedirs("experiments", exist_ok=True)
     path = f"experiments/{group}.md"
     if os.path.exists(path):
-        # A hand-written ledger (pre-registered metric etc.) already exists — append the launch
+        # A hand-written experiment record (pre-registered metric etc.) already exists - append the launch
         # record instead of clobbering it.
         with open(path, "a") as f:
             f.write(f"\n## Launch record ({time.strftime('%Y-%m-%d %H:%M')})\n\n")

@@ -23,7 +23,7 @@ PAIRS = [("qwen35-2b", "qwen35-27b", "size 2B vs 27B"),
          ("qwen3-27b", "qwen3-27b_think", "thinking off vs on"),
          ("llama-3.3-70b", "qwen3-27b_think", "llama vs crown-thinking"),
          ("local16", "qwen3-27b_think", "hill-climb vs crown-thinking"),
-         ("local16", "llama-3.3-70b", "hill-climb vs llama (the banked step-5 pair)")]
+         ("local16", "llama-3.3-70b", "hill-climb vs llama (the step-5 pair)")]
 RNG = np.random.default_rng(0)
 
 

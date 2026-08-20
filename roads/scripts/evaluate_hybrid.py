@@ -156,7 +156,7 @@ def main() -> None:
         protag = _load_protag(os.path.join(args.run, "protagonist", "actor.pt"))
         antag = _load_antag(cfg, os.path.join(args.run, "antagonist", "actor.pt"))
         r = eval_hybrid_cells(protag, antag, make_env, cfg)
-        print(f"\nHybrid eval — run {args.run}")
+        print(f"\nHybrid eval - run {args.run}")
         for cell in ["greedy_noatk", "greedy_atk", "learned_noatk", "learned_atk"]:
             print(f"  {cell:>14}: {r[cell]:8.0f}")
         print(f"  gap_atk   = {r['gap_atk']:+.0f}  (neg = learned beats greedy under attack)")

@@ -64,7 +64,7 @@ def call_openai_thinking(base, key, model, system, user, schema=None, max_tokens
 if __name__ == "__main__":
     p1e.g33.call_openai = call_openai_thinking
     p1e.MODELS = ("qwen3-27b",)
-    p1e.OUT = OUT                      # never overwrite the banked thinking-OFF run
+    p1e.OUT = OUT                      # never overwrite the thinking-off run
     p1e.BASE_URL = BASE_URL_FIXED
     print(f"[thinking-on probe] models={p1e.MODELS} max_tokens={MAX_TOKENS}\n"
           f"  endpoint {BASE_URL_FIXED}\n  -> {OUT}\n")

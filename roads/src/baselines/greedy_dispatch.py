@@ -160,10 +160,10 @@ def urgency_dispatch_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 def hybrid_greedy_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
     """Hybrid baseline (`routing_mode="hybrid"`): the strong REACTIVE dispatcher the learned policy
-    must beat. **Assignment** — each unassigned truck takes the nearest (congestion-aware) unclaimed
-    request, with sequential claiming. **Routing** — each assigned truck steps to the forward
+    must beat. **Assignment** - each unassigned truck takes the nearest (congestion-aware) unclaimed
+    request, with sequential claiming. **Routing** - each assigned truck steps to the forward
     next-hop on the congestion-aware shortest path to its target. It reroutes around congestion it
-    can *see now*, but cannot *anticipate* the adversary — the headroom a learned policy can exploit.
+    can *see now*, but cannot *anticipate* the adversary - the headroom a learned policy can exploit.
     """
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env

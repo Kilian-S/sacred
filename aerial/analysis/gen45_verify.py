@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Recomputes the banked gen45 confirmation figures from the raw artefacts, with selection
+"""Recomputes the recorded gen45 confirmation figures from the raw artefacts, with selection
 logic written independently of analysis/gen45_score.py."""
 from __future__ import annotations
 

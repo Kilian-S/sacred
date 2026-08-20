@@ -165,7 +165,7 @@ def main() -> None:
         protag = _load_protag(cfg, os.path.join(args.run, "protagonist", "actor.pt"))
         antag = _load_antag(cfg, os.path.join(args.run, "antagonist", "actor.pt"))
         r = eval_dynamic_cells(protag, antag, make_env_for_seed, cfg, seeds)
-        print(f"\nDynamic assignment eval — run {args.run} ({len(seeds)} fixed seeds)")
+        print(f"\nDynamic assignment eval - run {args.run} ({len(seeds)} fixed seeds)")
         for cell in ["greedy_noatk", "greedy_atk", "learned_noatk", "learned_atk"]:
             print(f"  {cell:>14}: {r[cell + '_mean']:8.1f} +/- {r[cell + '_std']:5.1f}")
         print(f"  gap_atk   = {r['gap_atk_mean']:+.1f} +/- {r['gap_atk_std']:.0f}  (neg = learned beats greedy under attack)")

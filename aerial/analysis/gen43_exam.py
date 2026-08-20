@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sits one model configuration on the gen43 forty-question bank: one call per item with a single
 retry on parse or format failure, non-thinking arms at temperature 0 and the thinking arm at 0.6,
-seed 0 and max_tokens 16000. Traces are banked.
+seed 0 and max_tokens 16000. Traces are saved.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b --thinking on

@@ -110,7 +110,7 @@ def main() -> None:
     protag, antag = _build_agents(args.run, cfg)
     r = eval_cells_assignment(protag, antag, lambda: make_assignment_env(), cfg)
 
-    print(f"\nAssignment evaluation — run: {args.run}")
+    print(f"\nAssignment evaluation - run: {args.run}")
     print(f"{'policy':>8} | {'antagonist':>10} | {'total_wait':>10}")
     print("-" * 36)
     print(f"{'greedy':>8} | {'no-attack':>10} | {r['greedy_noatk']:>10.1f}")
@@ -124,7 +124,7 @@ def main() -> None:
         print(f"PASS: learned beats greedy-insertion by {-r['gap_atk']:.0f} "
               f"({-100*r['gap_atk']/r['greedy_atk']:.1f}%) under attack.")
     else:
-        print("NOT BEATEN under attack — inspect Q_Spread / entropy / antagonist co-evolution.")
+        print("NOT BEATEN under attack - inspect Q_Spread / entropy / antagonist co-evolution.")
 
 
 if __name__ == "__main__":

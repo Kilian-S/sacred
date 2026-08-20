@@ -3,7 +3,7 @@
 
 The machinery is step5_prep's llm16 arm at the same budget of 16 exact evaluations per field; the
 model is called with reasoning enabled and a larger token budget, since the trace draws from the
-same allowance. The output copies the four banked family keys across unaltered, so the banked test
+same allowance. The output copies the four existing family keys across unaltered, so the test
 set is preserved, and adds the new "qwenthink16" key.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_step5c_prep.py
@@ -120,7 +120,7 @@ def main():
     tr = np.median([new[str(f)][0][1] for f in TRAIN_FIELDS])
     te = np.median([new[str(f)][0][1] for f in TEST_FIELDS])
     print(f"\nqwenthink16 train-field median best {tr:.4f}  test-field median best {te:.4f}")
-    print(f"[written] {OUT} (four banked family keys verified byte-identical)")
+    print(f"[written] {OUT} (four family keys verified byte-identical)")
 
 
 if __name__ == "__main__":

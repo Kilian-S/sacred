@@ -41,7 +41,7 @@ def main() -> None:
     v2 = load("experiments/gen03_portfolio_v2.json")
 
     print("=" * 76)
-    print("gen03 — PRE-REGISTERED PRIMARY: dD = D(vanilla, br_own) - D(sacred, br_own)")
+    print("gen03 - PRE-REGISTERED PRIMARY: dD = D(vanilla, br_own) - D(sacred, br_own)")
     print("=" * 76)
     primary_by_pair = {}
     for name, res in (("pair0", pair0), ("pair1", pair1)):
@@ -56,14 +56,14 @@ def main() -> None:
         print(f"         D(sacred, br_sacred) = {mean_ci(d_sac)[0]:8.0f}   "
               f"D(vanilla, br_vanilla) = {mean_ci(d_van)[0]:8.0f}")
 
-    print("\nSECONDARY — common attacks (same attacker for both arms, paired):")
+    print("\nSECONDARY - common attacks (same attacker for both arms, paired):")
     for attack in ("targeted", "random"):
         for name, res in (("pair0", pair0), ("pair1", pair1)):
             diffs = paired_diff(d_of(res, "sacred", attack), d_of(res, "vanilla", attack))
             m, ci = mean_ci(diffs)
             print(f"  {name} {attack:>9}: dD = {m:+8.0f} ± {ci:6.0f}")
 
-    print("\nSECONDARY — cross-BR 2x2 (attack generalization), D(arm, attack):")
+    print("\nSECONDARY - cross-BR 2x2 (attack generalization), D(arm, attack):")
     for name, res in (("pair0", pair0), ("pair1", pair1)):
         for arm in ("sacred", "vanilla"):
             row = []
@@ -72,13 +72,13 @@ def main() -> None:
                 row.append(f"{attack}: {m:8.0f} ± {ci:5.0f}")
             print(f"  {name} {arm:>8} | " + " | ".join(row))
 
-    print("\nSECONDARY — clean premium W(arm, none) and greedy reference:")
+    print("\nSECONDARY - clean premium W(arm, none) and greedy reference:")
     for name, res in (("pair0", pair0), ("pair1", pair1), ("v2", v2)):
         for arm in res:
             m, ci = mean_ci(res[arm]["none"])
             print(f"  {name} {arm:>8} W(none) = {m:8.0f} ± {ci:5.0f}")
 
-    print("\nvanilla_seed2 (no sacred partner) — D(vanilla, br_own) for the cross-seed picture:")
+    print("\nvanilla_seed2 (no sacred partner) - D(vanilla, br_own) for the cross-seed picture:")
     d_v2 = d_of(v2, "vanilla", "br_vanilla")
     m, ci = mean_ci(d_v2)
     print(f"  v2: D(vanilla, br_vanilla) = {m:8.0f} ± {ci:6.0f}")

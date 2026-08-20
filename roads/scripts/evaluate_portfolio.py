@@ -268,7 +268,7 @@ def select_best_under_attack(run_dir: str, cfg: SMDPConfig, make_env_for_seed,
                              greedy_factory, instance_seeds: list[int],
                              rollouts: int = 1, attacker: str = "targeted") -> list[dict]:
     """Rank a run's protagonist snapshots by mean total_wait under the VALIDATION attacker
-    (configurable — gen06 selects on `pathrand` because `targeted` is its held-out test attack).
+    (configurable - gen06 selects on `pathrand` because `targeted` is its held-out test attack).
     Selection never sees the test attackers or the test instances."""
     import glob
     import os

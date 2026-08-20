@@ -115,7 +115,7 @@ def main() -> None:
     rows[("learned", "no-attack")] = run_episode(smdp := fresh_smdp(), sac_protagonist_policy(protag), no_antagonist_policy)
     rows[("learned", "attack")] = run_episode(smdp := fresh_smdp(), sac_protagonist_policy(protag), sac_antagonist_policy(smdp, antag))
 
-    print(f"\nStage-0 evaluation — run: {args.run}")
+    print(f"\nStage-0 evaluation - run: {args.run}")
     print(f"{'policy':>8} | {'antagonist':>10} | {'total_wait':>10} | {'delivered':>9} | {'ticks':>5} | {'budget':>6}")
     print("-" * 64)
     for (pol, atk), r in rows.items():
@@ -128,7 +128,7 @@ def main() -> None:
     if lw < gw:
         print(f"PASS: learned beats greedy by {gw - lw:.1f} ({100*(gw-lw)/gw:.1f}%) lower latency under attack.")
     else:
-        print("NOT BEATEN: learned does not beat greedy under attack — inspect Q_Spread/entropy curves.")
+        print("NOT BEATEN: learned does not beat greedy under attack - inspect Q_Spread/entropy curves.")
 
 
 if __name__ == "__main__":

@@ -118,7 +118,7 @@ def main():
             for rep in range(REPEATS):
                 key = f"{f}_r{rep}"
                 if key in done:
-                    print(f"  {tag} {key}: already banked", flush=True)
+                    print(f"  {tag} {key}: already stored", flush=True)
                     continue
                 t0 = time.time()
                 rng = np.random.default_rng(f * 100 + rep)
