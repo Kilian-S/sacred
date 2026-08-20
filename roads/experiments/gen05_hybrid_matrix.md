@@ -1,6 +1,6 @@
 # gen05: robustness matrix on the fixed hybrid rung
 Registered 2026-07-04. Results 2026-07-04 (primary and best-response rows), 2026-07-06 (seed-level sensitivity). Code `cd11f14` (build state), `324a644` (launch).
-Artefacts: `experiments/gen05_portfolio.json`, runs under `models/runs/gen05_hybrid_matrix/`, `analysis/gen0506_seedlevel_stats.py`, `scripts/run_generation.py`, `scripts/train_sacred.py`, `scripts/evaluate_portfolio.py`.
+Artefacts: `experiments/gen05_portfolio_pair0.json`, `experiments/gen05_portfolio_pair1.json`, `experiments/gen05_portfolio_pair2.json`, `experiments/gen05_portfolio_br_pair0.json`, `experiments/gen05_portfolio_br_pair1.json`, `experiments/gen05_portfolio_br_pair2.json`, runs under `models/runs/gen05_hybrid_matrix/`, `analysis/gen0506_seedlevel_stats.py`, `scripts/run_generation.py`, `scripts/train_sacred.py`, `scripts/evaluate_portfolio.py`.
 
 ## Question
 Does adversarial training against a strong scripted adversary buy robustness to a held-out attack on the fixed hybrid rung?
