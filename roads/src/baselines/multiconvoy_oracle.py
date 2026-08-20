@@ -1,19 +1,14 @@
-"""Multi-convoy interdiction oracle (gen08 Phase M / Obj-1 + Obj-5 ground truth).
+"""Multi-convoy interdiction oracle.
 
-N convoys route base -> FOB against a K-asset committing interdictor. The defender chooses a JOINT
-routing, represented (convoys are interchangeable) as an OCCUPANCY of convoys over the candidate
-routes; the interdictor commits K edges (hidden). Generalising `interdiction_oracle` from 1 to N
-convoys, this module computes:
-  * ``loss_det``   = the best DETERMINISTIC joint plan, worst-cased over the attacker's response
-                     (what a coordinating classical metaheuristic / ALNS produces);
-  * ``loss_mixed`` = the minimax value of the best RANDOMISED joint routing (what SACRED targets);
-  * the equilibrium defender (a distribution over occupancies) and attacker (over interdiction sets);
-  * the exploitability of ANY (e.g. learned) defender occupancy distribution.
-
-Two objective families (see `scratch/multiconvoy_*.py` for the finding that the OBJECTIVE decides
-whether SACRED wins): LINEAR (expected fraction of convoys lost, risk-neutral) and THRESHOLD(m)
-(P(>= m convoys lost)); MISSION-failure is THRESHOLD(1) = P(>= 1 convoy lost), the loss-averse and
-operationally-realistic objective under which the multi-convoy gap holds and grows with N.
+N convoys route base to FOB against a K-asset committing interdictor. The defender chooses a joint
+routing, represented (convoys being interchangeable) as an occupancy of convoys over the candidate
+routes, and the interdictor commits K hidden edges. Generalising ``interdiction_oracle`` from one
+convoy to N, this module computes ``loss_det``, the best deterministic joint plan worst-cased over
+the attacker's response; ``loss_mixed``, the minimax value of the best randomised joint routing;
+the equilibrium defender and attacker distributions; and the exploitability of any defender
+occupancy distribution. Two objective families are supported: linear (expected fraction of convoys
+lost, risk-neutral) and threshold(m) (probability that at least m convoys are lost), of which
+mission failure is threshold(1).
 """
 from __future__ import annotations
 
@@ -28,8 +23,7 @@ from src.baselines.interdiction_oracle import InterdictionGame
 
 
 def occupancies(n_routes: int, N: int) -> list[np.ndarray]:
-    """Every way to place N interchangeable convoys over ``n_routes`` routes (occupancy vectors
-    summing to N)."""
+    """Enumerate every occupancy vector over ``n_routes`` routes summing to N convoys."""
     out: list[np.ndarray] = []
     for combo in itertools.combinations_with_replacement(range(n_routes), N):
         v = np.zeros(n_routes, dtype=int)
@@ -40,9 +34,11 @@ def occupancies(n_routes: int, N: int) -> list[np.ndarray]:
 
 
 def caught_pmf(occ: np.ndarray, p: np.ndarray) -> np.ndarray:
-    """PMF of the number of convoys intercepted, given occupancy ``occ`` and per-route interception
-    probabilities ``p`` under a fixed interdiction set (each convoy on route r is caught
-    independently with prob p[r]; = a sum of Binomial(occ[r], p[r]) = a Poisson-binomial)."""
+    """PMF of the number of convoys intercepted under a fixed interdiction set.
+
+    Each convoy on route r is caught independently with probability ``p[r]``, so the count is a
+    sum of Binomial(occ[r], p[r]) terms, that is a Poisson-binomial.
+    """
     pmf = np.array([1.0])
     for r in range(len(occ)):
         if occ[r] > 0:
@@ -52,16 +48,15 @@ def caught_pmf(occ: np.ndarray, p: np.ndarray) -> np.ndarray:
 
 def objective_value(occ: np.ndarray, p: np.ndarray, N: int, objective: str = "mission", m: int = 1,
                     rho: float = 0.0) -> float:
-    """Loss for occupancy ``occ`` vs interception probs ``p``: ``linear`` = E[fraction lost];
-    ``mission`` = P(>=1 lost); ``threshold`` = P(>= m lost).
+    """Loss for occupancy ``occ`` against per-route interception probabilities ``p``.
 
-    ``rho`` (B4, correlated interception): a within-route common-shock mix between INDEPENDENT
-    draws (rho=0, the default and the model everything else uses) and COMONOTONE draws (rho=1: the
-    convoys stacked on a route are caught all-or-nothing by ONE ambush team). The expectation
-    E[fraction lost] is INVARIANT to rho (linearity), so only the loss-averse objectives feel it.
-    Under the mission objective, rho > 0 makes STACKING less mission-exploitable (a stacked column
-    shares one shock instead of drawing one per convoy), i.e. independence is the CONSERVATIVE
-    assumption for the SACRED stack (the disclosed caveat, now a tunable curve)."""
+    ``linear`` is E[fraction lost], ``mission`` is P(>= 1 lost) and ``threshold`` is P(>= m lost).
+    ``rho`` is a within-route common-shock mix between independent draws (rho=0, the default) and
+    comonotone draws (rho=1, where convoys stacked on a route are caught all-or-nothing by one
+    ambush team). E[fraction lost] is invariant to rho by linearity, so only the loss-averse
+    objectives feel it; rho > 0 makes stacking less mission-exploitable, which makes independence
+    the conservative assumption.
+    """
     if objective == "linear":
         return float(occ @ p) / N                      # linearity: rho-invariant
     thr = 1 if objective == "mission" else int(m)
@@ -83,14 +78,14 @@ def objective_value(occ: np.ndarray, p: np.ndarray, N: int, objective: str = "mi
 
 
 def objective_matrix(game: InterdictionGame, N: int, objective: str = "mission", m: int = 1):
-    """(occupancies, loss matrix) with M[occ, iset] = the chosen objective's loss.
+    """Return (occupancies, loss matrix), with ``M[occ, iset]`` the chosen objective's loss.
 
-    ``mission`` and ``linear`` have closed forms and are computed as single matrix products
-    (mission: M = 1 - exp(O @ log(1 - payoff)), the survival product; linear: M = O @ payoff / N),
-    which is what makes the K >= 3 sweep instances buildable (the generic per-entry
-    Poisson-binomial convolution at 28.8M entries costs ~half an hour; the matmul is sub-second).
-    ``threshold`` with m > 1 keeps the exact convolution path. Equivalence is regression-tested
-    against the loop implementation (tests/test_multiconvoy_oracle_vectorised.py)."""
+    ``mission`` and ``linear`` have closed forms computed as single matrix products (mission:
+    ``M = 1 - exp(O @ log(1 - payoff))``, the survival product; linear: ``M = O @ payoff / N``),
+    which is what keeps large instances tractable, since the generic per-entry Poisson-binomial
+    convolution costs orders of magnitude more. ``threshold`` with m > 1 keeps the exact
+    convolution path, and equivalence between the two paths is regression-tested.
+    """
     occs = occupancies(game.n_routes, N)
     O = np.asarray(occs, dtype=float)                    # [n_occ, R]
     if objective == "linear":
@@ -109,8 +104,11 @@ def objective_matrix(game: InterdictionGame, N: int, objective: str = "mission",
 
 
 def _row_minimiser(M: np.ndarray) -> tuple[float, np.ndarray]:
-    """Zero-sum matrix game: ROW minimises expected loss, COL maximises. Returns (value, row mixed
-    strategy) via LP (same construction as interdiction_oracle)."""
+    """Solve the zero-sum matrix game by LP, rows minimising expected loss and columns maximising.
+
+    Returns:
+        The game value, and the row player's mixed strategy.
+    """
     n, k = M.shape
     c = np.zeros(n + 1); c[-1] = 1.0
     A_ub = np.hstack([M.T, -np.ones((k, 1))]); b_ub = np.zeros(k)
@@ -149,20 +147,24 @@ def solve_multiconvoy(game: InterdictionGame, N: int, objective: str = "mission"
 
 def greedy_br_attacker(route_edges, edge_vuln: dict, occ_support, N: int, K: int,
                        objective: str = "mission", m: int = 1, rho: float = 0.0):
-    """MATRIX-FREE best-response interdictor (A4): pick K edges greedily to maximise the defender's
-    expected loss, WITHOUT enumerating the C(E, K) interdiction sets or the [occ x iset] matrix -
-    the regime where the exact oracle is infeasible (K >= 4).
+    """Matrix-free best-response interdictor: greedily pick K edges maximising the defender's loss.
 
-    For the MISSION objective, expected mission-failure of a defender occupancy distribution is a
-    monotone SUBMODULAR function of the interdicted edge set (it is a weighted "at-least-one"
-    coverage over the convoys' edge-crossing events), so the greedy K-edge choice carries the
-    classic (1 - 1/e) approximation guarantee (verified against the exact BR at K <= 2 in
-    tests/test_greedy_br.py). Cost O(E * K * |support| * R).
+    Enumerates neither the C(E, K) interdiction sets nor the [occupancy x set] matrix, so it
+    covers the regime where the exact oracle is infeasible. Under the mission objective, expected
+    mission failure of a defender occupancy distribution is a monotone submodular function of the
+    interdicted edge set (a weighted at-least-one coverage over the convoys' edge-crossing
+    events), so the greedy K-edge choice carries the classic (1 - 1/e) approximation guarantee.
+    Costs O(E * K * |support| * R).
 
-    Args: ``route_edges`` = tuple of per-route frozenset edge sets (game.route_edges);
-    ``edge_vuln`` = {frozenset_edge: p_e}; ``occ_support`` = list of (occ_tuple, weight) with
-    weights summing to 1 (the defender's play, e.g. a trailing-window occupancy histogram);
-    ``rho`` = within-route interception correlation (B4). Returns (chosen_edge_frozensets, value)."""
+    Args:
+        route_edges: Per-route frozenset edge sets.
+        edge_vuln: Edge frozenset to interception probability.
+        occ_support: (occupancy tuple, weight) pairs whose weights sum to 1, the defender's play.
+        rho: Within-route interception correlation.
+
+    Returns:
+        The chosen edge frozensets, and the loss they achieve.
+    """
     cand = sorted(set().union(*route_edges), key=repr)
     vuln = np.array([edge_vuln.get(e, 1.0) for e in cand])   # hard interception -> p_e = 1
     R = len(route_edges)
@@ -196,8 +198,10 @@ def greedy_br_attacker(route_edges, edge_vuln: dict, occ_support, N: int, K: int
 
 
 def best_response_attacker_multi(obj_matrix: np.ndarray, occupancy_dist: np.ndarray) -> tuple[int, float]:
-    """The committing interdictor's best interdiction set against a defender OCCUPANCY distribution,
-    and the loss it achieves = that defender's EXPLOITABILITY."""
+    """Best interdiction set against a defender occupancy distribution, and the loss it achieves.
+
+    That loss is the defender's exploitability.
+    """
     per_iset = np.asarray(occupancy_dist, dtype=float) @ obj_matrix
     j = int(per_iset.argmax())
     return j, float(per_iset[j])

@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Evaluation for the Stage-2 HYBRID rung (assignment + next-hop routing).
+"""Evaluation for the hybrid rung, which combines assignment with next-hop routing.
 
-Learned (assignment + routing) vs the hybrid greedy baseline, under {no-attack, fixed antagonist}.
-Static demand -> deterministic -> a single episode per cell (no seed noise), so best-checkpoint
-selection is unbiased (no max-over-noise). `gap_atk` < 0 = the learned policy beats greedy under
-the fixed adversary.
-
-  PYTHONPATH=. python scripts/evaluate_hybrid.py --run models/runs/<run>
-  PYTHONPATH=. python scripts/evaluate_hybrid.py --run models/runs/<run> --select-best
+Compares the learned policy against the hybrid greedy baseline with no attack and against a fixed
+antagonist. Demand is static and the episodes are deterministic, so one episode per cell suffices
+and best-checkpoint selection carries no max-over-noise bias. ``gap_atk`` below zero means the
+learned policy beats greedy under the fixed adversary.
 """
 
 from __future__ import annotations
@@ -35,9 +32,12 @@ def hybrid_config() -> SMDPConfig:
 
 
 def sac_hybrid_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC):
-    """Learned hybrid policy: per waiting truck, `select_action` over its mask (assignment candidates
-    OR routing next-hops, per the truck's state). Sequential claiming for ASSIGNMENT trucks only (a
-    routing truck doesn't claim). Uses `smdp.env` to tell assignment from routing (assigned_target)."""
+    """Learned hybrid policy: one ``select_action`` per waiting truck over that truck's mask.
+
+    A mask holds assignment candidates or routing next-hops depending on the truck's state, read
+    from ``smdp.env`` via ``assigned_target``. Sequential claiming applies to assignment trucks
+    only, since a routing truck claims nothing.
+    """
     def policy(event):
         env = smdp.env
         mask = event.protagonist_action_mask
@@ -64,8 +64,11 @@ def sac_hybrid_policy(smdp: SMDPDecisionWrapper, agent: ProtagonistSAC):
 
 
 def eval_hybrid_cells(protag, antag, make_env, cfg: SMDPConfig) -> dict:
-    """4-cell {greedy, learned} x {no-attack, fixed antagonist} eval (single deterministic episode
-    each). `gap_atk` < 0 = learned beats the hybrid greedy baseline under the fixed adversary."""
+    """Run the four cells of {greedy, learned} x {no attack, fixed antagonist}.
+
+    One deterministic episode each. ``gap_atk`` below zero means the learned policy beats the
+    hybrid greedy baseline under the fixed adversary.
+    """
     def fresh() -> SMDPDecisionWrapper:
         return SMDPDecisionWrapper(env_factory=make_env, config=cfg)
 
@@ -92,7 +95,7 @@ def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13, edge_in_dim: int = 4) -> 
 
 
 def _load_protag(path) -> ProtagonistSAC:
-    """Size the nets to the checkpoint's trained feature width (see infer_node_in_dim)."""
+    """Size the nets to the feature width the checkpoint was trained with."""
     sd = torch.load(path, map_location="cpu")
     agent = _new_protag(node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
@@ -107,9 +110,12 @@ def _load_antag(cfg: SMDPConfig, path) -> AntagonistSAC:
 
 
 def select_best_checkpoint(run_dir, make_env, cfg, antag_path=None) -> list[dict]:
-    """Eval each protagonist snapshot vs a FIXED antagonist (default: the final one); return per-
-    snapshot results sorted best-first (most negative gap_atk). Deterministic (static demand), so
-    the min is unbiased — no max-over-noise selection problem (unlike the dynamic rung)."""
+    """Evaluate every protagonist snapshot against a fixed antagonist, best first.
+
+    The antagonist defaults to the run's final one, and results are sorted by ``gap_atk``
+    ascending. Static demand makes each evaluation deterministic, so taking the minimum is
+    unbiased.
+    """
     if antag_path is None:
         antag_path = os.path.join(run_dir, "antagonist", "actor.pt")
     antag = _load_antag(cfg, antag_path)

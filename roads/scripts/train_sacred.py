@@ -258,7 +258,7 @@ def main() -> None:
     else:
         trainer_mode = "atla"
 
-    # Reproducibility + CPU thread cap (for parallel seeded runs; see scratch/thread_benchmark.py).
+    # Reproducibility and a CPU thread cap, for running seeds in parallel.
     if args.threads is not None:
         import torch
         torch.set_num_threads(args.threads)
@@ -271,7 +271,7 @@ def main() -> None:
         torch.manual_seed(args.seed)
         print(f"Seeded run: seed={args.seed}")
 
-    # 1. Initialize the SMDP environment for the chosen problem.
+    # 1. Initialise the SMDP environment for the chosen problem.
     if args.problem == "stage0":
         print("Initializing SACRED Stage-0 next-hop route-choice validation environment (single truck)...")
         from src.envs.stage0_factory import make_stage0_nexthop_env
@@ -285,18 +285,17 @@ def main() -> None:
             congestion_cost=0.1,
             reward_mode="latency",  # per-tick outstanding-wait; telescopes to total latency
             routing_mode="next_hop",  # policy chooses each edge -> learns to route around the antagonist
-            routing_corridor_slack=1.2,  # tightened from 1.5: keeps both routes, prunes the mid-corridor dithering
+            routing_corridor_slack=1.2,  # keeps both routes while pruning mid-corridor dithering
             congestion_levels=(0.25, 0.5, 0.75, 1.0),
         )
         smdp = SMDPDecisionWrapper(
             env_factory=lambda: make_stage0_nexthop_env(),
             config=config,
         )
-        # Stage 0 has no demonstration ERB yet (the dynamic-dispatch ERB is later-stage work).
         # Next-hop fragments each episode into many short transitions, so the per-transition
-        # latency reward is small (~-0.15 at scale 0.01) and was dwarfed by the SAC entropy
-        # bonus alpha*H (~0.5) -> the agent optimised entropy, not delivery (Q went positive
-        # while delivery collapsed). Scale up ~10x so the task signal dominates the entropy term.
+        # latency reward is small (about -0.15 at scale 0.01) and the SAC entropy bonus alpha*H
+        # (about 0.5) would otherwise dominate it, leaving the agent optimising entropy rather
+        # than delivery. Scaling up about tenfold keeps the task signal dominant.
         reward_scale = 0.1
     elif args.problem == "assign":
         print("Initializing SACRED 3b assignment probe (2 trucks/depots, contested demand)...")
@@ -332,14 +331,14 @@ def main() -> None:
             congestion_cooldown=0,
             congestion_cost=0.1,
             reward_mode="latency",
-            routing_mode="destination",       # assignment only: env auto-routes (routing deferred)
+            routing_mode="destination",       # assignment only: the env auto-routes
             congestion_levels=(1.0,),         # FULL blockage only (simpler adversary + fewer updates)
             max_antag_actions_per_event=1,    # one strategic roadblock per event -> ~32 updates/ep
         )
-        # Each episode gets a fresh Poisson demand stream. When --seed is set, derive a distinct
-        # per-episode demand seed from a counter so the whole run's stream sequence is reproducible
-        # (the env is rebuilt each reset, so a fixed seed would repeat one stream — the counter
-        # advances it instead). Unseeded -> OS entropy per episode.
+        # Each episode gets a fresh Poisson demand stream. Under --seed, the per-episode demand
+        # seed comes from a counter so the run's whole stream sequence is reproducible; the env is
+        # rebuilt each reset, so a fixed seed alone would repeat one stream. Unseeded runs draw on
+        # OS entropy per episode.
         if args.seed is not None:
             _demand_counter = itertools.count(args.seed * 100003)
             env_factory = lambda: make_dynamic_assign_env(
@@ -357,7 +356,7 @@ def main() -> None:
 
         # Single source of truth for the arena config (train + eval share it; see contested.py).
         config = contested_config(congestion_budget=args.congestion_budget)
-        # B1: opt into the twin difference reward on the config + inject the provider (default off).
+        # Opt into the twin difference reward on the config and inject the provider; off by default.
         baseline_provider = None
         if args.reward_baseline == "twin":
             config = dataclasses.replace(config, reward_baseline="twin")
@@ -378,16 +377,16 @@ def main() -> None:
         from src.envs.assignment_factory import make_hybrid_assign_env
 
         config = SMDPConfig(
-            max_ticks=800,                  # greedy ends ~tick 220 unattacked / ~416 under the
-                                            # budget-1500 attack (post zombie-fix); 800 keeps full
+            max_ticks=800,                  # greedy ends near tick 220 unattacked and near 416
+                                            # under the budget-1500 attack, so 800 keeps full
                                             # headroom while halving the cost of untrained
-                                            # wandering. MUST match evaluate_hybrid.hybrid_config.
+                                            # wandering. Must match evaluate_hybrid.hybrid_config.
             antagonist_interval=25,
             congestion_duration=125,        # = 5 x interval -> block expiry aligns to a decision event
-            # 1500 = the budget sweep's sweet spot (scratch/critique_probes.py Probe C): scripted
-            # route-reach attack costs greedy ~+84% with 8/8 still delivered and episodes ending
-            # ~tick 416; 4000 dragged episodes to ~1263 ticks and approaches the everyone-crushed
-            # regime. MUST match evaluate_hybrid.hybrid_config.
+            # 1500 is the budget sweep's sweet spot: the scripted route-reach attack costs greedy
+            # about +84% with 8/8 still delivered and episodes ending near tick 416, whereas 4000
+            # drags episodes to about 1263 ticks, approaching the regime where every policy is
+            # crushed. Must match evaluate_hybrid.hybrid_config.
             congestion_budget=1500.0,
             congestion_cooldown=0,
             congestion_cost=0.1,
@@ -410,8 +409,8 @@ def main() -> None:
             congestion_duration=30,
             congestion_budget=500.0,
             congestion_cooldown=0,
-            remaining_demand_penalty=0.05,  # protag_reward_shaping: was 0.5 (the dominant, antagonist-driven noise term); demoted to a small urgency nudge
-            delivery_reward=100.0,  # protag_reward_shaping: was 10.0; now the dominant, controllable signal so the critic can attribute value to good routing
+            remaining_demand_penalty=0.05,  # a small urgency nudge; larger values let antagonist-driven noise dominate the reward
+            delivery_reward=100.0,  # the dominant, controllable signal, so the critic can attribute value to good routing
             time_penalty=1.0,
             congestion_cost=0.1,
             congestion_levels=(0.25, 0.5, 0.75, 1.0)
@@ -446,8 +445,8 @@ def main() -> None:
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        # B2: absolute target if --protag-target-entropy set, else the historical dynamic
-        # 0.45*ln(N) fallback (None). -1.0 caused alpha runaway/critic divergence — never that.
+        # Absolute target when --protag-target-entropy is given, otherwise the dynamic
+        # 0.45*ln(N) fallback. A target of -1.0 causes alpha runaway and critic divergence.
         target_entropy=args.protag_target_entropy,
         reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
@@ -470,8 +469,8 @@ def main() -> None:
         tau=0.005,
         alpha_init=1.0,
         autotune_alpha=True,
-        # B2: absolute target if --antag-target-entropy set (the gen04b entropy-pinning fix),
-        # else the historical dynamic 0.5*ln(N) fallback (None).
+        # Absolute target when --antag-target-entropy is given, otherwise the dynamic
+        # 0.5*ln(N) fallback.
         target_entropy=args.antag_target_entropy,
         reward_scale=reward_scale,  # problem-dependent (set above): 0.1 stage0 next-hop, 0.01 osm baseline
         device=args.device,
@@ -502,7 +501,7 @@ def main() -> None:
             protag.replay_buffer.push(trans)
         print(f"Seeded {len(transitions)} demonstration transitions.")
 
-    # 4. Initialize ATLA Trainer
+    # 4. Initialise the ATLA trainer
     print("Initializing ATLA Coevolution Trainer...")
     import datetime
     # Within a generation (--group), name runs by tag+seed (no timestamp) so seeds sit together
@@ -532,8 +531,8 @@ def main() -> None:
     elif args.problem == "dynassign" and args.eval_every > 0:
         from scripts.evaluate_dynamic_assign import eval_dynamic_cells
         from src.envs.assignment_factory import make_dynamic_assign_env as _mkd
-        # Multi-seed, fixed-adversary eval (a few fixed Poisson instances) — the metric the
-        # static-3b retraction demands. make_env_for_seed(seed) -> a zero-arg factory bound to it.
+        # Multi-seed, fixed-adversary eval over a few fixed Poisson instances.
+        # make_env_for_seed(seed) returns a zero-arg factory bound to that instance.
         make_env_for_seed = lambda seed: (lambda: _mkd(arrival_rate=args.arrival_rate, demand_seed=seed))
         eval_fn = lambda ep: eval_dynamic_cells(protag, antag, make_env_for_seed, config, seeds=(0, 1, 2))
         eval_every = args.eval_every
@@ -548,8 +547,9 @@ def main() -> None:
     elif args.problem == "hybrid" and args.eval_every > 0:
         from scripts.evaluate_hybrid import eval_hybrid_cells
         from src.envs.assignment_factory import make_hybrid_assign_env as _mkh
-        # Static demand -> deterministic single-episode eval vs the current antagonist (progress
-        # signal); the real verdict is best-checkpoint vs the FIXED antagonist (select-best, post-hoc).
+        # Static demand gives a deterministic single-episode eval against the current antagonist,
+        # which is only a progress signal; the verdict comes from best-checkpoint selection
+        # against a fixed antagonist afterwards.
         eval_fn = lambda ep: eval_hybrid_cells(protag, antag, _mkh, config)
         eval_every = args.eval_every
 
@@ -560,7 +560,7 @@ def main() -> None:
             ScriptedAttackerMixture, build_scripted_attacker,
             random_path_block_policy, targeted_block_policy)
         if args.attacker_mixture:
-            # B4-lite: parse "name:weight,..." into a per-episode-sampled population.
+            # Parse "name:weight,..." into a population sampled once per episode.
             members = []
             for i, part in enumerate(args.attacker_mixture.split(",")):
                 name, _, w = part.strip().partition(":")

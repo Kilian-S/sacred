@@ -1,18 +1,12 @@
-"""Multi-convoy fleet-routing baselines (gen08 Phase M / Obj-5): the CLASSICAL opponents SACRED must
-beat.
+"""Classical multi-convoy fleet-routing baselines.
 
-  * shortest_path_fleet   -- the naive, interdiction-UNAWARE planner: every convoy takes the cheapest
-                             route (they stack, and the interdictor ambushes the obvious road);
-  * alns_fleet_planner    -- an Adaptive Large Neighbourhood Search coordinating planner (destroy /
-                             repair over the joint route assignment, adaptive operator weights,
-                             simulated-annealing acceptance) that minimises WORST-CASE mission-failure.
-                             It knows the vulnerability map (the fairest, strongest classical
-                             opponent) and converges to the oracle's ``loss_det`` = the best any
-                             DETERMINISTIC fleet plan can achieve. SACRED (``loss_mixed``) still beats
-                             it because a deterministic plan cannot randomise.
-
-`classical_baselines` reports each planner's exploitability (worst-case objective under the
-best-response interdictor) beside the oracle references, for the Obj-5 comparison in M3.
+``shortest_path_fleet`` is the interdiction-unaware planner: every convoy takes the cheapest
+route, so they stack and the interdictor ambushes the obvious road. ``alns_fleet_planner`` is an
+Adaptive Large Neighbourhood Search planner (destroy and repair over the joint route assignment,
+adaptive operator weights, simulated-annealing acceptance) that knows the vulnerability map and
+minimises worst-case mission failure, converging to the oracle's ``loss_det``, the best any
+deterministic fleet plan can achieve. ``classical_baselines`` reports each planner's
+exploitability under the best-response interdictor beside the oracle references.
 """
 from __future__ import annotations
 
@@ -113,18 +107,20 @@ def alns_fleet_planner(game: InterdictionGame, N: int, objective: str = "mission
 
 def classical_baselines(game: InterdictionGame, N: int, objective: str = "mission", m: int = 1,
                         seed: int = 0) -> dict:
-    """Exploitability of each classical planner vs the best-response interdictor, with oracle refs.
-    Ordering (mission objective): shortest_path >= alns == optimal_deterministic >= equilibrium."""
+    """Exploitability of each classical planner against the best-response interdictor.
+
+    Reported beside the oracle references. Under the mission objective the ordering is
+    shortest_path >= alns == optimal_deterministic >= equilibrium.
+    """
     occs, M = objective_matrix(game, N, objective, m)
     idx = {tuple(int(x) for x in o): i for i, o in enumerate(occs)}
     sp = shortest_path_fleet(game, N)
     sp_expl = float(M[idx[_occ(sp, game.n_routes)]].max())
     plan = alns_fleet_planner(game, N, objective, m, seed=seed)
     sol = solve_multiconvoy(game, N, objective, m)
-    # FAIRNESS: the best DETERMINISTIC STACKED plan (all N convoys on one route), worst-cased over
-    # interdiction sets. ALNS is FREE to stack (the occupancy set includes every stack) but chooses to
-    # SPREAD (its loss_det is <= this), proving the fleet spreading is ALNS's OPTIMAL choice, not a
-    # handicap we imposed -- and SACRED still beats the spread plan by RANDOMISING, which ALNS cannot.
+    # Best deterministic STACKED plan (all N convoys on one route), worst-cased over interdiction
+    # sets. ALNS is free to stack, since the occupancy set includes every stack, so its loss_det
+    # is at most this value.
     forced_stack = min(float(M[idx[_occ([r] * N, game.n_routes)]].max()) for r in range(game.n_routes))
     return {"shortest_path": sp_expl, "alns": plan.exploitability,
             "alns_forced_stack": forced_stack,

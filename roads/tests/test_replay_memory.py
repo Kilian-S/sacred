@@ -1,13 +1,10 @@
-"""Replay-memory contract tests (2026-08-07 OOM incident).
+"""Replay-memory contract tests.
 
-The 2026-08-07 four-city batch was OOM-killed: every stored transition held a fresh deep
-snapshot of the instance's node/edge dicts (5.7 MB on the 6,083-node Kyiv graph) AND, once
-sampled, its own featurized graph tensors. Both scale with graph size x buffer length, so
-adding a large city multiplied replay memory by ~19x per affected transition.
-
-These tests pin the two fixes: the dynamic-generalist observations share one base payload
-per instance, and the SAC featurization cache is shared per instance when the observation
-carries a ``_graph_key``.
+A transition that holds its own deep snapshot of the instance's node and edge dicts, and its own
+featurised graph tensors once sampled, makes replay memory scale with graph size times buffer
+length, which exhausts memory on large city graphs. These tests pin the two fixes: the
+dynamic-generalist observations share one base payload per instance, and the SAC featurisation
+cache is shared per instance when the observation carries a ``_graph_key``.
 """
 from __future__ import annotations
 
@@ -27,8 +24,7 @@ def instance():
 
 
 def test_observations_share_one_base_payload(instance):
-    """Two transitions of the same instance must SHARE their node/edge dicts (not copy),
-    while carrying their own per-route features."""
+    """Two transitions of one instance share their node and edge dicts, not their route features."""
     o1 = build_obs(instance, np.zeros(instance.nR), 3)
     o2 = build_obs(instance, np.eye(instance.nR)[0], 3)
     assert o1 is not o2                          # distinct dicts per transition
@@ -51,7 +47,7 @@ def test_window_column_is_per_transition(instance):
 
 
 def test_featurize_cache_is_shared_per_instance(instance):
-    """With a _graph_key present, two transitions must reuse ONE featurized graph."""
+    """With a _graph_key present, two transitions reuse a single featurised graph."""
     from src.agents import sac as sac_mod
 
     sac_mod._SHARED_GRAPH_CACHE.clear()
@@ -75,7 +71,7 @@ def test_featurize_cache_is_shared_per_instance(instance):
 
 
 def test_featurize_cache_unchanged_without_graph_key():
-    """Absent the key (every historical trainer), caching stays per transition."""
+    """Absent the key, caching stays per transition."""
     from src.agents import sac as sac_mod
 
     calls = {"n": 0}

@@ -1,10 +1,9 @@
-"""Item 2.4: zero-shot K/N rows (EVAL-ONLY). The frozen gen16 multi-city generalist (trained at
-N=3, K=1) evaluated WITHOUT retraining on held-out Gdansk ODs at shifted adversary budget K=2 and
-fleet size N=5, scored against each (OD, K, N) cell's own oracle equilibrium. The policy conditions
-on the MAP (edge vulnerability + per-route features), not on K/N, so this tests whether the learned
-hedge survives budget/fleet shift zero-shot. Either outcome is informative.
+"""Zero-shot K/N rows: evaluation only, with no retraining.
 
-Run: PYTHONPATH=. .venv/bin/python analysis/zst_kn_rows.py <generalist_actor.pt>
+A frozen multi-city generalist trained at N=3, K=1 is evaluated on held-out Gdansk ODs at a
+shifted adversary budget K=2 and fleet size N=5, scored against each (OD, K, N) cell's own oracle
+equilibrium. The policy conditions on the map (edge vulnerability and per-route features) rather
+than on K or N, so this tests whether the learned hedge survives a budget or fleet shift.
 """
 from __future__ import annotations
 
@@ -32,8 +31,10 @@ def _mkprot(state=None):
 
 
 def tap_ratio(states, it):
-    """TAP-style read: the exact occupancy distributions of the last few checkpoints, AVERAGED,
-    then scored (matches the gen16 best-checkpoint-TAP estimator; a single checkpoint is FP-noisy)."""
+    """Score the averaged exact occupancy distributions of a set of checkpoints.
+
+    Averaging is needed because a single checkpoint is noisy under fictitious play.
+    """
     ds = []
     for st in states:
         _, d = exact_ratio(_mkprot(st), it)
@@ -47,8 +48,8 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("actor")
     ap.add_argument("--json-out", default="models/runs/zst_kn_rows.json"); a = ap.parse_args()
     torch.set_num_threads(4)
-    # TAP over the 3 checkpoints CENTRED ON gen16's SELECTED best-checkpoint (the deployable object;
-    # NOT the last 3 = the drifted final iterates). best_at read from the seed's gen16 json.
+    # Average over the three checkpoints centred on the selected best checkpoint, which is the
+    # deployable object, rather than over the last three, which are drifted final iterates.
     ck_dir = a.actor.rsplit("/", 1)[0]
     cks = {int(re.search(r"ep(\d+)", c).group(1)): c
            for c in glob.glob(f"{ck_dir}/actor_ep*.pt")}

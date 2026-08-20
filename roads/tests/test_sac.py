@@ -19,7 +19,6 @@ class TestSAC(unittest.TestCase):
         buffer = ReplayBuffer(capacity=10)
         self.assertEqual(len(buffer), 0)
 
-        # Mock transition
         transition = SMDPTransition(
             agent="protagonist",
             state=self.obs,
@@ -53,12 +52,10 @@ class TestSAC(unittest.TestCase):
         obs_with_active = dict(self.obs)
         obs_with_active["active_truck"] = 0
 
-        # Test stochastic action selection
         action = agent.select_action(obs_with_active, action_mask, deterministic=False)
         self.assertIn(0, action)
         self.assertIn(action[0], ["a", "d", "hub"])
 
-        # Test deterministic action selection
         action_det = agent.select_action(obs_with_active, action_mask, deterministic=True)
         self.assertIn(0, action_det)
         self.assertIn(action_det[0], ["a", "d", "hub"])
@@ -79,7 +76,6 @@ class TestSAC(unittest.TestCase):
         next_obs_state = dict(self.obs)
         next_obs_state["active_truck"] = 1
 
-        # We construct transitions for replay buffer
         t1 = SMDPTransition(
             agent="protagonist",
             state=obs_state,
@@ -104,11 +100,9 @@ class TestSAC(unittest.TestCase):
             info={}
         )
 
-        # Push to buffer
         agent.replay_buffer.push(t1)
         agent.replay_buffer.push(t2)
 
-        # Update and check loss reporting
         metrics = agent.update(batch_size=2)
         self.assertIsNotNone(metrics)
         self.assertIn("protag_critic_loss", metrics)
@@ -116,7 +110,6 @@ class TestSAC(unittest.TestCase):
         self.assertIn("protag_alpha_loss", metrics)
         self.assertIn("protag_alpha", metrics)
 
-        # Losses should be valid numbers
         self.assertFalse(torch.isnan(torch.tensor(metrics["protag_critic_loss"])))
         self.assertFalse(torch.isnan(torch.tensor(metrics["protag_actor_loss"])))
 
@@ -135,15 +128,14 @@ class TestSAC(unittest.TestCase):
             "original_edges": self.original_edges
         }
 
-        # Test action selection (stochastic)
         action = agent.select_action(self.obs, action_mask, remaining_budget=50.0, deterministic=False)
         if action is not None:
             edge, level = action
             self.assertIn(edge, self.original_edges[:3])
             self.assertIn(level, [0.25, 0.5, 0.75, 1.0])
 
-        # Test budget limits masking: budget = 0.05, so only wait (None) or cheapest congestion option (level 0.25 cost = 0.25*12*0.015 = 0.045) should be valid
-        # Let's set extremely low budget (e.g. 0.01) so all level costs exceed remaining budget
+        # Budget masking: the cheapest congestion option (level 0.25) costs
+        # 0.25 * 12 * 0.015 = 0.045, so a budget of 0.01 affords no level at all.
         action_low = agent.select_action(self.obs, action_mask, remaining_budget=0.01, deterministic=False)
         self.assertIsNone(action_low)  # Must fall back to "wait" (None) because of budget constraint
 

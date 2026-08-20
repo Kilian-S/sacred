@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-"""Exact solvers for the pattern-of-life window MDP (shared by the 2026-07-23 probes).
+"""Exact solvers for the pattern-of-life window MDP.
 
-The dynamic game of gen19/gen27 (fleet stacks; adversary softmax-BRs with temperature tau to
-the trailing w-window of realised routes) is an average-cost MDP over the R^w window states
-with DETERMINISTIC transitions. Its exact optimum is therefore the MINIMUM MEAN CYCLE of the
-(state --action--> state) graph. Karp's algorithm computes it with no iteration/tolerance;
-damped relative value iteration cross-checks it (the two agreed to 5 decimals on all 10 cells
-of analysis/gen35_mmc_check.py).
-
-Discovered 2026-07-23 (models/runs/gen35_mmc_check.json): the undamped RVI inside
-scripts/train_b1lite1.py:oracle_refs OSCILLATES on this MDP class and its `history_opt` is
-wrong on every cell tested (+18% on 35-159 K=1, -44%/-57% on 71-33 K=2/3). Use THIS module's
-history_opt_exact for every future yardstick; ledger appendices restate the banked rows.
-
-State encoding: window tuple s=(s_0..s_{w-1}) (s_0 oldest), integer id = sum s_i R^{w-1-i}
-(lexicographic; identical to itertools.product order used by oracle_refs). Transition:
-nxt(s, a) = (s mod R^{w-1}) * R + a.
+The dynamic game (the fleet stacks, and the adversary softmax best-responds with temperature tau
+to the trailing w-window of realised routes) is an average-cost MDP over the R^w window states
+with deterministic transitions, so its exact optimum is the minimum mean cycle of the
+state-action-state graph. Karp's algorithm computes that with no iteration or tolerance, and
+damped relative value iteration cross-checks it. States are encoded as a window tuple
+s = (s_0..s_{w-1}) with s_0 oldest, whose integer id is sum s_i R^{w-1-i} in lexicographic order,
+and the transition is nxt(s, a) = (s mod R^{w-1}) * R + a.
 """
 from __future__ import annotations
 
@@ -25,8 +17,11 @@ from scripts.train_b1lite1 import softmax_br
 
 
 def build_window_mdp(L, tau, w, member_fn=None):
-    """cost[s, a] for the window MDP. member_fn(counts) -> iset distribution overrides the
-    default softmax-BR adversary (used for the gen34 adversary-family members)."""
+    """Build the cost[s, a] matrix of the window MDP.
+
+    ``member_fn(counts) -> interdiction-set distribution`` overrides the default softmax
+    best-response adversary.
+    """
     R = L.shape[0]
     n = R ** w
     pw = R ** (w - 1)
@@ -80,7 +75,7 @@ def damped_rvi(cost, n, R, pw, iters=60_000, damp=0.5, tol=1e-11):
 
 
 def history_opt_exact(L, tau, w, member_fn=None, check=True):
-    """The corrected dynamic-optimum yardstick: Karp, cross-checked by damped RVI."""
+    """The dynamic-optimum yardstick: Karp's minimum mean cycle, cross-checked by damped RVI."""
     cost, n, R, pw = build_window_mdp(L, tau, w, member_fn=member_fn)
     mmc = karp_mmc(cost, n, R, pw)
     if check:
@@ -91,8 +86,10 @@ def history_opt_exact(L, tau, w, member_fn=None, check=True):
 
 
 def greedy_policy_from_rvi(cost, n, R, pw, iters=60_000, damp=0.5, tol=1e-11):
-    """Deterministic optimal policy (row-stochastic [n, R] one-hot) extracted from the damped
-    RVI value function of THIS cost matrix."""
+    """Extract the deterministic optimal policy from the damped RVI value function.
+
+    Returned as a row-stochastic [n, R] one-hot matrix.
+    """
     heads = (np.arange(n) % pw) * R
     nxt = heads[:, None] + np.arange(R)[None, :]
     h = np.zeros(n)
@@ -110,10 +107,12 @@ def greedy_policy_from_rvi(cost, n, R, pw, iters=60_000, damp=0.5, tol=1e-11):
 
 
 def policy_value_exact(policy, cost, n, R, pw, iters=40_000, tol=1e-13, damp=0.5):
-    """Exact average cost of a stationary (possibly stochastic) window policy.
-    policy[s] = distribution over R actions. DAMPED power iteration on the induced chain
-    (deterministic policies induce periodic cycles; undamped iteration oscillates on them -
-    the dbf385d lesson a third time). Damping preserves the stationary distribution."""
+    """Exact average cost of a stationary, possibly stochastic, window policy.
+
+    ``policy[s]`` is a distribution over R actions. The power iteration on the induced chain is
+    damped because deterministic policies induce periodic cycles, on which undamped iteration
+    oscillates; damping preserves the stationary distribution.
+    """
     heads = (np.arange(n) % pw) * R
     pi = np.ones(n) / n
     c = (policy * cost).sum(axis=1)

@@ -1,4 +1,4 @@
-"""Tests for the B3 attack exposure/strength curriculum (pure logic, no training)."""
+"""Tests for the attack exposure and strength curriculum (pure logic, no training)."""
 
 from __future__ import annotations
 

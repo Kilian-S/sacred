@@ -1,10 +1,8 @@
 #!/bin/bash
-# B2 THINKING-MODE rerun (pre-registered 2026-08-13): qwen3-27b only, all three cells.
-# v2 (same day, BEFORE any result existed): the first launch ran one stream per cell and
-# projected ~25 h; conversations are independent across registers and episodes, so this
-# version runs 5 workers per cell (a | b | c-seeds 0,1 | c-seeds 2,3 | c-seed 4) = 15
-# concurrent streams, an ops change only (request bodies unchanged). Idempotent: existing
-# outputs skip. Per-call timeout 1800 s in thinking mode (harness).
+# B2 LLM benchmark batch in thinking mode: qwen3-27b across all three cells. Five workers
+# per cell (a | b | c seeds 0,1 | c seeds 2,3 | c seed 4) give 15 concurrent streams, which
+# is safe because conversations are independent across registers and episodes. Idempotent:
+# existing outputs are skipped.
 set -u; cd "$(dirname "$0")/.."
 BASE="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"; KEY="iits-local-key"; MODEL="qwen3-27b"
 worker () {

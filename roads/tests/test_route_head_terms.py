@@ -1,7 +1,7 @@
-"""gen11 regression tests: undiluted per-route head terms (route_feats/route_feat_w, route_bias).
+"""Regression tests for the per-route head terms (route_feats, route_feat_w and route_bias).
 
-The terms must (a) shift logits/Q by exactly feats @ w (and bias), (b) be absent-by-default
-(byte-identical behaviour without the attributes), and (c) keep q/target parameter registration
+The terms must shift logits and Q by exactly feats @ w plus the bias, be absent by default so
+behaviour is unchanged without the attributes, and keep the q and target parameter registration
 order aligned so _soft_update's parameter zip stays correct.
 """
 from __future__ import annotations

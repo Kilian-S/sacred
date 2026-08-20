@@ -1,4 +1,4 @@
-"""Unit tests for the GATv2 neural network architectures and state featurization."""
+"""Unit tests for the GATv2 network architectures and state featurisation."""
 
 import unittest
 import torch
@@ -14,14 +14,13 @@ from src.agents.networks import (
 
 class TestNetworks(unittest.TestCase):
     def setUp(self) -> None:
-        # Create a toy graph environment with 2 trucks
         self.env = make_toy_graph_env(num_trucks=2)
         self.obs = self.env.observe()
 
     def test_featurize_state(self) -> None:
         pyg_data = featurize_state(self.obs, active_truck_id=0)
 
-        # 9 nodes in toy graph, each has 14 features (col 14 = multi-convoy route-correlation)
+        # 9 nodes in the toy graph, each with 14 node features
         self.assertEqual(pyg_data.x.shape, (9, 14))
 
         # 15 undirected edges = 30 directed edges in PyG
@@ -29,7 +28,7 @@ class TestNetworks(unittest.TestCase):
         self.assertEqual(pyg_data.edge_index.shape[1], 30)
 
         # Edge features (norm_distance, congestion_level)
-        self.assertEqual(pyg_data.edge_attr.shape, (30, 5))  # col 4 = vulnerability (A1 bump)
+        self.assertEqual(pyg_data.edge_attr.shape, (30, 5))  # col 4 = edge vulnerability
 
         # Active truck feature checks
         # Active truck (id 0) is at "depot" initially
@@ -61,13 +60,12 @@ class TestNetworks(unittest.TestCase):
         node_ids = sorted(list(self.obs["nodes"].keys()))
         depot_idx = node_ids.index("depot")
 
-        # In toy graph, depot neighbors are "a", "d", "hub"
+        # In the toy graph the depot's neighbours are "a", "d" and "hub"
         allowed_destinations = ["a", "d", "hub"]
         allowed_indices = [node_ids.index(n) for n in allowed_destinations]
 
         probs, val = net(pyg_data, active_node_idx=depot_idx, action_mask_indices=allowed_indices)
 
-        # Output validations
         self.assertEqual(probs.shape, (3,))
         self.assertEqual(val.shape, (1,))
 
@@ -109,8 +107,7 @@ class TestNetworks(unittest.TestCase):
             level_costs=level_costs,
         )
 
-        # Output validations
-        # edge_probs has shape [len(allowed_edges) + 1] (includes wait action)
+        # edge_probs has shape [len(allowed_edges) + 1] (includes the wait action)
         self.assertEqual(edge_probs.shape, (6,))
         # level_probs has shape [len(allowed_edges), num_levels]
         self.assertEqual(level_probs.shape, (5, num_levels))

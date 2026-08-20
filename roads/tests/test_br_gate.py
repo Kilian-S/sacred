@@ -1,6 +1,6 @@
-"""Tests for the exploitability BR-gate machinery: the hybrid greedy per-truck chooser and the
-trainer's frozen-protagonist-chooser hook (antagonist trains vs a greedy victim, protagonist net
-untouched)."""
+"""Tests for the best-response gate: the hybrid greedy per-truck chooser, and the trainer hook
+that trains the antagonist against a frozen greedy victim while the protagonist net is untouched.
+"""
 
 from __future__ import annotations
 

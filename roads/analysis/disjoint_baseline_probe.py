@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
-"""Oracle-only probe (no training): the DISJOINT-ROUTE naive baseline the ladders never carried.
+"""Oracle-only probe of the disjoint-route naive baseline.
 
-Motivation (critique 2026-07-16): the menu's first routes are literally nx.edge_disjoint_paths
-(max-flow decomposition; build_route_set). The ladders' "uniform" anchors mix over the PADDED
-k-shortest menu, whose near-duplicates share edges and stack probability mass under one
-interdicted edge, which makes naive randomisation look weak (uniform-stack degrades with menu
-size, CRITIQUE_EXAMINER §5.2). The natural naive baseline a planner would actually use is
-"pick uniformly among the edge-disjoint routes" (2 lines: max-flow, then uniform). This probe
-measures that row, plus its inverse-vulnerability refinement, everywhere the trained numbers
-live: the single-convoy headline (33-71), both multi-convoy headline instances (35-159, 62-97),
-and the held-out-city ZST test pools (Gdansk, Istanbul).
-
-Everything is exact oracle arithmetic; seconds; zero training.
+The route menu's leading entries are an edge-disjoint max-flow decomposition, whereas the
+"uniform" ladder anchors mix over the padded k-shortest menu, whose near-duplicates share edges
+and so stack probability mass under a single interdicted edge. This probe measures the naive row
+a planner would actually use, uniform over the edge-disjoint routes, plus its
+inverse-vulnerability refinement, on the single-convoy headline instance, both multi-convoy
+headline instances and the held-out-city transfer pools. Exact oracle arithmetic, no training.
 """
 from __future__ import annotations
 
@@ -27,8 +22,10 @@ N, K, BAND, KX = 3, 1, (0.15, 0.95), 8
 
 
 def disjoint_subset(route_edges) -> list[int]:
-    """Greedy maximal edge-disjoint subset in menu order (the menu's prefix IS the max-flow
-    decomposition, so this recovers the disjoint base routes)."""
+    """Greedy maximal edge-disjoint subset of routes, taken in menu order.
+
+    The menu's prefix is the max-flow decomposition, so this recovers the disjoint base routes.
+    """
     kept: list[int] = []
     used: set = set()
     for i, re in enumerate(route_edges):
@@ -130,11 +127,12 @@ def main() -> None:
 
 
 def sweep_cells() -> None:
-    """The gen12 K/N sweep cells on held-out 35-159, heuristic row beside SACRED.
-    Measured 2026-07-16: N3K1 0.250 (SACRED 0.261), N3K2 0.494 (0.500), N3K3 0.738 (0.661),
-    N2K1 0.249 (0.232), N5K1 0.250 (0.389). The crossover where trained calibration first beats
-    the max-flow heuristic is K = m-1 (m = 4 disjoint routes): the interdiction budget must
-    approach the min-cut before shared-edge calibration carries value beyond naive disjointness."""
+    """Print the K/N sweep cells on held-out 35-159, heuristic row beside SACRED.
+
+    The crossover where trained calibration first beats the max-flow heuristic is K = m-1, with m
+    the number of disjoint routes: the interdiction budget must approach the min-cut before
+    shared-edge calibration carries value beyond naive disjointness.
+    """
     for (n, k, sacred) in [(3, 1, 0.261), (3, 2, 0.500), (3, 3, 0.661), (2, 1, 0.232), (5, 1, 0.389)]:
         env = make_multiconvoy_env(("35", "159"), N=n, K=k, k_extra_routes=KX, edge_vuln_band=BAND,
                                    absolute_vuln_norm=True, menu_select=True, objective="mission")

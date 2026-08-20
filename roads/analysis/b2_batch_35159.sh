@@ -1,6 +1,5 @@
 #!/bin/bash
-# B2 overnight batch: the 35-159 cell, llama + qwen concurrent (one stream each).
-# Ledger: experiments/b2_llm_benchmark.md launch record 2026-07-16.
+# B2 LLM benchmark batch for the 35-159 cell: llama and qwen concurrently, one stream each.
 set -u
 cd "$(dirname "$0")/.."
 mkdir -p models/runs/b2_llm/batch_35159

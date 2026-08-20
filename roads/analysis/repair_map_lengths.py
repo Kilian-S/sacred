@@ -1,9 +1,7 @@
-"""Repair the edge lengths of extract_city.py outputs (2026-07-10 bug: add_edge_lengths was called
-on the PROJECTED graph, so metre coordinates were treated as degrees -> lengths ~1e7 m). Recomputes
-each edge's length as the haversine sum along its LineString geometry (lon/lat), preserving the
-broken value as `length_raw` for audit. Idempotent (skips files whose median length is already sane).
+"""Recompute the edge lengths of a city extract as haversine sums along each LineString.
 
-Run: .venv/bin/python analysis/repair_map_lengths.py data/maps/gdansk data/maps/east_london data/maps/istanbul
+Takes map directories as arguments, preserves the previous value as ``length_raw``, and is
+idempotent: files whose median length is already plausible are skipped.
 """
 from __future__ import annotations
 

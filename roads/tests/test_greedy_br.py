@@ -1,6 +1,6 @@
-"""A4 verification: the matrix-free submodular greedy best-response interdictor equals (K<=1) or
-closely bounds (K=2, the (1-1/e) guarantee, in practice usually exact here) the EXACT best response
-computed from the full [occ x iset] objective matrix, on real Kaliningrad headline instances."""
+"""Verifies the matrix-free submodular greedy best-response interdictor against the exact best
+response computed from the full [occupancy x interdiction-set] objective matrix, on real
+Kaliningrad instances: equal at K=1, and within the (1 - 1/e) guarantee at K=2."""
 from __future__ import annotations
 
 import networkx as nx

@@ -1,8 +1,7 @@
 #!/bin/bash
-# B2 thinking rerun, register (b) at the amended uniform 32k cap (2026-08-13; the 5c-class
-# co-change, ledger amendment). v4: DIRECT-TO-PORT (qwen vllm on :8001, Kilian's authorisation;
-# bypasses the gateway proxy window that 502'd long traces). Three workers, one per cell.
-# Idempotent: existing outputs skip.
+# B2 LLM benchmark batch in thinking mode, register (b) at a uniform 32k token cap.
+# One worker per cell, posting direct to the vLLM port. Idempotent: existing outputs
+# are skipped.
 set -u; cd "$(dirname "$0")/.."
 BASE="http://cv-iits-w05.tail5b8d80.ts.net:8001/v1"; KEY="iits-local-key"; MODEL="qwen3-27b"
 worker () {

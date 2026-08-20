@@ -1,10 +1,10 @@
-"""A1 regression tests: per-transition instance conditioning.
+"""Regression tests for per-transition instance conditioning.
 
-The generalist samples a different instance each sortie; a replayed instance-i transition MUST be
-scored under instance i's menu and per-route features, not whatever instance the nets were last
-pointed at. These tests pin (a) that the env attaches per-instance menu/features/vulnerability to
-every observation, (b) that select_action honours the ON-observation menu over a stale net
-attribute, and (c) that the edge-vulnerability column is populated and instance-specific.
+The generalist samples a different instance each sortie, so a replayed instance-i transition must
+be scored under instance i's menu and per-route features rather than whatever instance the nets
+were last pointed at. These pin that the env attaches per-instance menu, features and
+vulnerability to every observation, that select_action honours the on-observation menu over a
+stale net attribute, and that the edge-vulnerability column is populated and instance-specific.
 """
 from __future__ import annotations
 

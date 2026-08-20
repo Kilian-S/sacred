@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
-"""Powered stress (load) sweep at capacity 1 (gen07 arena scoping, 2026-07-06).
+"""Powered load sweep of the unpredictability lever at capacity 1.
 
-Follow-up to analysis/capacity_probe.py, which showed the exploitability lever is a STRESS
-phenomenon (capacity slack destroys it) and hinted at a load sweet spot near lambda=0.08 off only
-12 instances. This pins it with power: per-instance lever with a 95% CI, so we can tell the real
-signal from the difference-of-differences noise, and find the load that maximises the lever while
-keeping greedy trainable (delivery above the collapse band).
-
-Metrics per lambda (capacity 1, contested arena = dynassign + route reach), paired demand seeds:
-  * W_clean, delivery      : deterministic greedy, no attack (competence / trainability).
-  * D_det                  : W(greedy_det, targeted) - W(greedy_det, none), the attacker's bite.
-  * LEVER (mean +/- 95%CI) : per instance, D_det_i - D_rand_i, where D_rand_i uses eps-randomised
-                             greedy averaged over rollouts. > 0 (CI excluding 0) = unpredictability
-                             measurably reduces attacker damage; the room adversarial training has.
-  * clean_cost             : W(greedy_rand, none) - W(greedy_det, none), the price of that mixing.
-  * ratio                  : lever / clean_cost (> 1 = unpredictability pays for itself).
-
-Run: PYTHONPATH=. .venv/bin/python analysis/stress_sweep.py
+For each arrival rate, over paired demand seeds on the contested arena, it reports the clean wait
+and delivery rate of deterministic greedy (its competence, hence its trainability); D_det, the
+attacker's bite; the per-instance lever D_det - D_rand with a 95% confidence interval, where
+D_rand uses eps-randomised greedy averaged over rollouts; the clean cost of that mixing; and the
+ratio of the two. A lever whose interval excludes zero means unpredictability measurably reduces
+attacker damage, and a ratio above one means the mixing pays for itself.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Facility Location Problem solver logic using Surrogate-Based Optimization (SBO)."""
+"""Facility Location Problem solver built on Surrogate-Based Optimisation (SBO)."""
 
 from __future__ import annotations
 
@@ -13,33 +13,26 @@ class FLPSolver:
     """Solver for the Facility Location Problem leveraging a trained Surrogate model."""
 
     def __init__(self, surrogate_model: torch.nn.Module, node_list: List[NodeId]) -> None:
-        """Initialize the FLP Solver.
+        """Initialise the FLP solver.
 
-        Parameters
-        ----------
-        surrogate_model:
-            Trained PyTorch SurrogateMLP model.
-        node_list:
-            Ordered list of node IDs in the graph network, matching the feature representation order.
+        Args:
+            surrogate_model: Trained SurrogateMLP.
+            node_list: Node IDs of the graph, ordered to match the surrogate's feature layout.
         """
         self.model = surrogate_model
         self.node_list = node_list
 
     def solve(self, demand_dict: Dict[NodeId, float], num_trucks: int = 3, num_depots: int = 2, K: int = None) -> Tuple[List[NodeId], float]:
-        """Find the optimal fleet allocation that minimizes predicted expected adversarial cost.
+        """Find the fleet allocation minimising predicted expected adversarial cost.
 
-        Parameters
-        ----------
-        demand_dict:
-            Mapping of node ID to its demand value.
-        num_trucks:
-            Total number of trucks in the fleet.
-        num_depots:
-            Number of distinct depots to place.
+        Args:
+            demand_dict: Node ID to demand value.
+            num_trucks: Total number of trucks in the fleet.
+            num_depots: Number of distinct depots to place.
+            K: When given, overrides both ``num_trucks`` and ``num_depots``.
 
-        Returns
-        -------
-        Tuple of (list_of_truck_starting_nodes, predicted_cost).
+        Returns:
+            The chosen truck starting nodes, and their predicted cost.
         """
         if K is not None:
             num_depots = K

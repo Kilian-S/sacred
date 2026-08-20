@@ -1,4 +1,4 @@
-"""Tests for the multi-convoy classical baselines (gen08 Phase M / Obj-5)."""
+"""Tests for the multi-convoy classical baselines."""
 import networkx as nx
 import numpy as np
 

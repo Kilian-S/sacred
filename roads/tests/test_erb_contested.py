@@ -1,5 +1,5 @@
-"""Test the B7 contested ERB demo path: greedy no-attack transitions are collectable and load
-into a protagonist replay buffer (the --erb-path contract), without file I/O."""
+"""Tests the contested ERB demo path: greedy no-attack transitions are collectable and load into
+a protagonist replay buffer, as the ``--erb-path`` contract requires, without file I/O."""
 
 from __future__ import annotations
 

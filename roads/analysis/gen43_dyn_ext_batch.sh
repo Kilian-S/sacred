@@ -1,10 +1,7 @@
 #!/bin/bash
-# gen43 dynamic-arm extension batch (pre-registered: experiments/gen43_unified_kboundary.md,
-# EXTENSION section 2026-08-08). K=5 then K=6 on 71-33 kx=8, 3 seeds 3-parallel each,
-# trainer verbatim (exact softmax adversary; K=6 pays ~25 min startup per process).
-# Launch authority: KILIAN runs this himself.
-#   nohup bash analysis/gen43_dyn_ext_batch.sh >> models/runs/gen43_unified/batch.log 2>&1 & disown
-# then verify at first-print level and check `ps -o nice` (zsh trap).
+# gen43_unified_kboundary dynamic-arm extension: K=5 then K=6 on 71-33 with k-extra 8,
+# 3 seeds 3-parallel each, against the exact softmax adversary. K=6 pays roughly 25 minutes
+# of startup per process.
 set -u
 cd "$(dirname "$0")/.."
 export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1

@@ -1,4 +1,4 @@
-"""Tests for the multi-convoy interdiction oracle (gen08 Phase M)."""
+"""Tests for the multi-convoy interdiction oracle."""
 import networkx as nx
 import numpy as np
 
@@ -35,13 +35,13 @@ def test_reproduces_multiconvoy_probe_110_135():
     from src.envs.multiconvoy_interdiction import make_multiconvoy_env
     game = make_multiconvoy_env(od=("110", "135"), N=2, objective="mission").game
     sol = solve_multiconvoy(game, N=2, objective="mission")
-    assert abs(sol.loss_det - 0.728) < 0.02       # scratch/multiconvoy_probe.py, N=2 K=1 soft
+    assert abs(sol.loss_det - 0.728) < 0.02       # N=2, K=1, soft interception
     assert abs(sol.loss_mixed - 0.314) < 0.02
     assert sol.gap > 0.3
 
 
 def test_mission_gap_exceeds_linear_gap():
-    """The finding: a loss-averse objective preserves the gap; a risk-neutral one dilutes it."""
+    """A loss-averse objective preserves the gap, whereas a risk-neutral one dilutes it."""
     from src.envs.multiconvoy_interdiction import make_multiconvoy_env
     game = make_multiconvoy_env(od=("110", "135"), N=3, objective="mission").game
     mission = solve_multiconvoy(game, N=3, objective="mission")

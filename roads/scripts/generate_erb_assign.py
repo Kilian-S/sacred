@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Generate ERB demonstrations for the 3b assignment probe (Obj 3: ERB bootstrapping).
+"""Generate replay-buffer demonstrations for the assignment probe.
 
-Runs greedy-insertion episodes on the assignment env WITH THE ANTAGONIST OFF (no-attack
-demos), collecting protagonist transitions via the shared transition builder so they are
-byte-identical to live training transitions. Seeds the protagonist's replay buffer with the
-near-optimal *static* assignment partition (greedy is near-optimal unattacked) to anchor the
-clean-road behaviour, while leaving the adversarial advantage for co-evolution to discover.
-
-    PYTHONPATH=. python scripts/generate_erb_assign.py --episodes 100 --out data/erb_assign.pt
+Runs greedy-insertion episodes on the assignment environment with the antagonist off, collecting
+protagonist transitions through the shared transition builder so they take exactly the form live
+training transitions do. Seeding the replay buffer with the near-optimal static assignment
+partition anchors clean-road behaviour while leaving the adversarial advantage for coevolution to
+discover.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ from src.baselines.greedy_dispatch import _congestion_aware_distance, _id_key
 
 
 def assignment_config() -> SMDPConfig:
-    """Match scripts/train_sacred.py's assign branch (env physics identical)."""
+    """Match the assign branch of scripts/train_sacred.py, whose env physics are identical."""
     return SMDPConfig(
         max_ticks=800, antagonist_interval=20, congestion_duration=30,
         congestion_budget=400.0, congestion_cooldown=0, congestion_cost=0.1,
@@ -32,9 +30,11 @@ def assignment_config() -> SMDPConfig:
 
 
 def greedy_choose_fn(smdp: SMDPDecisionWrapper):
-    """Per-truck greedy-insertion choice for the active truck, given its claim-reduced mask:
-    nearest unserved request (congestion-aware), else depot. Mirrors greedy_insertion_policy
-    but in the per-truck form the transition builder expects."""
+    """Per-truck greedy-insertion choice for the active truck, given its claim-reduced mask.
+
+    Picks the nearest unserved request, congestion-aware, and otherwise the depot. Mirrors
+    greedy_insertion_policy in the per-truck form the transition builder expects.
+    """
     def choose(projected_obs, truck_mask, truck_id):
         env = smdp.env
         dests = truck_mask.get(truck_id, [])
@@ -75,7 +75,6 @@ def main() -> None:
 
     torch.save(all_transitions, args.out)
     print(f"\nSaved {len(all_transitions)} greedy no-attack protagonist transitions to {args.out}")
-    # quick sanity
     assert all(t.agent == "protagonist" for t in all_transitions)
     t0 = all_transitions[0]
     print(f"sample transition: active_truck={t0.state.get('active_truck')} "

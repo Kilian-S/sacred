@@ -1,7 +1,5 @@
 #!/bin/bash
-# gen34_hidden_adversary batch (pre-registered: experiments/gen34_hidden_adversary.md;
-# Kilian's full launch control 2026-07-23). 3 seeds 3-parallel, then the no-intel causal
-# control. Pause/resume: pkill -STOP/-CONT -f train_family_generalist.py
+# gen34_hidden_adversary batch: 3 seeds 3-parallel, then the no-intel causal control.
 set -u
 cd "$(dirname "$0")/.."
 export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1

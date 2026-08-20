@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-"""Multi-seed, fixed-adversary evaluation for the Stage-1.5 dynamic assignment rung.
+"""Multi-seed, fixed-adversary evaluation for the dynamic assignment rung.
 
-The static-3b "milestone" was retracted because its eval was a SINGLE deterministic episode of the
-learned policy vs the *co-evolving* antagonist -> the gap swung +/-100 on arms-race timing, not
-robustness. This harness fixes both failure modes:
-  * average over N fixed Poisson demand instances (seeds) -> mean +/- std, not one anecdote;
-  * pit learned AND greedy against the SAME fixed antagonist on the SAME instance.
-Plus best-checkpoint selection over the per-phase snapshots (final-checkpoint is arbitrary under
-co-evolution).
-
-Usage:
-  PYTHONPATH=. python scripts/evaluate_dynamic_assign.py --run models/runs/<run> --seeds 5
-  PYTHONPATH=. python scripts/evaluate_dynamic_assign.py --run models/runs/<run> --select-best --seeds 5
+Averages over N fixed Poisson demand instances rather than resting on a single episode, and pits
+the learned policy and greedy against the same fixed antagonist on the same instance, so the
+reported gap measures robustness rather than arms-race timing. Best-checkpoint selection over the
+per-phase snapshots is available too, the final checkpoint being arbitrary under coevolution.
 """
 
 from __future__ import annotations
@@ -51,9 +44,12 @@ def _mean_std(xs: list[float]) -> tuple[float, float]:
 
 
 def eval_dynamic_cells(protag, antag, make_env_for_seed, cfg: SMDPConfig, seeds=(0, 1, 2)) -> dict:
-    """4-cell {greedy, learned} x {no-attack, attack} eval over fixed demand seeds; learned and
-    greedy face the SAME fixed antagonist on each instance. Returns mean/std per cell + gaps.
-    ``gap_atk_mean`` < 0 => learned beats greedy under the fixed adversary (the headline)."""
+    """Run the four cells of {greedy, learned} x {no attack, attack} over fixed demand seeds.
+
+    Learned and greedy face the same fixed antagonist on each instance. Returns the mean and
+    standard deviation per cell plus the gaps; ``gap_atk_mean`` below zero means learned beats
+    greedy under the fixed adversary.
+    """
     cells: dict[str, list[float]] = {
         "greedy_noatk": [], "greedy_atk": [], "learned_noatk": [], "learned_atk": [],
         "gap_noatk": [], "gap_atk": [],
@@ -94,8 +90,11 @@ def _new_antag(cfg: SMDPConfig, node_in_dim: int = 13, edge_in_dim: int = 4) -> 
 
 
 def _load_protag(cfg: SMDPConfig, path: str) -> ProtagonistSAC:
-    """Build a protagonist sized to the checkpoint's trained feature width and load it (pre-13-dim
-    checkpoints, e.g. gen02, keep working: the agent slices current features down to its width)."""
+    """Build a protagonist sized to the checkpoint's trained feature width, and load it.
+
+    Narrower older checkpoints keep working, because the agent slices current features down to
+    its own width.
+    """
     sd = torch.load(path, map_location="cpu")
     agent = _new_protag(cfg, node_in_dim=infer_node_in_dim(sd), edge_in_dim=infer_edge_in_dim(sd))
     agent.actor.load_state_dict(sd)
@@ -110,11 +109,12 @@ def _load_antag(cfg: SMDPConfig, path: str) -> AntagonistSAC:
 
 
 def select_best_checkpoint(run_dir, make_env_for_seed, cfg, seeds, antag_path=None) -> list[dict]:
-    """Eval each protagonist snapshot vs a FIXED antagonist (default: the final antagonist) over
-    the seeds; return per-snapshot results sorted best-first (most negative gap_atk_mean).
+    """Evaluate every protagonist snapshot against a fixed antagonist over the seeds.
 
-    Final-checkpoint is arbitrary under co-evolution, so we report the best protagonist *under a
-    fixed adversary* — standard model selection, and it matches deployment (ship one frozen policy)."""
+    The antagonist defaults to the run's final one, and results are sorted by ``gap_atk_mean``
+    ascending. The final checkpoint is arbitrary under coevolution, so the best protagonist under
+    a fixed adversary is reported instead, which is also what deployment would ship.
+    """
     if antag_path is None:
         antag_path = os.path.join(run_dir, "antagonist", "actor.pt")
     antag = _load_antag(cfg, antag_path)

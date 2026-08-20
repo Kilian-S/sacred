@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""gen40 sensitivity sweep (ORACLE-ONLY, no training): the dynamic register's structure along
-window w, corridor count m, budget K, and menu size R (k_extra).
+"""Oracle-only sensitivity sweep of the dynamic register (experiment gen40).
 
-Pre-registered in experiments/gen40_dyn_sensitivity.md (read it first). All quantities exact;
-dynamic optima via Karp (analysis/dyn_exact.py), core-restricted where R^w > FULL_STATE_CAP,
-cross-checked against the full-menu optimum wherever both are computable.
-
-Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
-     analysis/gen40_dyn_sensitivity.py
-Writes models/runs/gen40_dyn_sensitivity.json
+Maps the register's structure along window length w, corridor count m, adversary budget K and
+menu size R. Every quantity is exact: dynamic optima come from Karp's minimum mean cycle,
+restricted to the disjoint core wherever R^w exceeds FULL_STATE_CAP and cross-checked against the
+full-menu optimum wherever both are computable. No training.
 """
 from __future__ import annotations
 
@@ -38,14 +34,18 @@ KS = [1, 2, 3]
 KXS = [0, 4, 8]
 FULL_STATE_CAP = 3_200      # full-menu exact objects only when R^w <= this
 IID_SUPPORT_CAP = 70_000    # iid_eq exact enumeration cap (support^w)
-MAX_ISETS = 250_000         # gen35 convention: skip cells past this column count
+MAX_ISETS = 250_000         # skip cells past this column count
 
 
 # ---------------------------------------------------------------- exact helpers (vectorised)
 def enum_windows(sub, w, R):
-    """All windows over route subset `sub` (base-|sub| encoding, s_0 oldest; identical
-    ordering convention to analysis/dyn_exact.py). Returns (dec [n,w] in subset indices,
-    counts [n,R] over full route ids)."""
+    """Enumerate all windows over the route subset ``sub``.
+
+    Base-|sub| encoding with s_0 oldest, the same ordering convention as analysis/dyn_exact.py.
+
+    Returns:
+        The decoded windows [n, w] in subset indices, and counts [n, R] over full route ids.
+    """
     b = len(sub)
     n = b ** w
     dec = np.empty((n, w), dtype=np.int64)
@@ -60,8 +60,10 @@ def enum_windows(sub, w, R):
 
 
 def window_losses(counts, L, tau, chunk=256):
-    """[n, R] per-route expected loss (L @ q(s)) for every window state; exactly softmax_br
-    semantics (counts normalised by their sum), batched."""
+    """Per-route expected loss L @ q(s) for every window state, batched into [n, R].
+
+    Follows softmax_br semantics exactly, with counts normalised by their sum.
+    """
     n = counts.shape[0]
     out = np.empty((n, L.shape[0]))
     for i in range(0, n, chunk):
@@ -76,16 +78,22 @@ def window_losses(counts, L, tau, chunk=256):
 
 
 def restricted_opt(lw, sub, w):
-    """Exact dynamic optimum of the policy class restricted to routes `sub` (Karp on the
-    base-|sub| window graph); lw = window_losses for enum_windows(sub, w)."""
+    """Exact dynamic optimum of the policy class restricted to the routes ``sub``.
+
+    Karp's algorithm on the base-|sub| window graph; ``lw`` is window_losses for
+    enum_windows(sub, w).
+    """
     b = len(sub)
     cost = lw[:, sub]
     return karp_mmc(cost, b ** w, b, b ** (w - 1))
 
 
 def antirepeat_stationary(lw, dec, sub, w, damp=0.5, iters=60_000, tol=1e-13):
-    """Exact stationary loss of 'uniform over `sub` routes absent from the window' (fallback
-    uniform over sub when all are punished); damped power iteration on the window chain."""
+    """Exact stationary loss of playing uniformly over the ``sub`` routes absent from the window.
+
+    Falls back to uniform over ``sub`` when every route is punished. Damped power iteration on
+    the window chain.
+    """
     b = len(sub)
     n = b ** w
     inwin = np.zeros((n, b), dtype=bool)
@@ -152,8 +160,10 @@ def inv_vuln_dist(sub, L, R):
 
 # ---------------------------------------------------------------- instance screen
 def screen_od(city, target_m, kx=8, seed=0, tries=4000):
-    """First deg>=3 OD whose base disjoint count and built-menu core both equal target_m,
-    with the standing menu-size and one-shot-value screens."""
+    """Find the first degree-3 OD whose disjoint count and menu core both equal ``target_m``.
+
+    The menu-size and one-shot-value screens are applied as well.
+    """
     nodes_path, edges_path = CITY_PATHS[city]
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, _DEFAULT_TASKS)
     G = nx.Graph()

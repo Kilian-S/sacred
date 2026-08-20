@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Evaluate a trained assignment-probe protagonist vs greedy-insertion (3b).
+"""Evaluate a trained assignment protagonist against greedy insertion.
 
-Headline check: under the trained antagonist, does the learned multi-truck assignment policy
-achieve lower total delivery latency than reactive greedy-insertion? The static cell is
-reported too (expected near-0 gap — assignment headroom here is adversarial, see the gate).
-
-Usage:
-    PYTHONPATH=. python scripts/evaluate_assignment.py --run models/runs/<run_name>
+Asks whether the learned multi-truck assignment policy achieves lower total delivery latency than
+reactive greedy insertion under the trained antagonist. The unattacked cell is reported too,
+where the headroom is expected to be near zero because the assignment headroom here is
+adversarial.
 """
 
 from __future__ import annotations
@@ -32,9 +30,12 @@ def assignment_config() -> SMDPConfig:
 
 
 def sac_assignment_policy(agent: ProtagonistSAC, env_ref=None):
-    """Learned multi-truck assignment with STATE PROJECTION + SEQUENTIAL CLAIMING (mirrors the
-    trainer): each waiting truck decides in turn; its chosen request is removed from later trucks'
-    masks so two trucks can't be assigned the same demand node (depots are never claimed)."""
+    """Learned multi-truck assignment with state projection and sequential claiming.
+
+    Mirrors the trainer: each waiting truck decides in turn, and its chosen request is removed
+    from later trucks' masks so two trucks cannot be assigned the same demand node. Depots are
+    never claimed.
+    """
     def policy(event: DecisionEvent):
         mask = event.protagonist_action_mask
         nodes = event.observation["nodes"]
@@ -70,9 +71,11 @@ def sac_antagonist_policy(smdp: SMDPDecisionWrapper, agent: AntagonistSAC):
 
 
 def eval_cells_assignment(protag, antag, make_env, cfg: SMDPConfig) -> dict:
-    """4-cell {greedy-insertion, learned} x {no-attack, attack} eval -> total_wait per cell +
-    gaps. Reusable for the CLI and periodic in-training eval. ``gap_atk`` < 0 means the learned
-    policy beats greedy-insertion under the trained antagonist (the headline)."""
+    """Run the four cells of {greedy insertion, learned} x {no attack, attack}.
+
+    Used both from the command line and for periodic in-training evaluation. ``gap_atk`` below
+    zero means the learned policy beats greedy insertion under the trained antagonist.
+    """
     def fresh() -> SMDPDecisionWrapper:
         return SMDPDecisionWrapper(env_factory=make_env, config=cfg)
 

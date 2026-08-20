@@ -1,33 +1,15 @@
 #!/usr/bin/env python3
-"""gen43 static exact optimum at K = 7 and K = 8 (2026-08-10, ORACLE/EVAL-ONLY, no training).
+"""Exact static optimum at large interdiction budgets, by constraint generation.
 
-WHY. The 2026-08-10 extension took the exact static optimum to K = 6 with a dense stacked LP.
-K = 7 and K = 8 are past that: the dense LP's own constraint matrix alone would be ~3.1 GB and
-~13.9 GB, and the payoff and survival arrays sit beside it, so the direct route peaks around
-11 GB and 50 GB. Kilian asked whether they are reachable in theory; they are reachable in
-practice, by CONSTRAINT GENERATION.
-
-THE METHOD, and why it is exact. The defender has only R = 11 pure strategies (Prop 3.2: the
-mission objective is concave in the occupancy, so stacks suffice), so the LP has 11 unknowns
-and, by LP basis size, an optimal attacker mixture supported on at most 12 of the C(43, K)
-columns. We therefore never form the full constraint matrix. Instead:
-
-  1. keep a small WORKING SET of columns and solve the exact LP on it, giving (v, d);
-  2. SCAN every column of the full game for the one that hurts d most;
-  3. if no column exceeds v, then d is optimal against the WHOLE game and v = v* exactly,
-     which is a certificate, not an approximation; otherwise add the violating column and
-     repeat.
-
-Step 2 is the only expensive part and is done on a cached float32 survival matrix
-(R x C(43,K), 1.4 GB at K=7 and 6.4 GB at K=8), built once in chunks so the combination
-enumeration never materialises.
-
-ANCHORS. The same solver is run at K = 5 and K = 6 first and must reproduce the dense-LP
-values 0.620058 and 0.686494 before any new number is read.
-
-Run: OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=. .venv/bin/python \
-     analysis/gen43_static_exact_k78.py --budgets 5 6 7 8
-Artefact: models/runs/gen43_static_exact_k78.json (regenerable, deterministic).
+A dense LP over all C(43, K) columns is out of memory reach beyond K = 6, but the defender has
+only R = 11 pure strategies, because the mission objective is concave in the occupancy and stacks
+therefore suffice, so by LP basis size an optimal attacker mixture is supported on at most 12
+columns. The solver keeps a small working set, solves the exact LP on it, scans every column of
+the full game for the one that hurts the resulting mixture most, and stops when none exceeds the
+LP value, which is an exact certificate rather than an approximation. That scan is the only
+expensive step and runs over a cached or chunked float32 survival matrix, so the combination
+enumeration never materialises. Running the same solver at K = 5 and K = 6 reproduces the
+dense-LP anchors.
 """
 from __future__ import annotations
 
@@ -45,14 +27,16 @@ from src.envs.multiconvoy_interdiction import make_multiconvoy_env
 N, BAND, KX = 3, (0.15, 0.95), 8
 CHUNK = 1_000_000
 
-# dense-LP values from the 2026-08-10 extension, used as anchors
+# Dense-LP values, used as anchors for the budgets they cover.
 V_STAR_DENSE = {1: 0.127640, 2: 0.255280, 3: 0.382920, 4: 0.510560,
                 5: 0.620058, 6: 0.686494}
 
 
 def build_instance(od=("71", "33")):
-    """Route/edge structure only; taken from the cheap K=1 env (the game's candidate edge set
-    and route edge sets do not depend on the budget)."""
+    """Route and edge structure only, taken from the cheap K=1 env.
+
+    The candidate edge set and the route edge sets do not depend on the budget.
+    """
     env = make_multiconvoy_env(od, N=N, K=1, k_extra_routes=KX, edge_vuln_band=BAND,
                                absolute_vuln_norm=True, menu_select=True, objective="mission")
     game = env.game
@@ -90,7 +74,12 @@ def survival_matrix(s, E, k, verbose=True):
 
 
 def solve_exact(surv, R, tol=1e-12, max_rounds=200, verbose=True):
-    """Constraint generation. Returns (v_star, d, n_rounds, working_set_size)."""
+    """Constraint generation over a cached survival matrix.
+
+    Returns:
+        The certified value, the defender mixture, the number of rounds, the working-set size,
+        and the certificate gap.
+    """
     # seed the working set with the columns that hurt a few natural mixtures most
     seeds = [np.ones(R) / R]
     cols = []
@@ -117,9 +106,10 @@ def solve_exact(surv, R, tol=1e-12, max_rounds=200, verbose=True):
 
 
 def greedy_column(d, s, k):
-    """Exact-in-practice warm-start column: greedily pick the k edges that hurt mixture d most.
-    Used only to SEED the working set; optimality is certified by the streaming scan, never
-    by this."""
+    """Greedily pick the k edges that hurt mixture ``d`` most, as a warm-start column.
+
+    Used only to seed the working set; optimality is certified by the streaming scan, never here.
+    """
     R, E = s.shape
     acc, chosen = np.ones(R), []
     for _ in range(k):
@@ -136,9 +126,11 @@ def greedy_column(d, s, k):
 
 
 def solve_exact_streaming(s, E, k, verbose=True):
-    """Constraint generation without caching the survival matrix: the working set is warm
-    started by greedy best responses, and optimality is certified by full chunked scans over
-    every one of the C(E,k) columns. Memory is O(R x CHUNK)."""
+    """Constraint generation without caching the survival matrix.
+
+    The working set is warm started by greedy best responses, and optimality is certified by full
+    chunked scans over every one of the C(E, k) columns. Memory is O(R x CHUNK).
+    """
     R = s.shape[0]
     n = comb(E, k)
     cols = [np.ones(R)]                       # empty interdiction set, a valid column
@@ -167,8 +159,8 @@ def solve_exact_streaming(s, E, k, verbose=True):
             if float(vals[jj]) > best_v:
                 best_v, best_edges = float(vals[jj]), idx[jj].astype(int).copy()
             pos += m
-        # the scan runs in float32 for speed (absolute precision ~5e-8 at these magnitudes),
-        # so the winning column is re-evaluated in float64 before the certificate is applied
+        # The scan runs in float32 for speed, with absolute precision around 5e-8 at these
+        # magnitudes, so the winning column is re-evaluated in float64 before certifying.
         best_acc = np.ones(R)
         for e in best_edges:
             best_acc = best_acc * s[:, int(e)]

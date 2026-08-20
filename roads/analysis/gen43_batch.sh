@@ -1,12 +1,7 @@
 #!/bin/bash
-# gen43_unified_kboundary batch (pre-registered: experiments/gen43_unified_kboundary.md).
-# Launch authority: KILIAN runs this himself (standing workflow, 2026-08-05).
-#   nohup bash analysis/gen43_batch.sh > models/runs/gen43_unified/batch.log 2>&1 & disown
-# then verify at first-print level (tail the cell logs) and check `ps -o nice` (zsh trap).
-#
-# Static cells K in {1,2,3,4,7,8} (3 seeds 3-parallel each; exact attacker at K<=3,
-# greedy-BR at K>=4 per the fidelity record), then dynamic cells K in {1,4} (3 seeds
-# 3-parallel). Reused cells (static K=5/6, dynamic K=2/3 + control) are NOT re-run.
+# gen43_unified_kboundary batch. Static cells K in {1,2,3,4,7,8}, 3 seeds 3-parallel each,
+# with an exact attacker at K<=3 and greedy best-response at K>=4, then dynamic cells
+# K in {1,4}, 3 seeds 3-parallel.
 set -u
 cd "$(dirname "$0")/.."
 export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1

@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Block R0 (ORACLE-ONLY, free): repair + aim.
+"""Oracle-only screen of the disjoint heuristic: fleet costs, prevalence, and a K-scan.
 
-R0a: disjoint-heuristic rows WITH fleet-cost columns for the headline ladders; the
-     population prevalence of the heuristic's suboptimality (the honest A8 companion row).
-R0c: the K-scan (heuristic/eq vs K) on the headline instances + the gen26 step-3 instance
-     shortlist (m = 5-6 Kaliningrad ODs, heuristic saturation at K = m-1/m under the greedy
-     yardstick).
-
-Everything is exact LP / greedy-BR arithmetic; no training. Ledger: Block R in
-NEXT_STEPS_MASTER.md; results fold into gen13/gen14/gen12/gen16/gen22/a6_a7_a8/b2 + gen26.
+Adds fleet-cost columns to the disjoint-heuristic rows of the headline ladders, measures how
+prevalent the heuristic's suboptimality is across a population of ODs drawn from four cities, and
+scans exploitability against the adversary budget K on the headline instances and on a shortlist
+of Kaliningrad ODs with five or six disjoint routes. Exact LP and greedy best-response
+arithmetic, with no training.
 """
 from __future__ import annotations
 
@@ -127,7 +124,7 @@ def part3_kscan_and_shortlist():
             scan[f"K{k}"] = {"eq": round(sol.loss_mixed, 3), "det": round(sol.loss_det, 3),
                              "heuristic": round(float(h), 3),
                              "heuristic_eq_ratio": round(float(h) / sol.loss_mixed, 2)}
-        # K = 4, 5: greedy yardstick (no exact eq exists = the point)
+        # K = 4, 5: the greedy yardstick, since no exact equilibrium is computable there.
         game = env.game
         dis = disjoint_subset(game.route_edges)
         uni_support = [(tuple(N if i == r else 0 for i in range(game.n_routes)), 1.0 / len(dis))

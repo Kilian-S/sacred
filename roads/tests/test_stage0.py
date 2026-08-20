@@ -1,10 +1,8 @@
-"""Tests for the Stage-0 validation rung: latency reward + env factory.
+"""Tests for the Stage-0 validation rung: the latency reward and the env factory.
 
-Stage 0 (problem redesign §7.1) is the single-truck validation rung. These tests pin
-the two new, behaviour-bearing pieces:
-  * the latency reward mode telescopes to total delivery latency, and
-  * the K=1 cluster factory builds the intended geometry,
-while confirming the legacy (static-problem) reward path is untouched by default.
+Stage 0 is the single-truck validation rung. These tests pin that the latency reward mode
+telescopes to total delivery latency and that the cluster factory builds the intended geometry,
+while confirming that the legacy static-problem reward path is untouched by default.
 """
 
 import math

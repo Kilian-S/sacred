@@ -1,4 +1,4 @@
-"""Tests for the B4-lite scripted-attacker population (mixture)."""
+"""Tests for the scripted-attacker population (mixture)."""
 
 from __future__ import annotations
 

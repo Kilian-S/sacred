@@ -1,23 +1,13 @@
 #!/usr/bin/env python3
-"""Routing-unpredictability lever probe on the HYBRID arena (gen07 arena scoping, 2026-07-06).
+"""Routing-unpredictability lever probe on the hybrid arena.
 
-The powered destination-mode sweep (analysis/stress_sweep.py) found the ASSIGNMENT-unpredictability
-lever thin at every load (~2-7% of D). But destination mode AUTO-ROUTES (Dijkstra), so it
-structurally cannot express ROUTING unpredictability, which is the thesis's actual mechanism
-("unpredictable roads deny the ambush"). This probe measures the routing lever on the hybrid arena
-(routing_mode="hybrid", route-reach attacker), where the policy chooses each edge:
-
-  D_det   = W(hybrid_greedy_det, targeted) - W(hybrid_greedy_det, none)   [deterministic routing]
-  D_rand  = W(hybrid_greedy_eps_routing, targeted) - W(..., none)         [eps-random forward edge]
-  LEVER   = D_det - mean(D_rand)   (higher = routing unpredictability reduces the route-reach
-            attacker's damage more; the room a learned routing policy could exploit)
-
-Static demand -> the deterministic greedy is a single trajectory; the CI comes from the eps-rollout
-distribution (the relevant uncertainty). Compared against the ~2-7% destination assignment lever,
-this says whether the exploitability lever really lives in routing control (=> gen07 wants a
-routing arena) or is thin everywhere (=> the benefit is structurally small in this problem).
-
-Run: PYTHONPATH=. .venv/bin/python analysis/hybrid_lever_probe.py
+Destination mode auto-routes with Dijkstra and so cannot express routing unpredictability, the
+mechanism by which unpredictable roads are meant to deny the ambush. On the hybrid arena the
+policy chooses each edge, so this probe compares the attacked-minus-clean wait of deterministic
+greedy routing against the same quantity under eps-random forward-edge choice; the difference is
+the lever a learned routing policy could exploit, measured against the thin assignment lever the
+destination-mode sweep found. Demand is static, so the confidence interval comes from the
+eps-rollout distribution.
 """
 
 from __future__ import annotations
@@ -41,8 +31,10 @@ EPS_VALUES = [0.2, 0.4]
 
 
 def eps_routing_greedy(smdp, rng, eps):
-    """Hybrid greedy, but on the ROUTING branch pick a random forward option with prob eps (routing
-    unpredictability). Assignment branch stays greedy (isolates the routing lever)."""
+    """Hybrid greedy that takes a random forward option with probability eps when routing.
+
+    The assignment branch stays greedy, which isolates the routing lever.
+    """
     def policy(event):
         env = smdp.env
         actions, claimed = {}, set()

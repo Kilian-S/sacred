@@ -1,4 +1,4 @@
-"""PyGame visualization for the SACRED toy environment."""
+"""PyGame visualisation for the SACRED toy environment."""
 
 from __future__ import annotations
 

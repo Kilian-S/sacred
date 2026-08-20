@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""A2 + A3 (EVAL-ONLY): shuffled-map transfer row + intel-noise robustness curve.
+"""Evaluation-only shuffled-map transfer row and intel-noise robustness curve.
 
-A2: does the frozen gen16 generalist TRACK equilibria of threat maps decorrelated from geometry
-    (candidate-edge value permutations = new realities), or was it reading geometry?
-A3: reality fixed (true game scores everything); only the OBSERVED map is corrupted
-    (shuffle-fraction / multiplicative noise): does the hedge survive intel error?
-
-Pre-registration: experiments/zst_map_robustness.md (binding). No training; exact arithmetic.
+The A2 row permutes candidate-edge vulnerabilities so that the threat map decorrelates from
+geometry, and asks whether a frozen generalist still tracks the resulting equilibria or was
+reading geometry all along. The A3 row holds reality fixed, corrupting only the observed map by
+shuffle fraction or multiplicative noise, and asks whether the hedge survives intel error. No
+training, and exact arithmetic throughout.
 """
 from __future__ import annotations
 
@@ -46,8 +45,8 @@ def _mm(x):
 
 
 def cand_edges(inst):
-    # canonical, PROCESS-INDEPENDENT order (sorting frozensets by repr depends on the per-process
-    # string-hash seed, which made the seeded shuffles non-reproducible across invocations)
+    # Canonical, process-independent order: sorting frozensets by repr depends on the per-process
+    # string-hash seed, which makes seeded shuffles irreproducible across invocations.
     return sorted(set().union(*inst.env.game.route_edges), key=lambda e: tuple(sorted(map(str, e))))
 
 
@@ -62,9 +61,11 @@ def true_cand_map(inst):
 
 
 def policy_dist(states, inst, obs_map: dict, worst_per_route: np.ndarray) -> np.ndarray:
-    """Exact stacked occupancy distribution of the TAP-of-checkpoints policy, with the OBSERVED
-    edge-vulnerability map + per-route features overridden. obs_map keys: frozenset cand edges
-    (non-candidate edges keep the env's true values)."""
+    """Exact stacked occupancy distribution of the checkpoint-averaged policy.
+
+    The observed edge-vulnerability map and the per-route features are overridden. ``obs_map`` is
+    keyed by candidate-edge frozensets; non-candidate edges keep the env's true values.
+    """
     env = inst.env
     env.reset()
     obs = dict(env.observe())
@@ -198,10 +199,10 @@ def main():
             print(f"A3 {kind}={lv}: gen {np.mean(gs):.2f}x  (true-map anchor "
                   f"{out['sanity']['gen']:.2f}, rand {out['sanity']['rand']:.2f})", flush=True)
 
-    # ---------- post-hoc DIAGNOSTIC (labelled, not gated): information-free observed map ----------
-    # All candidate vulnerabilities observed as the band midpoint (0.55): if performance holds at
-    # the true-map anchor, the map observation contributes ~nothing and the mechanism is the
-    # geometry/cost pathway + multi-instance training, not per-edge map reading.
+    # ---------- diagnostic: information-free observed map ----------
+    # All candidate vulnerabilities are observed as the band midpoint 0.55. If performance holds
+    # at the true-map anchor, the map observation contributes almost nothing and the mechanism is
+    # the geometry and cost pathway plus multi-instance training, not per-edge map reading.
     gs = []
     for it in insts:
         obs_map = {e: 0.55 for e in cand_edges(it)}

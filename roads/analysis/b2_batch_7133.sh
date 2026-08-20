@@ -1,7 +1,5 @@
 #!/bin/bash
-# B2 71-33 cell (pre-registered 2026-08-12; the consolidated Act-2 instrument, K=1).
-# Mirrors b2_batch_gdansk.sh exactly; only OD/city/base/output move. Endpoint = the
-# MagicDNS name (2026-08-06 transport repair).
+# B2 LLM benchmark batch for the 71-33 cell at K=1.
 set -u; cd "$(dirname "$0")/.."
 mkdir -p models/runs/b2_llm/batch_7133
 BASE="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"; KEY="iits-local-key"; OD="71-33"

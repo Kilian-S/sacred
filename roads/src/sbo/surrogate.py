@@ -34,30 +34,14 @@ def train_surrogate(
     hidden_dim: int = 32,
     device: str = "cpu",
 ) -> tuple[SurrogateMLP, list[float]]:
-    """Train the SurrogateMLP on the collected SBO dataset.
+    """Train a SurrogateMLP on the collected SBO dataset.
 
-    Parameters
-    ----------
-    features:
-        Input tensor or array of shape (num_samples, input_dim).
-        Contains depot indicator and demands.
-    targets:
-        Target tensor or array of shape (num_samples,) or (num_samples, 1).
-        Contains expected adversarial travel times/ticks.
-    epochs:
-        Number of epochs to train for.
-    lr:
-        Learning rate for Adam optimizer.
-    batch_size:
-        Mini-batch size for DataLoader.
-    hidden_dim:
-        Hidden layer dimension size.
-    device:
-        Torch device to execute training on (e.g. 'cpu', 'mps').
+    Args:
+        features: Shape (num_samples, input_dim), holding depot indicators and demands.
+        targets: Expected adversarial travel ticks, shape (num_samples,) or (num_samples, 1).
 
-    Returns
-    -------
-    Tuple of (trained_model, list_of_epoch_losses).
+    Returns:
+        The trained model, and the mean loss per epoch.
     """
     if isinstance(features, np.ndarray):
         features = torch.tensor(features, dtype=torch.float32)

@@ -12,13 +12,11 @@ from src.baselines.metaheuristic import AdaptiveLargeNeighborhoodSearchVRP
 
 class TestERB(unittest.TestCase):
     def setUp(self) -> None:
-        # Create standard toy environment (2 trucks)
         self.env = make_toy_graph_env(num_trucks=2)
 
     def test_alns_initialization(self) -> None:
         alns = AdaptiveLargeNeighborhoodSearchVRP(self.env, iterations=10)
         
-        # Verify precomputations
         self.assertIn(self.env.depot_node, alns.distances)
         self.assertGreater(len(alns.tasks), 0)
         

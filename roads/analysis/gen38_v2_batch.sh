@@ -1,6 +1,6 @@
 #!/bin/bash
-# gen38 V2 batch (gated-in: V1 PASSED). Type-conditioned SACRED, 3 seeds. Launch ONLY when the
-# machine is free (gen37 done) to avoid oversubscription. Kilian's full launch control 2026-07-24.
+# gen38 V2 batch: type-conditioned SACRED, 3 seeds. Needs a free machine to avoid
+# oversubscribing the CPU.
 set -u
 cd "$(dirname "$0")/.."
 export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1

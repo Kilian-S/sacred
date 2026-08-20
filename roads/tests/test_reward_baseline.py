@@ -1,9 +1,9 @@
-"""Tests for B1 counterfactual twin reward baseline (Option B), contested arena.
+"""Tests for the counterfactual twin reward baseline on the contested arena.
 
-The load-bearing property: subtracting an action-independent per-tick baseline b(t) shifts the
-episode return by exactly a per-episode CONSTANT (sum_t b(t) = the twin greedy rollout's
-total_wait), preserving the zero-sum game and its equilibrium. Verified numerically end-to-end,
-plus the default (reward_baseline="none") path is asserted byte-identical to before.
+The load-bearing property is that subtracting an action-independent per-tick baseline b(t) shifts
+the episode return by exactly a per-episode constant, the twin greedy rollout's total wait, which
+preserves the zero-sum game and its equilibrium. The default path, reward_baseline="none", is
+asserted to be unaffected.
 """
 
 from __future__ import annotations
@@ -59,8 +59,8 @@ def test_twin_baseline_shifts_return_by_the_twin_constant():
 
 
 def test_default_path_unchanged():
-    # reward_baseline="none" must reproduce a plain contested run (regression guard for historical
-    # behaviour: the config field defaults to "none" and no provider is attached).
+    # reward_baseline="none" must reproduce a plain contested run: the config field defaults to
+    # "none" and no provider is attached.
     a = _greedy_run(_contested_smdp("none"), lambda _s: no_antagonist_policy)["total_wait"]
     plain = SMDPDecisionWrapper(
         env_factory=lambda: make_contested_env(arrival_rate=RATE, demand_seed=SEED),

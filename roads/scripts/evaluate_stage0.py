@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Evaluate a trained Stage-0 protagonist against the greedy baseline.
 
-Headline Stage-0 success check: the learned protagonist should achieve **lower total
-delivery latency (``total_wait``) than the greedy nearest-request dispatcher under the
-trained antagonist**. We also report the no-attack column to see the antagonist's bite.
-
-Usage:
-    PYTHONPATH=. python scripts/evaluate_stage0.py --run models/runs/<run_name>
+Checks whether the learned protagonist achieves lower total delivery latency (``total_wait``)
+than the greedy nearest-request dispatcher under the trained antagonist, with the no-attack
+column reported alongside to show the antagonist's bite.
 """
 
 from __future__ import annotations
@@ -37,7 +34,7 @@ def stage0_config() -> SMDPConfig:
         congestion_cost=0.1,
         reward_mode="latency",
         routing_mode="next_hop",
-        routing_corridor_slack=1.2,  # MUST match train_sacred.py stage0 config (default 1.5 != trained)
+        routing_corridor_slack=1.2,  # must match train_sacred.py; the 1.5 default was not trained
         congestion_levels=(0.25, 0.5, 0.75, 1.0),
     )
 
@@ -66,10 +63,11 @@ def sac_antagonist_policy(smdp: SMDPDecisionWrapper, agent: AntagonistSAC):
 
 
 def eval_cells(protag, antag, make_env, cfg: SMDPConfig) -> dict:
-    """Run the 4-cell {greedy,learned} x {no-attack,attack} eval and return total_wait per
-    cell plus the headline gap. Reusable for the CLI and for periodic in-training eval (pass
-    the live agents). Deterministic (env + policies have no randomness), so it's a clean
-    snapshot. ``gap_atk`` < 0 means the learned policy beats greedy under the antagonist.
+    """Run the four cells of {greedy, learned} x {no attack, attack}.
+
+    Returns total_wait per cell plus the headline gap, and serves both the command line and
+    periodic in-training evaluation. Deterministic, since neither env nor policies introduce
+    randomness. ``gap_atk`` below zero means the learned policy beats greedy under the antagonist.
     """
     def fresh() -> SMDPDecisionWrapper:
         return SMDPDecisionWrapper(env_factory=make_env, config=cfg)

@@ -1,5 +1,5 @@
-"""gen26 step 2: the greedy-BR (matrix-free) env mode must agree with the exact machinery
-below the wall, and must not perturb the exact path at all when the flag is off."""
+"""The matrix-free greedy best-response env mode must agree with the exact machinery wherever the
+exact path is tractable, and must leave the exact path untouched when the flag is off."""
 import numpy as np
 import pytest
 
@@ -40,7 +40,7 @@ def test_route_interception_matches_exact_payoff_columns():
 
 
 def test_exploitability_agrees_at_K1():
-    """greedy BR == exact BR at K=1 (the A4 verification, now through the env yardstick)."""
+    """Greedy best response equals the exact best response at K=1, through the env yardstick."""
     exact, greedy = _envs(K=1)
     rng = np.random.default_rng(0)
     for _ in range(3):
