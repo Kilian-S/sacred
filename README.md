@@ -25,14 +25,14 @@ Every experiment has one record in `experiments/`. A record states the question,
 pinned game configuration, the pre-registered decision criteria, the baseline family and
 the results, and nothing else. All numbers cited in the thesis trace to these records.
 
-| thesis act | records |
+| Thesis Act | Records |
 |---|---|
-| Act 1, the wrong adversary | `roads/experiments/gen03_robustness_dynassign.md` to `gen07_contested_matrix.md` |
-| Act 2, incomputability at scale | `roads/experiments/gen43_unified_kboundary.md` |
-| Act 3, zero-shot transfer | `roads/experiments/gen27_dynamic_generalist.md`, with controls in `gen16_multicity.md`, `gen21_vanilla_transfer.md`, `gen22_rotation.md`, `gen25_dr_control.md`, `zst_map_robustness.md` |
-| Act 4, road to air | `aerial/experiments/gen31_aerial_dyn.md`, `gen45_unified_corridor.md` |
-| Act 5, LLM-assisted SACRED | `roads/experiments/b2_llm_benchmark.md`, `gen34_hidden_adversary.md`, `gen38_llm_enemy_id.md`; `aerial/experiments/gen39_concealment.md`, `gen43_exam.md`, `gen44_budget_sweep.md` |
-| synthesis and references | `roads/experiments/regime_decision_table.md`, `ref_artificialanalysis_llm_index.md`; `aerial/experiments/theatre_atlas.md` |
+| Act 1: Congestion | `roads/experiments/gen03_robustness_dynassign.md` to `gen07_contested_matrix.md` |
+| Act 2: Incomputability at Scale | `roads/experiments/gen43_unified_kboundary.md` |
+| Act 3: Zero-Shot Transfer | `roads/experiments/gen27_dynamic_generalist.md`, with controls in `gen16_multicity.md`, `gen21_vanilla_transfer.md`, `gen22_rotation.md`, `gen25_dr_control.md`, `zst_map_robustness.md` |
+| Act 4: From Road-Based to Air-Based Resupply | `aerial/experiments/gen31_aerial_dyn.md`, `gen45_unified_corridor.md` |
+| Act 5: LLM-Assisted SACRED | `roads/experiments/b2_llm_benchmark.md`, `gen34_hidden_adversary.md`, `gen38_llm_enemy_id.md`; `aerial/experiments/gen39_concealment.md`, `gen43_exam.md`, `gen44_budget_sweep.md` |
+| Synthesis and References | `roads/experiments/regime_decision_table.md`, `ref_artificialanalysis_llm_index.md`; `aerial/experiments/theatre_atlas.md` |
 
 ## Reproduction
 
