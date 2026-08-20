@@ -40,7 +40,7 @@ PYTHONPATH=. .venv/bin/python scripts/train_dyn_generalist.py \
 - iid_eq: the static equilibrium mixture played against the pattern-of-life adversary; the pre-registered bar.
 - Uniform-disjoint heuristic: uniform stack over the edge-disjoint routes, static value.
 - Inverse-vulnerability heuristic: the inverse-vulnerability weighted stack, static value.
-- Local-search static optimum: multi-start local search over static mixtures (local optimum, disclosed as such).
+- Local-search static optimum: multi-start local search over static mixtures, a local optimum.
 - Rotation: deterministic round-robin over the disjoint routes.
 - Anti-repeat, full menu: uniform over menu routes not in the last-3 window.
 - Anti-repeat, disjoint: uniform over the disjoint routes not in the last-w window.
@@ -60,7 +60,7 @@ Naive rules on the 6 held-out Gdansk instances, against the same adversary (w=3,
 | 275-72 | 0.218 | 0.203 | 0.115 | 0.53 |
 | 193-278 | 0.187 | 0.186 | 0.112 | 0.60 |
 
-All six held-out ODs have m=3 disjoint routes, so the w=3 window covers the whole disjoint set and deterministic rotation does not clear the cap.
+All six held-out ODs have m=3 disjoint routes, and the w=3 window covers the whole disjoint set.
 
 Trained history-aware arms, 12,000 sorties each, select-on-train selection.
 

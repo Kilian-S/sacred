@@ -20,9 +20,7 @@ Primary: pooled dD_targeted = D(vanilla, targeted) - D(scripted, targeted) acros
 
 Competence precondition: each arm's W(none) must land within about 15% of greedy's clean W, else that arm's rows are flagged competence-compromised.
 
-Pre-registered interpretive branches: dD_pathrand > 0 with dD_targeted about 0 gives attack-specific hardening without transfer; both about 0 with competence met gives a null with competence valid.
-
-Statistical reporting rule: pooled instance-level CI, per-pairing sign consistency and the 3-pairing t sensitivity, always reported together.
+Pre-registered interpretive branches: dD_pathrand > 0 with dD_targeted about 0 gives attack-specific hardening without transfer; both about 0 with competence met gives a null with competence valid. Reporting rule: pooled instance-level CI, per-pairing sign consistency and the 3-pairing t sensitivity, always together.
 
 ## Baselines
 - `none`: no attacker, the clean baseline for D.
