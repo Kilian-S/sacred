@@ -1,9 +1,6 @@
-"""Two-agent game loop for the first SACRED test environment.
-
-This is intentionally not a PettingZoo wrapper yet. It keeps the first
-adversarial loop easy to inspect while preserving the core API shape needed
-for a later wrapper: protagonist action, antagonist action, environment step,
-and per-agent rewards.
+"""Two-agent game loop for the first SACRED test environment, deliberately kept as a plain loop
+rather than a PettingZoo wrapper so that it stays easy to inspect, while preserving the API shape a
+wrapper would need: protagonist action, antagonist action, environment step, per-agent rewards.
 """
 
 from __future__ import annotations
@@ -148,7 +145,7 @@ class NearestDemandProtagonist:
                 
             actions[truck_id] = destination
             
-            # Immediately update expected demand for the next truck in this loop
+            # Claim the demand now, so the next truck in this same loop does not chase it too.
             if destination in self.expected_demand:
                 self.expected_demand[destination] -= truck.load
                 if self.expected_demand[destination] <= 0:
@@ -334,7 +331,6 @@ class SacredToyGame:
             if edge in self.active_congestion:
                 continue
                 
-            # Snap level to nearest discrete bin
             bins = [0.0, 0.25, 0.5, 0.75, 1.0]
             snapped_level = min(bins, key=lambda b: abs(b - float(level)))
             

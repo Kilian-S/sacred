@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""gen32 Phase 0: the corridor hunt on the REAL Kaliningrad->Gvardeysk vec-theatre
-(ORACLE-ONLY, free; the gen31 anticipatory-doctrine register transplanted onto real OSM
-terrain). Pre-registered gates G1-G5 in experiments/gen32_theatre_dyn.md.
+"""Hunts a gen32 operating point on the real Kaliningrad->Gvardeysk vector theatre, oracle only.
 
-Substrate: the committed vector theatre (data/maps/theatre_kgd_gvardeysk_vec.json; 25 routes =
-14 geometric lanes + 11 terrain-aware cover routes; 185 candidate AD sites on emplaceable
-terrain outside terminal standoff; LOS-masked survival). The FIXED menu + sites are shared
-across layouts; only the hidden per-site EFFECTIVENESS field is resampled (a spatially-
-correlated RBF over the real site coordinates, rank-mapped into a band): 'which real positions
-are hot today'. Enemy = the gen31 anticipatory mixed doctrine (q_rep punish the recent window
-+ q_flee pre-aim at the obvious escape route), softmax(tau). Everything exact at w=2.
+The route menu and the candidate air-defence sites come from the committed vector theatre and are
+shared across layouts, with line-of-sight-masked survival; only the hidden per-site effectiveness
+field is resampled, deciding which real positions are hot on a given day. The enemy plays the
+anticipatory mixed doctrine, punishing the recent window and pre-aiming at the escape route, under
+a softmax of temperature tau, and everything is exact at w=2.
 """
 from __future__ import annotations
 
@@ -33,9 +29,11 @@ def _mm(x):
 
 
 def resample_field(coords, seed, length_scale=6.0, band=(0.30, 0.95)):
-    """Spatially-correlated hidden effectiveness field over the REAL site coordinates
-    (RBF Gaussian draw, rank-mapped into the band; km length scale). Terrain still decides
-    WHICH positions can emplace and their radii; this decides which are HOT today."""
+    """Draws a spatially correlated hidden effectiveness field over the real site coordinates.
+
+    The draw is an RBF Gaussian rank-mapped into ``band``, with ``length_scale`` in km. Terrain
+    decides which positions can emplace and their radii; this decides which of them are hot.
+    """
     rng = np.random.default_rng(seed)
     d2 = ((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1)
     cov = np.exp(-d2 / (2.0 * length_scale ** 2)) + 1e-8 * np.eye(len(coords))
@@ -46,8 +44,11 @@ def resample_field(coords, seed, length_scale=6.0, band=(0.30, 0.95)):
 
 
 class TheatreBase:
-    """Loads the fixed theatre ONCE (menu, sites, radii, route topology). Field-specific games
-    are cheap rebuilds (recompute survival + payoff for a resampled effectiveness field)."""
+    """Holds the theatre loaded once: menu, sites, radii and route topology.
+
+    Field-specific games are cheap rebuilds that recompute survival and payoff for a resampled
+    effectiveness field.
+    """
 
     def __init__(self, path="data/maps/theatre_kgd_gvardeysk_vec.json",
                  range_scale=1.0, spacing_km=2.0, standoff_km=4.0):
@@ -72,7 +73,7 @@ class TheatreBase:
 
 
 class DynTheatre:
-    """One (field, doctrine, operating point) cell with exact machinery (gen31 math)."""
+    """One (field, doctrine, operating point) cell, solved exactly."""
 
     def __init__(self, base: TheatreBase, pp_field, w, tau, q_rep, q_flee, q_ar=0.0,
                  build_env=False):
@@ -99,10 +100,10 @@ class DynTheatre:
             mask[np.arange(Sn), self.states[:, k]] = True
         Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tau
         Ar = np.exp(Zr); Ar /= Ar.sum(axis=1, keepdims=True)
-        rflee = (Ar @ self.dmg.T).argmin(axis=1)                 # obvious myopic escape route
-        # anti-repeat ANTICIPATION (the G2 lever): the enemy models a defender who avoids its
-        # recent window (uniform over NON-window routes) and pre-aims at that spread, so any
-        # blind rotation/anti-repeat rule is punished and only calibrated randomised play evades.
+        rflee = (Ar @ self.dmg.T).argmin(axis=1)                 # the myopic escape route
+        # anti-repeat anticipation: the enemy models a defender who avoids its recent window,
+        # uniform over the non-window routes, and pre-aims at that spread, so blind rotation and
+        # anti-repeat rules are punished and only calibrated randomised play evades.
         ar = (~mask).astype(float)
         ar /= ar.sum(axis=1, keepdims=True)
         Var = ar @ self.dmg                                      # [Sn, H] damage vs a spreader
@@ -206,7 +207,7 @@ def rule_family(g: DynTheatre):
                 cand = [r for r in sup if not g.in_window[si, r]]
                 rot[si, cand[0] if cand else sup[0]] = 1.0
             rows[f"rot_{name}"] = g.stationary(rot)
-    # doctrine-informed fitted rules (information parity; disclosed caps)
+    # doctrine-informed fitted rules
     dodge = np.zeros((len(g.states), g.R))
     dodge[np.arange(len(g.states)), g.stepdmg.argmin(axis=1)] = 1.0
     rows["myopic_dodge"] = g.stationary(dodge)

@@ -1,12 +1,7 @@
-"""Numerical-equivalence guard for the batch-encode refactor of SAC.update().
-
-The optimization batches the GATv2 encoder across the whole minibatch in one
-`Batch.from_data_list` pass and then applies each network's `head(...)` per sample.
-Because the batched graph is a disjoint union (no cross-graph edges), this must be
-mathematically identical, in eval mode, to running `forward(...)` on each graph
-separately. These tests pin that invariant so the optimization cannot silently
-change learning behaviour.
-"""
+"""Numerical-equivalence guard for the batch-encode path in ``SAC.update()``. The batched graph is
+a disjoint union with no cross-graph edges, so encoding the whole minibatch in one pass and then
+applying each network's head per sample must be identical, in eval mode, to calling ``forward`` on
+each graph separately."""
 
 from __future__ import annotations
 

@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-"""gen39 step 1b: the PAIRED-MEMORY screen, run block-parallel (ORACLE-ONLY, FREE).
+"""Runs the paired-memory screen block by block, oracle only.
 
-Same grid as `gen39_screen.py`, but every cell is scored under BOTH defender memories:
-
-  forgetful   the w-serial track window (what step 1a ran): a located team is forgotten w serials
-              later, so being seen is nearly free and the concealment trade is muted;
-  persistent  the faithful form of "concealment buys persistence": the defender remembers every
-              team it has seen for the whole mission. The set of seen teams only GROWS, so a
-              long-run average washes out the phase of interest and the measure becomes EPISODIC,
-              expected damage over a T-serial mission from complete ignorance, exact by backward
-              induction. One sweep yields the whole mission-length curve (see `episodic`).
-
-Pairing both memories in ONE cell is the point: the enemy, field, laydown and doctrine are shared,
-so the difference between the two columns IS the price of the defender's memory, with nothing else
-moving. Mission length becomes a real axis rather than a nuisance.
-
-Parallelism is by BLOCK (map x range multiplier x concealed reach), one OS process each, every
-maths thread pool capped to 1 so the workers do not fight (standing dogma). Blocks are resumable:
-a block whose output file exists is skipped.
+Every cell of `gen39_screen.py`'s grid is scored under both defender memories, a forgetful one that
+keeps only a w-serial track window and a persistent one that remembers every team it has seen for
+the whole mission. Because the persistent set of seen teams only grows, the measure is episodic,
+the expected damage over a T-serial mission from complete ignorance, computed exactly by backward
+induction, and one sweep yields the whole mission-length curve. Pairing the two memories in one
+cell holds the enemy, field, laydown and doctrine fixed, so the difference between the columns is
+the price of the defender's memory. Blocks (map by range multiplier by concealed reach) run one per
+process with every maths thread pool capped to one, and a block whose output file exists is skipped.
 
     PYTHONPATH=. python analysis/gen39_screen2.py --list
     PYTHONPATH=. python analysis/gen39_screen2.py --block 0 --quick     # one block, in this process
@@ -48,7 +39,7 @@ from src.envs.aerial_theatre_vec import lateral_width, load_vec_theatre, terrain
 OUTDIR = "models/runs/gen39_screen2"
 N_SITES = 200                   # fixed candidate budget; class shares match the map's composition
 HORIZONS = (10, 20, 40, 80)     # mission lengths, free: one backward sweep gives them all
-T_PIN = 40                      # the pinned mission length the gates are read at
+T_PIN = 40                      # the mission length the summary rows are read at
 SOFTNESS = (0.0, 0.05, 0.2, 0.5)
 TOPM = (2, 3, 5)
 
@@ -62,11 +53,13 @@ def block_path(b, outdir=OUTDIR):
     return f"{outdir}/b{b['i']:02d}_{b['map']}_r{b['rm']}_c{b['cr']}.json"
 
 
-# --- the static cap, returning its MIXTURE too (needed to score the same static play episodically)
+# --- the static cap, returning its mixture so the same static play can be scored episodically ---
 def static_localopt_d(g, iters=20, pop=20, keep=5):
-    """Verbatim `gen39_screen.static_localopt`, but it also hands back the best mixture so the SAME
-    static defender can be scored under both memories. Same rng and schedule, so the value is the
-    one step 1a recorded."""
+    """Local static optimum, returning the best mixture as well as its value.
+
+    Matches `gen39_screen.static_localopt`, rng and schedule included, so the same static defender
+    can be scored under both memories.
+    """
     rng = np.random.default_rng(0)
     exp = 1.0 - g.S[:, g.L].min(axis=1)
     pool = sorted(set(np.where(g.d_eq > 1e-6)[0]) | set(np.argsort(exp)[:12]))
@@ -88,9 +81,10 @@ def static_localopt_d(g, iters=20, pop=20, keep=5):
 
 
 def ladder_forgetful(g, sl_val):
-    """`gen39_screen.ladder` with the static local optimum passed in rather than recomputed (it is
-    the most expensive term in the cell and the persistent arm needs its mixture anyway).
-    `--check` asserts this reproduces the step-1a ladder exactly."""
+    """`gen39_screen.ladder` with the static local optimum passed in rather than recomputed.
+
+    It is the most expensive term in the cell, and the persistent arm needs its mixture anyway.
+    """
     rows = {"iid_eq*fit": g.value_static(g.d_eq), "static_localopt*fit": sl_val}
     blind = g.blind_supports()
     for name, d in blind.items():
@@ -127,14 +121,13 @@ def ladder_forgetful(g, sl_val):
 
 
 def _episodic_fixed(g, mat, horizons=HORIZONS):
-    """Score a memoryless (state-only) rule matrix episodically, so static and blind play sit on
-    the SAME yardstick as the memory-using rules."""
+    """Scores a memoryless rule matrix episodically, on the same yardstick as memory-using rules."""
     m = np.asarray(mat, dtype=float)
     return g.episodic(rule=lambda idx, mask, perc: m, horizons=horizons)
 
 
 def ladder_persistent(g, sl_d, horizons=HORIZONS):
-    """Every arm again, under whole-mission memory. Rows are {T: value} curves."""
+    """Every arm again under whole-mission memory; rows are {T: value} curves."""
     rows = {}
     Sn = len(g.states)
     for tag, d in (("iid_eq*fit", g.d_eq), ("static_localopt*fit", sl_d)):
@@ -143,7 +136,7 @@ def ladder_persistent(g, sl_d, horizons=HORIZONS):
     for name, d in blind.items():        # terrain only: these use no memory at all, by construction
         rows[f"blind_static_{name}"] = _episodic_fixed(g, np.broadcast_to(d, (Sn, g.R)), horizons)
         rows[f"blind_anti_{name}"] = _episodic_fixed(g, g._anti(d), horizons)
-    for name, d in blind.items():        # + every team seen SO FAR THIS MISSION
+    for name, d in blind.items():        # plus every team seen so far this mission
         for anti in (False, True):
             a = "_anti" if anti else ""
             for soft in SOFTNESS:
@@ -178,7 +171,7 @@ def cell(base, seed, hidden_leth, K, kind, tag, horizons=HORIZONS):
     pe = ladder_persistent(g, sl_d, horizons)
     opt_p = g.episodic(horizons=horizons)
 
-    at = lambda v: v[T_PIN]                                       # noqa: E731 (read the pinned T)
+    at = lambda v: v[T_PIN]                                       # noqa: E731 (read at the pinned T)
     out = {}
     for mem, rows, opt, pick in (("forgetful", fg, opt_f, lambda v: v),
                                  ("persistent", pe, at(opt_p), at)):
@@ -219,9 +212,8 @@ def run_block(b, outdir=OUTDIR, quick=False, force=False, check=False):
     sc = map_scale(b["map"], ref_lat)
     t0 = time.time()
     base = ConcealBase(PATH % b["map"],
-                       # forest_los left at the v2 DEFAULT (False): woodland hides the team
-                       # without blinding it. The symmetric variant is the disclosed sensitivity
-                       # row and its numbers live in the *_symforest artefacts, never mixed.
+                       # forest_los left at the v2 default of False, so woodland hides the team
+                       # without blinding it
                        terrain=terrain_v2(hidden_leth=1.0, conceal_reach=b["cr"]),
                        range_scale=sc * b["rm"], spacing_km=2.0 * sc, standoff_km=4.0 * sc,
                        n_sites=N_SITES)
@@ -229,7 +221,7 @@ def run_block(b, outdir=OUTDIR, quick=False, force=False, check=False):
           f"H={base.H} lanes={len(base.lane_idx)} concealed={int(base.concealed.sum())} "
           f"build={time.time() - t0:.0f}s", flush=True)
 
-    if check:                                    # the forgetful arm must match step 1a exactly
+    if check:                                    # the forgetful arm must match gen39_screen exactly
         from analysis.gen39_screen import ladder as ladder_1a
         pp = base.lethality(resample_field(base.coords, FIELDS[0]), hidden_leth=0.6)
         L = pick_laydown(base, pp, "open", 3, np.random.default_rng(FIELDS[0] * 131 + 3))

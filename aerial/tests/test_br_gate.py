@@ -1,6 +1,6 @@
-"""Tests for the exploitability BR-gate machinery: the hybrid greedy per-truck chooser and the
-trainer's frozen-protagonist-chooser hook (antagonist trains vs a greedy victim, protagonist net
-untouched)."""
+"""Exploitability best-response gate: the hybrid greedy per-truck chooser and the trainer's
+frozen-protagonist-chooser hook, where the antagonist trains against a greedy victim and the
+protagonist network is left untouched."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def test_frozen_chooser_trains_antagonist_without_touching_protag():
         frozen_protagonist_chooser=hybrid_greedy_chooser(smdp))
     trainer.run_training(total_episodes=1)
     trainer.writer.close()
-    # The greedy victim is frozen: the protagonist buffer must stay empty (only the antagonist learns).
+    # the greedy victim is frozen, so only the antagonist learns and the protagonist buffer stays empty
     assert len(protag.replay_buffer) == before == 0
     import shutil
     shutil.rmtree("logs/tb_runs/_test", ignore_errors=True)

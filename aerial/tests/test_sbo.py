@@ -14,14 +14,12 @@ class TestSBO(unittest.TestCase):
         input_dim = 18
         model = SurrogateMLP(input_dim=input_dim, hidden_dim=16)
 
-        # Batch of 4 samples
         dummy_x = torch.randn(4, input_dim)
         output = model(dummy_x)
 
         self.assertEqual(output.shape, (4, 1))
 
     def test_train_surrogate(self) -> None:
-        # Create a toy SBO dataset
         np.random.seed(42)
         torch.manual_seed(42)
 
@@ -42,7 +40,6 @@ class TestSBO(unittest.TestCase):
 
         self.assertIsInstance(model, SurrogateMLP)
         self.assertEqual(len(losses), 5)
-        # Verify loss is decreasing or valid
         self.assertTrue(all(loss >= 0 for loss in losses))
 
     def test_flp_solver(self) -> None:
@@ -56,13 +53,11 @@ class TestSBO(unittest.TestCase):
         solver = FLPSolver(surrogate_model=model, node_list=node_list)
         demands = {"a": 1.0, "b": 0.5, "c": 2.0}
 
-        # Solve K=1
         optimal_depot_1, predicted_cost_1 = solver.solve(demands, K=1)
         self.assertEqual(len(optimal_depot_1), 1)
         self.assertIn(optimal_depot_1[0], node_list)
         self.assertIsInstance(predicted_cost_1, float)
 
-        # Solve K=2
         optimal_depots_2, predicted_cost_2 = solver.solve(demands, K=2)
         self.assertEqual(len(optimal_depots_2), 2)
         for depot in optimal_depots_2:

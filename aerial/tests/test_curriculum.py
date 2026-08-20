@@ -1,4 +1,4 @@
-"""Tests for the B3 attack exposure/strength curriculum (pure logic, no training)."""
+"""Tests for the attack exposure and strength curriculum: pure logic, no training."""
 
 from __future__ import annotations
 
@@ -23,12 +23,12 @@ def test_budget_levels_span_min_to_max():
 
 def test_ramps_up_only_when_competent():
     c = _curr(window=5, competence_floor=0.4)
-    # A full window at/above the floor advances exactly one level and resets the window.
+    # a full window at or above the floor advances exactly one level and resets the window
     for _ in range(5):
         c.decide()
         c.record(0.6)
     assert c.level == 1
-    # A full window BELOW the floor holds the level.
+    # a full window below the floor holds the level
     for _ in range(5):
         c.decide()
         c.record(0.2)

@@ -1,4 +1,4 @@
-"""Tests for the interdiction security-game oracle (gen08 ground truth)."""
+"""Tests for the interdiction security-game oracle."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def test_edges_of_route():
     assert edges_of_route(("a", "b", "c")) == {frozenset({"a", "b"}), frozenset({"b", "c"})}
 
 
-# --- I3: heterogeneous edge vulnerability (soft interception, non-uniform equilibria) ---
+# --- heterogeneous edge vulnerability: soft interception, non-uniform equilibria ---
 
 
 def _heterogeneous():
@@ -161,7 +161,7 @@ def test_soft_equilibrium_matches_closed_form():
     inv = 1.0 / p_star
     assert sol.value == pytest.approx(1.0 / inv.sum(), abs=1e-6)
     np.testing.assert_allclose(sol.defender_strategy, inv / inv.sum(), atol=1e-6)
-    # the equilibrium is genuinely non-uniform (the asymmetry I3 needs).
+    # the equilibrium is genuinely non-uniform.
     assert sol.defender_strategy.max() > sol.defender_strategy.min() + 0.1
     # loss_det < 1 under soft interception (the best deterministic route survives sometimes),
     # and the mixed equilibrium still beats it.

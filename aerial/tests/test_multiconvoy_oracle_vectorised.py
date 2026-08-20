@@ -1,5 +1,5 @@
-"""Regression test: the vectorised objective_matrix closed forms (mission/linear) equal the
-generic per-entry loop implementation (objective_value with the Poisson-binomial pmf)."""
+"""Checks that the vectorised objective_matrix closed forms equal the generic per-entry loop over
+objective_value, which sums the Poisson-binomial pmf directly."""
 from __future__ import annotations
 
 import numpy as np

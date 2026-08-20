@@ -1,6 +1,6 @@
-"""A4 verification: the matrix-free submodular greedy best-response interdictor equals (K<=1) or
-closely bounds (K=2, the (1-1/e) guarantee, in practice usually exact here) the EXACT best response
-computed from the full [occ x iset] objective matrix, on real Kaliningrad headline instances."""
+"""Checks the matrix-free greedy best-response interdictor against the exact best response taken
+from the full [occ x iset] objective matrix on Kaliningrad instances: equality at K=1 and the
+submodular (1 - 1/e) bound at K=2."""
 from __future__ import annotations
 
 import networkx as nx
@@ -44,7 +44,6 @@ def _exact_value(game, N, K, occ_support):
     d = np.zeros(len(occs))
     for o, wt in occ_support:
         d[idx[tuple(int(x) for x in o)]] += wt
-    # rebuild M at the requested K
     gK = build_interdiction_game(_G, *_od, K, k_extra=8, weight="w",
                                  intercept_fn=survival_intercept_fn(_vuln))
     _, MK = objective_matrix(gK, N, "mission")
@@ -64,7 +63,7 @@ def test_greedy_equals_exact_K1():
 
 
 def test_greedy_within_guarantee_K2():
-    # greedy >= (1 - 1/e) * exact optimum (submodular guarantee); in practice usually exact here
+    # submodularity guarantees greedy >= (1 - 1/e) * exact optimum
     for seed in range(4):
         supp = _random_occ_support(_gm, 3, seed)
         _, gv = greedy_br_attacker(_gm.route_edges, _vuln, supp, 2, 2, "mission")

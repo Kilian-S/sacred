@@ -1,4 +1,4 @@
-"""Tests for the multi-convoy interdiction env, including the G-M1 fidelity gate (gen08 Phase M)."""
+"""Tests for the multi-convoy interdiction env, including its fidelity against the oracle."""
 import numpy as np
 
 from src.baselines.multiconvoy_oracle import objective_matrix, solve_multiconvoy
@@ -16,8 +16,7 @@ def _mc_average(env, occ_seq, iset_seq):
 
 
 def test_gm1_env_reproduces_loss_mixed():
-    """G-M1: playing the oracle equilibrium (defender occupancies vs attacker sets), the env's
-    sampled mission-failure reproduces loss_mixed."""
+    """Playing the oracle equilibrium, the env's sampled mission failure reproduces loss_mixed."""
     env = make_multiconvoy_env(od=("110", "135"), N=2, objective="mission", seed=1)
     sol = solve_multiconvoy(env.game, N=2, objective="mission")
     rng = np.random.default_rng(0)
@@ -28,7 +27,7 @@ def test_gm1_env_reproduces_loss_mixed():
 
 
 def test_gm1_env_reproduces_loss_det():
-    """G-M1: the deterministic optimum occupancy vs its best-response set reproduces loss_det."""
+    """The deterministic optimum occupancy against its best-response set reproduces loss_det."""
     env = make_multiconvoy_env(od=("110", "135"), N=2, objective="mission", seed=2)
     sol = solve_multiconvoy(env.game, N=2, objective="mission")
     occs, M = objective_matrix(env.game, 2, "mission")

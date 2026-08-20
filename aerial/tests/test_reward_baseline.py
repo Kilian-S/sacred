@@ -1,9 +1,6 @@
-"""Tests for B1 counterfactual twin reward baseline (Option B), contested arena.
-
-The load-bearing property: subtracting an action-independent per-tick baseline b(t) shifts the
-episode return by exactly a per-episode CONSTANT (sum_t b(t) = the twin greedy rollout's
-total_wait), preserving the zero-sum game and its equilibrium. Verified numerically end-to-end,
-plus the default (reward_baseline="none") path is asserted byte-identical to before.
+"""Tests the counterfactual twin reward baseline on the contested arena, where subtracting an
+action-independent per-tick baseline b(t) shifts the episode return by the per-episode constant
+sum_t b(t) and so leaves the zero-sum game and its equilibrium intact.
 """
 
 from __future__ import annotations
@@ -33,34 +30,33 @@ def _contested_smdp(reward_baseline="none", demand_seed=SEED):
 
 
 def _greedy_run(smdp, attacker_of):
-    # attacker_of(smdp) binds the attacker to the SAME wrapper the episode drives (the attacker
-    # reads smdp.env each event -- a separate wrapper instance would desync it).
+    # the attacker must be bound to the wrapper the episode drives, since it reads smdp.env on
+    # every event and a separate wrapper instance would desynchronise it
     return run_episode(smdp, greedy_insertion_policy(smdp), attacker_of(smdp))
 
 
 def test_twin_baseline_shifts_return_by_the_twin_constant():
-    # Real episode (greedy vs targeted, no baseline): total_wait_real.
+    # greedy against a targeted attacker, no baseline
     real_wait = _greedy_run(_contested_smdp("none"), targeted_block_policy)["total_wait"]
 
-    # Same episode WITH the twin baseline: greedy is deterministic and the baseline changes only
-    # the reward (not dynamics/actions), so the trajectory is identical -> the reported total_wait
-    # is the adjusted return.
+    # the same episode with the twin baseline. Greedy is deterministic and the baseline changes
+    # only the reward, never the dynamics or the actions, so the trajectory is identical and the
+    # reported total_wait is the adjusted return.
     adjusted_wait = _greedy_run(_contested_smdp("twin"), targeted_block_policy)["total_wait"]
 
-    # The twin's own greedy no-attack total_wait on the SAME arrivals = sum_t b(t).
+    # the twin's own greedy no-attack total_wait on the same arrivals is sum_t b(t)
     twin_wait = _greedy_run(_contested_smdp("none"), lambda _s: no_antagonist_policy)["total_wait"]
 
-    # adjusted == real - twin_constant (to floating tolerance).
     assert abs(adjusted_wait - (real_wait - twin_wait)) < 1e-6, (
         adjusted_wait, real_wait, twin_wait)
-    # And the subtraction is doing real work (attack made real > twin, so adjusted is a small
-    # positive excess, well below the raw real_wait).
+    # the attack pushes the real episode above the twin, so the adjusted return is a small
+    # positive excess rather than the raw wait
     assert twin_wait > 0.0 and adjusted_wait < real_wait
 
 
 def test_default_path_unchanged():
-    # reward_baseline="none" must reproduce a plain contested run (regression guard for historical
-    # behaviour: the config field defaults to "none" and no provider is attached).
+    # with the field left at its "none" default and no provider attached, the wrapper must
+    # reproduce a plain contested run
     a = _greedy_run(_contested_smdp("none"), lambda _s: no_antagonist_policy)["total_wait"]
     plain = SMDPDecisionWrapper(
         env_factory=lambda: make_contested_env(arrival_rate=RATE, demand_seed=SEED),
@@ -70,8 +66,8 @@ def test_default_path_unchanged():
 
 
 def test_baseline_series_is_deterministic_and_action_independent():
-    # The provider depends only on the arrivals -> identical series on repeated calls, and it does
-    # not read the live agents (it runs its own greedy twin).
+    # the provider depends only on the arrivals, so repeated calls give an identical series; it
+    # runs its own greedy twin and never reads the live agents
     cfg = dataclasses.replace(contested_config(), reward_baseline="twin")
     provider = make_greedy_twin_baseline_provider(cfg, arrival_rate=RATE)
     env1 = make_contested_env(arrival_rate=RATE, demand_seed=SEED)

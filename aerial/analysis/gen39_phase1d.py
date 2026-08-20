@@ -1,39 +1,13 @@
 #!/usr/bin/env python3
-"""gen39 Phase 1d: THE FEEDBACK LOOP THE LLM ACTUALLY DESERVES (Kilian, 2026-07-27).
+"""Gives the composing model a full after-action report each round and measures whether it acts on
+it.
 
-Kilian's argument, accepted: a heuristic cannot act on feedback and the optimiser behind it only
-searches blindly; reading a report and reasoning about it is the ONE capability a language model
-has that the alternatives do not, and Phase 1c never tested it - it handed the model a grade (two
-scalars), not an account of the battle. This gives it a real AFTER-ACTION REPORT each round.
-
-The report is DIAGNOSIS, never PRESCRIPTION (the binding design line): it says what happened, and
-never which site to move to. The moment a counterfactual "move team 2 here and damage rises to X"
-enters the prompt, the optimiser is solving the problem and the model is transcribing it.
-
-Per round the model receives:
-  * the mission outcome: total damage, and the per-serial decay curve (does the force fade as it
-    is located?);
-  * the ROUTE TABLE: for every route, its cost to the flight, which of its teams threaten it, and
-    how much of the defender's flying went down it;
-  * the FREE-LANE list: routes no team threatens, and the cost of the flight's safest option (the
-    single number the position optimiser maximises);
-  * per TEAM: damage contributed, engagements, whether and when it was located, routes covered,
-    and overlap with its team-mates (redundant vs complementary);
-  * its own history: every previous force and its two scores.
-
-GROUNDING CHECK (Kilian's addition): each force must also declare `intended_routes`, the route
-numbers it believes it will threaten. We score that against the truth. This separates the two
-failure modes: a model that misreads the report (low grounding) is failing at comprehension; a
-model that reads it correctly and still cannot close the lanes (high grounding, flat threat) is
-failing at combinatorial-geometric reasoning, which is the claim Phase 1c over-reached on.
-
-BARS (fixed before any call):
-  B1 free lanes fall materially across rounds (the report's core signal is acted on);
-  B2 median irreducible threat rises toward the heuristic curriculum's 0.0215;
-  B3 the best evolved force beats the heuristic force against a TRAINED SACRED defender
-     (the matchup the curriculum question actually turns on; scored offline from the banked
-     step-3 checkpoints, so it costs no training).
-  Grounding is REPORTED per round, never gated.
+The report is diagnosis and never prescription, so it says what happened but never which site to
+move to. Each round the model receives the mission outcome with its per-serial decay curve, a route
+table giving each route's cost and the share of the defender's flying that went down it, the list
+of routes no team threatens, a per-team account of damage, exposure and overlap, and its own
+history. Each force must also declare the routes it believes it will threaten, scored against the
+truth, which separates a misread report from a genuinely hard problem.
 
     PYTHONPATH=. python analysis/gen39_phase1d.py --rounds 6 --n 3
 """
@@ -178,7 +152,7 @@ def parse_intent(force):
 
 
 def grounding(intent, aa):
-    """Jaccard between the routes the model SAID it would threaten and the truth."""
+    """Jaccard overlap between the routes the model said it would threaten and the truth."""
     if intent is None:
         return None
     truth = set().union(*[set(c) for c in aa["covers"]]) if aa["covers"] else set()

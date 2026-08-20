@@ -1,25 +1,12 @@
 #!/usr/bin/env python3
-"""gen39 Phase 1c: can the LLM compose a force that is dangerous even to a defender that KNOWS
-where it is? (Kilian, 2026-07-27. Oracle + model calls only, no training.)
+"""Tests whether an LLM can compose a force that stays dangerous to a defender that knows where it
+is, using oracle scoring and model calls only.
 
-Phase 1 measured the mechanism: curriculum value tracks the opponent's IRREDUCIBLE threat (damage
-against a defender with perfect knowledge), and the LLM's forces are concealment gambits - strong
-against a searching defender, near-harmless against a knowing one (median 0.0008-0.0019 vs the
-heuristic curriculum's 0.0215). Three arms test whether that is a capability ceiling or a
-BRIEFING failure. All three keep the placer, terrain, budget and scorer of step 2, so only the
-composition process differs.
-
-  robust   the brief gains ONE constraint: the force must stay dangerous against a defender that
-           knows exactly where every team is. Nothing else changes.
-  iter     three rounds of feedback: compose -> score exactly -> tell the model its two yardstick
-           numbers and which routes escaped -> revise. Matches the tuning budget the gen32
-           doctrine received over two generations (the fair-fight argument).
-  curated  best-of-N over the banked 61-force population, ranked by irreducible threat: the
-           "LLM proposes, oracle selects" pattern (the gen38 shape). FREE, no new calls.
-
-BAR (fixed before the calls, per house rules): an arm justifies a Phase-2 training run only if
-its forces reach ~0.0215 median irreducible threat, the heuristic curriculum's level. Anything
-below that cannot overturn step 3 and is reported as a measured ceiling.
+Three arms keep the placer, terrain, budget and scorer of the composition step, so only the
+composition process differs. The robust arm adds a single constraint to the brief, the iterative
+arm runs three rounds of compose, exact score, feedback and revise, and the curated arm takes the
+best of the saved population ranked by irreducible threat and makes no new calls. An arm clears
+the bar only if its forces reach the heuristic curriculum's median irreducible threat.
 
     PYTHONPATH=. python analysis/gen39_phase1c.py --robust --iter --curated
 """
@@ -87,7 +74,7 @@ def _task(spec):
 
 
 def score_many(forces: dict, workers=9):
-    """forces: key -> force dict. Returns key -> (median irreducible, median vs-observing, cover)."""
+    """Scores each force over the fields; returns key -> (median irreducible, observing, cover)."""
     import multiprocessing as mp_
     specs = [(k, f, fld) for k, f in forces.items() for fld in FIELDS]
     agg: dict = {}

@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-"""gen45: the gen32 dynamic-register trainer on the UNIFIED real-corridor game
-(ledger experiments/gen45_unified_corridor.md; Phase 0 pinned w=2, tau=0.10, DOC32
-q=(0.6 repeat, 0.2 flee, 0.3 anti-repeat-anticipation) on 2026-08-09, gates G1 min 3.71,
-G2 12/12). Same SAC machinery as gen32 verbatim; the only changes are the substrate
-(ConcealBase: terrain v2 with conceal_reach 0.85, range_scale 0.7, 200 quota sites, the gen39
-MULTIPLIER field band 0.55-1.0) and the pinned w=2. The enemy is DynTheatre unchanged, i.e.
-the gen39 machinery's flat full-map-relocation limit (selfcheck 3.9e-12 in the hunt).
+"""Trains the dynamic-register defender on the gen45 unified real-corridor game.
 
-Refs (exact, per instance): iid_eq, local static optimum, the payoff-blind dynamic family,
-the fitted doctrine rules (disclosed caps), history_opt. PRIMARY bar object = the static CAP
-min(iid_eq, static_opt). Policy eval = EXACT stationary damage of the policy-induced window
-chain. Field ranges per the ledger: train 45300-45317, val 45400-45403, dev-test 45101-45102
-(diagnostics only), GATED pristine 45200-45205 (behind --eval-gated, confirmation only).
+Exact references are built per instance (equilibrium, local static optimum, the payoff-blind
+dynamic family, the fitted doctrine rules and the history optimum); the primary bar is the static
+cap, the smaller of the equilibrium and the static optimum, and the policy is scored by the exact
+stationary damage of the window chain it induces.
 """
 from __future__ import annotations
 
@@ -24,7 +17,7 @@ from pathlib import Path as _P
 import numpy as np
 import torch
 
-from scripts.train_multiconvoy import route_one  # noqa: F401  (kept for parity)
+from scripts.train_multiconvoy import route_one  # noqa: F401
 from src.agents.networks import featurize_state, node_index_map
 from src.agents.sac import ProtagonistSAC, _clip_ea, _clip_x
 from src.agents.transition_builder import SMDPTransition
@@ -109,7 +102,7 @@ def make_pool(eval_gated=False):
     if eval_gated:
         test = [Inst(base, f"gated{45200 + s}", 45200 + s) for s in range(6)]
     else:
-        test = [Inst(base, f"dev{s}", s) for s in (45101, 45102)]  # burned, diagnostics only
+        test = [Inst(base, f"dev{s}", s) for s in (45101, 45102)]  # diagnostics only
     return base, train, val, test
 
 

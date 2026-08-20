@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
-"""gen39 step 3: SACRED on the concealment game (experiments/gen39_concealment.md; the pinned
-narva cell K=3, cr 0.85, rm 0.7, table lethality). gen32 machinery throughout; what is new is the
-INFORMATION STATE: the policy's state is (track window, set of teams seen so far this mission),
-the reveal channel arrives as a per-route head column (threat of the SPOTTED teams), and memory
-of spotted teams is whole-mission, reset per episode (Kilian's persistence rule).
-
-Head columns per route: [public exposure (terrain-lethality worst case, field-blind),
-recency (window frequency), known-threat (spotted teams' zone damage, masked by what THIS
-mission has seen)]. `--blind` zeroes the known-threat column: the causal control AND the
-sighted-vs-blind concealment measurement (one arm, two duties, per the pinned step-3 record).
-
-Arms (--arm): llm | random | heuristic - the training population the enemy is drawn from each
-episode. Test = held-out enemies (never trained against, all three families + the oracle-searched
-best force) on pristine fields 6100-6105. Exact eval: the policy's (window, mask)-conditioned
-route distribution, scored by backward induction over the mission (episodic, T=40).
+"""Trains SACRED on the gen39 concealment game, where the policy's state is the track window plus
+the set of enemy teams spotted so far this mission. The reveal channel arrives as a per-route head
+column carrying the threat of the spotted teams, and that memory lasts the whole mission and is
+reset per episode. Per-route head columns are public exposure, recency and known threat, and
+``--blind`` zeroes the known-threat column as a causal control. ``--arm`` selects the family the
+training enemies are drawn from; test enemies are held out on pristine fields and scored exactly by
+backward induction over the mission.
 """
 from __future__ import annotations
 
@@ -53,7 +45,7 @@ def narva_base():
     t = terrain_v2(hidden_leth=1.0, conceal_reach=CR)
     base = ConcealBase(PATH % MAP, terrain=t, range_scale=sc * RM, spacing_km=2.0 * sc,
                        standoff_km=4.0 * sc, n_sites=200)
-    S_pub = base.survival(base.pp_base)                 # terrain-lethality worst case: PUBLIC
+    S_pub = base.survival(base.pp_base)                 # terrain-lethality worst case, field-blind
     base.expo_pub = _mm((1.0 - S_pub ** N).max(axis=1))
     return base
 
@@ -61,7 +53,7 @@ def narva_base():
 # --- forces ------------------------------------------------------------------------------------
 
 def place(force, base, pp):
-    """The step-2 placer verbatim (one placer everywhere)."""
+    """Places an enemy force on the base under the given lethality field."""
     from analysis.gen39_compose import place as _place
     return _place(force, base, pp)
 
@@ -77,7 +69,7 @@ class Inst:
     def __init__(self, base, name, field, sites=None, doctrines=None, archetype=None):
         self.name, self.field = name, field
         pp = base.lethality(resample_field(base.coords, field), hidden_leth=1.0)
-        if archetype is not None:                       # heuristic family: gen32 doctrine
+        if archetype is not None:                       # heuristic family: doctrine-driven laydown
             sites, g, _ = choose_force(base, pp, archetype, K, np.random.default_rng(field),
                                        w=W, tau=TAU, doctrine=DOC32)
         else:
@@ -145,9 +137,12 @@ def _rnd_force(seed):
 
 
 def prep_cache(base, forces_path, cache=CACHE):
-    """The expensive shared prep, run ONCE before the batch: heuristic laydowns (choose_force per
-    field x archetype), the common val set, the held-out test cells and every oracle ref. All 12
-    runs load this; the yardsticks are byte-identical across arms and seeds by construction."""
+    """Builds the shared prep once before a batch of runs.
+
+    Covers the heuristic laydowns (one per field and archetype), the common validation set, the
+    held-out test cells and every oracle reference, so that all runs load identical yardsticks
+    whatever their arm and seed.
+    """
     _, llm_test = _llm_split(forces_path)
     out = {"heur_train": {}, "val": [], "test": []}
     for f in TRAIN_FIELDS:
@@ -205,10 +200,12 @@ def _from_cache(base, rec):
 
 
 def build_pools_step5(base, arm, curricula, cache=CACHE):
-    """Step 5: every arm's training population is ITS OWN 16-evaluation search results (top-3 per
-    field), doctrine FROZEN to gen32; the test set is the SAME strong four-family set for every
-    arm (llm16/local16/random16/tuned best force per field + the oracle ceiling), so no defender
-    is tested only on the kind of enemy it was raised against."""
+    """Builds the step-5 pools, where each arm trains on its own searched forces.
+
+    An arm trains against the top three forces its own search found per field, with doctrine frozen,
+    while every arm is tested on the same four-family held-out set plus the oracle ceiling, so no
+    defender is tested only on the kind of enemy it was raised against.
+    """
     cur = json.loads(_P(curricula).read_text())
     train = []
     for f in TRAIN_FIELDS:
@@ -235,7 +232,7 @@ def build_pools_step5(base, arm, curricula, cache=CACHE):
 
 
 def build_pools(base, arm, forces_path, cache=CACHE):
-    """Training population per arm + the SHARED cached val/test structure."""
+    """Builds one arm's training population, plus the shared cached validation and test sets."""
     c = json.loads(_P(cache).read_text())
     llm_train, _ = _llm_split(forces_path)
     train = []
@@ -267,12 +264,12 @@ def build_pools(base, arm, forces_path, cache=CACHE):
 # --- exact policy eval -------------------------------------------------------------------------
 
 def policy_value(prot, inst, env, blind=False):
-    """EXACT policy value in ONE head call. The head applies route_feats as a pure additive
-    logit shift (`logit shift = feats @ w`, networks.py): for the fixed graph encoding,
-    probs(window, mask) = softmax(log p0 + F(window, mask) @ w) where p0 is the head's output
-    with route_feats zeroed. The first version looped Sn x M head calls (151k forwards per
-    eval); it ground the whole batch to a halt and is replaced by this closed form, verified
-    numerically identical (tests/test_gen39_trainer_eval.py)."""
+    """Exact policy value in one head call.
+
+    The head applies route_feats as a pure additive logit shift, so for the fixed graph encoding
+    probs(window, mask) = softmax(log p0 + F(window, mask) @ w), where p0 is the head's output with
+    route_feats zeroed. That closed form replaces one head call per (state, mask) pair.
+    """
     env.reset()
     obs = env.observe()
     pyg = featurize_state(obs, 0).to(prot.device)
@@ -300,10 +297,11 @@ def policy_value(prot, inst, env, blind=False):
 
 
 def save_full_state(prot, rng, sortie, hist, path):
-    """STATE-COMPLETE run state: nets + optimisers + alpha + replay buffer + every RNG. The
-    buffered transitions' featurization caches are SHARED per-field graphs, which pickle once
-    per unique object, so they stay in the save (stripping them would regrow private copies
-    after resume: the measured memory crawl)."""
+    """Saves the complete run state: nets, optimisers, alpha, replay buffer and every RNG.
+
+    The buffered transitions' feature caches are shared per-field graphs that pickle once per unique
+    object, so they stay in the save; stripping them would regrow private copies after a resume.
+    """
     import random as _rnd
     _P(path).parent.mkdir(parents=True, exist_ok=True)
     torch.save({"prot": prot, "rng": rng.bit_generator.state, "np": np.random.get_state(),
@@ -370,12 +368,10 @@ def main():
         if it.field not in envs:
             envs[it.field] = TheatreEnv(base.menu, it.g.game, it.S_field, N=N)
         del it.S_field
-    # ONE shared featurized graph per (field, convoy): the graph is identical for every
-    # transition on a field (route feats ride separately at the head), but the update path
-    # memoises a PRIVATE copy on each transition, which grew ~1 GB per run as the buffer filled
-    # and pinned the machine at the memory-compression threshold (measured 2026-07-26: the
-    # 7 s/sortie crawl at every priority). Pre-attaching the shared graph at push time stores
-    # each tensor once; exactness pinned by test_gen39_trainer_eval.
+    # One shared featurised graph per (field, convoy): the graph is identical for every transition
+    # on a field, since route feats ride separately at the head. Without this the update path
+    # memoises a private copy on each transition, growing by roughly a gigabyte per run as the
+    # buffer fills; pre-attaching the shared graph at push time stores each tensor once.
     pyg_cache = {}
     for f, env_ in envs.items():
         env_.reset()

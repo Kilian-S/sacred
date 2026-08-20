@@ -1,16 +1,9 @@
 """Scripted attackers for the robustness-evaluation portfolio.
 
-These are policy-agnostic disruptors used to evaluate every protagonist under the SAME attacks
-(unlike the co-evolved antagonist, which is a best response to whichever policy it trained
-against). Both respect the antagonist action mask (reach + budget), so they are directly
-comparable to learned attackers.
-
-  * random_block_policy  — uniform-random full block from the current mask (seeded). The weakest
-    portfolio member: robustness to undirected disruption / domain-randomization-style noise.
-  * targeted_block_policy — deterministic heuristic: block the first blockable edge AHEAD on the
-    congestion-aware shortest path of the truck nearest to its goal (i.e. cut off the truck about
-    to make progress). The strongest scripted member; also the VALIDATION attacker for checkpoint
-    selection, keeping the best-response test attackers held out.
+These are policy-agnostic disruptors that evaluate every protagonist under the same attacks, unlike
+the co-evolved antagonist, which is a best response to whichever policy it trained against. All of
+them respect the antagonist action mask (reach and budget), so they are directly comparable to
+learned attackers.
 """
 
 from __future__ import annotations
@@ -39,11 +32,11 @@ def random_block_policy(seed: int = 0):
 
 
 def mask_first_block_policy(event: DecisionEvent):
-    """Deterministic "gateway" attacker: block the lexicographically-first maskable edge at max
-    level. Sounds naive, but under ROUTE reach the mask is exactly the edges on trucks' committed
-    routes — the mask does the aiming — and this attacker inflicted +40…+184% on greedy in the
-    hybrid budget sweep (scratch/critique_probes.py Probe C). It is the HELD-OUT test attacker for
-    gen05: the scripted-adversarial arm trains against targeted_block_policy, never against this."""
+    """Deterministic gateway attacker: block the lexicographically-first maskable edge at max level.
+
+    Under route reach the mask is exactly the edges on the trucks' committed routes, so the mask
+    itself does the aiming. Held out as a test attacker, never trained against.
+    """
     lbe = event.antagonist_action_mask.get("levels_by_edge", {})
     if not lbe:
         return None
@@ -52,11 +45,12 @@ def mask_first_block_policy(event: DecisionEvent):
 
 
 def random_path_block_policy(smdp: SMDPDecisionWrapper, seed: int = 0):
-    """The gen06 TRAINING attacker: block the first blockable edge on the path of a UNIFORMLY
-    RANDOM goal-committed truck (falling back to a random maskable edge). Route-aimed like
-    `targeted` but stochastic across trucks — training against it exposes the protagonist to
-    broader interdiction patterns (less determinism to overfit) while `targeted` (always the
-    nearest-to-goal truck) stays HELD OUT as the test attack."""
+    """Block the first blockable edge on the path of a uniformly random goal-committed truck.
+
+    Falls back to a random maskable edge when no truck is committed. Route-aimed like `targeted`
+    but stochastic across trucks, so training against it leaves less determinism to overfit and
+    keeps `targeted` held out as the test attack.
+    """
     rng = random.Random(seed)
 
     def policy(event: DecisionEvent):
@@ -132,15 +126,13 @@ def targeted_block_policy(smdp: SMDPDecisionWrapper):
 
 
 class ScriptedAttackerMixture:
-    """B4-lite adversary population: a FIXED weighted mixture of scripted attackers, one sampled
-    per episode (deterministic by ``seed``). Training the defender against a mixture rather than a
-    single fixed attacker is fictitious-play-flavoured (the literature review's cited stabiliser):
-    it exposes the policy to a diversity of interdiction patterns and denies it a single attacker
-    to overfit, which is the co-evolution-cycling failure the campaign kept hitting. No inner
-    best-response training loop (that is the recorded B4-full stretch); this is cheap and stationary.
+    """A fixed weighted mixture of scripted attackers, one sampled per episode (seeded).
 
-    ``members`` is a list of ``(name, policy_callable, weight)``. Each policy is a ready attacker
-    (already bound to its wrapper). ``sample()`` returns ``(name, policy)`` for the next episode.
+    Training the defender against a mixture rather than a single fixed attacker exposes it to a
+    diversity of interdiction patterns and denies it one attacker to overfit. There is no inner
+    best-response loop, so the adversary stays cheap and stationary. ``members`` is a list of
+    ``(name, policy_callable, weight)`` whose policies are already bound to their wrapper, and
+    ``sample()`` returns ``(name, policy)`` for the next episode.
     """
 
     def __init__(self, members: list[tuple[str, Callable[[DecisionEvent], Any], float]], seed: int = 0):
@@ -161,8 +153,7 @@ class ScriptedAttackerMixture:
 
 
 def build_scripted_attacker(name: str, smdp: SMDPDecisionWrapper, seed: int = 0):
-    """Factory: map an attacker name to a ready policy bound to ``smdp`` (used by the mixture and
-    the training CLI). 'gateway' = the mask-first route attacker; 'random' = undirected floor."""
+    """Map an attacker name to a ready policy bound to ``smdp``."""
     if name == "targeted":
         return targeted_block_policy(smdp)
     if name == "pathrand":

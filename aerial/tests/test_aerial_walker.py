@@ -1,5 +1,5 @@
-"""gen28 v2.3 walker: leg-survival calibration, polyline reference game, env node-mode
-contract with the real SAC stack, and the exact-DP exploitability vs brute-force enumeration."""
+"""Walker environment: leg-survival calibration, the polyline reference game, the node-mode
+contract against the SAC stack, and exact-DP exploitability against brute-force enumeration."""
 
 import itertools
 
@@ -70,7 +70,7 @@ def test_env_walk_and_node_mode_update():
         nobs, nmask = (None, None) if last else (steps[i + 1][0], steps[i + 1][2])
         prot.replay_buffer.push(_transition(obs, 0, a, mask, -1.0 if last else 0.0,
                                             nobs, 0, nmask, last))
-    prot.update(8)                                            # real node-mode SAC update
+    prot.update(8)
 
 
 def test_dp_exploitability_matches_bruteforce():

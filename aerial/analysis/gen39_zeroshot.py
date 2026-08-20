@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-"""gen39 step 5 ZERO-SHOT ROWS: the Narva-trained defenders, evaluated on theatres they have
-never seen (Kilian, 2026-07-28).
+"""Scores the Narva-trained defenders on theatres they have never seen.
 
-All twelve step-5 checkpoints (4 arms x 3 seeds, validation-selected) are scored on the other
-three theatres. Every map gets its OWN strong test set, built exactly as Narva's was: four enemy
-families (llm16 / local16 / random16 / tuned), each authored by its own 16-evaluation search at
-the SAME matched budget, plus the oracle-searched force as the ceiling row. Doctrine frozen to
-gen32 everywhere. Nothing is retrained: this is transfer.
-
-Pre-declared before the run (ledger, step-5 pre-registration): on kgd_gvardeysk the free gate
-measured RANDOM search BEATING the LLM proposer (0.0647 vs 0.0494), so kgd is a pre-declared
-negative cell for the llm16 arm and a null there confirms a prediction rather than embarrassing
-one.
-
-SELF-CHECK (`--selfcheck`): rebuild Narva's test instances from the committed curricula and
-re-evaluate a checkpoint through THIS harness; the values must reproduce the step-5 run log, or
-the harness is wrong and no map row may be trusted.
+All twelve validation-selected checkpoints, four arms by three seeds, are scored on the other three
+theatres. Every map gets its own strong test set built exactly as Narva's was, with four enemy
+families each authored by its own 16-evaluation search at the same matched budget, plus the
+oracle-searched force as the ceiling row. Doctrine is frozen throughout and nothing is retrained,
+so what is measured is transfer. The self-check rebuilds Narva's test instances from the committed
+curricula and re-evaluates a checkpoint through this harness, whose values must reproduce the
+training run log before any map row can be trusted.
 
     PYTHONPATH=. python analysis/gen39_zeroshot.py --selfcheck
     PYTHONPATH=. python analysis/gen39_zeroshot.py --maps kgd_gvardeysk,ukraine,fulda
@@ -51,8 +43,10 @@ OUT = Path("models/runs/gen39_zeroshot.json")
 
 
 def base_for(name):
-    """The step-5 theatre build, map-parameterised (the trainer's own `narva_base` verbatim
-    except for the map), including the public-exposure head column the policy reads."""
+    """Builds a theatre exactly as the trainer does, parameterised by map.
+
+    Includes the public-exposure head column the policy reads.
+    """
     sc = lateral_width(load_vec_theatre(PATH % name)) / lateral_width(
         load_vec_theatre(PATH % "kgd_gvardeysk"))
     base = ConcealBase(PATH % name, terrain=terrain_v2(hidden_leth=1.0, conceal_reach=CR),
@@ -142,7 +136,7 @@ def search_random(base, pool, field, rng):
 
 
 def build_test_set(name, base, pool):
-    """Six pristine fields x {llm16, local16, random16, tuned} best force + the oracle ceiling."""
+    """Six pristine fields, each with the best force of every family plus the oracle ceiling."""
     pp0 = base.lethality(resample_field(base.coords, TEST_FIELDS[0]), hidden_leth=1.0)
     digest = map_digest(base, pp0)
     cells = []
@@ -191,8 +185,10 @@ def load_ckpts():
 
 
 def selfcheck():
-    """Rebuild Narva's step-5 test instances from the committed curricula and re-evaluate one
-    checkpoint through THIS harness; values must match the step-5 run log."""
+    """Re-evaluates one checkpoint on Narva's test instances rebuilt from the committed curricula.
+
+    The values must match the training run log, otherwise the harness is wrong.
+    """
     base = base_for("narva")
     cur = json.loads((STEP5 / "curricula.json").read_text())
     run = json.loads((STEP5 / "llm16_seed0.json").read_text())

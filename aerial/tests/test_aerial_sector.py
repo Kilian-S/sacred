@@ -1,6 +1,6 @@
-"""gen28 aerial sector: lattice determinism, proximity correctness, payoff fidelity,
-closed-form equilibrium sanity, greedy-BR validity (submodularity tested, not assumed),
-lane machinery. All oracle-side; no training."""
+"""Aerial sector machinery: lattice determinism, proximity correctness, payoff fidelity,
+closed-form equilibrium sanity, greedy best-response validity and the lane rules. All oracle
+side, no training."""
 
 import itertools
 
@@ -74,8 +74,8 @@ def test_payoff_matches_bruteforce_loop():
 
 
 def test_disjoint_lanes_uniform_equilibrium():
-    """3 pure lanes spaced > 2r, one hazard candidate dead-centre on each: symmetric coverage,
-    so the equilibrium is uniform over lanes with value = single-lane exposure / 3."""
+    """Three pure lanes spaced more than 2r apart, one hazard candidate dead-centre on each, cover
+    symmetrically, so the equilibrium is uniform with value single-lane exposure / 3."""
     lat = SectorLattice(ny=9, nx=13)
     menu = [lane_path(lat, row) for row in (0, 4, 8)]
     centres = np.array([[6.0, 0.0], [6.0, 4.0], [6.0, 8.0]])
@@ -105,7 +105,7 @@ def test_greedy_br_exact_at_k1_and_bound_at_k2():
         _, greedy2 = greedy_br_hazards(S, d, K=2)
         assert greedy2 <= exact2 + 1e-12
         assert greedy2 >= (1.0 - 1.0 / np.e) * exact2 - 1e-12             # certified bound
-        assert greedy2 >= 0.95 * exact2                                    # measured fidelity
+        assert greedy2 >= 0.95 * exact2                                    # empirical fidelity floor
 
 
 def test_weather_is_cost_only():

@@ -1,24 +1,14 @@
 #!/usr/bin/env python3
-"""gen39 step-5c ZERO-SHOT LEG: fresh unseen-map test sets with LAYDOWNS SAVED, and all
-FIFTEEN checkpoints (12 banked + 3 qwenthink16) scored on them.
+"""Rebuilds the unseen-map test sets with their laydowns saved and scores all fifteen checkpoints
+on them.
 
-Why this exists (pinned in the step-5c pre-registration): the banked zero-shot table cannot
-be extended, because `gen39_zeroshot.py` saved SCORES but not the laydowns it scored, and the
-LLM search is stochastic, so the banked per-map test sets are unrecoverable. The repair, as
-pre-registered: rebuild each unseen map's test set ONCE with laydowns saved, score all fifteen
-checkpoints on the FRESH sets, and pair only within the fresh table. The banked table stays
-banked and is never mixed with this one.
-
-Design choices, disclosed:
-  * Test families stay the ORIGINAL FOUR (llm16 / local16 / random16 / tuned) plus the oracle
-    ceiling row, mirroring the banked construction exactly. qwenthink16 is a DEFENDER arm here,
-    not a test family; adding a fifth family would change the test object and buys nothing the
-    pre-registered question needs.
-  * Every search function is IMPORTED from the banked harness, never re-implemented, so the
-    construction is identical apart from persistence.
-  * Build is incremental and per-(map, family): the three oracle-only families need no GPU box
-    and run while the box is busy elsewhere; the llm16 family is added afterwards. Nothing is
-    recomputed once banked in the artefact.
+`gen39_zeroshot.py` saved scores but not the laydowns it scored, and the LLM search is stochastic,
+so its per-map test sets cannot be reconstructed or extended. Each unseen map's test set is
+therefore rebuilt once with laydowns persisted, all fifteen checkpoints are scored on the fresh
+sets, and comparisons are paired only within them. The test families stay the original four plus
+the oracle ceiling row, every search function is imported from the earlier harness rather than
+re-implemented, and the build is incremental per (map, family), so nothing already saved is
+recomputed.
 
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_zeroshot2.py --selfcheck
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen39_zeroshot2.py --build \
@@ -114,10 +104,10 @@ def build(maps, families, workers):
 
 
 def score(workers, out_path=None, only_maps=None):
-    """Score all fifteen checkpoints on the fresh sets. Cell = mean over the four family
-    instances plus the oracle-ceiling instance, exactly the banked cell definition.
+    """Scores all fifteen checkpoints on the fresh sets.
 
-    out_path lets one process per map run concurrently without racing the artefact; the
+    A cell is the mean over the four family instances plus the oracle-ceiling instance.
+    ``out_path`` lets one process per map run concurrently without racing the artefact; the
     per-map files are merged by --merge.
     """
     OUT = Path(out_path) if out_path else globals()["OUT"]
@@ -165,7 +155,7 @@ def score(workers, out_path=None, only_maps=None):
 
 
 def load_ckpts_all():
-    """load_ckpts() covers the four banked arms; add the qwenthink16 seeds the same way."""
+    """Extends `load_ckpts`, which covers four arms, with the qwenthink16 seeds."""
     import torch
 
     from src.agents.sac import ProtagonistSAC

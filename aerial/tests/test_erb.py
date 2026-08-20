@@ -12,17 +12,14 @@ from src.baselines.metaheuristic import AdaptiveLargeNeighborhoodSearchVRP
 
 class TestERB(unittest.TestCase):
     def setUp(self) -> None:
-        # Create standard toy environment (2 trucks)
         self.env = make_toy_graph_env(num_trucks=2)
 
     def test_alns_initialization(self) -> None:
         alns = AdaptiveLargeNeighborhoodSearchVRP(self.env, iterations=10)
         
-        # Verify precomputations
         self.assertIn(self.env.depot_node, alns.distances)
         self.assertGreater(len(alns.tasks), 0)
         
-        # Verify all customer nodes are captured
         self.assertTrue(all(task[0] != self.env.depot_node for task in alns.tasks))
         self.assertTrue(all(task[2] <= 1.0 for task in alns.tasks))
 
@@ -30,12 +27,11 @@ class TestERB(unittest.TestCase):
         alns = AdaptiveLargeNeighborhoodSearchVRP(self.env, iterations=20)
         best_sol = alns.solve()
 
-        # Check solution dictionary keys map to truck IDs
         self.assertEqual(len(best_sol), 2)
         self.assertIn(0, best_sol)
         self.assertIn(1, best_sol)
 
-        # Check all tasks are partitioned exactly once
+        # every task is assigned to exactly one truck
         total_tasks_assigned = sum(len(seq) for seq in best_sol.values())
         self.assertEqual(total_tasks_assigned, len(alns.tasks))
 
@@ -46,11 +42,9 @@ class TestERB(unittest.TestCase):
         for t_id, task_seq in best_sol.items():
             route = alns.get_physical_route(task_seq)
             
-            # Route must start and end at the depot
             self.assertEqual(route[0], self.env.depot_node)
             self.assertEqual(route[-1], self.env.depot_node)
             
-            # Check edge connectivity along the route
             for i in range(len(route) - 1):
                 u, v = route[i], route[i+1]
                 self.assertTrue(self.env.graph.has_edge(u, v))
@@ -71,7 +65,6 @@ class TestERB(unittest.TestCase):
         event = smdp.reset_decision_env()
         transitions = []
 
-        # Run a short simulation to verify transition capture structure
         while not event.done:
             if event.decision_type in (DecisionType.PROTAGONIST_DECISION, DecisionType.BOTH_DECISION):
                 import copy
@@ -95,13 +88,12 @@ class TestERB(unittest.TestCase):
                     
                     actions[truck_id] = next_node
                     
-                    # Project commitment
+                    # project the commitment into the state stored for this truck
                     projected_obs["trucks"][truck_id]["destination"] = next_node
                     projected_obs["trucks"][truck_id]["current_node"] = None
 
                 next_event, transition = smdp.step_protagonist(actions)
                 
-                # Check individual transition record construction
                 for truck_id in event.waiting_trucks:
                     state_copy = truck_decision_states[truck_id]
 
@@ -134,7 +126,6 @@ class TestERB(unittest.TestCase):
                 event = smdp.advance_until_decision()
 
         self.assertGreater(len(transitions), 0)
-        # Check transition slots
         for t in transitions:
             self.assertEqual(t.agent, "protagonist")
             self.assertIn("active_truck", t.state)

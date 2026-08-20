@@ -1,7 +1,6 @@
-"""gen28 game v2: curve machinery + line-integral exposure. The load-bearing checks:
-the p_max calibration (dead-centre straight transit intercepted w.p. exactly p_max), the
-bank limit, obstacle rejection, menu determinism, payoff-vs-bruteforce, the disjoint-lane
-closed form, and greedy-BR validity on the integral exposure."""
+"""Curve machinery and line-integral exposure: the p_max calibration, the bank limit, obstacle
+rejection, menu determinism, payoff against brute force, the disjoint-lane closed form, and
+greedy best-response validity."""
 
 import numpy as np
 import pytest
@@ -21,7 +20,7 @@ def test_pmax_calibration_straight_transit():
     straight = make_curve(LAT, [4.0] * 5)
     for pmax in (0.3, 0.6, 0.9):
         S = curve_survival_matrix([straight], np.array([[6.0, 4.0]]), r=1.5, p_max=pmax)
-        assert 1.0 - S[0, 0] == pytest.approx(pmax, rel=0.01)     # the kappa calibration
+        assert 1.0 - S[0, 0] == pytest.approx(pmax, rel=0.01)     # kappa is calibrated to p_max
     S = curve_survival_matrix([straight], np.array([[6.0, 5.2]]), r=1.5, p_max=0.9)
     assert 0.0 < 1.0 - S[0, 0] < 0.9                              # grazing < dead centre
     S = curve_survival_matrix([straight], np.array([[6.0, 5.6]]), r=1.5, p_max=0.9)
@@ -38,7 +37,7 @@ def test_obstacles_reject_wall_crossers():
     assert lane_curve(PINCH, 0.0) is None                          # into the wall
     assert lane_curve(PINCH, 4.0) is not None                      # through the gap
     menu, lane_idx = build_curve_menu(PINCH, r=1.6, R=30, seed=0)
-    assert len(lane_idx) == 1                                      # ONE lane survives a pinch
+    assert len(lane_idx) == 1                                      # only one lane survives a pinch
     rects_hit = [c for c in menu if np.any(
         (np.abs(c.pts[:, 0] - 6.0) < 0.5) & ((c.pts[:, 1] < 2.5) | (c.pts[:, 1] > 5.5)))]
     assert not rects_hit                                           # nobody crosses the wall
@@ -70,8 +69,8 @@ def test_payoff_matches_bruteforce_integral():
 
 
 def test_disjoint_lanes_closed_form():
-    """3 lanes far apart, one hazard dead-centre on each: uniform equilibrium, value ~ p_max/3
-    (each lane's transit through its own hazard is straight -> the calibration applies)."""
+    """Three far-apart lanes with one hazard dead-centre on each give a uniform equilibrium of
+    value p_max/3."""
     menu = [lane_curve(LAT, o) for o in (0.0, 4.0, 8.0)]
     centres = np.array([[6.0, 0.0], [6.0, 4.0], [6.0, 8.0]])
     game, S = build_curved_game(LAT, menu, centres, K=1, r=1.0, p_max=0.9)
@@ -91,7 +90,7 @@ def test_greedy_br_on_integral_exposure():
         _, exact2 = best_response_attacker(game, d)
         _, greedy2 = greedy_br_hazards(S, d, K=2)
         assert greedy2 <= exact2 + 1e-12
-        assert greedy2 >= 0.95 * exact2                            # measured fidelity
+        assert greedy2 >= 0.95 * exact2                            # empirical fidelity floor
     g1, _ = build_curved_game(LAT, menu, centres, K=1, r=1.2, p_max=0.9)
     d = rng.random(len(menu)); d /= d.sum()
     assert greedy_br_hazards(S, d, K=1)[1] == pytest.approx(

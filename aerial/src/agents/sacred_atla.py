@@ -20,22 +20,13 @@ from src.agents.transition_builder import collect_protagonist_transitions
 
 
 class ATLACoevolutionTrainer:
-    """Trainer orchestrating alternating minimax GRL training of both agents.
+    """Trainer orchestrating the alternating minimax training of both agents.
 
-    Parameters
-    ----------
-    smdp:
-        SMDP Wrapper environment instance.
-    protag_agent:
-        Soft Actor-Critic agent for fleet routing.
-    antag_agent:
-        Soft Actor-Critic agent for edge congestion.
-    log_dir:
-        Directory to save TensorBoard training runs.
-    switch_every_episodes:
-        Number of episodes to train one agent before freezing it and training the other.
-    batch_size:
-        Mini-batch training size for SAC updates.
+    Args:
+        switch_every_episodes: episodes to train one agent for before freezing it and training
+            the other.
+        eval_fn: optional snapshot evaluation called as ``eval_fn(episode)``, its scalars logged
+            under ``Eval/*``.
     """
 
     def __init__(
@@ -65,40 +56,33 @@ class ATLACoevolutionTrainer:
         self.antag = antag_agent
         self.switch_every_episodes = switch_every_episodes
         self.batch_size = batch_size
-        # Training mode. "atla" = the coevolutionary alternating game (default). "vanilla" = the
-        # NON-adversarial control for the robustness comparison: the protagonist trains every
-        # episode and the antagonist is inert (never acts, never updates) — identical env, reward,
-        # nets and hyperparameters otherwise. "antagonist_only" = best-response attacker training:
-        # the protagonist is FROZEN (acts stochastically, no updates/storage) while the antagonist
-        # trains every episode — used to build the per-policy worst-case attack for evaluation.
-        # "scripted_adversary" = adversarial training against a FIXED scripted attacker
-        # (gen04 consequence: the learned adversary cannot learn to attack — the scripted targeted
-        # heuristic supplies strong, stationary adversarial pressure instead; the protagonist
-        # trains every episode, the antagonist nets are never used).
+        # Training modes. "atla" plays the coevolutionary alternating game. "vanilla" is the
+        # non-adversarial control: the protagonist trains every episode and the antagonist is
+        # inert, with everything else identical. "antagonist_only" freezes the protagonist and
+        # trains the antagonist alone, which builds the per-policy worst-case attack used for
+        # evaluation. "scripted_adversary" trains the protagonist against a fixed scripted
+        # attacker, leaving the antagonist nets unused.
         self.mode = mode
         self.scripted_attacker = scripted_attacker
-        # B3 attack exposure/strength curriculum (optional; scripted_adversary only). When set, it
+        # Optional attack exposure/strength curriculum (scripted_adversary only). When set it
         # decides per episode whether the attack fires and at what budget, ramping difficulty only
-        # while the defender stays competent. None = the historical constant-attack regime.
+        # while the defender stays competent.
         self.attack_curriculum = attack_curriculum
-        self._episode_attacked = True  # per-episode flag; overwritten each episode when curriculum set
-        # B4-lite adversary population (optional; scripted_adversary only). A ScriptedAttackerMixture
-        # whose member is resampled each episode, overriding self.scripted_attacker for that episode.
-        # None = the single fixed scripted attacker. Composes with the B3 curriculum.
+        self._episode_attacked = True  # overwritten each episode when a curriculum is set
+        # Optional adversary population (scripted_adversary only): a ScriptedAttackerMixture whose
+        # member is resampled each episode, overriding self.scripted_attacker for that episode.
+        # Composes with the curriculum.
         self.scripted_attacker_pool = scripted_attacker_pool
-        # antagonist_only gate: drive the FROZEN protagonist with this per-truck chooser (e.g. greedy)
-        # instead of the SAC net, so a best-response attacker can be trained against a competent
-        # deterministic victim (the exploitability BR gate; gen05 only transferred BRs to greedy).
+        # antagonist_only: drive the frozen protagonist with this per-truck chooser instead of the
+        # SAC net, so a best-response attacker can be trained against a competent deterministic
+        # victim.
         self.frozen_protagonist_chooser = frozen_protagonist_chooser
-        # Update-to-data ratio: run a gradient update once every N decision epochs (per agent)
-        # instead of every one. N=1 = the historical behaviour. The hybrid rung makes ~10x more
-        # (edge-level) decisions per episode than destination-mode rungs, so update-per-decision
-        # is prohibitive there (~198 s/ep untrained); N>1 trades updates-per-experience for
-        # wall-clock. Applied identically to every arm of a generation for fairness.
+        # Update-to-data ratio: one gradient update every N decision epochs per agent rather than
+        # every epoch, trading updates-per-experience for wall-clock on registers that make many
+        # cheap decisions. Applied identically to every arm of a generation for fairness.
         self.update_every = max(1, int(update_every))
         self._protag_decision_count = 0
         self._antag_decision_count = 0
-        # Optional periodic snapshot eval: eval_fn(episode) -> dict of scalars, logged under Eval/*.
         self.eval_fn = eval_fn
         self.eval_every = eval_every
 
@@ -106,12 +90,11 @@ class ATLACoevolutionTrainer:
             run_name = f"sacred_atla_sw{switch_every_episodes}_b{batch_size}"
         self.run_name = run_name
 
-        # Create TensorBoard writer
         os.makedirs(log_dir, exist_ok=True)
         self.writer = SummaryWriter(log_dir=os.path.join(log_dir, self.run_name))
 
-        # Training phase tracking. Non-ATLA modes pin the phase for the whole run (the
-        # switch-every cadence then only drives checkpoint/snapshot saving).
+        # Non-ATLA modes pin the phase for the whole run, so the switch-every cadence then only
+        # drives checkpoint and snapshot saving.
         self.current_phase: str = "antagonist" if mode == "antagonist_only" else "protagonist"
         self.episode_count = 0
         self.step_count = 0
@@ -130,14 +113,13 @@ class ATLACoevolutionTrainer:
             # 1. Check training phase switch
             if (ep - 1) > 0 and (ep - 1) % self.switch_every_episodes == 0:
                 print("Saving checkpoints for both agents before phase switch...")
-                # Save into the run-specific directory so other runs can't clobber this run's
-                # resumable state. Resume with: --resume-checkpoint models/runs/<run_name>
+                # Run-specific directory, so other runs cannot clobber this run's resumable state.
+                # Resume with: --resume-checkpoint models/runs/<run_name>
                 ckpt_dir = os.path.join("models", "runs", self.run_name)
                 self.protag.save_checkpoint(os.path.join(ckpt_dir, "protagonist", "checkpoint.pt"), ep - 1)
                 self.antag.save_checkpoint(os.path.join(ckpt_dir, "antagonist", "checkpoint.pt"), ep - 1)
-                # Per-phase actor snapshots (cheap, never overwritten) so best-checkpoint selection
-                # is possible post-hoc — final-checkpoint is misleading under co-evolution, and the
-                # missing snapshots are exactly what made static-3b un-salvageable.
+                # Per-phase actor snapshots, never overwritten, so best-checkpoint selection stays
+                # possible post-hoc; the final checkpoint is misleading under co-evolution.
                 snap_dir = os.path.join(ckpt_dir, "snapshots")
                 os.makedirs(snap_dir, exist_ok=True)
                 torch.save(self.protag.actor.state_dict(), os.path.join(snap_dir, f"protagonist_ep{ep - 1}.pt"))
@@ -148,13 +130,13 @@ class ATLACoevolutionTrainer:
 
             # 2. Reset environment and tracking accumulators
             event = self.smdp.reset_decision_env()
-            # B3: the curriculum decides this episode's attack on/off + budget, overriding the
-            # config budget the reset just installed. Clean episodes keep viable-state experience
-            # in the replay; the budget ramps only as competence is earned (see record() below).
+            # The curriculum decides this episode's attack on/off and budget, overriding the config
+            # budget the reset just installed. Clean episodes keep viable-state experience in the
+            # replay, and the budget ramps only as competence is earned.
             if self.attack_curriculum is not None:
                 self._episode_attacked, ep_budget = self.attack_curriculum.decide()
                 self.smdp.budget = CongestionBudget(ep_budget)
-            # B4-lite: resample this episode's attacker from the population (if any).
+            # Resample this episode's attacker from the population, if one is configured.
             self._episode_attacker_name = None
             if self.scripted_attacker_pool is not None:
                 self._episode_attacker_name, self.scripted_attacker = self.scripted_attacker_pool.sample()
@@ -173,11 +155,11 @@ class ATLACoevolutionTrainer:
 
                 # A. PROTAGONIST DECISION EPOCH
                 if event.decision_type in (DecisionType.PROTAGONIST_DECISION, DecisionType.BOTH_DECISION):
-                    # Sequential per-truck decisions with projection + claiming live in the shared
-                    # transition builder (single source of truth, also used by the ERB demo
-                    # generator so demos are byte-identical to live transitions).
+                    # Sequential per-truck decisions with projection and claiming live in the
+                    # shared transition builder, which the demo generator also uses so that demos
+                    # are byte-identical to live transitions.
                     if self.frozen_protagonist_chooser is not None:
-                        _choose = self.frozen_protagonist_chooser  # e.g. greedy victim (BR gate)
+                        _choose = self.frozen_protagonist_chooser  # e.g. a greedy victim
                     else:
                         def _choose(projected_obs, truck_mask, truck_id):
                             return self.protag.select_action(projected_obs, truck_mask, deterministic=False)
@@ -192,7 +174,6 @@ class ATLACoevolutionTrainer:
                     ep_protag_reward += interval_reward
                     ep_antag_reward += next_event.antagonist_reward
 
-                    # Update protagonist parameters if in protagonist phase
                     self._protag_decision_count += 1
                     if (self.current_phase == "protagonist"
                             and self._protag_decision_count % self.update_every == 0):
@@ -205,11 +186,10 @@ class ATLACoevolutionTrainer:
                 # B. ANTAGONIST DECISION EPOCH
                 elif event.decision_type in (DecisionType.ANTAGONIST_DECISION, DecisionType.BOTH_DECISION):
                     if self.mode in ("vanilla", "scripted_adversary"):
-                        # vanilla: the adversary never acts. scripted_adversary: a FIXED scripted
-                        # attacker acts (strong, stationary adversarial pressure). Either way no
-                        # antagonist net forward/storage/update — only the protagonist learns.
-                        # B3: on a curriculum "clean" episode the scripted attacker is held back
-                        # (acts like vanilla for that episode).
+                        # Under vanilla the adversary never acts; under scripted_adversary a fixed
+                        # scripted attacker does. Either way there is no antagonist net forward
+                        # pass, storage or update, so only the protagonist learns. On a curriculum
+                        # clean episode the scripted attacker is held back for that episode.
                         attack_on = self.mode == "scripted_adversary" and self._episode_attacked
                         action = self.scripted_attacker(event) if attack_on else None
                         next_event, _ = self.smdp.step_antagonist(action)
@@ -218,7 +198,6 @@ class ATLACoevolutionTrainer:
                         event = next_event
                         continue
                     mask = event.antagonist_action_mask
-                    # Active congestion choice
                     remaining_budget_before = self.smdp.budget.remaining
                     action = self.antag.select_action(
                         event.observation, mask, remaining_budget_before, deterministic=False
@@ -226,7 +205,8 @@ class ATLACoevolutionTrainer:
 
                     next_event, transition = self.smdp.step_antagonist(action)
                     
-                    # Enrich transition info and next_state allowed_destinations for Antagonist SAC update
+                    # The antagonist update needs the budget either side of the step and the edge
+                    # sets its mask allowed, neither of which the raw transition carries.
                     transition.info["antagonist_budget_remaining"] = remaining_budget_before
                     transition.info["next_antagonist_budget_remaining"] = self.smdp.budget.remaining
                     
@@ -254,7 +234,6 @@ class ATLACoevolutionTrainer:
                     ep_antag_reward += transition.reward
                     ep_protag_reward += next_event.protagonist_reward
 
-                    # Update antagonist parameters if in antagonist phase
                     self._antag_decision_count += 1
                     if (self.current_phase == "antagonist"
                             and self._antag_decision_count % self.update_every == 0):
@@ -265,7 +244,6 @@ class ATLACoevolutionTrainer:
                     event = next_event
 
                 else:
-                    # In case of event-only stepping (fallthrough)
                     event = self.smdp.advance_until_decision()
 
             # 4. Extract end-of-episode simulator stats
@@ -288,8 +266,8 @@ class ATLACoevolutionTrainer:
                 delivery_rate = delivered / max(1e-6, initial_demands)
             budget_spent = self.smdp.budget.used
 
-            # B3: feed the delivery rate back to the curriculum (only attacked episodes drive the
-            # ramp) and log its state so the ramp is auditable post-hoc.
+            # Feed the delivery rate back to the curriculum, where only attacked episodes drive the
+            # ramp, and log its state so the ramp stays auditable post-hoc.
             if self.attack_curriculum is not None:
                 self.attack_curriculum.record(delivery_rate)
                 cstate = self.attack_curriculum.state()
@@ -313,17 +291,17 @@ class ATLACoevolutionTrainer:
             self.writer.add_scalar("Episode/Delivery_Rate", delivery_rate, ep)
             self.writer.add_scalar("Episode/Budget_Spent", budget_spent, ep)
 
-            # Latency metrics (Stage-0 redesign). In latency reward mode the protagonist
-            # reward telescopes to -(total outstanding-wait), so total_wait = -ep_protag_reward
-            # and mean latency is that normalised per request.
+            # In latency reward mode the protagonist reward telescopes to minus the total
+            # outstanding wait, so total_wait = -ep_protag_reward and mean latency is that
+            # normalised per request.
             if getattr(self.smdp.config, "reward_mode", "legacy") == "latency":
                 total_wait = -ep_protag_reward
                 num_requests = max(1.0, initial_demands)
                 self.writer.add_scalar("Episode/Total_Wait", total_wait, ep)
                 self.writer.add_scalar("Episode/Mean_Latency", total_wait / num_requests, ep)
             if is_dynamic:
-                # Headline dynamic metrics: mean wait of *completed* requests (clean, untruncated)
-                # and the residual queue at the horizon (how far behind the fleet fell).
+                # Mean wait of completed requests only, which is untruncated, plus the residual
+                # queue at the horizon.
                 if env._delivered_latencies:
                     self.writer.add_scalar(
                         "Episode/Mean_Delivered_Latency",
@@ -332,7 +310,6 @@ class ATLACoevolutionTrainer:
                 self.writer.add_scalar("Episode/Num_Arrivals", initial_demands, ep)
             self.writer.add_scalar("Phase/Training_Flag", 1.0 if self.current_phase == "protagonist" else 0.0, ep)
 
-            # Log Protagonist training metrics
             if protag_losses and self.current_phase == "protagonist":
                 avg_critic_loss = np.mean([m["protag_critic_loss"] for m in protag_losses])
                 avg_actor_loss = np.mean([m["protag_actor_loss"] for m in protag_losses])
@@ -353,7 +330,6 @@ class ATLACoevolutionTrainer:
                 self.writer.add_scalar("Gradients/Protagonist_Critic_Norm", avg_c_grad, ep)
                 self.writer.add_scalar("Gradients/Protagonist_Actor_Norm", avg_a_grad, ep)
 
-            # Log Antagonist training metrics
             if antag_losses and self.current_phase == "antagonist":
                 avg_critic_loss = np.mean([m["antag_critic_loss"] for m in antag_losses])
                 avg_actor_loss = np.mean([m["antag_actor_loss"] for m in antag_losses])
@@ -377,7 +353,7 @@ class ATLACoevolutionTrainer:
                 em = self.eval_fn(ep)
                 for key, val in em.items():
                     self.writer.add_scalar(f"Eval/{key}", val, ep)
-                # Handle both the single-cell eval (greedy_atk) and the multi-seed eval (greedy_atk_mean).
+                # Accepts both the single-cell and the multi-seed eval key sets.
                 gat = em.get("greedy_atk", em.get("greedy_atk_mean"))
                 lat = em.get("learned_atk", em.get("learned_atk_mean"))
                 gap = em.get("gap_atk", em.get("gap_atk_mean"))
@@ -389,8 +365,6 @@ class ATLACoevolutionTrainer:
                         f"gap={gap:+.0f}{std_s} (neg = learned beats greedy under attack)"
                     )
 
-        # Save trained actor models
-        # 1. Save to unique run directory
         model_save_dir = os.path.join("models", "runs", self.run_name)
         os.makedirs(os.path.join(model_save_dir, "protagonist"), exist_ok=True)
         os.makedirs(os.path.join(model_save_dir, "antagonist"), exist_ok=True)
@@ -399,7 +373,7 @@ class ATLACoevolutionTrainer:
         print(f"Saved coevolved protagonist actor to {os.path.join(model_save_dir, 'protagonist', 'actor.pt')}")
         print(f"Saved coevolved antagonist actor to {os.path.join(model_save_dir, 'antagonist', 'actor.pt')}")
 
-        # 2. Save copies to standard latest paths for downstream scripts (backward compatibility)
+        # Copies at the standard latest paths, which downstream scripts read.
         os.makedirs("models/protagonist", exist_ok=True)
         os.makedirs("models/antagonist", exist_ok=True)
         torch.save(self.protag.actor.state_dict(), "models/protagonist/actor.pt")

@@ -1,15 +1,11 @@
-"""Non-learning baselines and an episode-eval harness for the Stage-0 rung.
+"""Non-learning dispatch baselines and an episode-evaluation harness.
 
-The greedy dispatcher is the reference the learned protagonist must beat: at every
-decision it sends each idle truck to the *nearest* allowed destination along the
-**congestion-aware** shortest path (``effective_weight``, which already encodes the
-antagonist's congestion). For the capacity-1 Stage-0 shuttle this is greedy
-nearest-request scheduling — the natural, strong, non-adaptive heuristic.
-
-``run_episode`` drives the SMDP wrapper with arbitrary protagonist/antagonist
-*policies* (callables of the current ``DecisionEvent``), so the same harness scores
-the greedy baseline and a trained SAC agent under the same antagonist. It mirrors the
-decision-branch structure of :class:`ATLACoevolutionTrainer` exactly.
+At every decision the greedy dispatcher sends each idle truck to the nearest allowed destination
+along the congestion-aware shortest path (``effective_weight``, which already encodes the
+antagonist's congestion), which for the capacity-1 shuttle is greedy nearest-request scheduling.
+``run_episode`` drives the SMDP wrapper with arbitrary protagonist and antagonist policies,
+callables of the current ``DecisionEvent``, so the same harness scores the greedy baseline and a
+trained agent under the same antagonist.
 """
 
 from __future__ import annotations
@@ -62,8 +58,10 @@ def greedy_protagonist_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 
 def _greedy_goal(env: GraphEnv, truck) -> Any:
-    """The node a reactive dispatcher heads for: nearest outstanding customer if the truck
-    has load, else the home depot to reload."""
+    """The node a reactive dispatcher heads for.
+
+    The nearest outstanding customer while the truck has load, otherwise the home depot to reload.
+    """
     if truck.load > 0:
         customers = [
             n for n, d in env.graph.nodes(data=True)
@@ -78,9 +76,10 @@ def _greedy_goal(env: GraphEnv, truck) -> Any:
 
 
 def greedy_next_hop_action(env: GraphEnv, action_mask: "dict[int, list[Any]]") -> "dict[int, Any]":
-    """Reactive next-hop greedy: step onto the first hop of the congestion-aware shortest
-    path to the current goal. This reacts to congestion *now* but cannot anticipate the
-    antagonist — the headroom a learned policy can exploit."""
+    """Step onto the first hop of the congestion-aware shortest path to the current goal.
+
+    This reacts to congestion as it stands but cannot anticipate the antagonist.
+    """
     actions: dict[int, Any] = {}
     for truck_id, neighbors in action_mask.items():
         if not neighbors:
@@ -106,10 +105,11 @@ def greedy_next_hop_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 
 def greedy_insertion_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
-    """Multi-truck greedy-insertion baseline (destination mode): each free truck takes the
-    nearest (congestion-aware) unserved request, with *sequential claiming* so two trucks
-    deciding in the same event never grab the same request. Depot (reload/return) only if no
-    request is available. This is the reactive classical dispatcher the learned policy must beat.
+    """Multi-truck greedy-insertion baseline in destination mode.
+
+    Each free truck takes the nearest (congestion-aware) unserved request, with sequential claiming
+    so that two trucks deciding in the same event never grab the same request. A truck heads for
+    the depot to reload or return only when no request is available.
     """
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env
@@ -133,12 +133,12 @@ def greedy_insertion_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 
 def urgency_dispatch_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
-    """Oldest-first (most-urgent) dispatcher: each free truck takes the longest-waiting unserved
-    request, tie-broken by congestion-aware distance, with sequential claiming. Unlike greedy-
-    insertion (nearest), this *uses request age* — the signal greedy is blind to — so it tests
-    whether prioritising the backlog beats myopic-nearest under load. Reactive (no anticipation),
-    so it is a heuristic floor on "smart", not a ceiling. (Dynamic-demand only; reads the env's
-    per-node pending-arrival ages.)"""
+    """Oldest-first dispatcher: each free truck takes the longest-waiting unserved request.
+
+    Ties break by congestion-aware distance, with sequential claiming. Unlike greedy insertion it
+    uses request age, the signal a nearest-first rule is blind to, but it is still purely reactive.
+    Dynamic-demand only, since it reads the environment's per-node pending-arrival ages.
+    """
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env
         pending = getattr(env, "_pending_arrivals", {})
@@ -152,7 +152,7 @@ def urgency_dispatch_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
             requests = [d for d in dests if env.graph.nodes[d]["demand"] > 0.0]
             source = env.trucks[truck_id].current_node
             if requests and source is not None:
-                # max age first; tie-break nearest (congestion-aware), then id for determinism.
+                # max age first, then nearest (congestion-aware), then id for determinism
                 best = min(
                     requests,
                     key=lambda d: (-ages.get(d, 0.0), _congestion_aware_distance(env, source, d), _id_key(d)),
@@ -166,11 +166,12 @@ def urgency_dispatch_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 
 def hybrid_greedy_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
-    """Hybrid baseline (`routing_mode="hybrid"`): the strong REACTIVE dispatcher the learned policy
-    must beat. **Assignment** — each unassigned truck takes the nearest (congestion-aware) unclaimed
-    request, with sequential claiming. **Routing** — each assigned truck steps to the forward
-    next-hop on the congestion-aware shortest path to its target. It reroutes around congestion it
-    can *see now*, but cannot *anticipate* the adversary — the headroom a learned policy can exploit.
+    """Reactive dispatcher for `routing_mode="hybrid"`.
+
+    Assignment gives each unassigned truck the nearest (congestion-aware) unclaimed request, with
+    sequential claiming; routing then steps each assigned truck to the forward next-hop on the
+    congestion-aware shortest path to its target. It reroutes around congestion it can see now but
+    cannot anticipate the adversary.
     """
     def policy(event: DecisionEvent) -> "dict[int, Any]":
         env = smdp.env
@@ -206,11 +207,12 @@ def hybrid_greedy_policy(smdp: SMDPDecisionWrapper) -> ProtagPolicy:
 
 
 def hybrid_greedy_chooser(smdp: SMDPDecisionWrapper):
-    """Per-truck form of hybrid_greedy_policy for the transition builder (choose(projected_obs,
-    truck_mask, truck_id) -> {truck_id: node}). Used to drive greedy as the FROZEN protagonist
-    when training a best-response attacker against it (the exploitability BR gate). Same logic as
-    hybrid_greedy_policy: assignment -> nearest congestion-aware request from the claim-reduced
-    mask; routing -> forward next-hop on the congestion-aware shortest path to the target."""
+    """Per-truck form of ``hybrid_greedy_policy`` for the transition builder.
+
+    Takes ``(projected_obs, truck_mask, truck_id)`` and returns ``{truck_id: node}``, so that
+    greedy can drive the frozen protagonist while a best-response attacker trains against it. The
+    logic matches ``hybrid_greedy_policy``.
+    """
     def choose(projected_obs, truck_mask, truck_id):
         env = smdp.env
         dests = truck_mask.get(truck_id, [])
@@ -245,16 +247,14 @@ def run_episode(
     protag_policy: ProtagPolicy,
     antag_policy: AntagPolicy = no_antagonist_policy,
 ) -> dict[str, Any]:
-    """Run one episode driving the wrapper with the given policies; return metrics.
+    """Run one episode driving the wrapper with the given policies and return its metrics.
 
-    Returns a dict with:
-      * ``total_wait``    -- telescoped delivery latency = sum over ticks of outstanding
-                             request count (= ``-protagonist_reward`` in latency mode).
-                             Lower is better; includes still-undelivered requests up to
-                             the horizon. **This is the headline comparison metric.**
-      * ``delivered`` / ``num_requests`` / ``delivery_rate``
-      * ``mean_completion_tick`` -- mean delivery tick over *delivered* requests only.
-      * ``ticks`` / ``budget_used``
+    Returns:
+        ``total_wait`` (telescoped delivery latency, the sum over ticks of the outstanding request
+        count and equal to ``-protagonist_reward`` in latency mode, lower being better and
+        including requests still undelivered at the horizon), ``delivered``, ``num_requests``,
+        ``delivery_rate``, ``mean_completion_tick`` (over delivered requests only),
+        ``mean_delivered_latency``, ``ticks`` and ``budget_used``.
     """
     event = smdp.reset_decision_env()
     # Total demand units to deliver, from the pristine initial graph (robust to any auto-

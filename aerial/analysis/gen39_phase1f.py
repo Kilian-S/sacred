@@ -1,33 +1,14 @@
 #!/usr/bin/env python3
-"""gen39 Phase 1f: SAMPLE EFFICIENCY IN A SPACE TOO LARGE TO ENUMERATE (Kilian, 2026-07-27).
+"""Races four search methods over the real emplacement space under a shared evaluation budget.
 
-Phase 1e closed the interface questions: briefing was not the problem, grounding was and is fixed
-(91%), and on a 165-option menu the residual gap is combinatorial search - where an LLM cannot
-earn its place, because brute force is free there.
-
-This phase asks the question where it CAN. The real emplacement space on narva is 200 candidate
-sites = 1.3 million three-team combinations; no planner enumerates that, and neither can we. So
-every method gets the SAME BUDGET of exact evaluations and we race them:
-
-  llm     the model proposes candidate forces from a map digest + the running leaderboard of what
-          it has tried and scored (its own history only: no other arm's results);
-  random  triples drawn uniformly from the 200 sites;
-  local   the standing algorithmic baseline: greedy max-min seed + steepest-descent single-site
-          swaps (`ConcealBase.best_laydown`'s own strategy), restarted when it converges;
-  greedy  top-K by individual site threat, re-evaluated (the naive planner's shortcut).
-
-Every arm is scored by the SAME exact evaluator on the SAME fields, and the budget is counted in
-EXACT EVALUATIONS, which is the currency that matters operationally (each one is a full mission
-solve). The LLM's model calls are reported separately and are NOT charged to the budget: the
-claim under test is "does reading the map and reasoning in words find good forces in fewer
-SIMULATIONS", not "is it cheap in tokens".
-
-  BARS (fixed before any call):
-    S1 at the shared budget, the LLM arm's BEST force beats the random arm's best;
-    S2 it also beats the local-search arm's best (the algorithmic incumbent);
-    S3 it reaches >= 0.0215, the tuned-doctrine curriculum's level (operational relevance).
-  Reported: the whole budget curve (best-so-far vs evaluations), per model, plus the tuned
-  doctrine and the 165-slot restricted ceiling as context lines.
+The space is 200 candidate sites, far too large to enumerate. The LLM arm proposes candidate forces
+from a map digest and the running leaderboard of its own scored proposals, the random arm draws
+triples uniformly, the local arm runs steepest-descent single-site swaps with restarts, and the
+greedy arm takes the top sites by individual threat. Every arm is scored by the same exact
+evaluator on the same fields, with the budget counted in exact evaluations, each one a full mission
+solve. Model calls are reported separately and are not charged to the budget, because the question
+is whether reading the map finds good forces in fewer simulations, not whether it is cheap in
+tokens.
 
     PYTHONPATH=. python analysis/gen39_phase1f.py --budget 96 --rounds 8
 """
@@ -51,7 +32,7 @@ from src.envs.aerial_conceal import ConcealDyn, resample_field
 from src.redforce import serialise_theatre
 
 W, TAU, T_MISSION = 2, 0.10, 40
-DOC = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)      # doctrine held FIXED across arms: positions only
+DOC = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3)      # held fixed across arms, so only positions differ
 TUNED_BAR, SLOT_CEIL = 0.0215, 0.0278
 OUT = Path("models/runs/gen39_phase1f.json")
 
@@ -91,8 +72,11 @@ def evaluate(pool, triples):
 # --- the map digest the LLM reads ----------------------------------------------------------------
 
 def map_digest(base, pp, n_show=200):
-    """A factual site list: index, ground, reach, lethality, whether it reveals, position along
-    and across the corridor, and how many routes it threatens. Descriptive only."""
+    """Builds the factual site catalogue the model reads.
+
+    Each line gives a site's index, ground, reach, lethality, whether it reveals itself, its
+    position along and across the corridor, and how many routes it threatens. Descriptive only.
+    """
     v = base.th.target - base.th.base
     u = v / (np.linalg.norm(v) + 1e-9)
     nrm = np.array([-u[1], u[0]])
@@ -157,7 +141,7 @@ def main():
         curves["random"] = [max(sc_r[t] for t in tri[:i + 1]) for i in range(len(tri))]
         print(f"  random   best {max(sc_r.values()):.4f}", flush=True)
 
-        # --- greedy top-K by individual threat (cheap incumbent) ---------------------------
+        # --- greedy top-K by individual site threat ----------------------------------------
         thr = base.threat_rank(pp0)
         order = np.argsort(-thr)
         tri_g = [tuple(sorted(int(x) for x in order[i:i + K])) for i in range(a.budget)]

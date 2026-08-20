@@ -1,31 +1,14 @@
 #!/usr/bin/env python3
-"""gen39 Phase 1e: A GROUNDED ACTION SPACE, AND A FAIR CEILING (Kilian, 2026-07-27).
+"""Hands the composing model a grounded action space and a like-for-like ceiling.
 
-Phase 1d measured the failure precisely: grounding 12-40%. The model chooses in a vocabulary
-(terrain class + corridor region) whose geometric consequences it has never been shown, so it is
-guessing what its own force covers and no downstream reasoning can repair that.
-
-This phase removes the guess. The model is handed a SLOT CATALOGUE: every (class, region) slot
-that exists on this map, each annotated with the routes a team placed there would threaten, its
-reach and lethality, and whether it reveals itself. The model picks 3 slots and a doctrine per
-team. Its choice now DETERMINES coverage readably, so grounding should approach 100% by
-construction, and the task becomes what it always should have been: a small covering puzzle
-stated in words ("26 routes, 3 teams, leave no free lane").
-
-Still DESCRIPTIVE, never PRESCRIPTIVE: the catalogue says what each slot covers; it never says
-which combination to choose, and no counterfactual scores are given.
-
-THE FAIR CEILING (the point of this phase). The unrestricted optimiser searches thousands of
-exact site combinations; the model picks 3 slots from ~12. Scoring one against the other is not
-a like-for-like test. So we EXHAUSTIVELY score every 3-slot combination from the SAME catalogue
-under the SAME doctrine, and report the model against THAT restricted best, with the
-unrestricted optimiser kept only as context.
-
-  BARS (fixed before any call):
-    G  grounding >= 80% (the interface fix worked at all);
-    C1 median irreducible threat >= 60% of the RESTRICTED ceiling;
-    C2 the model's best force beats the median RANDOM 3-slot choice (it is choosing, not drawing).
-  Reported: absolute threat vs the unrestricted 0.0215, free lanes, per-model split.
+The model receives a catalogue of every (class, region) slot on the map, each annotated with the
+routes a team posted there would threaten, its reach and lethality, and whether it reveals itself,
+and then picks three slots and a doctrine per team, so its choice determines coverage readably.
+The catalogue stays descriptive: it says what each slot covers, never which combination to choose,
+and no counterfactual scores are given. Because the unrestricted optimiser searches thousands of
+exact site combinations while the model picks three slots from a dozen, every three-slot
+combination from the same catalogue is scored exhaustively under the same doctrine and the model
+is reported against that restricted best.
 
     PYTHONPATH=. python analysis/gen39_phase1e.py --n 4 --rounds 2
 """
@@ -51,7 +34,7 @@ from src.envs.aerial_conceal import ConcealDyn, resample_field
 from src.redforce import TAU_BIN, force_schema, serialise_theatre
 
 W, TAU, T_MISSION = 2, 0.10, 40
-N_ROUTES = 26                     # narva menu size (asserted at run time)
+N_ROUTES = 26                     # narva menu size, recomputed at run time
 UNRESTRICTED_BAR = 0.0215
 REGIONS = ("near_base", "mid_corridor", "near_target_standoff")
 CLASSES = ("open", "field", "forest", "urban")
@@ -59,8 +42,11 @@ OUT = Path("models/runs/gen39_phase1e.json")
 
 
 def slot_table(base, pp):
-    """Every (class, region) slot that exists, its representative site (highest threat there, the
-    placer's own rule so the catalogue is TRUE), and the routes a team there would threaten."""
+    """Builds the slot catalogue, mapping each existing (class, region) slot to its site.
+
+    The site is the highest-threat one in that slot, which is the placer's own rule, so the
+    catalogue matches where a team would actually stand.
+    """
     thr = base.threat_rank(pp)
     v = base.th.target - base.th.base
     u = v / (np.linalg.norm(v) + 1e-9)
@@ -80,7 +66,7 @@ def slot_table(base, pp):
 
 
 def slot_coverage(base, pp, slots):
-    """Routes each slot's team would threaten, computed exactly (single-team game per slot)."""
+    """Routes each slot's team would threaten, computed exactly with one single-team game per slot."""
     cov = {}
     for name, site in slots.items():
         g = ConcealDyn(base, pp, np.array([site]), w=W, tau=TAU)
@@ -178,7 +164,7 @@ def main():
     globals()["N_ROUTES"] = n_routes
     print(f"[1e] {len(slots)} slots, {n_routes} routes: {sorted(slots)}\n")
 
-    # --- the FAIR CEILING: every 3-slot combination, exactly scored, same doctrine -------------
+    # --- the fair ceiling: every 3-slot combination, exactly scored, same doctrine -------------
     combos = list(itertools.combinations(sorted(slots), K))
     specs = [(c, f) for c in combos for f in FIELDS]
     agg: dict = {}

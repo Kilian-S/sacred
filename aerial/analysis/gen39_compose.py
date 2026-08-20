@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
-"""gen39 step 2: three composers write DOCTRINE + ROLES; one fixed algorithm places
-(experiments/gen39_concealment.md, step-2 pre-registration + the implementation pins).
+"""Compares four composers of a concealed force under one shared placer.
 
-Arms (identical budget, terrain, weapons table and placer; only the composition differs):
-  llm        llama-3.3-70b and qwen3-27b, per-model reporting, guided JSON (gen33 machinery);
-  random     doctrine mixes drawn uniformly on the simplex, postures random;
-  heuristic  the pinned gen32 doctrine replicated across the teams (the screen's own enemy:
-             the per-team path reproduces it exactly, the tested regression anchor);
-  relabel    the BINDING CONTROL: the same calls under a brief whose forest and open rows are
-             SWAPPED; the model's terrain choices must materially change or the terrain-reasoning
-             claim is not licensed (composition-without-terrain-content re-scope, as gen33).
-
-Scoring (fixed before any call): every force is placed by the same placer (best-threat site of
-its stated terrain in its stated region, no site reused) and scored EXACTLY on the pinned narva
-cell under persistent memory, T=40. PRIMARY scorer = the best OBSERVING defender (the rule
-family that uses what its track has spotted); the omniscient optimum and the blind value are
-reported beside it. The oracle-searched best force (choose_force) is the reported ceiling.
+The arms carry an identical budget, terrain, weapons table and placer, so only the composition
+differs. Two LLM models write doctrine and roles as guided JSON, a random arm draws doctrine mixes
+uniformly on the simplex, a heuristic arm replicates the pinned doctrine across the teams, and a
+relabel control repeats the calls under a brief whose forest and open rows are swapped, so its
+terrain choices must change materially for any terrain-reasoning claim to stand. Every force is
+placed by the same placer at the highest-threat site of its stated terrain and region, then scored
+exactly on the pinned narva cell under persistent memory, with the best observing defender as the
+primary scorer and the omniscient optimum and blind value reported beside it.
 
     PYTHONPATH=. python analysis/gen39_compose.py --dry          # offline pipeline validation
-    PYTHONPATH=. python analysis/gen39_compose.py --live         # the ~32-call live run
+    PYTHONPATH=. python analysis/gen39_compose.py --live         # the live run
     PYTHONPATH=. python analysis/gen39_compose.py --score        # (re)score saved forces
 """
 from __future__ import annotations
@@ -45,15 +38,15 @@ _spec = importlib.util.spec_from_file_location("g33", "scripts/gen33_generate_fo
 g33 = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(g33)
 
-# --- the pinned operating point (ledger, 2026-07-26) -------------------------------------------
+# --- the pinned operating point ----------------------------------------------------------------
 MAP, CR, RM, K = "narva", 0.85, 0.7, 3
 PATH = "data/maps/theatre_%s_vec.json"
-FIELDS = (5100, 5101, 5102)          # the cell's own fields; pristine 61xx stay for step 3
+FIELDS = (5100, 5101, 5102)          # the cell's own fields
 W, TAU = 2, 0.10
 DOC32 = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3, tau=TAU, w=W)
 MODELS = ("llama-3.3-70b", "qwen3-27b")
 N_LLM, N_RANDOM = 8, 20
-N_LLM_BIG = 32          # Phase 1b: a richer population, per model, for the curriculum question
+N_LLM_BIG = 32          # a richer population, per model
 BASE_URL, KEY = "http://cv-iits-w05.tail5b8d80.ts.net:8080/v1", "iits-local-key"
 OUTDIR = Path("models/runs/gen39_compose")
 
@@ -67,9 +60,11 @@ def narva_base():
 
 
 def relabelled(t: dict) -> dict:
-    """The control brief's table: forest and open SWAP characteristics (reach, lethality,
-    reveal, los); emplaceability kept. Used ONLY for the brief text; placement and scoring stay
-    on the true table."""
+    """Swaps the forest and open rows of the terrain table for the control brief.
+
+    Emplaceability is kept. The swapped table feeds the brief text only; placement and scoring
+    stay on the true table.
+    """
     s = {k: dict(v) for k, v in t.items()}
     for key in ("r_km", "p_max", "reveal", "los"):
         s["forest"][key], s["open"][key] = s["open"][key], s["forest"][key]
@@ -77,8 +72,10 @@ def relabelled(t: dict) -> dict:
 
 
 def place(force, base, pp):
-    """The one placer every arm shares: per team, the highest-threat unused site of its stated
-    terrain in its stated region; fall back to its terrain anywhere, then to any unused site."""
+    """Places each team at the highest-threat unused site of its stated terrain and region.
+
+    Falls back to its terrain anywhere, then to any unused site.
+    """
     thr = base.threat_rank(pp)
     v = base.th.target - base.th.base
     u = v / (np.linalg.norm(v) + 1e-9)
@@ -101,8 +98,11 @@ def place(force, base, pp):
 
 
 def doctrines_of(force):
-    """Schema doctrine -> per-team ConcealDyn doctrine: punish->q_rep, anticipate->q_flee,
-    hold->q_hold (normalised); tau from decisiveness; memory clamped to the game's w."""
+    """Maps a schema doctrine onto per-team ConcealDyn doctrines.
+
+    The three weights are normalised, tau comes from the stated decisiveness, and memory is
+    clamped to the game's window w.
+    """
     out = []
     for a in force["agents"]:
         d = a["doctrine"]
@@ -115,7 +115,7 @@ def doctrines_of(force):
 
 
 def score_force(base, pp, sites, doctrines):
-    """(omniscient optimum, best blind rule, best OBSERVING rule, implied coverage)."""
+    """Returns the omniscient optimum, best blind rule, best observing rule and implied coverage."""
     g = ConcealDyn(base, pp, sites, w=W, tau=TAU, doctrines=doctrines)
     sup = g.blind_supports()
     blind = min(g.episodic(rule=lambda i, m, p, M=np.asarray(g._anti(d), float): M, T=40)
@@ -148,7 +148,7 @@ def random_force(rng, k=K):
 
 
 def heuristic_force():
-    """The pinned gen32 doctrine replicated; reach posture, regions spread (pinned pre-call)."""
+    """Builds the heuristic arm's force: the pinned doctrine replicated, regions spread."""
     f = {"agents": []}
     for reg in ("near_base", "mid_corridor", "near_target_standoff"):
         f["agents"].append({
@@ -161,7 +161,7 @@ def heuristic_force():
 
 
 def heuristic_doctrines():
-    return [dict(DOC32)] * K          # gen32 exactly, incl. q_ar (the regression-anchor path)
+    return [dict(DOC32)] * K          # the pinned doctrine unchanged, q_ar included
 
 
 def generate_llm(arm, n, temperature=0.8):
@@ -295,7 +295,7 @@ def report(res):
             print(f"\n[BAR] {m}: beats heuristic {wins}/3 fields, pooled {'PASS' if pooled else 'FAIL'}, "
                   f"above random mean {'PASS' if above_rnd else 'FAIL'} "
                   f"(llm {med(ks, 2):.4f} vs heur {med(heur, 2):.4f} vs random-mean {r_mean:.4f})")
-    for m in MODELS:                                     # the binding relabel control
+    for m in MODELS:                                     # the relabel control
         ks_n = groups.get(f"llm:{m}", [])
         ks_c = groups.get(f"relabel:{m}", [])
         if ks_n and ks_c:
@@ -326,7 +326,7 @@ def main():
         (OUTDIR / "forces_llm.json").write_text(json.dumps(recs, indent=1))
         score_all()
         return
-    if a.big:                       # Phase 1b: 32 per model, no relabel arm (already banked)
+    if a.big:                       # 32 forces per model, no relabel arm
         t0 = time.time()
         generate_llm("big", N_LLM_BIG)
         print(f"[big] generation done in {(time.time() - t0) / 60:.1f} min")

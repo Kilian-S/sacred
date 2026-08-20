@@ -1,4 +1,4 @@
-"""Facility Location Problem solver logic using Surrogate-Based Optimization (SBO)."""
+"""Facility location solver driven by a surrogate model (surrogate-based optimisation)."""
 
 from __future__ import annotations
 
@@ -10,36 +10,29 @@ from src.env.graph_env import NodeId
 
 
 class FLPSolver:
-    """Solver for the Facility Location Problem leveraging a trained Surrogate model."""
+    """Solver for the facility location problem that scores allocations with a trained surrogate."""
 
     def __init__(self, surrogate_model: torch.nn.Module, node_list: List[NodeId]) -> None:
-        """Initialize the FLP Solver.
+        """Initialise the solver.
 
-        Parameters
-        ----------
-        surrogate_model:
-            Trained PyTorch SurrogateMLP model.
-        node_list:
-            Ordered list of node IDs in the graph network, matching the feature representation order.
+        Args:
+            surrogate_model: trained SurrogateMLP.
+            node_list: node ids in the order the feature representation expects.
         """
         self.model = surrogate_model
         self.node_list = node_list
 
     def solve(self, demand_dict: Dict[NodeId, float], num_trucks: int = 3, num_depots: int = 2, K: int = None) -> Tuple[List[NodeId], float]:
-        """Find the optimal fleet allocation that minimizes predicted expected adversarial cost.
+        """Find the fleet allocation with the lowest predicted expected adversarial cost.
 
-        Parameters
-        ----------
-        demand_dict:
-            Mapping of node ID to its demand value.
-        num_trucks:
-            Total number of trucks in the fleet.
-        num_depots:
-            Number of distinct depots to place.
+        Args:
+            demand_dict: demand value per node id.
+            num_trucks: total trucks in the fleet.
+            num_depots: number of distinct depots to place.
+            K: when given, overrides both the truck and the depot count.
 
-        Returns
-        -------
-        Tuple of (list_of_truck_starting_nodes, predicted_cost).
+        Returns:
+            The truck starting nodes and their predicted cost.
         """
         if K is not None:
             num_depots = K

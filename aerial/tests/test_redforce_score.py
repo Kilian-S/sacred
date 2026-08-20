@@ -1,6 +1,6 @@
-"""gen33_llm_adversary: the force scorer (pinned semantics) against the gen32 machinery.
-The binding check: flat prior + single agent + (q_rep, q_flee, 0) at the screened operating
-point reproduces scratch DynTheatre exactly (same field seed, same window maths)."""
+"""Pins the LLM force scorer against the theatre dynamics it generalises: a flat prior with one
+agent and doctrine (q_rep, q_flee, 0) at the screened operating point must reproduce DynTheatre
+exactly, on the same field seed and the same window maths."""
 import importlib.util
 import sys
 from pathlib import Path

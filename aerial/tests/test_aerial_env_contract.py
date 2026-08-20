@@ -1,5 +1,5 @@
-"""gen28: the aerial env's observation/menu contract against the real SAC stack (featurizer,
-node_index_map, menu-select head, replay + update). Plumbing-only: no training claims."""
+"""The aerial environment's observation and menu contract against the SAC stack: featuriser, node
+index map, menu-select head, replay and update. Plumbing only, no training claims."""
 
 import numpy as np
 import pytest
@@ -39,7 +39,7 @@ def test_observation_featurizes_and_menu_indices_match_sorted_rows():
     assert pyg.edge_attr.shape[1] == 5
     assert float(pyg.edge_attr[:, 4].max()) > 0.0          # the threat projection reaches col 4
     n2i = node_index_map(obs)
-    for r, curve in enumerate(env.menu):                    # menu rows == sorted-order indices
+    for r, curve in enumerate(env.menu):                    # menu rows are sorted-order indices
         expect = [n2i[_nid(n)] for n in curve.node_seq]
         assert obs["menu_route_node_idx"][r].tolist() == expect
     assert obs["menu_route_feats"].shape == (env.game.n_routes, 2)
@@ -48,7 +48,7 @@ def test_observation_featurizes_and_menu_indices_match_sorted_rows():
 def test_obj_matrix_is_payoff_at_n1():
     env = _env()
     assert env.obj_matrix.shape == env.game.payoff.shape
-    assert np.allclose(env.obj_matrix, env.game.payoff)     # N=1 mission == interception
+    assert np.allclose(env.obj_matrix, env.game.payoff)     # at N=1 the mission is interception
 
 
 def test_route_one_and_update_run_end_to_end():
@@ -65,16 +65,16 @@ def test_route_one_and_update_run_end_to_end():
         obs["alpha_group"] = 0
         reward = -float(env.game.payoff[routes[0], k % env.game.payoff.shape[1]])
         prot.replay_buffer.push(_transition(obs, ci, hop, mask, reward, None, None, None, True))
-    prot.update(4)                                          # one real SAC update on the batch
+    prot.update(4)
 
 
 def test_exact_distribution_sums_to_one_and_scores():
-    """v3.0 fleet contract: exact_ratio returns the stacked OCCUPANCY distribution (fleet on
-    one route) and the mission-BR ratio to the fleet equilibrium."""
+    """``exact_ratio`` returns the stacked occupancy distribution and the mission best-response
+    ratio to the fleet equilibrium."""
     from scripts.train_aerial_generalist import exact_ratio, make_layout_instance
     inst = make_layout_instance("t", 1234)
     assert inst.env.config.N == 3
-    assert inst.env._obs_cache["menu_route_feats"].shape[1] == 1   # v3.1: exposure only
+    assert inst.env._obs_cache["menu_route_feats"].shape[1] == 1   # exposure only
     prot = _prot(feat_dim=1)
     ratio, d = exact_ratio(prot, inst)
     assert d.shape == (len(inst.env.occupancies),)

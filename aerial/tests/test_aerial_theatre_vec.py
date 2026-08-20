@@ -1,5 +1,6 @@
-"""gen28 v3-theatre CONTINUOUS (vector) env: real polygons load, off-centre continuous
-endpoints, in-bounds smooth lanes, terrain emplacement/standoff/LOS, non-degenerate solve."""
+"""Continuous (vector) theatre environment: real polygons load, endpoints are off centre, lanes
+stay smooth and in bounds, terrain drives emplacement, standoff and line of sight, and the game
+solves non-degenerately."""
 import numpy as np
 import pytest
 from src.baselines.interdiction_oracle import solve
@@ -14,7 +15,7 @@ def test_loads_real_polygons_and_continuous_offcentre_endpoints():
     assert sum(len(v) for v in TH.polys.values()) > 400        # hundreds of real polygons
     assert TH.base[0] < TH.W/2 and TH.target[0] > TH.W/2        # W -> E
     assert abs(TH.base[1] - TH.target[1]) > 3.0                 # off-centre, different latitudes
-    assert not np.allclose(TH.base[1], TH.H/2)                  # base NOT vertically centred
+    assert not np.allclose(TH.base[1], TH.H/2)                  # base is not vertically centred
 
 
 def test_lanes_are_smooth_in_bounds_and_reach_endpoints():

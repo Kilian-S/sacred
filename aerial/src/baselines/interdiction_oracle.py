@@ -1,27 +1,14 @@
-"""Network-interdiction security-game oracle (gen08 / Obj 1 + Obj 5 ground truth).
+"""Network-interdiction security-game oracle.
 
-Convoy routing vs a committing interdictor as a zero-sum matrix game:
-  * defender pure strategies  = candidate routes (base -> FOB), each an edge set;
-  * attacker pure strategies  = K-subsets of the edges appearing on some route (the K interdiction
-    assets it commits, HIDDEN, before the convoy moves);
-  * payoff[i, j] = interception probability of route i under interdiction set j (1 if the route
-    crosses an interdicted edge; a soft survival model is pluggable via ``intercept_fn``).
-
-The defender MINIMISES expected interception, the attacker MAXIMISES it. This module computes:
-  * ``loss_det``            = the best DETERMINISTIC defender's worst-case interception
-                             (min over routes of max over interdiction sets): what shortest-path /
-                             greedy / a collapsed vanilla-SAC policy is bounded by (fully exploitable);
-  * ``value`` (loss_mixed)  = the minimax value: the best MIXED-strategy defender vs the
-                             best-responding interdictor (what SACRED, learning the equilibrium via
-                             SAC entropy + ATLA, should approach);
-  * the equilibrium mixed strategies for BOTH sides (the defender's is the target SACRED is
-    validated against; the attacker's is the strong "oracle interdictor" for exploitability).
-
-It also evaluates ARBITRARY (e.g. learned) defender route-distributions: ``best_response_attacker``
-and ``interception_of_distribution`` give the exploitability of any frozen policy against the
-committing interdictor. This is the ground truth the gen08 experiment scores against; the LP is
-tractable for the single-convoy instances and provides the yardstick where deep RL then scales past
-it. First prototyped in ``scratch/interdiction_game_probe.py``.
+Convoy routing against a committing interdictor as a zero-sum matrix game. The defender's pure
+strategies are the candidate routes from base to FOB, each an edge set; the attacker's are the
+K-subsets of the edges appearing on some route, which it commits to and hides before the convoy
+moves; and payoff[i, j] is the interception probability of route i under interdiction set j, hard
+by default and soft through a pluggable ``intercept_fn``. The defender minimises expected
+interception and the attacker maximises it, and the module returns the best deterministic
+defender's worst case (``loss_det``), the minimax value of the best mixed defender (``value``) and
+the equilibrium mixed strategies of both sides. ``best_response_attacker`` and
+``interception_of_distribution`` extend the same scoring to any frozen defender route-distribution.
 """
 
 from __future__ import annotations
@@ -58,10 +45,12 @@ def k_shortest_routes(G: nx.Graph, s: NodeId, t: NodeId, k: int, weight: str = "
 
 
 def build_route_set(G: nx.Graph, s: NodeId, t: NodeId, k_extra: int = 8, weight: str = "w") -> list[Route]:
-    """Candidate defender routes: the edge-DISJOINT paths (the min-cut worth of genuinely
-    alternative routes: the strategic diversity a convoy planner uses) plus k-shortest paths for
-    realism. k-shortest alone are near-duplicates sharing the cheap chokepoint, understating the
-    mixing room; the disjoint paths are what matter for interdiction (Menger: #disjoint = min-cut)."""
+    """Candidate defender routes, the edge-disjoint paths plus the k-shortest paths.
+
+    The k-shortest paths alone are near-duplicates sharing the cheap chokepoint and understate the
+    mixing room. The disjoint paths are what matter for interdiction, since by Menger's theorem
+    their number equals the min-cut.
+    """
     routes: list[Route] = [tuple(p) for p in nx.edge_disjoint_paths(G, s, t)]
     seen = set(routes)
     for p in k_shortest_routes(G, s, t, k_extra, weight):
@@ -89,8 +78,11 @@ def build_interdiction_game(
     G: nx.Graph, s: NodeId, t: NodeId, K: int, *, k_extra: int = 8, weight: str = "w",
     intercept_fn: Callable[[frozenset, tuple[frozenset, ...]], float] | None = None,
 ) -> InterdictionGame:
-    """Build the K-asset interdiction game for OD (s, t). ``intercept_fn(route_edges, iset) -> [0,1]``
-    defaults to hard interception (1 if the route crosses any interdicted edge)."""
+    """Build the K-asset interdiction game for the OD pair (s, t).
+
+    ``intercept_fn(route_edges, iset) -> [0, 1]`` defaults to hard interception, returning 1 if the
+    route crosses any interdicted edge.
+    """
     routes = build_route_set(G, s, t, k_extra, weight)
     route_edges = [edges_of_route(r) for r in routes]
     cand_edges = sorted(set().union(*route_edges), key=repr)
@@ -114,8 +106,8 @@ def build_interdiction_game(
 class InterdictionSolution:
     value: float                    # loss_mixed: minimax interception probability
     loss_det: float                 # best deterministic defender's worst-case interception
-    defender_strategy: np.ndarray   # equilibrium distribution over routes (the SACRED target)
-    attacker_strategy: np.ndarray   # equilibrium distribution over interdiction sets (oracle attacker)
+    defender_strategy: np.ndarray   # equilibrium distribution over routes
+    attacker_strategy: np.ndarray   # equilibrium distribution over interdiction sets
 
     @property
     def gap(self) -> float:
@@ -123,8 +115,11 @@ class InterdictionSolution:
 
 
 def _row_minimiser(payoff: np.ndarray) -> tuple[float, np.ndarray]:
-    """Zero-sum matrix game: ROW minimises expected payoff, COL maximises. Returns (value, row mixed
-    strategy) via LP: min v s.t. sum_i x_i payoff[i,j] <= v for all j; sum x_i = 1; x >= 0."""
+    """Solve the zero-sum matrix game where the row player minimises expected payoff.
+
+    Returns the value and the row player's mixed strategy from the LP
+    min v s.t. sum_i x_i payoff[i, j] <= v for all j, sum_i x_i = 1, x >= 0.
+    """
     n, m = payoff.shape
     c = np.zeros(n + 1); c[-1] = 1.0
     A_ub = np.hstack([payoff.T, -np.ones((m, 1))]); b_ub = np.zeros(m)
@@ -151,9 +146,11 @@ def solve(game: InterdictionGame) -> InterdictionSolution:
 
 
 def best_response_attacker(game: InterdictionGame, defender_strategy: np.ndarray) -> tuple[int, float]:
-    """Given a defender distribution over ``game.routes``, the committing attacker's best interdiction
-    set and the interception it achieves = the defender's EXPLOITABILITY. (The attacker commits to
-    the strategy, not the realised route: the hidden-commit structure.)"""
+    """The committing attacker's best interdiction set against a distribution over ``game.routes``.
+
+    The interception it achieves is that defender's exploitability. The attacker responds to the
+    strategy, not to the realised route, which is the hidden-commit structure.
+    """
     d = np.asarray(defender_strategy, dtype=float)
     per_iset = d @ game.payoff              # expected interception for each interdiction set
     j = int(per_iset.argmax())
@@ -168,34 +165,34 @@ def interception_of_distribution(game: InterdictionGame, defender_strategy: np.n
 
 
 # ---------------------------------------------------------------------------
-# Heterogeneous edge vulnerability (soft interception): the I3 asymmetric instances.
-# On edge-disjoint routes with HARD interception the equilibrium is uniquely UNIFORM for every K
-# (best response = the top-K defender masses, minimised only by uniform), so vanilla's incidental
-# max-entropy mixing is near-optimal and the SACRED-vs-vanilla gap is thin (the I2 caveat).
-# Per-edge interception probabilities break that symmetry: for disjoint routes with per-route max
-# vulnerability p_i* the equilibrium is d_i proportional to 1/p_i* with value 1/sum_i(1/p_i*),
-# a NON-uniform target vanilla does not track (closed form; verified in tests).
+# Heterogeneous edge vulnerability (soft interception).
+# On edge-disjoint routes with hard interception the equilibrium is uniquely uniform for every K,
+# because the best response takes the top-K defender masses and only a uniform mix minimises those.
+# Per-edge interception probabilities break that symmetry, and for disjoint routes with per-route
+# maximum vulnerability p_i* the equilibrium is d_i proportional to 1/p_i* with value
+# 1/sum_i(1/p_i*), a non-uniform target.
 
 
 def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
                               band: tuple[float, float] = (0.2, 0.9),
                               weight: str = "w",
                               norm_edges: Iterable | None = None) -> dict[frozenset, float]:
-    """Per-edge interception probability from edge length: each candidate edge's length is mapped
-    affinely into ``band`` (shortest edge -> band[0], longest -> band[1]; all-equal lengths -> the
-    band midpoint). An ASCENDING band models exposure scaling with transit time (long edges
-    dangerous: vulnerability correlates with travel cost); a DESCENDING band (band[0] > band[1])
-    inverts the correlation (short edges = watched chokepoints), making cost and security CONFLICT
-    so cost-driven mixing is miscalibrated by construction (the I3 wave-1 lesson). Objective and
-    graph-derived (no hand-tuned threat map); the band itself is pinned in the ledger by an oracle
-    probe (`scratch/vuln_band_probe.py`) BEFORE any training.
+    """Per-edge interception probability from edge length, mapped affinely into ``band``.
 
-    ``norm_edges`` sets the reference edge set for the length->band affine map. None (default) =
-    normalise over ``edges`` themselves (PER-INSTANCE: the same physical road can get a different
-    p_e under a different route set, which is fine within one instance but not comparable across
-    instances). Passing the whole graph's edges makes the map ABSOLUTE (a road's vulnerability is
-    intrinsic and stable across OD instances), which cross-instance vulnerability comparison
-    requires; candidate lengths are clamped into the reference range so p stays inside the band."""
+    The shortest edge maps to band[0] and the longest to band[1], with all-equal lengths mapping to
+    the band midpoint. An ascending band models exposure scaling with transit time, so that
+    vulnerability correlates with travel cost; a descending band (band[0] > band[1]) inverts the
+    correlation, making short edges the watched chokepoints, so cost and security conflict and
+    cost-driven mixing is miscalibrated by construction. The map is derived from the graph rather
+    than hand-tuned.
+
+    Args:
+        norm_edges: reference edge set for the length-to-band map. None normalises over ``edges``
+            themselves, which is per-instance, so the same physical road can take a different p_e
+            under a different route set. Passing the whole graph's edges makes the map absolute and
+            therefore comparable across OD instances; candidate lengths are then clamped into the
+            reference range so p stays inside the band.
+    """
     es = sorted(edges, key=repr)
     if not es:
         raise ValueError("no candidate edges to assign vulnerability to")
@@ -212,10 +209,12 @@ def length_band_vulnerability(G: nx.Graph, edges: Iterable[frozenset], *,
 
 
 def survival_intercept_fn(vulnerability: dict[frozenset, float]) -> Callable[[frozenset, tuple[frozenset, ...]], float]:
-    """``intercept_fn`` for ``build_interdiction_game``: each interdicted edge the route crosses is
-    survived independently with probability 1 - p_e, so interception = 1 - prod(1 - p_e) over the
-    crossed interdicted edges (reduces to p_e for K=1). Raises KeyError on an edge without an
-    assigned vulnerability (the factory guarantees coverage of all candidate edges)."""
+    """Build a soft-survival ``intercept_fn`` for ``build_interdiction_game``.
+
+    Each interdicted edge the route crosses is survived independently with probability 1 - p_e, so
+    interception is 1 - prod(1 - p_e) over the crossed interdicted edges, which reduces to p_e at
+    K=1. Raises KeyError on an edge with no assigned vulnerability.
+    """
     def fn(route_edges: frozenset, iset: tuple[frozenset, ...]) -> float:
         survival = 1.0
         for e in iset:
@@ -226,12 +225,13 @@ def survival_intercept_fn(vulnerability: dict[frozenset, float]) -> Callable[[fr
 
 
 def cost_constrained_value(game: InterdictionGame, budget: float) -> tuple[float, np.ndarray]:
-    """One point of the COST-SECURITY FRONTIER: the minimax interception achievable by a mixed
-    route strategy whose EXPECTED travel cost is at most ``budget`` (sweep budget for the curve;
-    budget >= max useful cost reproduces the unconstrained ``solve`` value). This is the yardstick
-    for the two-axis claim: deterministic dispatch is cheap but fully exploitable, naive noise is
-    expensive AND exploitable, the equilibrium converts cost into security efficiently, and each
-    trained arm lands somewhere against the curve. Budgets below the cheapest route are infeasible."""
+    """One point of the cost-security frontier.
+
+    The minimax interception achievable by a mixed route strategy whose expected travel cost is at
+    most ``budget``. Sweep the budget for the whole curve; a budget at or above the maximum useful
+    cost reproduces the unconstrained ``solve`` value, and budgets below the cheapest route are
+    infeasible.
+    """
     c_min = float(game.travel_cost.min())
     if budget < c_min - 1e-12:
         raise ValueError(f"budget {budget} infeasible: the cheapest route costs {c_min}")
@@ -251,10 +251,12 @@ def cost_constrained_value(game: InterdictionGame, budget: float) -> tuple[float
 
 def route_distribution_from_first_hops(game: InterdictionGame, s: NodeId,
                                        first_hop_probs: dict[NodeId, float]) -> np.ndarray:
-    """Map a distribution over the FIRST hop out of s to a distribution over routes (each route is
-    credited to its first edge). For edge-disjoint routes this is exact (first hop identifies the
-    route); it is how a next-hop policy's branch-at-source probabilities become a route mixture for
-    comparison against the equilibrium ``defender_strategy``."""
+    """Map a distribution over the first hop out of s to a distribution over routes.
+
+    Each route is credited to its first edge, which is exact for edge-disjoint routes because the
+    first hop identifies the route. This is how a next-hop policy's branch-at-source probabilities
+    become a route mixture comparable with the equilibrium ``defender_strategy``.
+    """
     dist = np.zeros(game.n_routes)
     groups: dict[NodeId, list[int]] = {}
     for i, r in enumerate(game.routes):

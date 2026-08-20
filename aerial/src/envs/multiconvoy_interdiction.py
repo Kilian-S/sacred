@@ -1,19 +1,10 @@
-"""Multi-convoy interdiction environment (gen08 Phase M / Obj-2): N convoys route base -> FOB against
-a hidden K-asset interdictor, under SOFT (probabilistic) interception and a LOSS-AVERSE
-(mission-failure) objective.
+"""Multi-convoy interdiction environment, N convoys routing base to FOB against a hidden interdictor.
 
-Built additively on the single-convoy `interdiction.py` machinery. One sortie:
-  1. the interdictor COMMITS K interdiction assets (hidden);
-  2. the defender routes the N convoys SEQUENTIALLY (convoy 0, 1, ..., N-1); each `observe()` exposes
-     the routes already chosen by earlier convoys, so a policy MAY condition later convoys on earlier
-     ones (the mission-optimal joint strategy is CORRELATED, see `multiconvoy_oracle`); an
-     independent policy simply ignores those columns;
-  3. `resolve()` samples each convoy's interception (independent seeded Bernoulli under the committed
-     set) and returns the zero-sum reward (defender = -objective - travel cost).
-The env is validated against `src/baselines/multiconvoy_oracle.py` (it reproduces loss_det/loss_mixed
-by Monte-Carlo: the G-M1 gate), which is also the exploitability yardstick for a learned defender.
-Disjoint-route (first-hop) instances first, matching the oracle findings; the walk trie (shared-edge)
-is a later extension.
+Each sortie the interdictor commits K assets, the defender then routes the convoys one at a time,
+with every observation exposing the routes earlier convoys already took so that a policy may
+correlate them, and ``resolve()`` samples the interceptions and returns the zero-sum reward.
+Interception is soft and the objective is loss-averse, counting mission failure rather than expected
+losses. `src/baselines/multiconvoy_oracle.py` supplies the exploitability yardstick.
 """
 from __future__ import annotations
 
@@ -48,19 +39,19 @@ class MultiConvoyConfig:
     k_extra_routes: int = 0                # 0 = clean edge-disjoint routes only (first-hop routing)
     weight: str = "w"
     edge_vuln_band: tuple[float, float] | None = (0.15, 0.95)  # soft interception band; None = hard
-    absolute_vuln_norm: bool = True        # True = map arc length->prob over ALL graph arcs (intrinsic,
-                                           # cross-instance comparable); False = per-route-set normalise
-    menu_select: bool = False              # True = convoy picks a ROUTE INDEX (shared-edge menu);
-                                           # False = first-hop (disjoint). Menu is scalable, no walk trie.
+    absolute_vuln_norm: bool = True        # True = map arc length->prob over ALL graph arcs, which is
+                                           # graph-intrinsic and cross-instance comparable;
+                                           # False = normalise within the route set
+    menu_select: bool = False              # True = convoy picks a route index from a shared-edge
+                                           # menu; False = first-hop routing on disjoint routes
     objective: str = "mission"             # mission (P>=1) | linear (E[frac]) | threshold (P>=m)
     threshold_m: int = 1
     seed: int = 0                          # interception-sampling RNG seed
-    greedy_br: bool = False                # gen26: MATRIX-FREE mode for K past the exact wall (K>=4).
-                                           # The game object is built at K=1 (routes/costs/per-edge
-                                           # vulnerabilities only); obj_matrix is NOT built; the
-                                           # attacker/eval use the verified submodular greedy BR
-                                           # (A4-core, (1-1/e) guarantee). Default False = the exact
-                                           # path, byte-identical.
+    greedy_br: bool = False                # matrix-free mode for K past the exact-enumeration wall.
+                                           # The game is built at K=1 and no objective matrix is
+                                           # formed; the attacker and the evaluation instead use the
+                                           # submodular greedy best response, which carries a
+                                           # (1 - 1/e) guarantee. False = the exact path.
 
 
 @dataclass
@@ -85,7 +76,7 @@ class MultiConvoyInterdictionEnv:
             raise ValueError(f"OD nodes {s!r},{t!r} not in graph")
         self.base, self.fob = s, t
         intercept_fn = None
-        self.edge_vulnerability: dict = {}   # (u, v) key -> p_e; the OBSERVABLE threat map (A1)
+        self.edge_vulnerability: dict = {}   # (u, v) key -> p_e, the observable threat map
         if config.edge_vuln_band is not None:
             routes = build_route_set(graph, s, t, config.k_extra_routes, config.weight)
             cand = set().union(*(edges_of_route(r) for r in routes))
@@ -93,15 +84,14 @@ class MultiConvoyInterdictionEnv:
             vuln = length_band_vulnerability(graph, cand, band=tuple(config.edge_vuln_band),
                                              weight=config.weight, norm_edges=norm)
             intercept_fn = survival_intercept_fn(vuln)
-            # The FULL-GRAPH intrinsic map for the observation (featurise edge col 4): under the
-            # absolute norm a road's p_e is graph-intrinsic, so the policy sees the whole threat
-            # map, not just the candidate edges - the map-conditioning signal ZST step 1 requires.
+            # the full-graph map the observation carries. Under the absolute norm a road's p_e is
+            # graph-intrinsic, so the policy sees the whole threat map, not only candidate edges.
             full = length_band_vulnerability(
                 graph, (frozenset(e) for e in graph.edges() if e[0] != e[1]),  # skip self-loops
                 band=tuple(config.edge_vuln_band), weight=config.weight, norm_edges=norm)
             self.edge_vulnerability = {tuple(sorted(e, key=repr)): p for e, p in full.items()}
-        # gen26 greedy-BR mode: build the game at K=1 (routes, costs, per-edge vulnerabilities);
-        # the TRUE K lives in config.K and is honoured by the greedy attacker/eval paths below.
+        # in greedy-BR mode the game itself is built at K=1; the true K lives in config.K and is
+        # honoured by the greedy attacker and evaluation paths below
         game_K = 1 if config.greedy_br else config.K
         self.game = build_interdiction_game(graph, s, t, game_K, k_extra=config.k_extra_routes,
                                             weight=config.weight, intercept_fn=intercept_fn)
@@ -114,16 +104,15 @@ class MultiConvoyInterdictionEnv:
             self.routes_by_first_hop.setdefault(r[1], []).append(i)
         self.first_hops: list[NodeId] = sorted(self.routes_by_first_hop, key=repr)
         self._cand_edges = sorted(set().union(*self.game.route_edges), key=repr)
-        # oracle objective matrix (occupancies x interdiction sets): the exploitability yardstick.
-        # greedy_br mode (K >= 4, past the exact wall): NO matrix; the yardstick is the verified
-        # submodular greedy BR (A4-core) via exploitability_of_occupancy_dist below.
+        # objective matrix over occupancies x interdiction sets, the exploitability yardstick. In
+        # greedy-BR mode no matrix is built and the greedy best response is the yardstick instead.
         if config.greedy_br:
             from src.baselines.multiconvoy_oracle import occupancies as _occupancies
             self.occupancies = _occupancies(self.game.n_routes, config.N)
             self.obj_matrix = None
-            # per-edge vulnerability from the K=1 game itself (payoff[:, j] = p_e on routes
-            # crossing single-edge iset j, else 0), so hard AND soft interception both work and
-            # the greedy attacker sees exactly the exact game's edge model.
+            # per-edge vulnerability read off the K=1 game, where payoff[:, j] is p_e on the routes
+            # crossing single-edge set j and zero elsewhere, so the greedy attacker sees the same
+            # edge model as the exact path under both hard and soft interception
             self.vuln_by_edge = {iset[0]: float(self.game.payoff[:, j].max())
                                  for j, iset in enumerate(self.game.interdiction_sets)}
         else:
@@ -132,13 +121,13 @@ class MultiConvoyInterdictionEnv:
             self.vuln_by_edge = {}
         self._occ_index = {tuple(int(x) for x in o): i for i, o in enumerate(self.occupancies)}
         self._committed_iset: int | None = None
-        self._committed_edges: tuple | None = None   # greedy_br mode: explicit K-edge commitment
+        self._committed_edges: tuple | None = None   # explicit K-edge commitment, greedy-BR mode
         self._convoy_routes: list[int | None] = [None] * config.N
         self._cur = 0
-        # Menu-mode per-instance conditioning, attached to every observation so it travels WITH the
-        # transition into the replay buffer (the A1 generalist samples instances per sortie, and a
-        # replayed instance-i transition must be scored under instance i's menu/features, never the
-        # net's current attributes). Cached once; observations share the references (cheap).
+        # Menu-mode conditioning is attached to every observation so that it travels with the
+        # transition into the replay buffer: a generalist samples a fresh instance per sortie, and a
+        # replayed transition must be scored under its own instance's menu and features rather than
+        # whichever instance is current. Cached once, and observations share the references.
         self._menu_idx_cache: list | None = None
         self._menu_feats_cache = None
         if config.menu_select and graph_env is not None:
@@ -177,13 +166,15 @@ class MultiConvoyInterdictionEnv:
         self._committed_iset = int(iset_index)
 
     def commit_set(self, edges) -> None:
-        """greedy_br mode: commit an explicit set of K edges (frozensets), no iset enumeration."""
+        """Commit an explicit set of K edges, bypassing interdiction-set enumeration."""
         self._committed_edges = tuple(frozenset(e) for e in edges)
 
     def route_interception(self, edges) -> "np.ndarray":
-        """Per-route interception probability under an explicit committed edge set (greedy_br
-        mode's analytic-reward companion to game.payoff[:, iset]): p_r = 1 - prod(1 - p_e) over
-        the committed edges the route crosses."""
+        """Per-route interception probability under an explicit committed edge set.
+
+        ``p_r = 1 - prod(1 - p_e)`` over the committed edges that route r crosses, the greedy-BR
+        counterpart of a column of ``game.payoff``.
+        """
         p = np.zeros(self.game.n_routes)
         edges = [frozenset(e) for e in edges]
         for r, re_ in enumerate(self.game.route_edges):
@@ -195,7 +186,7 @@ class MultiConvoyInterdictionEnv:
         return p
 
     def commit_edge(self, edge) -> None:
-        """K=1: commit by edge (frozenset or (u,v) key)."""
+        """Commit a single interdiction edge, given as a frozenset or a ``(u, v)`` key."""
         target = frozenset(edge)
         for j, iset in enumerate(self.game.interdiction_sets):
             if len(iset) == 1 and iset[0] == target:
@@ -208,7 +199,7 @@ class MultiConvoyInterdictionEnv:
         return self._cur if self._cur < self.config.N else None
 
     def defender_action_mask(self) -> dict:
-        """The current convoy's action set: route ids (menu-select, shared-edge) or first hops."""
+        """The current convoy's action set, either menu route ids or first hops."""
         if self.config.menu_select:
             return {self._cur: list(range(self.game.n_routes))}
         return {self._cur: list(self.first_hops)}
@@ -222,9 +213,11 @@ class MultiConvoyInterdictionEnv:
         return int(ri)
 
     def menu_route_node_idx(self) -> list[list[int]]:
-        """Per-route node indices in featurize_state's SORTED row order (for the route menu-select
-        head: each route is scored by the mean-pooled embedding of these nodes). Sorted, NOT dict
-        insertion order: featurize_state sorts node ids (the 2026-07-09 node-ordering fix)."""
+        """Per-route node indices, in the sorted row order ``featurize_state`` produces.
+
+        The menu-select head scores each route by the mean-pooled embedding of these nodes, so the
+        indices must follow sorted node id order rather than dict insertion order.
+        """
         pos = {str(n): i for i, n in enumerate(sorted(self.graph_env.observe()["nodes"].keys()))}
         return [[pos[str(n)] for n in route if str(n) in pos] for route in self.game.routes]
 
@@ -237,12 +230,12 @@ class MultiConvoyInterdictionEnv:
             obs["edge_vulnerability"] = self.edge_vulnerability
         if self._menu_idx_cache is not None:
             obs["menu_route_node_idx"] = self._menu_idx_cache      # per-instance, rides the transition
-            obs["menu_route_feats"] = self._menu_feats_cache       # [R, 2] = (cost, worst-vuln), [0,1]
+            obs["menu_route_feats"] = self._menu_feats_cache       # [R, 2] cost and worst-case p, in [0, 1]
         earlier = [r for r in self._convoy_routes[:self._cur] if r is not None]
         obs["routed_convoys"] = list(earlier)
-        # route-correlation signal for the followers' menu head: per-node fraction of EARLIER convoys
-        # whose route passes through that node. A candidate route overlapping the leader's route then
-        # scores high, and the leader's EXACT route scores highest -> the followers can "follow".
+        # route-correlation signal for the followers' menu head, the per-node fraction of earlier
+        # convoys whose route passes through that node. A candidate route overlapping an earlier one
+        # then scores high, so followers are able to trail the leader.
         taken: dict = {}
         for r in earlier:
             for n in self.game.routes[r]:
@@ -268,7 +261,7 @@ class MultiConvoyInterdictionEnv:
         return ri
 
     def set_convoy_routes(self, route_indices) -> None:
-        """Explicitly set all N convoy routes (evaluation / the G-M1 gate)."""
+        """Explicitly set all N convoy routes, used by evaluation paths."""
         route_indices = list(route_indices)
         if len(route_indices) != self.config.N:
             raise ValueError(f"expected {self.config.N} routes, got {len(route_indices)}")
@@ -288,7 +281,7 @@ class MultiConvoyInterdictionEnv:
             raise RuntimeError("attacker has not committed this sortie")
         if any(r is None for r in self._convoy_routes):
             raise RuntimeError("not all convoys have been routed")
-        if self._committed_edges is not None:            # greedy_br mode: explicit K-edge set
+        if self._committed_edges is not None:            # explicit K-edge set, greedy-BR mode
             j = -1
             p = self.route_interception(self._committed_edges)
             self._committed_edges = None
@@ -314,8 +307,7 @@ class MultiConvoyInterdictionEnv:
 
     # -- exploitability (env-side yardstick) -----------------------------------
     def occupancy_dist_of(self, route_samples) -> np.ndarray:
-        """Empirical occupancy distribution from a list of per-convoy route tuples (a policy's
-        Monte-Carlo joint routing)."""
+        """Empirical occupancy distribution over a list of per-convoy route tuples."""
         dist = np.zeros(len(self.occupancies))
         for routes in route_samples:
             occ = [0] * self.game.n_routes
@@ -326,8 +318,10 @@ class MultiConvoyInterdictionEnv:
 
     def exploitability_of_occupancy_dist(self, occupancy_dist: np.ndarray) -> float:
         """Loss of a defender occupancy distribution under the best-response interdictor.
-        Exact (obj_matrix) below the wall; the verified submodular greedy BR (A4-core,
-        (1 - 1/e) guarantee, disclosed wherever cited) in greedy_br mode."""
+
+        Exact from the objective matrix below the enumeration wall, and from the submodular greedy
+        best response with its (1 - 1/e) guarantee in greedy-BR mode.
+        """
         if self.obj_matrix is None:
             from src.baselines.multiconvoy_oracle import greedy_br_attacker
             support = [(tuple(int(x) for x in o), float(w))
@@ -373,8 +367,11 @@ def make_multiconvoy_env(
     edges_path: str = _DEFAULT_EDGES,
     tasks_path: str = _DEFAULT_TASKS,
 ) -> MultiConvoyInterdictionEnv:
-    """Build the multi-convoy interdiction env on the Kaliningrad graph. Default OD 110->135 (the
-    soft-band connectivity instance from the oracle findings); soft interception + mission objective."""
+    """Build the multi-convoy interdiction env on the Kaliningrad graph.
+
+    The defaults give the well-connected 110 -> 135 OD pair under soft interception and the mission
+    objective.
+    """
     s, t = od
     nodes, edges = load_osm_graph_and_demands(nodes_path, edges_path, tasks_path)
     if s not in nodes or t not in nodes:

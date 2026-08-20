@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-"""gen31 Phase 0: the corridor hunt (ORACLE-ONLY, free; pre-registered gates G1-G5 in
-experiments/gen31_aerial_dyn.md).
+"""Hunts a gen31 operating point for the dynamic corridor game, oracle only.
 
-Enemy = ANTICIPATORY MIXED DOCTRINE: aim distribution a(window) = softmax_tau over per-position
-scores  Z[h] = q_rep * E[dmg | window routes] + q_dodge * E[dmg | uniform over NON-window
-routes] + q_eq * E[dmg | the static equilibrium stack mixture].  (Design decision recorded:
-the q_eq component scores positions against the standard hedge rather than mixing in the LP
-dual attacker; one softmax keeps the doctrine a single legible aim rule.)
-
-Everything is EXACT at w=2 (and vectorised for w=3): the window MDP (S = R^w states) gives
-history_opt by RVI; every rule's stationary damage comes from damped power iteration on the
-window chain; static rules use the same table. Information parity: doctrine-informed rules
-(myopic dodge, fitted soft dodge, fitted hedge-composed) are in the family, disclosed as
-oracle-fitted where fitted.
+The enemy plays an anticipatory mixed doctrine whose aim distribution is a softmax over
+per-position scores that combine expected damage against the recent window of routes, against the
+routes outside the window, and against the static equilibrium stack. Everything is exact: the
+window MDP over R^w states gives the history optimum by relative value iteration, and every rule's
+stationary damage comes from damped power iteration on the same window chain. Doctrine-informed
+rules sit in the comparator family and are marked where they are oracle-fitted.
 """
 from __future__ import annotations
 
@@ -67,8 +61,8 @@ class DynGame:
         Veq = (self.d_eq @ self.dmg)[None, :]                # [1, H]
         Z = q_rep * Vw + q_dodge * Vc + q_eq * Veq
         if q_flee > 0:
-            # second-order 'flee' model: the enemy pre-aims at the route a pattern-punished
-            # defender would obviously run to (argmin damage vs the pure-repeat aim)
+            # 'flee' component: the enemy pre-aims at the route a pattern-punished defender
+            # would run to, the argmin of damage against the pure-repeat aim
             Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tau
             Ar = np.exp(Zr); Ar /= Ar.sum(axis=1, keepdims=True)
             rflee = (Ar @ self.dmg.T).argmin(axis=1)
@@ -85,8 +79,11 @@ class DynGame:
         self.in_window_mask = mask
 
     def history_opt(self, iters=2000, tol=1e-12):
-        """RVI with the aperiodicity (lazy-chain) transform: T -> (T + I)/2, which preserves
-        the average reward and kills periodic oscillation (the dbf385d lesson, reapplied)."""
+        """Average damage of the history optimum by relative value iteration.
+
+        The lazy-chain transform T -> (T + I)/2 preserves the average reward and removes the
+        periodic oscillation an undamped iteration shows here.
+        """
         V = np.zeros(len(self.states))
         g = 0.0
         for _ in range(iters):
@@ -123,10 +120,10 @@ class DynGame:
 
 
 def rule_family(gme: DynGame):
-    """The complete parity family. Returns {name: value}; fitted rules marked *fit."""
+    """Evaluates the full comparator family; returns {name: value}, fitted rules marked ``*fit``."""
     rows = {}
     rows["iid_eq"] = gme.value_static(gme.d_eq)
-    # multi-start local static optimum (CEM on the simplex; disclosed local)
+    # local static optimum, by CEM on the simplex
     rng = np.random.default_rng(0)
     top = np.argsort(gme.dmg.max(axis=1))[:12]
     pool = sorted(set(np.where(gme.d_eq > 1e-6)[0]) | set(top))
@@ -167,7 +164,7 @@ def rule_family(gme: DynGame):
                 rot[si, cand[0] if cand else sup[0]] = 1.0
             blind[f"rot_{name}"] = gme.stationary(rot)
     rows.update(blind)
-    # doctrine-informed rules (parity): myopic dodge; fitted soft dodge; fitted composed
+    # doctrine-informed rules: myopic dodge, fitted soft dodge, fitted composed
     dodge = np.zeros((len(gme.states), gme.R))
     dodge[np.arange(len(gme.states)), gme.stepdmg.argmin(axis=1)] = 1.0
     rows["myopic_dodge"] = gme.stationary(dodge)
@@ -214,9 +211,9 @@ def cell(tag, lat, seed, w, tau, q_rep, q_dodge, q_eq, q_flee=0.0):
 
 def main():
     out = []
-    # slice 1: the doctrine grid at w=2 on three structured layouts (v4.0's probe layouts)
+    # the doctrine grid at w=2
     for q_rep, q_dodge, q_eq, q_flee in (
-            (1.0, 0.0, 0.0, 0.0),                       # v4.0 baseline doctrine
+            (1.0, 0.0, 0.0, 0.0),                       # pure repeat aim
             (0.7, 0.3, 0.0, 0.0), (0.5, 0.5, 0.0, 0.0),
             (0.6, 0.0, 0.0, 0.4), (0.4, 0.0, 0.0, 0.6),
             (0.5, 0.2, 0.0, 0.3), (0.4, 0.2, 0.2, 0.2), (0.3, 0.3, 0.0, 0.4)):

@@ -1,8 +1,6 @@
-"""Headless graph simulation for the SACRED SDVRP environment.
-
-The PettingZoo wrapper and renderer should sit on top of this module. This
-file owns only the fast tick-by-tick state transitions: graph attributes,
-truck dispatching, routing, congestion updates, and movement physics.
+"""Headless graph simulation for the SACRED SDVRP environment, owning only the tick-by-tick state
+transitions: graph attributes, truck dispatching, routing, congestion updates and movement physics.
+Wrappers and the renderer sit on top of it.
 """
 
 from __future__ import annotations
@@ -38,10 +36,9 @@ class TruckState:
     load: float = 1.0
     delivered_total: float = 0.0
     path_edges: set[EdgeId] = field(default_factory=set)
-    # Hybrid mode (assignment + next-hop routing): the request the truck was ASSIGNED to serve
-    # (then flips to home_depot for the return leg). None in destination/next_hop modes, so the
-    # hybrid serve/reload transitions in the env are no-ops there. The policy routes next-hop
-    # toward this target; on serving it (load->0) it becomes home_depot; on reloading it clears.
+    # Hybrid mode only (assignment plus next-hop routing): the request this truck was assigned to
+    # serve, which flips to home_depot once served and clears on reload. It stays None in the
+    # destination and next-hop modes, where the hybrid serve/reload transitions are no-ops.
     assigned_target: NodeId | None = None
 
     @property
@@ -60,24 +57,15 @@ class StepResult:
 
 
 class GraphEnv:
-    """Core SDVRP graph environment without PettingZoo or PyGame concerns.
+    """Core SDVRP graph environment, with no PettingZoo or PyGame concerns.
 
-    Parameters
-    ----------
-    graph:
-        Optional NetworkX graph. Nodes should expose ``x``, ``y``, ``demand``,
-        and ``has_depot`` attributes. Edges should expose ``distance`` and
-        ``congestion_level`` attributes. Missing attributes are filled with
-        defaults.
-    num_trucks:
-        Number of trucks initialized at the depot.
-    truck_speed:
-        Base distance a truck can travel in one tick when congestion is zero.
-    truck_capacity:
-        Amount of demand fulfilled when a truck reaches a customer node.
-    depot_node:
-        Explicit depot node. If omitted, the first node with ``has_depot=True``
-        is used.
+    Args:
+        graph: optional NetworkX graph whose nodes expose ``x``, ``y``, ``demand`` and
+            ``has_depot`` and whose edges expose ``distance`` and ``congestion_level``. Missing
+            attributes are filled with defaults.
+        truck_speed: distance a truck covers in one tick at zero congestion.
+        truck_capacity: demand fulfilled when a truck reaches a customer node.
+        depot_node: explicit depot; if omitted, the first node with ``has_depot=True`` is used.
     """
 
     def __init__(
@@ -124,17 +112,15 @@ class GraphEnv:
         self.truck_capacity = float(truck_capacity)
         self.max_time = max_time
 
-        # Dynamic (Poisson) demand: when an arrival fn is supplied the env injects requests over
-        # time (Stage 1.5) instead of placing all demand at t=0. The static path is untouched
-        # (fn is None -> _dynamic_demand False). The arrival fn is `(rng, horizon) -> iterable of
-        # (tick, node, size)`; it is re-drawn each reset so episodes are fresh (or reproducible
-        # via demand_seed for the multi-instance eval harness).
+        # Dynamic (Poisson) demand: with an arrival function supplied, requests are injected over
+        # time rather than placed all at t=0. The arrival function is
+        # `(rng, horizon) -> iterable of (tick, node, size)` and is re-drawn each reset, so
+        # episodes are fresh unless demand_seed pins them.
         self._demand_arrival_fn = demand_arrival_fn
         self._dynamic_demand = demand_arrival_fn is not None
-        # Whether observe() ships the queue/ETA feature block (node_waits, truck_etas,
-        # goal_dists). Defaults to dynamic-only (the Stage-1.5 behaviour); the hybrid rung
-        # turns it on for STATIC demand too so the policy has the same congestion-aware
-        # distance information the greedy baseline's Dijkstra uses (information parity).
+        # Whether observe() ships the queue and ETA feature block (node_waits, truck_etas,
+        # goal_dists). Dynamic demand needs it; static problems can turn it on so that the policy
+        # sees the same congestion-aware distances the greedy baseline's Dijkstra uses.
         self._expose_queue_features = (
             bool(expose_queue_features) if expose_queue_features is not None else self._dynamic_demand
         )
@@ -190,8 +176,8 @@ class GraphEnv:
     def reset(self, *, demand_seed: int | None = None) -> dict[str, Any]:
         """Reset the simulation clock and return the initial observation.
 
-        ``demand_seed`` (dynamic mode only) makes the Poisson arrival schedule reproducible — used
-        by the multi-instance evaluation harness to average over fixed demand instances.
+        In dynamic mode ``demand_seed`` pins the Poisson arrival schedule, which lets an evaluation
+        harness average over fixed demand instances.
         """
 
         self.graph = self._initial_graph.copy()
@@ -272,15 +258,14 @@ class GraphEnv:
     ) -> StepResult:
         """Advance the environment by one tick.
 
-        ``dispatch_actions`` maps idle truck ids to destination node ids (the truck
-        follows the A* shortest path there over many ticks).
-        ``next_hop_dispatch`` maps idle truck ids to an *adjacent* node and moves the
-        truck along that single direct edge (no A*); used by next-hop routing mode so the
-        policy — not the pathfinder — chooses the route. The two dispatch modes are
-        mutually exclusive in practice.
-        ``congestion_actions`` sets edge congestion levels before movement.
-        A congestion level of ``0.0`` means free flow, ``0.5`` means half speed,
-        and ``1.0`` means blocked.
+        Args:
+            dispatch_actions: idle truck id to destination node, the truck then following the
+                shortest path there over many ticks.
+            congestion_actions: edge congestion levels applied before movement, where 0.0 is free
+                flow, 0.5 is half speed and 1.0 is blocked.
+            next_hop_dispatch: idle truck id to an adjacent node, moving the truck along that one
+                direct edge so that the policy rather than the pathfinder picks the route. In
+                practice the two dispatch modes are mutually exclusive.
         """
 
         info: dict[str, Any] = {
@@ -365,15 +350,12 @@ class GraphEnv:
     def observe(self) -> dict[str, Any]:
         """Return a Python-dict observation suitable for wrappers to transform.
 
-        The node/edge sub-dicts are SNAPSHOT (fresh dicts with copied scalar fields) so a buffered
-        observation reflects the environment at DECISION time, not whenever its features are lazily
-        built (the B0 fix, CRITIQUE_PREFREEZE §5.2: `_obs_nodes`/`_obs_edges` mutate in place under
-        demand arrivals / `set_congestion`, and `SMDPTransition.feature_cache` is built lazily at
-        first sample, so shared references let later mutation rewrite a stored state's demand /
-        congestion columns). Static problems (interdiction / multi-convoy: demand set once, no
-        congestion) are semantically unchanged - the snapshot holds identical values - so the
-        banked headlines reproduce; the cost is one dict-comprehension per observe (observe is not
-        the hot path; `update()` dominates)."""
+        The node and edge sub-dicts are snapshots, freshly built with copied scalar fields, so that
+        a buffered observation reflects the environment at decision time. `_obs_nodes` and
+        `_obs_edges` mutate in place under demand arrivals and `set_congestion`, and transition
+        features are built lazily at first sample, so sharing the references would let later
+        mutation rewrite a stored state's demand and congestion columns.
+        """
         obs = {
             "time": self.time,
             "nodes": {n: dict(d) for n, d in self._obs_nodes.items()},
@@ -412,11 +394,12 @@ class GraphEnv:
         return cached
 
     def _dynamic_node_features(self) -> tuple[dict[NodeId, float], dict[int, dict[NodeId, float]]]:
-        """Per-node oldest wait and per-truck congestion-aware ETAs for the Step-2 observation.
+        """Per-node oldest wait and per-truck congestion-aware ETAs.
 
-        ``node_waits[node]`` = self.time − oldest pending arrival tick at that node (request age).
-        ``truck_etas[truck_id][node]`` = congestion-aware distance from each idle/at-node truck's
-        position to every outstanding-demand node and to its home depot (the candidate targets).
+        Returns:
+            ``node_waits[node]``, the age in ticks of the oldest pending request at that node, and
+            ``truck_etas[truck_id][node]``, the congestion-aware distance from each at-node truck
+            to every outstanding-demand node and to its home depot.
         """
         node_waits: dict[NodeId, float] = {}
         for node, dq in self._pending_arrivals.items():
@@ -435,12 +418,14 @@ class GraphEnv:
         return node_waits, truck_etas
 
     def _goal_distances(self) -> dict[int, dict[NodeId, float]]:
-        """Per-truck congestion-aware distance-to-goal field: for each truck committed to an
-        ``assigned_target`` (hybrid mode), the distance from EVERY node to that goal. This is the
-        global routing information the 2-layer GNN cannot propagate itself (receptive field 2 hops
-        vs graph diameter ~44): with it, each next-hop candidate carries its goal-progress under
-        current congestion — parity with the greedy baseline's Dijkstra. Cached per congestion
-        version via _single_source_lengths (undirected graph -> from-goal == to-goal)."""
+        """Per-truck congestion-aware distance-to-goal field, one entry per node for each truck
+        committed to an ``assigned_target``.
+
+        This carries the global routing information a two-layer GNN cannot propagate on its own,
+        since its receptive field is far smaller than the graph diameter, and gives each next-hop
+        candidate its goal progress under current congestion. The graph is undirected, so
+        distance-from-goal equals distance-to-goal and the congestion-versioned cache applies.
+        """
         goal_dists: dict[int, dict[NodeId, float]] = {}
         for truck_id, truck in self.trucks.items():
             goal = truck.assigned_target
@@ -457,8 +442,8 @@ class GraphEnv:
         if self.max_time is not None and self.time >= self.max_time:
             return True
 
-        # Dynamic demand keeps arriving until the horizon, so an empty queue is only a lull, not
-        # termination — terminate strictly on max_time (handled above), never on remaining==0.
+        # Dynamic demand keeps arriving until the horizon, so an empty queue is only a lull.
+        # Termination is strictly on max_time, handled above, never on remaining == 0.
         if self._dynamic_demand:
             return False
 
@@ -504,13 +489,12 @@ class GraphEnv:
         return path
 
     def dispatch_truck_edge(self, truck_id: int, neighbor: NodeId) -> None:
-        """Move an idle truck one step along the *direct* edge to ``neighbor`` (no A*).
+        """Move an idle truck one step along the direct edge to ``neighbor``, without pathfinding.
 
-        Unlike :meth:`dispatch_truck`, this commits the truck to the exact (current,
-        neighbor) edge and does not reroute around congestion — that is the point of
-        next-hop routing: the policy chooses the edge and bears its congestion. The truck
-        arrives next tick, becoming idle for the following decision (serving/reloading via
-        the usual :meth:`_arrive_at_edge_end` path when ``neighbor`` carries demand/depot).
+        Unlike :meth:`dispatch_truck` this commits the truck to that exact edge and never reroutes
+        around congestion, which is the point of next-hop routing: the policy chooses the edge and
+        bears its congestion. The truck arrives on the next tick and becomes idle for the following
+        decision, serving or reloading through the usual :meth:`_arrive_at_edge_end` path.
         """
         if truck_id not in self.trucks:
             raise ValueError(f"unknown truck id {truck_id}")
@@ -546,10 +530,10 @@ class GraphEnv:
 
     @functools.lru_cache(maxsize=None)
     def _get_shortest_path(self, source: NodeId, destination: NodeId) -> list[NodeId]:
-        # Dijkstra (exact). A* with the lat/lon coordinate heuristic is not reliably admissible
-        # on this OSM graph (clamped/rounded edge weights vs degree coords -> paths up to ~140%
-        # suboptimal in testing), which would corrupt truck routing and the greedy baseline's
-        # ETAs. The graph is small (~290 nodes), so exact Dijkstra is cheap and worth the rigor.
+        # Exact Dijkstra. A* with a lat/lon coordinate heuristic is not reliably admissible on an
+        # OSM graph, where clamped and rounded edge weights sit against degree coordinates, and an
+        # inadmissible heuristic would corrupt both truck routing and the greedy baseline's ETAs.
+        # The graphs here are small enough that exact search is cheap.
         return nx.dijkstra_path(self.graph, source, destination, weight="effective_weight")
 
     @classmethod
@@ -559,7 +543,7 @@ class GraphEnv:
         edges: Iterable[tuple[NodeId, NodeId, Mapping[str, Any]]],
         **kwargs: Any,
     ) -> GraphEnv:
-        """Construct an environment from serializable node and edge specs."""
+        """Construct an environment from serialisable node and edge specs."""
 
         return cls(nodes=nodes, edges=edges, **kwargs)
 
@@ -721,9 +705,9 @@ class GraphEnv:
             self._serve_demand(truck, node, info)
 
     def _reload_truck(self, truck: TruckState, info: dict[str, Any], node: NodeId) -> None:
-        # Hybrid: arriving at the depot ends the current assignment even at FULL load (a truck
-        # sent home because no unclaimed request remained must become assignable again, else it
-        # would orbit the depot forever). No-op in other modes.
+        # Hybrid: arriving at the depot ends the current assignment even at full load, since a
+        # truck sent home because no unclaimed request remained must become assignable again
+        # rather than orbit the depot. No-op in other modes.
         if truck.assigned_target is not None:
             truck.assigned_target = None
         if truck.load >= truck.capacity:
@@ -736,8 +720,8 @@ class GraphEnv:
         demand = self.graph.nodes[node]["demand"]
         if demand <= 0 or truck.load <= 0:
             return
-        # Hybrid: a truck serves ONLY the request it was assigned (keeps the assignment decision
-        # meaningful) — skip demand it merely passes through. No-op in destination/next_hop modes.
+        # Hybrid: a truck serves only the request it was assigned, skipping demand it merely passes
+        # through, which keeps the assignment decision meaningful. No-op in the other modes.
         if truck.assigned_target is not None and node != truck.assigned_target:
             return
 
@@ -748,7 +732,7 @@ class GraphEnv:
         self.remaining_demand -= delivered
         truck.load -= delivered
         truck.delivered_total += delivered
-        # Hybrid: served the assigned request (load now 0) -> head home to reload.
+        # Hybrid: the assigned request is served and the truck is empty, so head home to reload.
         if truck.assigned_target is not None and truck.load <= 0:
             truck.assigned_target = truck.home_depot
         delivery_record = {"truck_id": truck.truck_id, "node": node, "delivered": delivered}
@@ -771,9 +755,9 @@ class GraphEnv:
             else:
                 self.valid_customers_by_comp[comp][node] = new_demand
 
-        # Hybrid: if the demand here is exhausted, release any OTHER truck still assigned to it
-        # (cross-event double assignment) so it can be re-assigned instead of orbiting a
-        # zero-demand node forever — assigned_target otherwise only clears on serve/reload.
+        # Hybrid: with the demand here exhausted, release any other truck still assigned to this
+        # node so that it can be re-assigned rather than orbit a zero-demand node. Otherwise
+        # assigned_target would clear only on a serve or a reload.
         if new_demand <= 0.0:
             for other in self.trucks.values():
                 if other is not truck and other.assigned_target == node:
@@ -787,11 +771,9 @@ class GraphEnv:
         ux, uy = self._node_coords[u]
         vx, vy = self._node_coords[v]
         import math
-        # Convert EPSG:4326 degrees to rough meters, then to edge-weight units. OSM edge
-        # weights are length_m / 100 (see graph_utils), so the heuristic must also be
-        # straight-line-metres / 100 to stay <= true path cost. The previous version returned
-        # raw metres (~100x the edge scale) -> grossly inadmissible -> A* could return
-        # suboptimal paths. /100.0 makes it admissible AND tight.
+        # EPSG:4326 degrees to rough metres, then to edge-weight units. OSM edge weights are
+        # length_m / 100 (see graph_utils), so the heuristic must also be straight-line metres
+        # over 100 to stay at or below true path cost, which is what keeps it admissible.
         dx = (vx - ux) * 111000.0 * math.cos(math.radians((uy + vy) / 2.0))
         dy = (vy - uy) * 111000.0
         return hypot(dx, dy) / 100.0

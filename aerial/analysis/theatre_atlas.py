@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""gen39: the theatre atlas.
+"""Computes the reference statistics for the four aerial theatres and writes the theatre atlas.
 
-Computes the reference statistics for the four theatres the aerial line is limited to
-(Kilian 2026-07-25: Kaliningrad oblast, Ukraine, Narva, Fulda) and writes
-`experiments/theatre_atlas.md`. Oracle-only: loads the committed vector maps, measures them, and
-counts candidate emplacement sites under terrain tables v1 and v2. No training, no model calls.
+It loads the committed vector maps, measures them, and counts candidate emplacement sites under
+terrain tables v1 and v2, with no training and no model calls. Area shares come from dense point
+sampling through the same priority order the game's `classify` uses, water before sea before urban
+before alpine before forest before field, else open, with an STRtree lookup so the big maps stay
+affordable, and the sampler is verified against `hazard_sites` before anything is reported.
 
     PYTHONPATH=. python analysis/theatre_atlas.py
-
-Area shares are measured by dense point sampling through the SAME priority order the game's
-`classify` uses (water > sea > urban > alpine > forest > field, else open), with an STRtree lookup
-so the big maps are affordable; the sampler is verified against `hazard_sites` on Kaliningrad
-before anything is reported.
 """
 from __future__ import annotations
 
@@ -75,7 +71,7 @@ def area_shares(th, polys, trees):
 
 
 def site_counts(th, terrain, polys, trees):
-    """Mirrors hazard_sites' loop with the fast classifier (verified equal on kgd)."""
+    """Mirrors the `hazard_sites` loop with the fast classifier."""
     xs = np.arange(1.0, th.W, SPACING_KM)
     ys = np.arange(1.0, th.H, SPACING_KM)
     cnt: dict = {}

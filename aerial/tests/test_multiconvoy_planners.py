@@ -1,4 +1,4 @@
-"""Tests for the multi-convoy classical baselines (gen08 Phase M / Obj-5)."""
+"""Tests for the multi-convoy classical baselines."""
 import networkx as nx
 import numpy as np
 
@@ -45,4 +45,4 @@ def test_baseline_ordering_sacred_beats_alns():
     b = classical_baselines(game, 3, "mission")
     assert abs(b["alns"] - b["optimal_deterministic"]) < 1e-6          # ALNS reaches the optimum
     assert b["shortest_path"] >= b["optimal_deterministic"] - 1e-9     # naive no better than optimal
-    assert b["equilibrium"] < b["alns"] - 1e-6                         # SACRED strictly beats the ALNS
+    assert b["equilibrium"] < b["alns"] - 1e-6                         # mixing strictly beats ALNS

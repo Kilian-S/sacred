@@ -1,8 +1,6 @@
-"""gen39 step-3 trainer: the closed-form policy evaluation must equal the per-state head loop.
-
-The head applies route_feats as an additive logit shift, so probs(window, mask) =
-softmax(log p0 + F @ w). This pins that equivalence numerically (the 151k-forwards eval bug):
-if the head's use of route_feats ever stops being a pure logit shift, this fires.
+"""Pins the trainer's closed-form policy evaluation against the per-state head loop, which agree
+because the head applies route_feats as an additive logit shift, so probs(window, mask) =
+softmax(log p0 + F @ w).
 """
 import numpy as np
 import torch
@@ -16,8 +14,8 @@ KGD = "data/maps/theatre_kgd_gvardeysk_vec.json"
 
 
 def test_shared_field_graph_equals_per_transition_featurization():
-    """The pre-attached shared graph must equal what the update path's lambda would build for a
-    transition on that field (the memory-crawl fix must not change a single tensor)."""
+    """The pre-attached shared graph must equal what the update path builds for a transition on
+    the same field, tensor for tensor."""
     from scripts.train_gen39_conceal import Inst, TheatreEnv, N
     base = ConcealBase(KGD, terrain=terrain_v2(), spacing_km=6.0, standoff_km=4.0)
     S_pub = base.survival(base.pp_base)
@@ -31,7 +29,7 @@ def test_shared_field_graph_equals_per_transition_featurization():
     env.reset()
     for ci in range(N):
         obs = env.observe()
-        obs["menu_route_feats"] = inst.feats((0, 1), 0)     # the per-serial extras ride along
+        obs["menu_route_feats"] = inst.feats((0, 1), 0)
         obs["target_entropy"] = 1.0
         rebuilt = featurize_state(obs, ci)
         assert torch.equal(shared[ci].x, rebuilt.x)

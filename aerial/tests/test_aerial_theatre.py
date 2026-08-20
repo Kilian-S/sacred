@@ -1,6 +1,6 @@
-"""gen28 v3-theatre: real-terrain env sanity - load, arbitrary off-centre endpoints, forward
-DAG, corridor-spanning menu (reaches target, no funnel), terrain-driven emplacement + LOS,
-line-integral calibration, InterdictionGame builds and solves."""
+"""Real-terrain theatre environment: loading, off-centre endpoints, the forward DAG, a
+corridor-spanning menu with no funnel cell, terrain-driven emplacement and line of sight, and a
+game that builds and solves non-degenerately."""
 import numpy as np
 import pytest
 
@@ -14,7 +14,7 @@ TH = load_theatre("data/maps/theatre_kgd_gvardeysk.json")
 def test_load_real_terrain_and_offcentre_endpoints():
     assert TH.nrow == 20 and TH.ncol == 46
     assert set(np.unique(TH.grid)).issubset(set(range(5)))
-    # endpoints are the real settlements and NOT vertically centred (the requested change)
+    # endpoints are the real settlements, so they are not vertically centred
     assert TH.base != (TH.nrow // 2, 0) and TH.target != (TH.nrow // 2, TH.ncol - 1)
     assert TH.base[1] < TH.ncol // 2 and TH.target[1] > TH.ncol // 2       # W -> E
     assert TH.base[0] != TH.target[0]                                       # different rows

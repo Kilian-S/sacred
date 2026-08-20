@@ -1,21 +1,11 @@
-"""gen28 v3-theatre: the REAL-terrain aerial interdiction game (Kilian 2026-07-18).
+"""Real-terrain aerial interdiction game over a land-cover corridor.
 
-A real ~45 km corridor (OSM land cover, `scratch/fetch_theatre.py`) becomes the game:
-  * lattice = the terrain grid cells (metric UTM coords); the UAV flies at altitude so EVERY
-    cell is navigable (terrain never blocks the drone, only shapes cost/threat);
-  * base and target are two REAL settlements at ARBITRARY cells (not centred); "forward
-    progress" = increasing projection onto the base->target axis, so the corridor runs in its
-    true direction and the route set stays a finite DAG;
-  * TERRAIN drives the interdictor, not the drone: hazards emplace only on emplaceable ground
-    (NOT water, NOT dense urban), with terrain-set radius + effectiveness (open/field = long
-    range high p; forest = short range high p, concealed); and dense URBAN cells MASK
-    line-of-sight (a hazard cannot engage an arc if the segment between them crosses an urban
-    cell) - the "urban corridors block contesting" mechanic;
-  * the game is an `InterdictionGame` over a screened diverse route menu x K-hazard sets, so the
-    LP / greedy BR / fleet mission oracle (solve_multiconvoy) all apply verbatim.
-
-Reuses the line-integral exposure calibration (kappa = -ln(1-p)/r; straight dead-centre transit
-intercepted w.p. p). Ledger: experiments/gen28_aerial.md (v3-theatre section).
+The lattice is the terrain grid in metric coordinates and the UAV flies at altitude, so every cell
+is navigable and terrain shapes the interdictor instead, fixing where hazards may be emplaced, at
+what radius and effectiveness, and which cells mask line of sight. Base and target sit at arbitrary
+real settlements, with forward progress measured as projection onto the base-to-target axis so the
+route set stays a finite DAG. The result is an `InterdictionGame` over a screened route menu
+crossed with K-hazard sets.
 """
 from __future__ import annotations
 
@@ -28,7 +18,7 @@ import numpy as np
 from src.baselines.interdiction_oracle import InterdictionGame
 
 CLASS_NAME = {0: "open", 1: "field", 2: "forest", 3: "urban", 4: "water"}
-# terrain -> (emplaceable, radius_km, p_max, blocks_LOS): the pinned mechanic table
+# terrain class -> emplaceable, engagement radius in km, p_max, whether it blocks line of sight
 TERRAIN = {
     "open":   dict(emplace=True,  r_km=2.5, p_max=0.90, los_block=False),
     "field":  dict(emplace=True,  r_km=2.5, p_max=0.90, los_block=False),
@@ -69,8 +59,11 @@ def _axis(th: Theatre):
 
 
 def forward_dag(th: Theatre):
-    """8-neighbour arcs from each cell to neighbours with strictly greater axis projection
-    (a DAG base->target; the generalisation of 'forward in x' to an arbitrary axis)."""
+    """Build the base-to-target DAG of 8-neighbour arcs onto cells of greater axis projection.
+
+    Returns:
+        ``(succ, proj)``, the successor lists per cell and the axis projection of every cell.
+    """
     b, u = _axis(th)
     proj = {}
     for r in range(th.nrow):
@@ -93,11 +86,15 @@ def forward_dag(th: Theatre):
 
 def lane_route(th: Theatre, succ, proj, offset_frac: float,
                mask_pref: float = 0.0) -> tuple | None:
-    """A corridor-spanning LANE: forward walk holding a target LATERAL offset that ramps 0 at
-    base -> offset_frac*half-width at mid-corridor -> 0 at target (a hat profile), so lanes
-    fan out across the width and reconverge (the small-game lane, on the diagonal axis).
-    ``mask_pref`` >0 nudges toward LOS-masking terrain (forest/urban) among near-tied steps:
-    terrain-aware routes that hug cover (the terrain-following option)."""
+    """Walk a corridor-spanning lane forward, holding a hat-shaped lateral offset.
+
+    The offset ramps from zero at the base to ``offset_frac`` of the half-width at mid-corridor and
+    back to zero at the target, so lanes fan out across the corridor and reconverge.
+
+    Args:
+        mask_pref: above zero, nudges near-tied steps towards line-of-sight-masking terrain, giving
+            routes that hug cover.
+    """
     b, u = _axis(th)
     nrm = np.array([-u[1], u[0]])
     half = 0.5 * th.nrow * th.cell_m
@@ -110,14 +107,14 @@ def lane_route(th: Theatre, succ, proj, offset_frac: float,
         if not nb:
             return None
         s_here = float((th.xy(node) - b) @ u) / (span + 1e-9)     # 0..1 along axis
-        ramp = np.sin(np.pi * np.clip(s_here, 0, 1))              # hat: 0 ends, 1 middle
+        ramp = np.sin(np.pi * np.clip(s_here, 0, 1))              # hat, 0 at the ends, 1 midway
         want_lat = offset_frac * half * ramp
         tgt = th.xy(th.target)
         best, bs = None, -1e18
         for m in nb:
             lat = float((th.xy(m) - b) @ nrm)
-            # DAG already guarantees forward progress, so LATERAL tracking dominates (per cell);
-            # end-game: pull to the actual target cell as s->1; tiny mask tiebreak.
+            # the DAG already guarantees forward progress, so lateral tracking dominates; the
+            # cubic term pulls onto the target cell as s -> 1 and the mask term only breaks ties
             score = -abs(lat - want_lat) / th.cell_m
             score += -(s_here ** 3) * np.linalg.norm(th.xy(m) - tgt) / th.cell_m
             score += 0.02 * float((th.xy(m) - th.xy(node)) @ u) / th.cell_m
@@ -134,9 +131,11 @@ def sample_route(th: Theatre, succ, rng, lateral_bias: float) -> tuple | None:
 
 
 def build_route_menu(th: Theatre, R: int = 24, seed: int = 0) -> list[tuple]:
-    """The corridor-spanning menu: LANES at lateral offsets across the width (both
-    terrain-blind and terrain-hugging variants), deduped. Fans out so no single hazard
-    covers the whole mixture (the funnel fix)."""
+    """Build the route menu from deduplicated lanes at lateral offsets across the corridor.
+
+    Both terrain-blind and terrain-hugging variants are generated, and the menu is then thinned to
+    the most dissimilar routes so that no single hazard covers the whole mixture.
+    """
     succ, proj = forward_dag(th)
     cands, seen = [], set()
     for off in np.linspace(-1.6, 1.6, 17):
@@ -169,10 +168,14 @@ def build_route_menu(th: Theatre, R: int = 24, seed: int = 0) -> list[tuple]:
 
 
 def hazard_sites(th: Theatre, stride: int = 2, standoff_km: float = 4.0):
-    """Emplaceable cells (terrain emplace=True), subsampled by stride, EXCLUDING sites within
-    ``standoff_km`` of base or target (friendly-controlled terminal airspace: the funnel fix,
-    the small-game standoff lesson applied at theatre scale). Returns (coords[H,2], r_m[H],
-    p_max[H], cells[H])."""
+    """Collect the emplaceable hazard sites, subsampled by ``stride``.
+
+    Sites within ``standoff_km`` of the base or the target are excluded as friendly-controlled
+    terminal airspace.
+
+    Returns:
+        ``(coords[H, 2], r_m[H], p_max[H], cells[H])``.
+    """
     b, t = th.xy(th.base), th.xy(th.target)
     so = standoff_km * 1000.0
     coords, rr, pp, cells = [], [], [], []
@@ -190,8 +193,7 @@ def hazard_sites(th: Theatre, stride: int = 2, standoff_km: float = 4.0):
 
 
 def _los_blocked(th: Theatre, p_hazard: np.ndarray, p_arc: np.ndarray) -> bool:
-    """True if the segment hazard->arc-midpoint crosses an LOS-blocking cell (urban/forest):
-    dense terrain shields the corridor from that hazard (the urban-canyon mechanic)."""
+    """True when the hazard-to-arc-midpoint segment crosses a line-of-sight-blocking cell."""
     steps = max(2, int(np.linalg.norm(p_arc - p_hazard) / th.cell_m) + 1)
     for t in np.linspace(0.15, 0.85, steps):          # skip the endpoints themselves
         q = p_hazard + t * (p_arc - p_hazard)
@@ -202,8 +204,11 @@ def _los_blocked(th: Theatre, p_hazard: np.ndarray, p_arc: np.ndarray) -> bool:
 
 
 def route_survival(th: Theatre, route: tuple, coords, rr, pp, *, los: bool) -> np.ndarray:
-    """S[h] = survival of the route against hazard h alone (line-integral exposure, LOS-masked;
-    kappa_h = -ln(1-p_h)/r_h so a dead-centre straight leg is intercepted w.p. p_h)."""
+    """Survival of the route against each hazard alone, as a line-integral exposure.
+
+    The absorption is calibrated as ``kappa_h = -ln(1 - p_h) / r_h``, so a straight leg flown dead
+    centre through hazard h is intercepted with probability ``p_h``.
+    """
     pts = np.array([th.xy(c) for c in route], dtype=float)
     mids = (pts[:-1] + pts[1:]) / 2.0
     ds = np.linalg.norm(np.diff(pts, axis=0), axis=1)
@@ -222,8 +227,14 @@ def route_survival(th: Theatre, route: tuple, coords, rr, pp, *, los: bool) -> n
 
 def build_theatre_game(th: Theatre, K: int = 1, menu_size: int = 24, site_stride: int = 2,
                        seed: int = 0, los: bool = True, standoff_km: float = 4.0):
-    """Returns (InterdictionGame, menu routes, hazard coords, r_m, p_max, S[R,H]). Exact only
-    while C(H,K) fits; past that use the greedy BR on S (the gen26 pattern)."""
+    """Assemble the theatre game.
+
+    The enumeration is exact only while ``C(H, K)`` fits in memory; past that, use the greedy best
+    response on ``S`` instead.
+
+    Returns:
+        ``(InterdictionGame, menu routes, hazard coords, r_m, p_max, S[R, H])``.
+    """
     menu = build_route_menu(th, R=menu_size, seed=seed)
     coords, rr, pp, cells = hazard_sites(th, stride=site_stride, standoff_km=standoff_km)
     S = np.stack([route_survival(th, r_, coords, rr, pp, los=los) for r_ in menu])   # [R,H]

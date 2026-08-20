@@ -1,17 +1,10 @@
-"""Lane-heuristic baselines for the aerial sector (gen28: the disjoint-heuristic analogue).
+"""Lane-heuristic baselines for the aerial sector.
 
-The strongest naive strategies a practitioner would write for free-flight interdiction, all
-PRE-REGISTERED into every gen28 ladder before any training (the R0/gen26 dogma):
-
-  * uniform-LANE stack: floor(W / 2r) + 1 maximally separated lateral lanes, played uniformly
-    (two lanes > 2r apart cannot both be touched by one hazard: the max-flow analogue);
-  * inverse-risk LANE stack: lanes weighted by 1 / (max single-hazard exposure);
-  * the same two variants over the FULL menu (the gen26 second-pass lesson: at high coverage
-    the strongest naive stack may live on the shared/full menu);
-  * tabular smooth fictitious play with the same BR oracle (drift-free average strategy: the
-    row that keeps "only self-play can train there" honest).
-
-All are scored by `best_response_attacker` on the same game, exactly like every other arm.
+These are the strongest naive strategies a practitioner would write for free-flight interdiction, a
+uniform stack over floor(W / 2r) + 1 maximally separated lateral lanes, an inverse-risk lane stack,
+the same two variants over the full route menu, and tabular smooth fictitious play against the same
+best-response oracle. All are scored by `best_response_attacker` on the same game as every other
+arm.
 """
 
 from __future__ import annotations
@@ -23,10 +16,13 @@ from src.envs.aerial_sector import Path, SectorLattice, lane_path
 
 
 def lane_rows(lat: SectorLattice, r: float) -> list[int]:
-    """The maximally separated lane rows: n = floor(W / 2r) + 1 evenly spaced rows (clipped to
-    the row count), rounded to lattice rows, deduplicated preserving order."""
-    # spacing of EXACTLY 2r still separates lanes (the taper reaches 0 at exactly r), so the
-    # boundary case counts; the epsilon guards float division (8/1.6 -> 4.999...).
+    """The maximally separated lane rows.
+
+    n = floor(W / 2r) + 1 evenly spaced rows, clipped to the row count, rounded to lattice rows and
+    deduplicated in order.
+    """
+    # A spacing of exactly 2r still separates two lanes, since the taper reaches 0 at exactly r, so
+    # the boundary case counts; the epsilon guards float division (8/1.6 -> 4.999...).
     n = min(int(lat.W / (2.0 * r) + 1e-9) + 1, lat.ny)
     rows = np.linspace(0.0, lat.W, n)
     out: list[int] = []
@@ -38,8 +34,11 @@ def lane_rows(lat: SectorLattice, r: float) -> list[int]:
 
 
 def lane_menu_indices(lat: SectorLattice, menu: list[Path], r: float) -> list[int]:
-    """Menu indices of the lane paths for radius r (the menu builder puts lanes first, so these
-    exist whenever the lane is constructible on the lattice)."""
+    """Menu indices of the lane paths for radius r.
+
+    The menu builder puts lanes first, so an index exists whenever the lane is constructible on the
+    lattice.
+    """
     idx: list[int] = []
     pos = {p: i for i, p in enumerate(menu)}
     for row in lane_rows(lat, r):
@@ -60,8 +59,10 @@ def _stack_distribution(n_routes: int, indices: list[int], weights: np.ndarray) 
 
 def lane_stack_distributions(game: InterdictionGame, lane_idx: list[int],
                              S: np.ndarray) -> dict[str, np.ndarray]:
-    """The four pre-registered naive stacks as route distributions. ``S`` = the single-hazard
-    survival matrix [R, H] (exposure_i = 1 - min_h S[i, h])."""
+    """The four naive stacks as route distributions.
+
+    ``S`` is the single-hazard survival matrix [R, H], from which exposure_i = 1 - min_h S[i, h].
+    """
     exposure = 1.0 - S.min(axis=1)
     n = game.n_routes
     out: dict[str, np.ndarray] = {}
@@ -77,9 +78,12 @@ def lane_stack_distributions(game: InterdictionGame, lane_idx: list[int],
 
 def tabular_smooth_fp(game: InterdictionGame, rounds: int = 4000, eta: float = 0.25,
                       ) -> tuple[float, np.ndarray]:
-    """Tabular smooth fictitious play with the exact BR oracle: multiplicative-weights defender
-    vs the best response to its RUNNING AVERAGE strategy; returns the average strategy and its
-    exploitability (drift-free by construction: the gen26 comparison row)."""
+    """Tabular smooth fictitious play against the exact best-response oracle.
+
+    A multiplicative-weights defender plays against the best response to its running average
+    strategy, which is drift-free by construction. Returns the exploitability of the average
+    strategy and the strategy itself.
+    """
     n = game.n_routes
     x = np.full(n, 1.0 / n)
     total = np.zeros(n)

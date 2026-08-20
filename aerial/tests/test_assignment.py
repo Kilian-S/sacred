@@ -1,11 +1,6 @@
-"""Tests for the 3b assignment probe: factory, greedy-insertion, ERB demo format.
-
-Pins the behaviour-bearing pieces of the assignment probe so they don't silently drift:
-  * the n=2 factory builds two depots + contested demand,
-  * greedy-insertion never double-assigns (sequential claiming), and
-  * ERB demos from the shared transition builder are SAC-update-compatible (the format that
-    bit us before).
-"""
+"""Assignment probe: the two-depot factory, greedy insertion claiming sequentially so it never
+double-assigns, and ERB demos from the shared transition builder staying compatible with a SAC
+update."""
 
 import unittest
 
@@ -87,12 +82,11 @@ class ErbDemoFormatTest(unittest.TestCase):
             self.assertEqual(t.agent, "protagonist")
             at = t.state.get("active_truck")
             self.assertIsNotNone(at)
-            # the field SAC.update() indexes: chosen node must be in the stored per-truck mask
+            # SAC.update() indexes this field, so the chosen node must be in the stored mask
             allowed = t.action_mask["protagonist"][at]
             self.assertIn(t.action[at], allowed)
 
     def test_demos_are_sac_update_compatible(self) -> None:
-        # The format that bit us before: feed demos into a real ProtagonistSAC buffer and update.
         from src.agents.sac import ProtagonistSAC
         smdp = SMDPDecisionWrapper(env_factory=make_assignment_env, config=_cfg())
         choose = self._greedy_choose(smdp)

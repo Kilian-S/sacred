@@ -1,5 +1,5 @@
-"""gen28 v4.0-dyn: exact-chain machinery sanity (chain vs long-rollout agreement, RVI below
-every row, feats shape/contract)."""
+"""Exact-chain machinery: agreement between the chain value and a long rollout, the ordering of
+the dynamic yardsticks, and the feature contract."""
 import numpy as np
 import pytest
 
@@ -12,7 +12,7 @@ def test_dyn_instance_yardsticks_and_chain():
     assert inst.hist_opt <= inst.bar + 1e-9
     assert inst.bar <= max(inst.iid_eq, inst.static_opt) + 1e-9
     assert inst.static_opt <= inst.iid_eq + 1e-9              # local search never worse than eq-mix
-    # chain value of a STATIC rule == the product-measure static value (two independent paths)
+    # a static rule's chain value equals its product-measure static value
     d = np.full(inst.R, 1.0 / inst.R)
     assert inst.chain_value(lambda w: d) == pytest.approx(inst.static_value(d), abs=1e-10)
     # chain vs stochastic rollout agreement on a window-dependent rule

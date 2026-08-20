@@ -1,23 +1,14 @@
-"""gen39: the concealment dynamic game (experiments/gen39_concealment.md).
+"""Concealment dynamic game on the vector theatre, exact on the defender's window MDP.
 
-Derives from the gen32 corridor-hunt machinery (`scratch/gen32_theatre_hunt.py`): the enemy is a
-doctrine that aims by softmax against a model of the defender's recent track, the defender's state
-is its own w-route window, and everything is exact on that window MDP (relative value iteration
-for the optimum, stationary distributions for any state-conditioned rule).
-
-What gen39 adds is the INFORMATION STRUCTURE. Under terrain table v2 the defender no longer knows
-which emplacements are hot: it knows the public terrain, and it learns about a site only when that
-site engages it AND the site sits on revealing ground (open, farmland). Sites in forest or town
-engage without giving themselves away.
-
-The reveal set is a deterministic function of the w-window, because which sites a route flies
-through the rings of is fixed geometry, so the state space is UNCHANGED and every quantity stays
-exactly computable. Memory is therefore the window, which is the bounded-memory form gen34 used.
-
-Three rule classes, kept strictly apart because the whole point is what each is allowed to see:
-  * BLIND      - terrain geometry only (lane structure), never the hot/cold field;
-  * REVEALED   - blind, plus the sites its own recent track has exposed on revealing ground;
-  * *fit       - field- or doctrine-informed (disclosed caps, never claimed as achievable).
+The enemy aims by softmax against a model of the defender's recent track and the defender's state is
+its own w-route window, so relative value iteration gives the optimum and stationary distributions
+score any state-conditioned rule. What makes it a concealment game is the information structure: the
+defender knows the public terrain, but learns about a site only once that site engages it from
+revealing ground, while sites in forest or town engage without giving themselves away. Which sites a
+route flies within reach of is fixed geometry, so the reveal set is a deterministic function of the
+window and the state space is unchanged. Rules are kept in three classes by what each may see,
+blind ones reading terrain geometry alone, revealed ones adding the sites their own track has
+exposed, and ``*fit`` ones reading the hidden field as a disclosed cap.
 """
 from __future__ import annotations
 
@@ -39,14 +30,11 @@ def _mm(x):
 
 
 def resample_field(coords, seed, length_scale=6.0, band=(0.55, 1.0)):
-    """The hidden per-site effectiveness draw: a spatially correlated RBF over the real site
-    coordinates, rank-mapped into a band.
+    """The hidden per-site effectiveness draw, a spatially correlated RBF rank-mapped into a band.
 
-    gen39 DESIGN CHANGE from gen32 (recorded): gen32 let this field REPLACE the terrain lethality,
-    which would erase the whole point of table v2 (a concealed site is supposed to shoot weaker
-    than an open one). Here the draw is a MULTIPLIER on the terrain's lethality, so the class
-    structure survives and the field only says which positions are hot today. Band defaults
-    accordingly to (0.55, 1.0) rather than gen32's absolute (0.30, 0.95)."""
+    The draw multiplies the terrain's lethality rather than replacing it, so the terrain class
+    structure survives and the field only says which positions are hot today.
+    """
     rng = np.random.default_rng(seed)
     d2 = ((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1)
     cov = np.exp(-d2 / (2.0 * length_scale ** 2)) + 1e-8 * np.eye(len(coords))
@@ -57,8 +45,11 @@ def resample_field(coords, seed, length_scale=6.0, band=(0.55, 1.0)):
 
 
 class ConcealBase:
-    """The fixed theatre: menu, sites, radii, terrain classes, reveal flags, exposure geometry.
-    Built once per (theatre, terrain table, range scale); field-specific games are cheap."""
+    """The fixed theatre, holding the menu, sites, radii, terrain classes and exposure geometry.
+
+    Built once per theatre, terrain table and range scale, after which field-specific games are
+    cheap to derive.
+    """
 
     def __init__(self, path, terrain=None, range_scale=1.0, spacing_km=2.0, standoff_km=4.0,
                  n_lanes=14, n_terrain=12, menu_step=None, stratified=0, site_seed=0,
@@ -77,10 +68,10 @@ class ConcealBase:
         self.isets, self.travel = game.interdiction_sets, game.travel_cost
         self.R, self.H = game.n_routes, len(coords)
         self.pp_base = np.asarray(pp, dtype=float)                       # terrain lethality [H]
-        self.concealed = ~reveal_flags(cls, self.terrain)                # forest + urban
+        self.concealed = ~reveal_flags(cls, self.terrain)                # forest and urban
         self.own = containing_blockers(self.th, coords, self.terrain)
-        self.reveal = reveal_flags(cls, self.terrain)                    # [H] revealing ground?
-        # exposure geometry is field-INDEPENDENT (the taper is range-only), so compute it once:
+        self.reveal = reveal_flags(cls, self.terrain)                    # [H] revealing ground
+        # the taper is range-only, so exposure geometry is field-independent and computed once.
         # expo[r, h] = route r flies inside site h's ring with line of sight.
         flat = np.ones(self.H)
         self.expo = np.stack([
@@ -88,16 +79,17 @@ class ConcealBase:
                            own_polys=self.own, return_exposed=True)[1] for m in menu])
 
     def lethality(self, field_mult, hidden_leth=1.0):
-        """Per-site lethality = terrain class x the hidden hot/cold draw x the concealed-class
-        knob. Keeping hidden_leth here (rather than in the terrain table) means the menu, the
-        site set and the geometry are IDENTICAL across the sweep, so every cell is the same game
-        with a different lethality vector: the standing same-menu comparison convention."""
+        """Per-site lethality, the terrain class times the hidden draw times the concealment knob.
+
+        Applying ``hidden_leth`` here rather than in the terrain table keeps the menu, the site set
+        and the geometry identical across a sweep, so every cell is the same game under a different
+        lethality vector.
+        """
         mult = np.where(self.concealed, hidden_leth, 1.0)
         return np.clip(self.pp_base * mult * np.asarray(field_mult), 1e-6, 0.999)
 
     def survival(self, pp):
-        """S[r, h] for a lethality vector, cached: the screen asks for the same vector twice
-        (once to rank ground for the laydown, once to build the game)."""
+        """Per-route, per-site survival for a lethality vector, cached across repeated calls."""
         key = np.asarray(pp, dtype=float).tobytes()
         if getattr(self, "_scache_key", None) != key:
             self._scache = np.stack([
@@ -107,30 +99,24 @@ class ConcealBase:
         return self._scache
 
     def threat_rank(self, pp, n_fleet=N_FLEET):
-        """Per site: the worst damage it could do to any single route. Ranks GROUND, which is what
-        an enemy choosing where to emplace actually compares."""
+        """Per site, the worst damage it could do to any single route, which ranks the ground."""
         return (1.0 - self.survival(pp) ** n_fleet).max(axis=0)
 
     def best_laydown(self, pp, K, pool=None, cand=60, restarts=3, iters=40, seed=0, n_out=0):
-        """The best FORCE of K positions, not the K best positions.
+        """The best force of K positions, as opposed to the K best individual positions.
 
-        The screen's original picker took the K sites with the highest individual threat, which is
-        not a force: with a dense candidate set it selects K nearly adjacent points in the same
-        piece of ground and leaves the rest of the corridor open. Measured 2026-07-25: as the
-        candidate count rose 563 -> 2360 the greedy force got monotonically WORSE against perfect
-        play (ratio 0.28 -> 0.05), i.e. the numbers were reporting the picker rather than the
-        terrain.
+        Taking the K sites of highest individual threat is not a force, because on a dense candidate
+        set it stacks nearly adjacent points on one piece of ground and leaves the rest of the
+        corridor open. The objective here is instead to maximise the damage on the safest route,
+        that is to close every lane, searched by a greedy max-min seed and steepest-descent swaps
+        over several restarts, restricted to the ``cand`` most threatening sites of the allowed
+        classes.
 
-        Objective (cheap, and the one a planner actually has): maximise the damage on the SAFEST
-        route, i.e. close every lane. Exact scoring still happens downstream on the chosen force;
-        this only has to choose well, not to score. Greedy max-min seed + steepest-descent swaps,
-        several restarts, restricted to the `cand` most threatening sites of the allowed classes.
-
-        The surrogate is not the true objective (which is the defender's optimum under the enemy's
-        doctrine), so it can lose to the old individual-threat picker on some maps: measured
-        2026-07-25, +53% on ukraine but -9% on kaliningrad. `n_out>0` therefore returns the best
-        n distinct candidate FORCES instead of one, so the caller can score them exactly and keep
-        the winner. The force actually used is then never worse than the old picker's."""
+        Args:
+            n_out: above zero, return the best n distinct candidate forces rather than one, so the
+                caller can score them exactly. The surrogate is not the true objective, so this is
+                what keeps the force finally used from being worse than a simpler picker's.
+        """
         S = self.survival(pp)
         logS = np.log(np.clip(S, 1e-300, 1.0)) * N_FLEET                  # [R, H]
         idx = np.arange(self.H) if pool is None else np.asarray(pool, dtype=int)
@@ -189,52 +175,47 @@ class ConcealDyn:
     def __init__(self, base: ConcealBase, pp_field, laydown, w=2, tau=0.10,
                  q_rep=0.6, q_flee=0.2, q_ar=0.3, sigma_r=1.5, same_class=True,
                  doctrines=None):
-        """laydown: the site indices the enemy has EMPLACED on.
+        """Build one cell of the game for a given enemy laydown.
 
-        Semantics are gen33's, which were regression-tested to reproduce the gen32 dynamic game
-        exactly in the flat single-team case: each emplaced team contributes a spatial
-        CONCENTRATION of engagement effort around its own position (an RBF bump of width
-        sigma_km), and the enemy's aim each serial is its doctrine softmax WEIGHTED by that
-        concentration. So the laydown decides where the enemy's weight sits without pretending it
-        can only ever engage from K exact points.
+        Each emplaced team contributes a spatial concentration of engagement effort around its own
+        position, and the enemy's aim each serial is its doctrine softmax weighted by that
+        concentration, so the laydown decides where the enemy's weight sits without pretending it
+        can only ever engage from K exact points. Both limits of that choice are degenerate: an
+        enemy free to re-aim over every site has nothing to reveal, which makes concealment pure
+        loss, while an enemy pinned to K hard points is trivially evadable by flying a free route.
 
-        Two design facts, both measured in the 2026-07-25 smokes and recorded in the ledger:
-        (i) an enemy free to re-aim over every site has nothing to reveal, so concealment is pure
-        loss and the terrain classes are dead; (ii) an enemy pinned to K hard points is trivially
-        evadable, because with 26 routes and 3 points a knowing defender simply flies a free route
-        and the optimum collapses to zero. The concentration form avoids both."""
+        Args:
+            laydown: the site indices the enemy has emplaced on.
+        """
         game, S = base.game_for(pp_field)
         self.base, self.game, self.S = base, game, S
         self.R, self.w, self.H = base.R, w, base.H
         self.L = np.asarray(laydown, dtype=int)
         self.dmg = 1.0 - S ** N_FLEET                                    # [R, H]
 
-        # per-team engagement concentration and its mixture (the enemy's spatial commitment).
-        # The width is tied to the team's OWN weapon reach (sigma = sigma_r x r), not to a fixed
-        # number of km: a short-range team in cover concentrates tightly, a long-range team on
-        # open ground spreads. A map-sized sigma would smear every laydown over the whole theatre
-        # and make the emplacement choice meaningless (measured, 2026-07-25).
+        # per-team engagement concentration and its mixture, the enemy's spatial commitment. The
+        # width is tied to the team's own weapon reach (sigma = sigma_r x r) rather than a fixed
+        # number of km, so a short-range team in cover concentrates tightly while a long-range team
+        # on open ground spreads. A map-sized sigma would smear every laydown over the whole
+        # theatre and make the emplacement choice meaningless.
         d2 = ((base.coords[None, :, :] - base.coords[self.L][:, None, :]) ** 2).sum(-1)
         sig = (sigma_r * np.asarray(base.rr)[self.L])[:, None]           # [k, 1]
         bump = np.exp(-d2 / (2.0 * np.clip(sig, 1e-6, None) ** 2))       # [k, H]
         if same_class:
-            # A team manoeuvres within ITS OWN ground, not out of it. Without this the smear
-            # leaks across terrain classes and the emplacement choice stops binding: measured on
-            # kaliningrad 2026-07-25, a "forest" team delivered only 20% of its effect from
-            # forest and 60% from OPEN ground, i.e. it drew open-ground reach and lethality while
-            # keeping forest's invisibility (reveal is decided by the team's own site). That
-            # diluted the price of concealment about fivefold and inflated every hide-vs-open
-            # comparison. Masking to the own class removes the leak; an isolated patch collapses
-            # the weight back onto the site itself, which is the right limit.
+            # a team manoeuvres within its own ground, not out of it. Without this mask the smear
+            # leaks across terrain classes and the emplacement choice stops binding, since a team
+            # would draw open-ground reach and lethality while keeping cover's invisibility, as
+            # revealing is decided by its own site. An isolated patch collapses the weight back
+            # onto the site itself, which is the right limit.
             cls = np.asarray(base.cls)
             bump = bump * (cls[None, :] == cls[self.L][:, None])
         self.prior_j = bump / np.clip(bump.sum(axis=1, keepdims=True), 1e-300, None)
         self.prior = self.prior_j.mean(axis=0)                           # [H]
         self.dmg_j = self.prior_j @ self.dmg.T                           # [k, R] threat per team
 
-        # the static caps are computed against the EMPLACED enemy: one "interdiction option" per
-        # team, whose payoff is that team's concentration-weighted damage, so the cap reflects the
-        # enemy the defender actually faces rather than every site the terrain could host
+        # the static caps are computed against the emplaced enemy, one interdiction option per team
+        # whose payoff is that team's concentration-weighted damage, so the cap reflects the enemy
+        # the defender actually faces rather than every site the terrain could host
         payoff_j = (self.prior_j @ game.payoff.T)                        # [k, R]
         game = InterdictionGame(game.routes, game.route_edges,
                                 tuple((int(h),) for h in self.L),
@@ -256,8 +237,8 @@ class ConcealDyn:
         for k in range(w):
             self.in_window[np.arange(Sn), self.states[:, k]] = True
 
-        # --- the enemy doctrine (gen31/gen32 form: punish the track, pre-aim at the obvious
-        # escape, pre-aim at a naive spreader) ---------------------------------------------------
+        # --- the enemy doctrine: punish the track, pre-aim at the obvious escape, and pre-aim at
+        # a naive spreader ------------------------------------------------------------------------
         if doctrines is None:
             Vw = self.dmg[self.states].mean(axis=1)                      # vs the recent track
             Zr = (Vw - Vw.max(axis=1, keepdims=True)) / tau
@@ -268,17 +249,15 @@ class ConcealDyn:
             Var = ar @ self.dmg                                          # vs a naive spreader
             Z = q_rep * Vw + q_flee * self.dmg[rflee] + q_ar * Var
             Zs = (Z - Z.max(axis=1, keepdims=True)) / tau
-            A = np.exp(Zs) * self.prior[None, :]      # doctrine, weighted by where the enemy IS
+            A = np.exp(Zs) * self.prior[None, :]      # doctrine, weighted by where the enemy is
             A /= np.clip(A.sum(axis=1, keepdims=True), 1e-300, None)
         else:
-            # PER-TEAM doctrines (gen39 step 2: the composers write doctrine per team). Each team
-            # j contributes unit-peak eagerness over ITS OWN zone shaped by ITS OWN doctrine;
-            # one joint normalisation allocates the serial's engagement across the force. With
-            # identical doctrines this reproduces the single-doctrine game exactly (sum of
-            # priors vs their mean cancels in the normalisation: the regression anchor). Extra
-            # component q_hold = sit on the zone's best ground regardless of the track (the
-            # brief's hold_static); teams may have shorter memories w_j <= w (reading the most
-            # recent w_j of the window; longer memories than w are clamped, disclosed).
+            # per-team doctrines. Each team contributes unit-peak eagerness over its own zone
+            # shaped by its own doctrine, and one joint normalisation allocates the serial's
+            # engagement across the force, so identical doctrines reproduce the single-doctrine
+            # game exactly. The extra q_hold component sits on the zone's best ground regardless
+            # of the track, and a team may carry a shorter memory w_j <= w, reading the most recent
+            # w_j of the window; longer memories are clamped to w.
             assert len(doctrines) == len(self.L)
             ar = (~self.in_window).astype(float)
             ar /= np.clip(ar.sum(axis=1, keepdims=True), 1e-12, None)
@@ -304,18 +283,15 @@ class ConcealDyn:
         shifted = np.concatenate([self.states[:, 1:], np.zeros((Sn, 1), int)], axis=1)
         self.succ = (shifted @ self.pows)[:, None] + np.arange(R)[None, :]
 
-        # --- gen39: what the defender has been shown --------------------------------------------
-        # known[s, j]: some route in the window was ENGAGEABLE by team j, and team j sits on
-        # revealing ground. A deterministic function of the state, so the MDP is unchanged.
+        # --- what the defender has been shown -----------------------------------------------------
+        # known[s, j] means some route in the window was engageable by team j and team j sits on
+        # revealing ground. It is a deterministic function of the state, so the MDP is unchanged.
         #
-        # SPOTTING FOLLOWS THE FIRE (Kilian 2026-07-25): a team relocates between serials within
-        # its zone (the same concentration its damage is delivered from), so it is spotted when
-        # the flight comes within range of ANY position it fights from, not only its nominal
-        # site. The earlier own-site-only trigger let a team engage from the far side of its zone
-        # while staying unspotted: free invisibility on open ground, biasing every hide-vs-open
-        # number against concealment. "Fights from" = positions carrying at least 5% of the
-        # team's peak concentration weight (the Gaussian tail cut, documented threshold); the
-        # nominal site always carries the peak, so the new trigger is a superset of the old one.
+        # Spotting follows the fire: a team relocates between serials within the same zone its
+        # damage is delivered from, so it is spotted when the flight comes within range of any
+        # position it fights from, not only its nominal site. Fighting positions are those carrying
+        # at least 5% of the team's peak concentration weight, and the nominal site always carries
+        # the peak.
         zone = self.prior_j >= 0.05 * self.prior_j.max(axis=1, keepdims=True)   # [k, H]
         engaged = (base.expo.astype(int) @ zone.T.astype(int)) > 0              # [R, k]
         self.revealable = engaged & base.reveal[self.L][None, :]
@@ -323,25 +299,27 @@ class ConcealDyn:
         for k in range(w):
             self.known |= self.revealable[self.states[:, k]]
         self.n_known = self.known.sum(axis=1)
-        # perceived threat of each route given ONLY the teams whose position is known
+        # perceived threat of each route given only the teams whose position is known
         kf = self.known.astype(float)
         denom = np.clip(self.n_known, 1, None)[:, None]
         self.perceived = (kf @ self.dmg_j) / denom                       # [Sn, R]
 
-    # --- persistent memory: the faithful form of "concealment buys persistence" -----------------
+    # --- persistent memory ----------------------------------------------------------------------
     #
-    # With window memory a team that gives itself away is forgotten w serials later, so being
+    # With window memory alone a team that gives itself away is forgotten w serials later, so being
     # located costs an open-ground team almost nothing and hiding is under-rewarded. Here the
-    # defender remembers every team it has seen for the whole mission, which is what the mechanic
-    # is supposed to mean. The state gains the set of teams seen (2^k of them, k <= 6), and since
-    # that set only ever GROWS, a long-run average would wash out exactly the phase of interest:
-    # the measure becomes an EPISODIC one, expected damage over a T-serial mission starting from
-    # complete ignorance, computed exactly by backward induction.
+    # defender instead remembers every team it has seen for the whole mission. The state gains the
+    # set of teams seen, 2^k of them, and because that set only ever grows a long-run average would
+    # wash out the phase of interest, so the measure is episodic: expected damage over a T-serial
+    # mission starting from complete ignorance, computed exactly by backward induction.
 
     def _memory_tables(self):
-        """expose[r] = bitmask of revealable teams route r gives away; perceived_mask[m, r] = the
-        route's threat as judged from the teams in mask m (uniform over what is known). Uses the
-        spot-where-it-fires trigger (self.revealable), same as the window form."""
+        """Build the persistent-memory tables.
+
+        Returns:
+            ``expose[r]``, the bitmask of revealable teams route r gives away, the route threat as
+            judged from the teams in each mask, uniform over what is known, and the mask sizes.
+        """
         if getattr(self, "_mem", None) is None:
             k = len(self.L)
             bits = (1 << np.arange(k))
@@ -353,22 +331,24 @@ class ConcealDyn:
         return self._mem
 
     def episodic(self, T=40, rule=None, start_mask=0, horizons=None):
-        """Mean per-serial damage over a T-serial mission with PERSISTENT memory.
+        """Mean per-serial damage over a T-serial mission under persistent memory.
 
-        rule=None returns the exact optimum for a defender that knows the laydown (backward
-        induction). Otherwise rule(state_index, mask, perceived_row) -> [R] route distribution is
-        evaluated. The start is averaged over track windows with nothing known, so no opening move
-        is privileged.
+        The start is averaged over track windows with nothing known, so no opening move is
+        privileged.
 
-        `horizons`: an iterable of mission lengths. The value after t backward steps IS the
-        t-serial answer, so one sweep yields the whole mission-length curve and a dict {t: value}
-        is returned instead of a scalar. Mission length is therefore free rather than a
-        multiplier on the screen's cost."""
+        Args:
+            rule: None gives the exact optimum for a defender that knows the laydown. Otherwise
+                ``rule(state_index, mask, perceived_row) -> [R]`` is evaluated as a route
+                distribution.
+            horizons: an iterable of mission lengths. The value after t backward steps is the
+                t-serial answer, so one sweep yields the whole curve and a ``{t: value}`` dict is
+                returned in place of a scalar.
+        """
         expose, perceived, _ = self._memory_tables()
         Sn, R, M = len(self.states), self.R, 1 << len(self.L)
         nxt_m = np.bitwise_or(np.arange(M)[:, None], expose[None, :])          # [M, R]
-        # the rule reads (state, mask) only, never V, so its matrix is built ONCE rather than once
-        # per backward step: a T-fold saving on the term that otherwise dominates the screen
+        # the rule reads (state, mask) only and never V, so its matrix is built once rather than
+        # once per backward step
         W = None if rule is None else np.stack(
             [rule(np.arange(Sn), m, perceived[m]) for m in range(M)], axis=1)  # [Sn, M, R]
         want = sorted({int(t) for t in horizons}) if horizons else [int(T)]
@@ -381,19 +361,23 @@ class ConcealDyn:
         return out if horizons else out[want[-1]]
 
     def _topm_row(self, perc, m):
-        """Uniform over the m routes that look safest given what is known: the rule a practitioner
-        actually writes ("avoid the worst few, pick at random among the rest"). Unlike a softmax
-        it keeps a flat, genuinely random spread, which is what a repetition-punishing enemy is
-        hardest to exploit by."""
+        """Uniform over the m routes that look safest given what is known.
+
+        This is the rule a practitioner writes, avoiding the worst few and picking at random among
+        the rest. Unlike a softmax it keeps a flat spread, which a repetition-punishing enemy finds
+        hardest to exploit.
+        """
         row = np.zeros(self.R)
         row[np.argsort(perc)[:max(1, min(m, self.R))]] = 1.0
         return row / row.sum()
 
     def episodic_rule(self, fallback, anti_repeat=False, softness=0.0, T=40, topm=0,
                       horizons=None):
-        """The avoid-revealed rule under persistent memory: fly the route that looks safest given
-        every team seen so far this mission, falling back to the blind rule while nothing is
-        known."""
+        """The avoid-revealed rule under persistent memory.
+
+        Fly the route that looks safest given every team seen so far this mission, falling back to
+        the blind rule while nothing is known.
+        """
         base_m = self._anti(fallback) if anti_repeat else np.broadcast_to(
             fallback, (len(self.states), self.R)).copy()
         base_m = np.array(base_m, dtype=float)
@@ -418,11 +402,10 @@ class ConcealDyn:
             return out
         return self.episodic(T=T, rule=rule, horizons=horizons)
 
-    # --- exact evaluators (gen32 verbatim) ------------------------------------------------------
+    # --- exact evaluators -----------------------------------------------------------------------
 
     def history_opt(self, iters=6000, tol=1e-12):
-        """The exact optimum for a defender that knows everything (damped relative value
-        iteration; agrees with Karp minimum-mean-cycle, the 2026-07-23 repair)."""
+        """The exact optimum for a defender that knows everything, by relative value iteration."""
         V = np.zeros(len(self.states))
         for _ in range(iters):
             Q = self.stepdmg + V[self.succ]
@@ -454,13 +437,13 @@ class ConcealDyn:
     # --- rule supports ---------------------------------------------------------------------------
 
     def blind_supports(self):
-        """TERRAIN-ONLY supports: lane structure and the menu, nothing that reads the field."""
+        """Terrain-only supports, built from lane structure and the menu alone."""
         out = {"uniform_lanes": np.zeros(self.R), "uniform_full": np.full(self.R, 1.0 / self.R)}
         out["uniform_lanes"][self.base.lane_idx] = 1.0 / max(len(self.base.lane_idx), 1)
         return out
 
     def fit_supports(self):
-        """FIELD-INFORMED supports (disclosed caps): they read the hidden effectiveness draw."""
+        """Field-informed supports, which read the hidden effectiveness draw and so are caps."""
         exp = 1.0 - self.S[:, self.L].min(axis=1)
         iv = np.zeros(self.R)
         iv[self.base.lane_idx] = 1.0 / np.clip(exp[self.base.lane_idx], 1e-6, None)
@@ -476,9 +459,13 @@ class ConcealDyn:
                         np.broadcast_to(d, m.shape))
 
     def avoid_revealed(self, fallback, anti_repeat=False, softness=0.0):
-        """The gen39 two-line rule: fly the route that looks safest given ONLY the sites your own
-        recent track has exposed on revealing ground; fall back to the blind rule when nothing is
-        known yet. softness>0 turns the argmin into a softmax (a fairer, less brittle rule)."""
+        """Fly the route that looks safest given only the sites the recent track has exposed.
+
+        Falls back to the blind rule while nothing is known yet.
+
+        Args:
+            softness: above zero, turns the argmin into a softmax, giving a less brittle rule.
+        """
         Sn = len(self.states)
         base_m = self._anti(fallback) if anti_repeat else np.broadcast_to(
             fallback, (Sn, self.R)).copy()
@@ -502,13 +489,15 @@ class ConcealDyn:
         return m
 
 
-# --- force selection (gen39 finding 6) --------------------------------------------------------
+# --- force selection --------------------------------------------------------------------------
 
 
 def pick_laydown(base, pp, kind, K, rng):
-    """Enemy laydown archetypes by top-K INDIVIDUAL threat (the original picker). Kept as one of
-    the candidates `choose_force` scores, never trusted alone: with a dense candidate set it
-    stacks K adjacent points and leaves the corridor open (finding 6)."""
+    """Enemy laydown archetypes taken by top-K individual threat.
+
+    Kept as one of the candidates `choose_force` scores and never trusted alone, since on a dense
+    candidate set it stacks K adjacent points and leaves the corridor open.
+    """
     thr = base.threat_rank(pp)
     open_sites = np.where(~base.concealed)[0]
     hid_sites = np.where(base.concealed)[0]
@@ -529,14 +518,17 @@ def pick_laydown(base, pp, kind, K, rng):
 
 
 def choose_force(base, pp, kind, K, rng, w=2, tau=0.10, doctrine=None, T=40):
-    """The archetype's force from BOTH pickers (top-K individual threat AND the `best_laydown`
-    combination search), every candidate scored EXACTLY (episodic optimum over a T-serial
-    mission), keeping the winner and recording which picker produced it. The surrogate inside
-    `best_laydown` can lose to the old picker on some maps, so scoring both exactly is what makes
-    the chosen force never worse than either picker alone (finding 6).
+    """Choose the archetype's force by scoring both pickers exactly.
 
-    Returns (laydown, ConcealDyn, picker_name); the winner's game object is handed back so the
-    caller never rebuilds it."""
+    Candidates come from top-K individual threat and from the `best_laydown` combination search,
+    and each is scored by its episodic optimum over a T-serial mission. Since the surrogate inside
+    `best_laydown` can lose to the simpler picker on some maps, scoring both is what keeps the
+    chosen force from being worse than either picker alone.
+
+    Returns:
+        ``(laydown, ConcealDyn, picker_name)``, handing back the winner's game object so the caller
+        never rebuilds it.
+    """
     doctrine = doctrine or {}
     cands = [("topk", np.asarray(pick_laydown(base, pp, kind, K, rng)))]
     if kind == "mixed":

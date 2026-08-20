@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""M3: train SACRED on the MULTI-CONVOY interdiction game (gen08 Phase M).
+"""Trains SACRED on the multi-convoy interdiction game.
 
-Each sortie is an N-step episode (route convoy 0 -> 1 -> ... -> N-1, terminal reward = -mission
-failure), so the SAC defender's credit propagates across the fleet's joint decision and it can learn
-the correlated optimum (the env exposes earlier convoys' routes via truck positions). Interdictor =
-the oracle best-response to the defender's empirical OCCUPANCY play (fictitious play). Arms: vanilla
-(no adversary, nominal travel objective) and sacred. Evaluated by EXPLOITABILITY = mission-failure of
-the policy's occupancy distribution under the best-response interdictor, vs the M2 classical ladder
-(shortest-path, ALNS) and the oracle (loss_det, loss_mixed).
+Each sortie is an N-step episode routing convoy 0 through convoy N-1 with a terminal mission-failure
+reward, so credit propagates across the fleet's joint decision and the correlated optimum is
+learnable; the env exposes earlier convoys' routes through the truck positions. The interdictor is
+the oracle best response to the defender's empirical occupancy play under fictitious play, the arms
+are vanilla (no adversary, nominal travel objective) and sacred, and the score is exploitability,
+the mission failure of the policy's occupancy distribution against that best response, read beside
+the classical ladder and the oracle.
 
 Run: PYTHONPATH=. python scripts/train_multiconvoy.py --sorties 3000 --seed 0
 """
@@ -32,8 +32,7 @@ from src.env.smdp_wrapper import SMDPTransition
 from src.envs.multiconvoy_interdiction import make_multiconvoy_env
 
 TAP_K = 5
-GREEDY_BR_EPS = 0.15   # gen26 greedy-BR mode: per-sortie prob of a one-edge-perturbed committed set
-                       # (fixed BEFORE the first run, never tuned on outcomes; the ledger records it)
+GREEDY_BR_EPS = 0.15   # greedy-BR mode: per-sortie probability of a one-edge-perturbed committed set
 
 
 def hop_probs(prot, obs, ci, allowed):
@@ -50,11 +49,15 @@ def hop_probs(prot, obs, ci, allowed):
 
 def route_one(prot, env, deterministic=False, fleet_route=False, leader_policy=None,
               copy_prob=0.0, rng=None):
-    """Route all N convoys; return (steps, occupancy, route_indices). fleet_route = followers hard-copy
-    convoy 0 (reachability control). leader_policy = a FROZEN mixing leader drives convoy 0 (follower
-    bootstrap). copy_prob = probability a follower is FORCED to copy the leader this sortie (the
-    demonstration crutch, annealed 1->0), so the critic experiences the low-failure stack against a
-    VARYING leader and must learn 'follow the correlation signal', not memorise a route."""
+    """Routes all N convoys and returns (steps, occupancy, route_indices).
+
+    Args:
+        fleet_route: followers hard-copy convoy 0, the reachability control.
+        leader_policy: a frozen mixing leader drives convoy 0, the follower bootstrap.
+        copy_prob: probability that a follower is forced to copy the leader this sortie, annealed
+            from one to zero, so the critic meets the low-failure stack under a varying leader and
+            has to learn to follow the correlation signal rather than memorise a route.
+    """
     menu = env.config.menu_select
     env_routes = []
     steps = []
@@ -66,12 +69,12 @@ def route_one(prot, env, deterministic=False, fleet_route=False, leader_policy=N
         elif fleet_route and ci != 0:
             act = leader_act
         elif ci != 0 and copy_prob > 0.0 and (rng.random() if rng is not None else 1.0) < copy_prob:
-            act = leader_act  # forced-copy demonstration (annealing crutch)
+            act = leader_act  # forced-copy demonstration
         else:
             act = prot.select_action(obs, mask, deterministic=deterministic)[ci]
         if ci == 0:
             leader_act = act
-        if menu:  # act is a ROUTE INDEX
+        if menu:  # act is a route index
             ri = int(act); env.route_convoy_by_index(ri)
         else:     # act is a first-hop node
             ri = env.route_of_first_hop(act); env.route_convoy_first_hop(act)
@@ -90,7 +93,7 @@ def _transition(obs, ci, hop, mask, reward, nobs, nci, nmask, done):
 
 
 def menu_leader_probs(prot, env):
-    """EXACT leader route distribution (menu-select): one forward pass at the convoy-0 decision."""
+    """Exact leader route distribution in menu-select mode, one forward pass at convoy 0."""
     env.reset()
     obs = env.observe()
     pyg = featurize_state(obs, 0).to(prot.device)
@@ -107,11 +110,12 @@ def menu_leader_probs(prot, env):
 
 
 def exact_fleet_occ_dist(prot, env):
-    """EXACT occupancy distribution in fleet-route + menu-select mode: the fleet stacks on the
-    leader, so the occupancy distribution is the leader's route distribution mapped onto the
-    stacked occupancies. Replaces the 400-sample Monte-Carlo estimate, whose sampling noise plus
-    min-selection bias the gen09 exact re-evaluation quantified at ~+0.012 on the best-checkpoint
-    TAP (scratch/gen09_exact_reeval.py; CRITIQUE_INTERDICTION.md §5.3)."""
+    """Exact occupancy distribution in fleet-route menu-select mode.
+
+    The fleet stacks on the leader, so the occupancy distribution is the leader's route distribution
+    mapped onto the stacked occupancies, free of the sampling noise and min-selection bias that a
+    Monte-Carlo estimate carries.
+    """
     lead = menu_leader_probs(prot, env)
     R, N = env.game.n_routes, env.config.N
     d = np.zeros(len(env.occupancies))
@@ -132,9 +136,13 @@ def policy_occ_dist(prot, env, samples=400, fleet_route=False, leader_policy=Non
 
 
 def coordination_stats(routes):
-    """stack_rate = fraction of sorties with ALL convoys on ONE route (mass on the MATCHED stacks);
-    follow_rate = fraction where convoy 1 took convoy 0's route. These, not H_foll, distinguish real
-    coordination (concentrate on the LEADER's route) from coincidental collapse onto a fixed route."""
+    """Returns the stack rate and the follow rate of a batch of sampled sorties.
+
+    The stack rate is the share of sorties with every convoy on one route, the follow rate the share
+    where convoy 1 took convoy 0's route. Unlike follower entropy, the pair separates real
+    coordination, concentrating on the leader's route, from a coincidental collapse onto a fixed
+    route.
+    """
     arr = np.asarray(routes)
     stack = float(np.mean([len(set(r)) == 1 for r in arr]))
     follow = float(np.mean(arr[:, 1] == arr[:, 0])) if arr.shape[1] >= 2 else 0.0
@@ -142,9 +150,11 @@ def coordination_stats(routes):
 
 
 def role_entropies(routes, R):
-    """From sampled per-convoy route tuples: H(leader route) and mean H(follower route | leader) -
-    the correlation SIGNATURE we want (leader stays high, follower -> 0 = learned stack-and-follow;
-    both high = still independent spreading)."""
+    """Returns H(leader route) and mean H(follower route | leader) from sampled route tuples.
+
+    A high leader entropy with a follower entropy near zero is the learned stack-and-follow
+    signature; both high means the convoys are still spreading independently.
+    """
     arr = np.asarray(routes)
     lead = np.bincount(arr[:, 0], minlength=R) / len(arr)
     H_lead = float(-(lead[lead > 0] * np.log(lead[lead > 0])).sum())
@@ -175,17 +185,15 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                           lr_alpha=(alpha_lr if adversarial else None),
                           alpha_floor=(leader_alpha_floor if adversarial else None),
                           legacy_next_alpha=legacy_role_target)
-    if env.config.menu_select:  # ROUTE menu-select head: give every net the per-route node indices
+    if env.config.menu_select:  # menu-select head: give every net the per-route node indices
         menu = [torch.tensor(r, dtype=torch.long) for r in env.menu_route_node_idx()]
         for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
             net.menu_routes = menu
-        if adversarial:  # vanilla stays a clean control (no follow mechanism)
-            # LEVER 2: a LEARNED (not fixed) weight on the undiluted per-route 'taken' term, at BOTH
-            # the policy head AND the critic Q head, so the critic can rank the leader's route and the
-            # actor gets a gradient to grow follow_w (Bellman-consistent Q input, not a hard bonus).
-            # gen18/C2: when a dedicated head-term lr is given, follow_w uses it too (the gen11
-            # silent-no-op lesson applied to the coordination weight); default None = base lr,
-            # byte-identical to the banked follower-bootstrap path.
+        if adversarial:  # vanilla stays a clean control, with no follow mechanism
+            # A learned weight on the undiluted per-route 'taken' term, at both the policy head and
+            # the critic Q head, so the critic can rank the leader's route and the actor gets a
+            # gradient to grow follow_w (a Bellman-consistent Q input, not a hard bonus). A
+            # dedicated head-term lr applies to follow_w too; None leaves it on the base lr.
             fw_lr = {"lr": head_term_lr} if head_term_lr is not None else {}
             prot.actor.follow_w = torch.nn.Parameter(torch.tensor(1.0))
             prot.actor_optimizer.add_param_group({"params": [prot.actor.follow_w], **fw_lr})
@@ -193,10 +201,10 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 qn.follow_w = torch.nn.Parameter(torch.tensor(1.0))
             prot.critic_optimizer.add_param_group(
                 {"params": [prot.q1.follow_w, prot.q2.follow_w], **fw_lr})
-            # gen11 arm B: undiluted per-route COST + worst-case VULNERABILITY at both heads with
-            # LEARNED weights (init 0 = byte-identical start). Restores the discriminability the
-            # mean-pooled embeddings lost post-node-ordering-fix; also the ZST map-conditioning
-            # mechanism. Registration ORDER matches across q and target nets (_soft_update zips).
+            # Undiluted per-route cost and worst-case vulnerability at both heads, with learned
+            # weights starting at zero; this restores discriminability the mean-pooled embeddings
+            # lack. Registration order must match across the q and target nets, because
+            # _soft_update zips their parameter lists.
             if route_feats:
                 cost = np.asarray(env.game.travel_cost, dtype=float)
                 vuln = env.game.payoff.max(axis=1)
@@ -209,14 +217,13 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                 for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                     net.route_feats = feats
                     net.route_feat_w = torch.nn.Parameter(torch.zeros(2))
-                # gen11b: the added head terms need their OWN lr scale; at the base lr they stayed
-                # ~0 over 1200 updates and silently no-op'd (the gen11 finding).
+                # The added head terms need their own lr scale; on the base lr they stay near zero
+                # and silently do nothing.
                 lr_kw = {"lr": head_term_lr} if head_term_lr is not None else {}
                 prot.actor_optimizer.add_param_group({"params": [prot.actor.route_feat_w], **lr_kw})
                 prot.critic_optimizer.add_param_group(
                     {"params": [prot.q1.route_feat_w, prot.q2.route_feat_w], **lr_kw})
-            # gen11 arm E: LEARNED per-route scalar bias (init 0) = pure identity capacity,
-            # reconstructing exactly what the pre-fix permutation accidentally provided.
+            # Learned per-route scalar bias, starting at zero: pure route-identity capacity.
             if route_bias:
                 for net in (prot.actor, prot.q1, prot.q2, prot.target_q1, prot.target_q2):
                     net.route_bias = torch.nn.Parameter(torch.zeros(env.game.n_routes))
@@ -232,17 +239,15 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
     occ_seq: list[int] = []                # per-sortie occupancy-index log (smooth-FP trailing window)
     smooth_probs = None                    # smooth-FP attacker distribution over interdiction sets
     committed = None
-    # gen26 greedy-BR mode (env built with greedy_br=True; obj_matrix is None): the attacker is the
-    # verified submodular greedy BR to the trailing-window occupancy support; smoothing = with prob
-    # GREEDY_BR_EPS the committed set has ONE member edge swapped for a random candidate (the
-    # sharp-pressure + residual-unpredictability role the tau=0.05 softmax plays below the wall).
+    # Greedy-BR mode (env built with greedy_br=True, so obj_matrix is None): the attacker is the
+    # submodular greedy best response to the trailing-window occupancy support, smoothed by swapping
+    # one member edge for a random candidate with probability GREEDY_BR_EPS.
     greedy_mode = env.obj_matrix is None
     greedy_set = None
 
     def _window_support(seq, window):
         win = seq[-window:]
-        if not win:  # initial attacker belief = uniform-DISJOINT-stack (the R0 heuristic prior;
-            # design decision, gen26 ledger: a sensible prior that needs no matrix)
+        if not win:  # initial attacker belief = uniform disjoint stack, a prior needing no matrix
             dis, used = [], set()
             for i, re_ in enumerate(env.game.route_edges):
                 if not (re_ & used):
@@ -274,12 +279,10 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                                                    env.config.objective, env.config.threshold_m)
                 committed = -1  # sentinel; committed EDGES are chosen per sortie below
             elif attacker_mode == "smooth":
-                # TRUE smooth fictitious play via the shared B2-P3-proven discipline (fp_dynamics):
-                # softmax BR to the TRAILING-WINDOW occupancy play, recomputed per block; the iset is
-                # SAMPLED FRESH EVERY sortie below (block-holding one iset is the cycling regime).
-                # gen17/C4: optional ANNEALED SMOOTHING - tau anneals linearly fp_tau -> fp_tau_final
-                # (smoothed-game equilibria converge to Nash as smoothing -> 0; a sharpening attacker
-                # raises the penalty for post-hedge drift). None = constant tau (byte-identical).
+                # Smooth fictitious play: a softmax best response to the trailing-window occupancy
+                # play, recomputed per block, with the interdiction set sampled fresh every sortie
+                # below (holding one set for a whole block is the cycling regime). With
+                # fp_tau_final set, tau anneals linearly across training; None keeps it constant.
                 cur_tau = (fp_tau if fp_tau_final is None
                            else fp_tau + (fp_tau_final - fp_tau) * (k / max(sorties - 1, 1)))
                 smooth_probs = smooth_fp_probs(occ_seq, n_occ, env.obj_matrix, cur_tau, smooth_window)
@@ -306,8 +309,8 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         played[oi] += 1.0
         occ_seq.append(oi)
         if adversarial:
-            # analytic (expected) mission-failure reward: dense, low-variance, unbiased replacement
-            # for the sampled Bernoulli env.resolve() (verified). committed = the FP interdictor.
+            # Analytic (expected) mission-failure reward: a dense, low-variance, unbiased
+            # replacement for the sampled Bernoulli resolution.
             p = p_committed if p_committed is not None else env.game.payoff[:, committed]
             reward = -interception_loss * objective_value(np.asarray(occ), p, env.config.N,
                                                           env.config.objective, env.config.threshold_m)
@@ -316,28 +319,26 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             reward = -interception_loss * (travel / (env.config.N * mean_cost))   # nominal travel
         N = env.config.N
         bootstrap = frozen_leader is not None
-        # ITEM 3 (prioritised replay / ERB / Obj-3): upsample MATCHED-STACK sorties so the critic keeps
-        # training on the rare-but-informative low-failure stacked experience once natural stacks are
-        # scarce (the confirmed under-sampling root cause).
+        # Prioritised replay: upsample matched-stack sorties so the critic keeps training on the
+        # rare but informative low-failure stacked experience once natural stacks grow scarce.
         is_stack = sum(1 for c in occ if c > 0) == 1
         n_push = stack_dup if (is_stack and adversarial) else 1
         if adversarial:
-            # role-dependent entropy. Bootstrap: convoys 1..N-1 are all followers (the leader is
-            # frozen). Otherwise convoy 0 leads and the followers switch to the low temperature
-            # only after the warmup so the critic learns the ordering before they commit.
-            # Tagged in a PRE-pass over ALL steps so that _transition's shallow next-state copy
-            # carries the NEXT decision's alpha_group too (the role-alpha target fix in sac.py).
+            # Role-dependent entropy. In bootstrap mode convoys 1..N-1 are all followers, since the
+            # leader is frozen; otherwise convoy 0 leads and the followers switch to the low
+            # temperature only after the warmup, so the critic learns the ordering before they
+            # commit. Tagged in a pre-pass over all steps so that _transition's shallow next-state
+            # copy carries the next decision's alpha_group too.
             for obs_j, ci_j, _, _ in steps:
                 is_follower = (ci_j != 0) and (bootstrap or k >= follower_warmup)
                 obs_j["target_entropy"] = follower_te if is_follower else leader_te
                 obs_j["alpha_group"] = 1 if is_follower else 0
         if leader_only_push and fleet_route:
-            # gen11 arm C (the follower-push diagnostic, CRITIQUE_PREFREEZE §5.1): in fleet-route
-            # mode the followers hard-copy the leader, so their transitions carry no decision
-            # content, yet post-warmup they train the SAME shared actor toward near-argmax on
-            # states differing from the leader's only in the correlation signal. Push ONLY the
-            # leader's decision, TERMINAL with the sortie reward. (One shared update per sortie
-            # below, same as every other arm.)
+            # In fleet-route mode the followers hard-copy the leader, so their transitions carry no
+            # decision content, yet after the warmup they would train the same shared actor toward
+            # near-argmax on states differing from the leader's only in the correlation signal.
+            # Push only the leader's decision, terminal with the sortie reward; the single shared
+            # update per sortie below is unchanged.
             obs0, ci0, hop0, mask0 = steps[0]
             t = _transition(obs0, ci0, hop0, mask0, reward, None, None, None, True)
             for _ in range(n_push):
@@ -347,7 +348,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             steps_to_push = steps
         for i, (obs, ci, hop, mask) in enumerate(steps_to_push):
             if bootstrap and ci == 0:
-                continue  # convoy 0 is the FROZEN mixing leader: not trained
+                continue  # convoy 0 is the frozen mixing leader, so it is not trained
             last = i == N - 1
             nobs, nci, nmask = (steps[i + 1][0], steps[i + 1][1], steps[i + 1][3]) if not last else (None, None, None)
             t = _transition(obs, ci, hop, mask, reward if last else 0.0, nobs, nci, nmask, last)
@@ -358,7 +359,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             t_train = time.time() - t_chunk
             t_ev = time.time()
             exact = fleet_route and env.config.menu_select
-            if exact:  # fleet-route: EXACT occupancy distribution (one forward pass, no MC noise)
+            if exact:  # fleet-route: exact occupancy distribution in one forward pass
                 d, lead = exact_fleet_occ_dist(prot, env)
                 nzl = lead[lead > 0]
                 H_lead, H_foll = float(-(nzl * np.log(nzl)).sum()), 0.0
@@ -371,7 +372,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
             pol_hist.append(d)
             expl = env.exploitability_of_occupancy_dist(d)
             expl_tap = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-TAP_K:], axis=0))
-            if ckpt_dir is not None:  # per-eval checkpoint: best-checkpoint becomes a re-evaluable artefact
+            if ckpt_dir is not None:  # per-eval checkpoint, so the best one stays re-evaluable
                 Path(ckpt_dir).mkdir(parents=True, exist_ok=True)
                 torch.save(prot.actor.state_dict(), str(Path(ckpt_dir) / f"actor_ep{k + 1}.pt"))
             nz = d[d > 0]; h = float(-(nz * np.log(nz)).sum())
@@ -390,7 +391,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
                          if sol is not None else
                          f"(GREEDY yardstick; heuristic={baselines['heuristic']:.3f})"), flush=True)
             t_chunk = time.time()
-    if fleet_route and env.config.menu_select:  # EXACT final reading (see the eval block above)
+    if fleet_route and env.config.menu_select:  # exact final reading, as in the eval block above
         d, lead = exact_fleet_occ_dist(prot, env)
         nzl = lead[lead > 0]
         H_lead, H_foll = float(-(nzl * np.log(nzl)).sum()), 0.0
@@ -403,9 +404,9 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
     pol_hist.append(d)
     expl_tap = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-TAP_K:], axis=0))
     expl = env.exploitability_of_occupancy_dist(d)
-    # STATIONARY-TAIL time-average (zero-sum FP: the equilibrium is the time-average, not per-eval
-    # play): exploitability of the MEAN occupancy over the last TAIL evals, its per-eval expl
-    # amplitude (std), and mean stack there -- the trustworthy read once coordination has plateaued.
+    # Stationary-tail time-average: under zero-sum fictitious play the equilibrium is the
+    # time-average rather than the per-eval play, so read exploitability of the mean occupancy over
+    # the last few evals, with its per-eval amplitude and the mean stack rate there.
     tail_k = min(len(pol_hist), 12)
     tail_expl = env.exploitability_of_occupancy_dist(np.mean(pol_hist[-tail_k:], axis=0))
     tail_amp = float(np.std([h[1] for h in hist[-tail_k:]])) if len(hist) >= 2 else 0.0
@@ -414,11 +415,10 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
         Path(save_actor).parent.mkdir(parents=True, exist_ok=True)
         torch.save(prot.actor.state_dict(), save_actor)
         print(f"  [saved leader actor] {save_actor}")
-    # BEST-CHECKPOINT (project discipline: the final iterate is misleading under adversarial/minimax
-    # co-evolution -- the last iterate over-trains toward uniform; select the lowest-exploitability
-    # training point). Report both the deployable trailing-averaged-policy reading (min TAP, the
-    # B2-P3 estimator, the headline) and the single-checkpoint reading (min per-eval expl). Both are
-    # re-evaluable from the saved per-eval ckpt_dir actors + the pol_hist occupancy distributions.
+    # Best checkpoint: under minimax co-evolution the final iterate over-trains toward uniform, so
+    # select the lowest-exploitability training point instead. Both readings, the trailing-averaged
+    # policy (min TAP) and the single checkpoint (min per-eval exploitability), are re-evaluable
+    # from the saved per-eval actors in ckpt_dir and the recorded occupancy distributions.
     best_tap = min((h[2] for h in hist), default=float("nan"))
     best_tap_sortie = next((h[0] for h in hist if h[2] == best_tap), None)
     best_expl = min((h[1] for h in hist), default=float("nan"))
@@ -432,7 +432,7 @@ def train_defender(env, *, sorties, seed, adversarial, switch_every, batch_size,
 
 
 def _route_of(steps, env):
-    if env.config.menu_select:  # the stored action IS the route index
+    if env.config.menu_select:  # the stored action is already the route index
         return [int(act) for (_, _, act, _) in steps]
     return [env.route_of_first_hop(hop) for (_, _, hop, _) in steps]
 
@@ -520,10 +520,10 @@ def main():
                                greedy_br=args.greedy_br)
     mean_cost = float(env.game.travel_cost.mean())
     if args.greedy_br:
-        # PAST THE EXACT WALL: no LP, no ALNS worst-case, no equilibrium exists computably.
-        # Anchors under the SAME greedy yardstick: shortest-stack, uniform-disjoint-stack (the R0
-        # heuristic), inverse-vuln-disjoint-stack. All arms in this mode are compared same-yardstick;
-        # absolute statements carry the certified interval [v, v/(1-1/e)].
+        # Past the exact wall there is no LP, no ALNS worst case and no computable equilibrium. The
+        # anchors (shortest stack, uniform disjoint stack, inverse-vulnerability disjoint stack) are
+        # scored under the same greedy yardstick as the arms, and absolute statements carry the
+        # certified interval [v, v/(1-1/e)].
         sol = None
         R_ = env.game.n_routes
         dis, used = [], set()
@@ -574,7 +574,7 @@ def main():
                   route_bias=args.route_bias, leader_only_push=args.leader_only_push,
                   head_term_lr=args.head_term_lr, fp_tau_final=args.fp_tau_final)
 
-    if args.leader_ckpt:  # follower BOOTSTRAP: frozen mixing leader + forced-copy annealing
+    if args.leader_ckpt:  # follower bootstrap: frozen mixing leader plus forced-copy annealing
         frozen = ProtagonistSAC(node_in_dim=14, edge_in_dim=4, hidden_dim=64, num_layers=2, heads=4,
                                 autotune_alpha=True, alpha_init=1.0, device="cpu")
         if env.config.menu_select:
@@ -592,8 +592,8 @@ def main():
         print("[sacred] follower bootstrap vs frozen leader...")
         sac = train_defender(env, adversarial=True, attacker_mode=args.attacker_mode,
                              frozen_leader=frozen, forced_copy_warmup=args.forced_copy_warmup, **common)
-        # nan -> vanilla reference row. 0.859 = the POST-FIX gen10-VAN seed-0 TAP (SHA 97764b1 era);
-        # the old 0.945 was a PRE-FIX number (CRITIQUE_PREFREEZE §5.3). Reference only, not citable.
+        # nan means the vanilla arm was skipped; fall back to a stored reference value so the
+        # printed ladder still has a vanilla row.
         van = v['expl_tap'] if v['expl_tap'] == v['expl_tap'] else 0.859
         print(f"\n=== FOLLOWER-BOOTSTRAP ({s}->{t}, N={args.N}, K={args.K}) ===")
         print(f"  shortest {baselines['shortest_path']:.3f}  ALNS {baselines['alns']:.3f}  vanilla {van:.3f}  equilibrium {sol.loss_mixed:.3f}")

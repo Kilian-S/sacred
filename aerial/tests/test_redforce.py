@@ -1,5 +1,5 @@
-"""gen33_llm_adversary: the LLM red-force I/O contract (schema, serialiser, dry force, resolver).
-Validates the generation half end-to-end without a live model."""
+"""Pins the LLM red-force input/output contract, its schema, serialiser, dry force and resolver,
+validating the generation half end to end without a live model."""
 import numpy as np
 
 from src.envs.aerial_theatre_vec import build_theatre_game, lateral_width, load_vec_theatre

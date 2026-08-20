@@ -1,6 +1,6 @@
-"""gen33_llm_adversary: terrain-table + loader extensions. Guards the sea/alpine classes, the
-new fetch (poly) format, the sea non-emplaceable fix, and the coverage-fraction range scaling
-(byte-identical at the default scale so existing games are untouched)."""
+"""Guards the terrain table and the vector-theatre loader: the sea and alpine classes, the polygon
+fetch format, sea being non-emplaceable, and range scaling that leaves the default scale
+untouched."""
 import os
 
 import numpy as np

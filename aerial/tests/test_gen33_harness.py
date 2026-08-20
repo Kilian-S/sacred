@@ -1,5 +1,5 @@
-"""gen33_llm_adversary: the concurrent generation harness (task fan-out, fallback parse).
-Loads the script by path (scripts/ is not a package) and exercises the dry concurrent path."""
+"""The concurrent red-force generation harness: task fan-out and fallback parsing. The script is
+loaded by path because ``scripts`` is not a package, and only the dry path is exercised."""
 import importlib.util
 import json
 from concurrent.futures import ThreadPoolExecutor

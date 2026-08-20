@@ -1,5 +1,5 @@
-"""Test the B7 contested ERB demo path: greedy no-attack transitions are collectable and load
-into a protagonist replay buffer (the --erb-path contract), without file I/O."""
+"""The contested ERB demo path: greedy no-attack transitions are collectable and load into a
+protagonist replay buffer, which is the ``--erb-path`` contract, without file I/O."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def test_contested_greedy_demos_collect_and_buffer():
     assert transitions, "greedy produced no protagonist transitions"
     assert all(t.agent == "protagonist" for t in transitions)
 
-    # They must load into a protagonist buffer exactly as --erb-path does.
+    # they must load into a protagonist buffer exactly as --erb-path does
     agent = ProtagonistSAC(node_in_dim=13, edge_in_dim=4, hidden_dim=16, num_layers=2, heads=2,
                            device="cpu")
     for t in transitions:
