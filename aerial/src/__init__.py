@@ -1,0 +1,2 @@
+"""SACRED thesis core package."""
+
