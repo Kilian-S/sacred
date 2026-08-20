@@ -35,7 +35,6 @@ mixture an exact solver would produce. Thus, SACRED outperforms, in a single zer
 the absolute best static plan available. When an identical network was deprived of its memory,
 its score dropped to a severely degraded 1.43, confirming that the ability to adapt to recent
 history drives the entire performance gain.
-([record](roads/experiments/gen27_dynamic_generalist.md))
 
 <img src="assets/four_cities.png" alt="Three training cities and the held-out fourth" width="100%">
 
@@ -47,7 +46,6 @@ across the remaining computable region, K=3 to K=6, with margins widening from 8
 The best heuristics sit at around 1.55 times the exact optimum, translating to wide gaps that
 are only filled by using SACRED. Once Nash equilibria become incomputable, learning provides
 the only alternative for realising additional performance gains.
-([record](roads/experiments/gen43_unified_kboundary.md))
 
 <img src="assets/dynamic_ladder.png" alt="The dynamic game ladder across interdiction budgets" width="100%">
 
@@ -57,8 +55,6 @@ configurations where SACRED is highly performant. Adversarial training against c
 not condition successful policies, because congestion is observable and easily avoidable,
 allowing reactive defenders to dominate. In interdiction games at low K budgets, randomisation
 over edge-disjoint routes is often optimal or quasi-optimal and SACRED therefore unnecessary.
-([record](roads/experiments/gen43_unified_kboundary.md),
-[record](roads/experiments/gen06_dynassign_matrix.md))
 
 <img src="assets/static_ladder.png" alt="The static game ladder across interdiction budgets" width="100%">
 
@@ -67,15 +63,12 @@ own recent history. This means that the core mechanism was simply transferable t
 resupply missions. On the Königsberg to Gvardeysk map, it beat the static reference on all
 eighteen cells, at 0.351 of this reference and 1.46 times the exact optimum in a zero-shot
 attempt.
-([record](aerial/experiments/gen45_unified_corridor.md))
 
 LLMs can be used to augment SACRED, resulting in measurable performance increases. While
 Llama-3.3-70B and Qwen3.6-27B both fail as decision-making defenders, they can perfectly
 categorise descriptions of enemy activity, which SACRED was ultimately unable to achieve alone.
 LLMs reliably identify the right adversary even when contradictory information is presented, or
 where keyword matching collapses. They are also highly effective training curriculum authors.
-([record](roads/experiments/gen38_llm_enemy_id.md),
-[record](aerial/experiments/gen39_concealment.md))
 
 <img src="assets/enemy_id.png" alt="Doctrine identification under degrading intelligence" width="100%">
 
