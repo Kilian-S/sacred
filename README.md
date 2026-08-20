@@ -1,93 +1,116 @@
 # SACRED
 
-**Adversarial reinforcement learning for contested resupply routing.** Code and experiment
-records for an MSc thesis at Imperial College London (Kilian Schwarz, 2026).
+SACRED is a Soft Actor-Critic, Robust Evolutionary Deep reinforcement learning framework that
+generates resilient, unpredictable routing policies for contested logistics operations. It was
+developed and evaluated in an MSc thesis at Imperial College London (Kilian Schwarz, 2026), and
+this repository is the thesis's code and experimental record.
 
-<img src="assets/theatre.png" alt="The Kaliningrad to Gvardeysk corridor in Mission Control, with line-of-sight-masked air defences and the trained policy's route" width="100%">
+<img src="assets/reaiming.png" alt="Four consecutive serials in the Königsberg Oblast theatre" width="100%">
 
-Send convoys down the same road often enough and an ambusher learns it. Fly the same corridor
-twice and the air defence is already aimed there. Classical planners are built to find the one
-best route, which is exactly the habit that gets a convoy caught. SACRED is a Soft Actor-Critic
-policy trained by fictitious self-play against best-responding adversaries. It learns calibrated
-route randomisation for convoy fleets and drone flights moving through networks under hidden,
-pre-committed interdiction, and every result is scored against exactly computable optima.
+*Four consecutive serials in the Königsberg Oblast theatre. SACRED effectively anticipates where
+the adversary is likely to emplace air defences.*
 
-The thesis asks a question the field had not answered with measurement, namely when a learned
-routing policy is worth using at all, and answers it as a map. Below a measurable boundary,
-simple rules are provably optimal and the thesis says so. Beyond it, where exact solvers and
-hand-written rules both give out, SACRED delivers value no competing method matches.
+Resupply operations in contested environments confront a class of threat that conventional
+logistics planning was never designed to address. When convoys travel repeatedly between bases
+and the forward positions they resupply, they generate a Pattern of Life: an observable record
+of routes, behaviours, and habits. A capable adversary intent on maximising the chance of
+interception studies that record and commits its interdiction assets to the network in advance
+of the next sortie. By the time the threat is observed the engagement has already occurred, so
+the only viable defences are anticipation and unpredictability. A planner that reliably selects
+the shortest route is intercepted with certainty in the worst case, precisely because its
+behaviour can be predicted without error.
 
-## Findings
+Adversarial Reinforcement Learning promises routing policies hardened by training against a
+hostile opponent, yet the literature offers no systematic account of when that promise holds.
+Instead of asking whether adversarial training works in a narrow domain, this project provides
+a map, identifying the settings in which the approach demonstrably fails and is unnecessary and
+those where adversarially-trained policies deliver unparalleled value.
 
-**One policy, never-seen city.** Trained by adversarial self-play on three cities and deployed
-zero-shot on a fourth, SACRED beats every fixed strategy the city admits, at 0.639 of the best
-static bound. An identical twin with its route memory deleted collapses to 1.434, so the learned
-use of history carries the entire gain.
+## Principal findings
+
+The central finding is that SACRED's calibrated unpredictability transfers zero-shot. Trained
+adversarially on three cities, it beats every fixed strategy of a fourth at 0.639 ± 0.025 of
+the static cap. Far from a trivial benchmark, this reference also bounds the optimal Nash
+mixture an exact solver would produce. Thus, SACRED outperforms, in a single zero-shot attempt,
+the absolute best static plan available. When an identical network was deprived of its memory,
+its score dropped to a severely degraded 1.43, confirming that the ability to adapt to recent
+history drives the entire performance gain.
 ([record](roads/experiments/gen27_dynamic_generalist.md))
 
-<img src="assets/flagship_transfer.png" alt="Zero-shot performance on the held-out city against the static cap, with the memory-deleted control" width="100%">
+<img src="assets/four_cities.png" alt="Three training cities and the held-out fourth" width="100%">
 
-**Learning pays exactly where computation fails.** Against an adversary that studies the
-defender's recent pattern, SACRED beats every heuristic at interdiction budgets K=3 to K=6, with
-margins widening to 20.7%, across the entire range where the exact optimum is still computable
-and beyond the reach of any solver.
+<img src="assets/flagship_transfer.png" alt="Zero-shot results by held-out OD pair, with the memory-blind control" width="100%">
+
+Learned policies are advantageous where computation fails. Against a Pattern-of-Life adversary,
+SACRED ties the best heuristics at an interdiction budget of K=2 and beats every heuristic
+across the remaining computable region, K=3 to K=6, with margins widening from 8.6 to 20.7%.
+The best heuristics sit at around 1.55 times the exact optimum, translating to wide gaps that
+are only filled by using SACRED. Once Nash equilibria become incomputable, learning provides
+the only alternative for realising additional performance gains.
 ([record](roads/experiments/gen43_unified_kboundary.md))
 
-<img src="assets/dynamic_ladder.png" alt="The dynamic ladder: SACRED below every heuristic from K=3 to the computability wall" width="100%">
+<img src="assets/dynamic_ladder.png" alt="The dynamic game ladder across interdiction budgets" width="100%">
 
-**And the map is honest about where it does not.** Against an adversary that commits in advance,
-a two-line stack over the edge-disjoint routes equals the exact game value at low budgets and is
-never beaten by training on the instrument. The thesis's opening act measures adversarial
-training against congestion actively worsening robustness. Knowing when not to deploy learning
-is part of the result.
+SACRED is not a panacean or universally efficacious policy, and the negative results garnered
+throughout the thesis are reported transparently, serving to demarcate the exact problem
+configurations where SACRED is highly performant. Adversarial training against congestion did
+not condition successful policies, because congestion is observable and easily avoidable,
+allowing reactive defenders to dominate. In interdiction games at low K budgets, randomisation
+over edge-disjoint routes is often optimal or quasi-optimal and SACRED therefore unnecessary.
 ([record](roads/experiments/gen43_unified_kboundary.md),
-[campaign](roads/experiments/gen06_dynassign_matrix.md))
+[record](roads/experiments/gen06_dynassign_matrix.md))
 
-<img src="assets/static_ladder.png" alt="The static ladder: the naive stacks stay ahead of the trained policy at every committed-adversary budget" width="100%">
+<img src="assets/static_ladder.png" alt="The static game ladder across interdiction budgets" width="100%">
 
-**The mechanism travels from roads to real terrain.** Rebuilt for aerial resupply on the real
-Kaliningrad to Gvardeysk corridor, with terrain-dependent reach, lethality and line-of-sight
-masking, the policy beats the static reference on 18 of 18 held-out cells at 0.351 of it, 1.46
-times the exact optimum, discovered zero-shot on threat fields it never trained on.
+SACRED is highly generalisable, requiring only a route menu, a risk estimate per route, and its
+own recent history. This means that the core mechanism was simply transferable to air-based
+resupply missions. On the Königsberg to Gvardeysk map, it beat the static reference on all
+eighteen cells, at 0.351 of this reference and 1.46 times the exact optimum in a zero-shot
+attempt.
 ([record](aerial/experiments/gen45_unified_corridor.md))
 
-**Language models slot in where language enters the loop.** Reading short, sometimes
-contradictory intelligence prose, an LLM identifies the enemy's doctrine 60 of 60 times where
-keyword matching collapses, and hands a type-conditioned SACRED the ability to cross a
-performance wall it provably cannot cross alone (0.664 against the type-blind 1.373). Curricula
-authored by a thinking-mode reasoner train the defenders that transfer best.
+LLMs can be used to augment SACRED, resulting in measurable performance increases. While
+Llama-3.3-70B and Qwen3.6-27B both fail as decision-making defenders, they can perfectly
+categorise descriptions of enemy activity, which SACRED was ultimately unable to achieve alone.
+LLMs reliably identify the right adversary even when contradictory information is presented, or
+where keyword matching collapses. They are also highly effective training curriculum authors.
 ([record](roads/experiments/gen38_llm_enemy_id.md),
 [record](aerial/experiments/gen39_concealment.md))
 
-<img src="assets/enemy_id.png" alt="Doctrine identification under degrading intelligence, LLM against keyword control, and the value of a correct call" width="100%">
+<img src="assets/enemy_id.png" alt="Doctrine identification under degrading intelligence" width="100%">
+
+Where the adversary simply plays a static Nash equilibrium, simple randomised rules are
+provably optimal. However, if the adversary observes and adapts, SACRED achieves evasion rates
+that no solver or heuristic can match, and does so on completely unseen networks, on the ground
+and in the air.
 
 ## Mission Control
 
-The interactive counterpart to the thesis. A web application over the same engine and the same
-records, where the games are played live: watch strategies duel across a real city, take either
-side yourself, command the air defence against the trained policy, or build a playable theatre
-from any rectangle of the real world.
+The Mission Control application is the interactive deliverable. The theatres, the trained
+policies, and the experimental record are explorable through it.
 
-<img src="assets/play.png" alt="The placement game in Mission Control: a hand-placed air defence laydown mid-mission against the trained policy" width="100%">
+<img src="assets/theatre.png" alt="The Kaliningrad to Gvardeysk theatre in Mission Control" width="100%">
+
+<img src="assets/play.png" alt="The placement game in Mission Control" width="100%">
 
 Repository: [sacred-mission-control](https://github.com/Kilian-S/sacred-mission-control)
 
 ## Layout
 
-The repository holds two self-contained arms.
+Two self-contained arms.
 
-- `roads/` covers the road-based interdiction games (thesis Acts 1 to 3 and the road half of
-  Act 5). `src/` holds the environments, agents and oracles, `scripts/` the trainers and
-  evaluators, `analysis/` the exact solvers, probes and scoring tools, `tests/` the suite
-  (171 tests), `experiments/` the experiment records, `data/maps/` the extracted city graphs.
-- `aerial/` covers the aerial theatre games (thesis Acts 4 and 5) in the same layout, with 246
-  tests and the theatre geometry under `data/maps/`.
+- `roads/`, the road-based interdiction games (thesis Acts 1 to 3 and the road half of Act 5).
+  `src/` holds the environments, agents and oracles, `scripts/` the trainers and evaluators,
+  `analysis/` the exact solvers, probes and scoring tools, `tests/` the suite (171 tests),
+  `experiments/` the experiment records, `data/maps/` the extracted city graphs.
+- `aerial/`, the aerial theatre games (thesis Acts 4 and 5) in the same layout, with 246 tests
+  and the theatre geometry under `data/maps/`.
 
 ## Experiment records
 
-Every experiment has one record in `experiments/`. A record states the question, the pinned game
-configuration, the pre-registered decision criteria, the baseline family and the results, and
-nothing else. All numbers cited in the thesis trace to these records.
+One record per experiment in `experiments/`, stating the question, the pinned game
+configuration, the pre-registered decision criteria, the baseline family and the results.
+All numbers cited in the thesis trace to these records.
 
 | Thesis Act | Records |
 |---|---|
@@ -108,12 +131,11 @@ pip install -r requirements.txt
 PYTHONPATH=. python -m pytest tests/
 ```
 
-Training and evaluation commands are pinned in the experiment records; run outputs land under
-`models/runs/`, which is not shipped (the records name the artefact paths that a rerun
-regenerates). All results were produced on a single laptop-class CPU. The language-model
-experiments call locally served open-weight models (Llama-3.3-70B and Qwen3.6-27B, plus the
-Qwen3.5 family) through an OpenAI-compatible endpoint and log every request and reply; an
-equivalent endpoint is required to rerun them.
+Training and evaluation commands are pinned in the experiment records. Run outputs land under
+`models/runs/`, not shipped; the records name the artefact paths a rerun regenerates. Every
+result was trained on a single laptop-class CPU. The language-model experiments call locally
+served open-weight models (Llama-3.3-70B, Qwen3.6-27B, and the Qwen3.5 family) through an
+OpenAI-compatible endpoint and log every request and reply.
 
 ## Data
 
