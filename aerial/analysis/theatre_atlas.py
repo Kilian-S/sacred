@@ -28,7 +28,7 @@ TARGET_SAMPLES = 60_000
 CHARACTER = {
     "kgd_gvardeysk": "Kaliningrad -> Gvardeysk along the Pregolya. The reference theatre: a short, "
                      "narrow corridor with the city as a line-of-sight wall at the mouth and open "
-                     "farmland beyond. Every banked aerial number was produced here.",
+                     "farmland beyond. The reference theatre for the aerial acts.",
     "ukraine": "Dnipro -> Zaporizhzhia along the river. A long north-south corridor, farmland "
                "dominated, heavily built up at both ends: the longest run of the four.",
     "narva": "Kohtla-Jarve -> Kingisepp across the Narva river border. Forest dominated with a "
@@ -123,8 +123,7 @@ def main():
 
     out = ["# Theatre atlas: the four scored aerial theatres",
            "",
-           "- **status: REFERENCE (2026-07-25).** Kilian's 2026-07-25 decision limits the aerial "
-           "line to these four theatres. Regenerate with "
+           "- **status: REFERENCE.** The aerial acts use these four theatres. Regenerate with "
            "`PYTHONPATH=. python analysis/theatre_atlas.py`; the maps themselves live under "
            "`data/maps/` and are gitignored, so this file is the committed record of what they "
            "contain. Oracle-only: no training, no model calls.",
@@ -180,7 +179,7 @@ def main():
                 "**Candidate emplacement sites** (%.1f km grid, %.1f km terminal standoff):"
                 % (SPACING_KM, STANDOFF_KM), "",
                 "| table | total | by class |", "|---|---|---|",
-                "| v1 (banked) | %d | %s |" % (sum(v1.values()),
+                "| v1 | %d | %s |" % (sum(v1.values()),
                                                ", ".join(f"{k} {n}" for k, n in sorted(v1.items()))),
                 "| v2 (gen39) | %d | %s |" % (sum(v2.values()),
                                               ", ".join(f"{k} {n}" for k, n in sorted(v2.items()))),
