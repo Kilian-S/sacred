@@ -82,7 +82,7 @@ and in the air.
 The Mission Control application is the interactive deliverable. The theatres, the trained
 policies, and the experimental record are explorable through it.
 
-<img src="assets/theatre.png" alt="The Kaliningrad to Gvardeysk theatre in Mission Control" width="100%">
+<img src="assets/theatre.png" alt="The Königsberg Oblast theatre in Mission Control" width="100%">
 
 <img src="assets/play.png" alt="The placement game in Mission Control" width="100%">
 
