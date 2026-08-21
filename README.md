@@ -134,3 +134,8 @@ OpenAI-compatible endpoint and log every request and reply.
 
 Road graphs and theatre geometry derive from OpenStreetMap data, © OpenStreetMap contributors,
 available under the Open Database Licence (ODbL). The maps carry network geometry only.
+
+## Licence
+
+Released under the GNU General Public License, version 3. The full text is in
+[LICENSE](LICENSE). Copyright (C) 2026 Kilian Schwarz.
