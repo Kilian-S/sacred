@@ -49,7 +49,7 @@
 >   2026-07-16: a LOCAL LLM workbench exists** (Prof. Angeloudis's box `cv-iits-w05`, no API keys /
 >   no spend). SSH `killian@100.88.32.88` (double-L username), gateway on :8080 reached via SSH
 >   tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88` -> `http://localhost:18080/v1`, key
->   `iits-local-key`; live model `llama-3.3-70b` (+ `qwen3-27b` one command away). Full details in
+>   `$SACRED_LLM_KEY`; live model `llama-3.3-70b` (+ `qwen3-27b` one command away). Full details in
 >   the HANDOVER top banner. TODO before the live run: (a) Kilian's go (it hits the shared GPU box);
 >   (b) add a generic OpenAI-compatible base-url path to `scratch/b2_llm_benchmark.py` (the openai
 >   branch already posts to /v1/chat/completions, just parameterise the host).

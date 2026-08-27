@@ -3,10 +3,10 @@
 - **status: PRE-REGISTERED 2026-07-12 (NEXT_STEPS_MASTER Block B item B2). Harness built and
   dry-run-validated (`scratch/b2_llm_benchmark.py`). UNBLOCKED 2026-07-16: a LOCAL LLM workbench
   is available (no commercial API keys / no spend needed) — Prof. Angeloudis's GPU box.**
-  - **Endpoint:** OpenAI-compatible gateway on the box's port 8080, key `iits-local-key`. NOT
+  - **Endpoint:** OpenAI-compatible gateway on the box's port 8080, key `$SACRED_LLM_KEY`. NOT
     directly reachable from Kilian's Mac (shared Tailscale node, ACL blocks 8080); reach it via SSH
     tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88` (username DOUBLE-L `killian`, pw
-    `tsl2026`), then `http://localhost:18080/v1`. Verified working end-to-end 2026-07-16.
+    `<held by Kilian>`), then `http://localhost:18080/v1`. Verified working end-to-end 2026-07-16.
   - **Models:** live = `llama-3.3-70b` (AWQ-INT4, 32K ctx); `qwen3-27b` (27B, 64K ctx) one
     `./start.sh start qwen3-27b` away (fits the VRAM budget alongside the 70B). Pinned open-weight
     models = more reproducible than a moving API; NO tools available = the informative no-tools

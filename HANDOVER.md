@@ -174,8 +174,14 @@ repair, near parity). Synthesis table: `experiments/regime_decision_table.md`.
 Three sacred worktrees (see `CLAUDE.md` for the table): roads `gen08-interdiction` (this tree,
 master docs, suite last recorded 171; the "224" previously recorded here was a doc slip, the
 aerial-era count), aerial `gen28-aerial` (suite last recorded 246), multi-OD
-`gen29-multiod` (closed, suite last recorded 173). Branches `main` and `gen07-contested` are
-frozen history at the gen07 close. Only `gen08-interdiction` has a remote (`origin`).
+`gen29-multiod` (closed, suite last recorded 173). Branch `gen07-contested` is frozen history
+at the gen07 close. All of `gen08-interdiction`, `gen28-aerial`, `gen29-multiod` and `public`
+are pushed to `origin` (github.com/Kilian-S/sacred). A fourth worktree, `code/sacred-public`
+(branch `public`, built 2026-08-21/22), is the reader-facing layout named in thesis Appendix A:
+`roads/` and `aerial/` arms with `src`, `scripts`, `analysis` (the former `scratch`), `tests`,
+`experiments` and `data/maps`, GPL-3.0, a README in Kilian's own prose, pinned requirements and
+a `pytest.ini` per arm. GitHub's default branch `main` is kept equal to `public` by
+fast-forward; the dev branches carry the full history and the untrimmed ledgers.
 
 **imperial-sacred** (`code/imperial-sacred`, branch `expansion-gen26-39`, unpushed) is the
 shareable restructured repo: engine package `sacred/`, historical harnesses `training/`, the
@@ -190,9 +196,11 @@ is its read-only evidence base. Its own briefs are `THESIS_FRAME.md` (the spine)
 
 **External references.** The guidance PDF and the assessed literature survey sit two directories
 above the repo root (`../../`). The LLM workbench (Prof Angeloudis's box `cv-iits-w05`) is
-reachable directly at `http://100.88.32.88:8080/v1`, key `iits-local-key`, models
-`llama-3.3-70b` and `qwen3-27b`; SSH `killian@100.88.32.88` (double-L, password `tsl2026`);
-every call is audit-logged on the box. Any use of it needs Kilian's go (shared hardware).
+reachable over Tailscale through an OpenAI-compatible gateway on port 8080, models
+`llama-3.3-70b` and `qwen3-27b`. The endpoint, gateway key and SSH credentials are held by
+Kilian and were scrubbed from every tree on 2026-08-27 (the public-branch scripts read
+`SACRED_LLM_BASE` and `SACRED_LLM_KEY` from the environment); every call is audit-logged on
+the box. Any use of it needs Kilian's go (shared hardware).
 
 ## Machine and operations facts (measured, not guessed)
 

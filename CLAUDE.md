@@ -48,6 +48,7 @@ never edit Kilian's own paragraphs; work through `scratchpad.tex`).
 | `code/sacred` (branch `gen08-interdiction`) | the ROADS worktree and the master documentation home |
 | `code/sacred-aerial` (branch `gen28-aerial`) | the AERIAL worktree (gen28, gen31, gen32, gen33, gen39) |
 | `code/sacred-gen29` (branch `gen29-multiod`) | the MULTI-OD worktree (gen29, gen36, gen37), closed |
+| `code/sacred-public` (branch `public`) | the READER-FACING layout named in thesis Appendix A (`roads/` + `aerial/` arms); GitHub `main` mirrors it |
 | `code/imperial-sacred` (branch `expansion-gen26-39`) | the shareable restructured repo with the Mission Control web app; entry points `README.md`, `AGENTS.md`, `docs/notes/HANDOVER.md` |
 | `Thesis/thesis/` | the thesis repo (Overleaf-synced); `main.tex` plus `chapters/`; `THESIS_FRAME.md` and `THESIS_PLANNER_HANDOFF.md` are its own briefs |
 | `Thesis/MSc Transport - Research Project Guidance 2025-2026.pdf` | deadlines and rubric (Methodology/Analysis/Discussion 50%, Structure & Presentation 20%) |
