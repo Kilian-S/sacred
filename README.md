@@ -139,4 +139,4 @@ available under the Open Database Licence (ODbL). The maps carry network geometr
 ## Licence
 
 Released under the GNU General Public License, version 3. The full text is in
-[LICENSE](LICENSE). Copyright (C) 2026 Kilian Schwarz.
+[LICENSE](LICENSE). Copyright (C) 2026 Kilian Xhen Schwarz.
