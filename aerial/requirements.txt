@@ -1,8 +1,12 @@
-# Core graph simulation.
-networkx>=3.0
-numpy>=1.24
-pygame>=2.5
-
-# Planned project stack: PyTorch, PyTorch Geometric, PyGame, PettingZoo, OSMnx.
-tensorboard
-
+# Pinned to the environment in which every result of the thesis was produced
+# (Python 3.13.7, macOS arm64, CPU only). Transitive dependencies resolve by pip.
+numpy==2.4.4
+networkx==3.6.1
+scipy==1.17.1
+torch==2.12.0
+torch-geometric==2.7.0
+pygame==2.6.1
+shapely==2.1.2
+matplotlib==3.10.9
+requests==2.34.2
+pytest==9.1.0
