@@ -3,7 +3,9 @@
 # One worker per cell, posting direct to the vLLM port. Idempotent: existing outputs
 # are skipped.
 set -u; cd "$(dirname "$0")/.."
-BASE="http://cv-iits-w05.tail5b8d80.ts.net:8001/v1"; KEY="iits-local-key"; MODEL="qwen3-27b"
+# The recorded run posted direct to the vLLM port (8001) rather than the gateway (8080);
+# point SACRED_LLM_BASE at that port to reproduce it.
+BASE="${SACRED_LLM_BASE:?set SACRED_LLM_BASE to the OpenAI-compatible endpoint}"; KEY="${SACRED_LLM_KEY:?set SACRED_LLM_KEY}"; MODEL="qwen3-27b"
 worker () {
   local OD=$1 CITY=$2 TAG=$3; shift 3
   local DIR="models/runs/b2_llm/batch_${TAG}_think"

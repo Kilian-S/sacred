@@ -2,7 +2,7 @@
 # B2 LLM benchmark batch for the 71-33 cell at K=1.
 set -u; cd "$(dirname "$0")/.."
 mkdir -p models/runs/b2_llm/batch_7133
-BASE="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"; KEY="iits-local-key"; OD="71-33"
+BASE="${SACRED_LLM_BASE:?set SACRED_LLM_BASE to the OpenAI-compatible endpoint}"; KEY="${SACRED_LLM_KEY:?set SACRED_LLM_KEY}"; OD="71-33"
 run_model () {
   local MODEL=$1
   for REG in a b c; do

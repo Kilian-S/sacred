@@ -8,6 +8,7 @@ defender by playing the predicted specialist policy against the true enemy type.
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.request
 from pathlib import Path
@@ -25,7 +26,9 @@ from src.baselines.multiconvoy_oracle import _row_minimiser
 
 torch.set_num_threads(1)
 N, K, BAND, KX, W, TAU = 3, 1, (0.15, 0.95), 8, 3, 0.15
-BASE, KEY, MODEL = "http://localhost:18080/v1/chat/completions", "iits-local-key", "llama-3.3-70b"
+BASE = os.environ.get("SACRED_LLM_BASE", "http://localhost:18080/v1").rstrip("/") + "/chat/completions"
+KEY = os.environ.get("SACRED_LLM_KEY", "")
+MODEL = "llama-3.3-70b"
 DRAWS = 3
 OUT = Path("models/runs/gen38_llm_enemy_id")
 TR = OUT / "transcripts"

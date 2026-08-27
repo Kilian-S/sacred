@@ -7,13 +7,14 @@ no model and no network.
 
   Dry:   PYTHONPATH=. <venv>/bin/python scripts/gen33_generate_force.py --provider dry
   Smoke: PYTHONPATH=. <venv>/bin/python scripts/gen33_generate_force.py --provider openai \
-           --base http://100.88.32.88:8080/v1 --models llama-3.3-70b,qwen3-27b \
+           --base "$SACRED_LLM_BASE" --models llama-3.3-70b,qwen3-27b \
            --phases single,coordinated --n 1
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -192,8 +193,10 @@ def summarise_and_save(records, a, out_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--provider", choices=["dry", "openai"], default="dry")
-    ap.add_argument("--base", default="", help="OpenAI-compatible base URL (e.g. http://100.88.32.88:8080/v1)")
-    ap.add_argument("--key", default="iits-local-key")
+    ap.add_argument("--base", default=os.environ.get("SACRED_LLM_BASE", ""),
+                    help="OpenAI-compatible base URL (defaults to $SACRED_LLM_BASE)")
+    ap.add_argument("--key", default=os.environ.get("SACRED_LLM_KEY", ""),
+                    help="gateway key (defaults to $SACRED_LLM_KEY)")
     ap.add_argument("--model", default="dry-synthetic")
     ap.add_argument("--models", default="", help="comma-separated model list; all held in flight together")
     ap.add_argument("--theatre", default="all", choices=list(THEATRES) + ["all"])

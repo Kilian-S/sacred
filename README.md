@@ -128,7 +128,8 @@ Training and evaluation commands are pinned in the experiment records. Run outpu
 `models/runs/`, not shipped; the records name the artefact paths a rerun regenerates. Every
 result was trained on a single laptop-class CPU. The language-model experiments call locally
 served open-weight models (Llama-3.3-70B, Qwen3.6-27B, and the Qwen3.5 family) through an
-OpenAI-compatible endpoint and log every request and reply.
+OpenAI-compatible endpoint and log every request and reply. The scripts read the endpoint and
+key from the environment variables `SACRED_LLM_BASE` and `SACRED_LLM_KEY`.
 
 ## Data
 

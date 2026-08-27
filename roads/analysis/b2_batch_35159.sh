@@ -3,7 +3,7 @@
 set -u
 cd "$(dirname "$0")/.."
 mkdir -p models/runs/b2_llm/batch_35159
-BASE="http://100.88.32.88:8080/v1"; KEY="iits-local-key"
+BASE="${SACRED_LLM_BASE:?set SACRED_LLM_BASE to the OpenAI-compatible endpoint}"; KEY="${SACRED_LLM_KEY:?set SACRED_LLM_KEY}"
 run_model () {
   local MODEL=$1
   for REG in a b c; do

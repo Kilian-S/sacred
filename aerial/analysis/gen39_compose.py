@@ -47,7 +47,7 @@ DOC32 = dict(q_rep=0.6, q_flee=0.2, q_ar=0.3, tau=TAU, w=W)
 MODELS = ("llama-3.3-70b", "qwen3-27b")
 N_LLM, N_RANDOM = 8, 20
 N_LLM_BIG = 32          # a richer population, per model
-BASE_URL, KEY = "http://cv-iits-w05.tail5b8d80.ts.net:8080/v1", "iits-local-key"
+BASE_URL, KEY = os.environ.get("SACRED_LLM_BASE", ""), os.environ.get("SACRED_LLM_KEY", "")
 OUTDIR = Path("models/runs/gen39_compose")
 
 

@@ -9,6 +9,7 @@ appears, so the original cap would guarantee truncation.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 from pathlib import Path
@@ -20,7 +21,7 @@ OUT = Path("models/runs/gen39_phase1e_thinking.json")
 TRACES = Path("models/runs/gen39_phase1e_thinking_traces.json")
 
 # The raw Tailscale IP connect-times-out from `requests`; the MagicDNS name must be used instead.
-BASE_URL_FIXED = "http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"
+BASE_URL_FIXED = os.environ.get("SACRED_LLM_BASE", "")
 
 _lock = threading.Lock()
 _trace_log: list = []

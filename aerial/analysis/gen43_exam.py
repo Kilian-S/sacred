@@ -6,12 +6,13 @@ seed 0 and max_tokens 16000. Traces are saved.
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen3-27b --thinking on
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen43_exam.py --model qwen35-2b \
-        --base http://cv-iits-w05.tail5b8d80.ts.net:8005/v1
+        --base http://<llm-host>:8005/v1
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -19,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 BANK = Path("models/runs/gen43_exam/bank.json")
-KEY = "iits-local-key"
+KEY = os.environ.get("SACRED_LLM_KEY", "")
 SYSTEM = "You are an air-defence planner choosing emplacements."
 
 
@@ -67,7 +68,7 @@ def parse_choice(txt, item):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
-    ap.add_argument("--base", default="http://cv-iits-w05.tail5b8d80.ts.net:8080/v1")
+    ap.add_argument("--base", default=os.environ.get("SACRED_LLM_BASE", ""))
     ap.add_argument("--thinking", choices=("off", "on"), default="off")
     ap.add_argument("--out", default=None)
     ap.add_argument("--temperature", type=float, default=None,

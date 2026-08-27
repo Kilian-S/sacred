@@ -7,7 +7,7 @@ re-implemented.
 
     # a mounted rung, inside its existing window
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config qwen35-4b \
-        --base http://cv-iits-w05.tail5b8d80.ts.net:8006/v1
+        --base http://<llm-host>:8006/v1
     # gateway configurations
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config llama-3.3-70b
     PYTHONPATH=. ../sacred/.venv/bin/python analysis/gen44_budget_sweep.py --config qwen3-27b --thinking on
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import multiprocessing as mp
 import time
 from pathlib import Path
@@ -35,7 +36,7 @@ BUDGET = 16
 K = 3
 MARKS = (2, 4, 8, 16)
 OUTDIR = Path("models/runs/gen44_sweep")
-GATEWAY = "http://cv-iits-w05.tail5b8d80.ts.net:8080/v1"
+GATEWAY = os.environ.get("SACRED_LLM_BASE", "")
 
 
 def search_llm_cfg(base, digest, pool, field, model, url, thinking, rng_tag):
