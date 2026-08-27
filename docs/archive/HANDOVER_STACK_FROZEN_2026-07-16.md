@@ -44,7 +44,7 @@
 > 6. **B2 (the LLM benchmark) is LIVE and stays in the ORIGINAL conversation** (design
 >    finalised: llama-3.3-70b + qwen3-27b, unhinted, 3 instances; first live transcript
 >    `scratch/b2_livetest_llama_transcript.txt`; gateway now DIRECTLY reachable at
->    http://100.88.32.88:8080/v1, key iits-local-key; qwen start needs Kilian's ssh). Do not
+>    http://100.88.32.88:8080/v1, key $SACRED_LLM_KEY; qwen start needs Kilian's ssh). Do not
 >    re-run B2 from a fresh session while that conversation is active.
 > **New operating dogmas earned today (also in SYSTEM.md):** (a) BASELINE COMPLETENESS is
 > pre-registered like metrics — every ladder carries the strongest naive baseline a
@@ -63,14 +63,14 @@
 > provided an SSH-reachable GPU server hosting an OpenAI-compatible LLM stack. Full connection +
 > inventory details below; the essentials:
 > - **Host `cv-iits-w05`**, reached over Tailscale. **SSH: `ssh killian@100.88.32.88`** (NOTE: the
->   username is `killian`, DOUBLE-L, not `kilian`; password `tsl2026`). Instructions file:
+>   username is `killian`, DOUBLE-L, not `kilian`; password `<held by Kilian>`). Instructions file:
 >   `../../Connecting to local LLM workbench.txt`.
 > - **The gateway on port 8080 is NOT directly reachable from Kilian's Mac** (the box is a *shared*
 >   Tailscale node from the prof's tailnet; its own IP is `100.73.116.67`, the Mac sees it as
 >   `100.88.32.88`, and the tailnet ACL allows SSH but not 8080). **Workaround (verified working):**
 >   an SSH tunnel `ssh -N -L 18080:localhost:8080 killian@100.88.32.88`, then hit
 >   `http://localhost:18080/v1`. (Alternative: ask the prof to open 8080 in the ACL / `tailscale serve`.)
-> - **OpenAI-compatible gateway**, API key `iits-local-key` (`Authorization: Bearer iits-local-key`).
+> - **OpenAI-compatible gateway**, API key `$SACRED_LLM_KEY` (`Authorization: Bearer $SACRED_LLM_KEY`).
 >   Every request+response is auto-logged to `/home/llm/vllm-server/audit/YYYY-MM-DD.jsonl` (the B2
 >   transcript record, for free; note the log is shared/readable by the `llm` group = pan, leo).
 > - **Live model: `llama-3.3-70b`** (AWQ-INT4, 32K ctx) — tested end-to-end, generates. Three more
@@ -83,7 +83,7 @@
 >   open-weight models (reproducible), no tools available (exactly the informative no-tools register
 >   the B2 pre-registration argues for), free, and on the supervisor's own hardware. **B2 is ready to
 >   run** the moment Kilian says go: point `scratch/b2_llm_benchmark.py` at the tunnelled endpoint
->   (`--base http://localhost:18080/v1 --key iits-local-key --model llama-3.3-70b`), then enable and
+>   (`--base http://localhost:18080/v1 --key $SACRED_LLM_KEY --model llama-3.3-70b`), then enable and
 >   run Qwen3-27B as the second model. NOTE: the harness currently supports `--provider anthropic|
 >   openai|dry`; add a generic OpenAI-compatible base-url path (trivial: the OpenAI branch already
 >   posts to `/v1/chat/completions`, just parameterise the URL) before the live run.
