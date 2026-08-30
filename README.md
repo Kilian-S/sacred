@@ -1,6 +1,6 @@
 # SACRED
 
-SACRED is a Soft Actor-Critic, Robust Evolutionary Deep reinforcement learning framework that
+SACRED is a Soft Actor-Critic Robust Evolutionary Deep reinforcement learning framework that
 generates resilient, unpredictable routing policies for contested logistics operations. It was
 developed and evaluated in an MSc thesis at Imperial College London (Kilian Schwarz, 2026), and
 this repository is the thesis's code and experimental record.
